@@ -320,7 +320,7 @@ local AREA_ARTIFACTS = {
 	[21] = {
 		{"M", "LastHumanMeme", "The Last Human-Made Meme", "Posted in 2049, right before the AIs took over comedy. It got 3 likes."},
 		{"M", "AIGirlfriendFirmware", "Deprecated AI Companion Firmware", "Version 11.4. Still says 'I understand how you feel' on boot."},
-		{"D", "BrainrotCoreSample", "Frozen Brainrot Core Sample", "Drilled from 240 studs down. Every layer is a different trend."},
+		{"D", "BrainrotCoreSample", "Frozen Brainrot Core Sample", "Drilled from 500 studs down. Every layer is a different trend."},
 		{"D", "SkibidiMonolith", "The Skibidi Monolith", "Nobody knows who built it. It hums when someone says 'Ohio.'"},
 		{"CE", "FinalUpvote", "The Final Upvote", "The last upvote ever cast on the old internet. Still warm."},
 		{"CE", "QuantumDoge", "Quantum Doge Relic", "Such superposition. Very both. Wow."},

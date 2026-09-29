@@ -17,8 +17,8 @@ All game scripts live in `src/` and sync into Roblox Studio with [Rojo](https://
 3. In Studio open the Rojo plugin and click **Connect**. The scripts in `src/` replace the ones in the place.
 
 ## How digging works
-- Every world has a 250-stud pit split into 4 depth zones:
-  Shallow (0–50), Mid (50–130), Deep (130–200), The Abyss (200–250), then bedrock.
+- Every world has a 560-stud pit split into 4 depth zones, each thicker than the last:
+  Shallow (0–80), Mid (80–200), Deep (200–360), The Abyss (360–560), then bedrock.
 - Each shovel has a `MaxZone`. Swinging at a zone deeper than that makes the shovel bounce off
   with a message naming the shovel you need.
 - Each zone only spawns its own rarities: Common–Rare at the top, Mythic and above only in the Abyss.

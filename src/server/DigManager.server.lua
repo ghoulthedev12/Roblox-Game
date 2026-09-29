@@ -1,5 +1,5 @@
 -- DigManager (Script in ServerScriptService)
--- Real terrain digging with shovels across every world: carves holes in a 250-stud pit,
+-- Real terrain digging with shovels across every world: carves holes in a 560-stud pit,
 -- blocks shovels from breaking into zones deeper than they're rated for, finds artifacts
 -- by depth zone, Lucky Dig minigame, pit resets, the Shovel Shops and the World Gates.
 
@@ -556,4 +556,4 @@ Players.PlayerRemoving:Connect(function(player)
 	lastBounceMessage[player] = nil
 end)
 
-print("DigManager ready: " .. #enabledWorlds() .. " world(s), 250-stud pits, shovel depth zones active")
+print("DigManager ready: " .. #enabledWorlds() .. " world(s), 560-stud pits, shovel depth zones active")

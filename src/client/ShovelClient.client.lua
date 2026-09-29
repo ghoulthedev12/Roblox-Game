@@ -30,7 +30,7 @@ local gui = UIKit.screen(player, "ShovelGui", 2)
 -- HINT MESSAGES (bubbly text above the hotbar)
 ---------------------------------------------------------------------
 local hint = UIKit.label(gui, "", {
-	Size = UDim2.fromOffset(620, 34), Position = UDim2.new(0.5, 0, 1, -250), AnchorPoint = Vector2.new(0.5, 0),
+	Size = UDim2.fromOffset(620, 30), Position = UDim2.new(0.5, 0, 1, -150), AnchorPoint = Vector2.new(0.5, 0),
 	Color = C.Sun, Stroke = 3,
 })
 hint.Visible = false
@@ -55,20 +55,57 @@ digMessageRemote.OnClientEvent:Connect(function(message, color)
 end)
 
 ---------------------------------------------------------------------
--- DEPTH METER + RETURN TO SURFACE + UNDERGROUND LIGHT
+-- DEPTH GAUGE (slim tube on the right edge) + RETURN TO SURFACE + UNDERGROUND LIGHT
 ---------------------------------------------------------------------
-local depthPanel = UIKit.panel(gui, {
-	Size = UDim2.fromOffset(360, 64), Position = UDim2.new(0.5, 0, 1, -112), AnchorPoint = Vector2.new(0.5, 1),
-	Color = C.Panel, Radius = 20,
-})
-depthPanel.Visible = false
-local depthStroke = depthPanel:FindFirstChildOfClass("UIStroke")
-local zoneDot = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(40, 40), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Sun, Radius = 20})
-local shovelLabel = UIKit.label(depthPanel, "", {Size = UDim2.new(1, -72, 0, 22), Position = UDim2.fromOffset(62, 8), Align = "Left", Color = C.Ink, Stroke = 0})
-local depthLabel = UIKit.label(depthPanel, "", {Size = UDim2.new(1, -72, 0, 22), Position = UDim2.fromOffset(62, 34), Align = "Left", Color = C.Violet, Stroke = 0})
+local GAUGE_H = 230 -- height of the tube in pixels
 
-local surfaceButton = UIKit.button(gui, "RETURN TO SURFACE", {
-	Size = UDim2.fromOffset(250, 48), Position = UDim2.new(0.5, 0, 1, -186), AnchorPoint = Vector2.new(0.5, 1), Color = C.Sky,
+local depthPanel = Instance.new("Frame") -- whole gauge; shown while holding a shovel or underground
+depthPanel.BackgroundTransparency = 1
+depthPanel.Size = UDim2.fromOffset(104, 360)
+depthPanel.Position = UDim2.new(1, -12, 0.5, 0)
+depthPanel.AnchorPoint = Vector2.new(1, 0.5)
+depthPanel.Visible = false
+depthPanel.Parent = gui
+local gaugeScale = Instance.new("UIScale")
+gaugeScale.Parent = depthPanel
+local function fitScreen()
+	gaugeScale.Scale = math.clamp(camera.ViewportSize.Y / 720, 0.65, 1)
+end
+camera:GetPropertyChangedSignal("ViewportSize"):Connect(fitScreen)
+fitScreen()
+
+-- depth number bubble
+local depthBubble = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(92, 40), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0), Color = C.Panel, Radius = 20})
+local depthLabel = UIKit.label(depthBubble, "0m", {Size = UDim2.new(1, -16, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0})
+
+-- the tube, filled with one colored band per zone (thicker zones = taller bands)
+local tube = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(30, GAUGE_H), Position = UDim2.new(0.5, 8, 0, 50), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 15, Stroke = 3, Shade = false})
+tube.ClipsDescendants = true
+local bands = Instance.new("Frame")
+bands.BackgroundTransparency = 1
+bands.Size = UDim2.fromScale(1, 1)
+bands.Parent = tube
+local tubeGloss = UIKit.panel(tube, {Size = UDim2.new(0, 6, 1, -16), Position = UDim2.new(0, 5, 0, 8), Color = C.White, Radius = 3, Stroke = false, Shade = false})
+tubeGloss.BackgroundTransparency = 0.55
+tubeGloss.ZIndex = 3
+
+-- your position: a round marker that slides down the left side of the tube
+local marker = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(22, 22), Position = UDim2.new(0.5, -14, 0, 50), AnchorPoint = Vector2.new(1, 0.5), Color = C.Sun, Radius = 11, Stroke = 3})
+marker.ZIndex = 4
+
+-- your shovel's limit: a red line across the tube with a small tag
+local limitLine = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(40, 6), Position = UDim2.new(0.5, 8, 0, 50), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Coral, Radius = 3, Stroke = 2, Shade = false})
+limitLine.ZIndex = 4
+local shovelLabel = UIKit.label(depthPanel, "", {Size = UDim2.fromOffset(52, 16), Position = UDim2.new(0.5, 30, 0, 50), AnchorPoint = Vector2.new(0, 0.5), Align = "Left", Color = C.Coral, Stroke = 2})
+shovelLabel.ZIndex = 4
+
+-- zone name pill under the tube
+local zonePill = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(104, 28), Position = UDim2.new(0.5, 0, 0, 50 + GAUGE_H + 8), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sun, Radius = 14})
+local zoneLabel = UIKit.label(zonePill, "", {Size = UDim2.new(1, -12, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+
+-- small "surface" button under everything, only while underground
+local surfaceButton = UIKit.button(depthPanel, "SURFACE", {
+	Size = UDim2.fromOffset(104, 40), Position = UDim2.new(0.5, 0, 0, 50 + GAUGE_H + 44), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sky, Radius = 20,
 })
 surfaceButton.Visible = false
 surfaceButton.MouseButton1Click:Connect(function()
@@ -77,37 +114,77 @@ end)
 
 local headlamp -- PointLight on our character when underground
 local equippedDef -- the shovel currently in hand
+local gaugeWorld -- world the bands were drawn for
 
 local function currentWorld()
 	return GameConfig.GetWorld(player:GetAttribute("CurrentWorld") or 1) or GameConfig.Worlds[1]
 end
 
+local function drawBands(world)
+	gaugeWorld = world
+	bands:ClearAllChildren()
+	local total = -world.Zones[#world.Zones].Bottom
+	for i, zone in ipairs(world.Zones) do
+		local top = -zone.Top / total
+		local height = (zone.Top - zone.Bottom) / total
+		local band = Instance.new("Frame")
+		band.BorderSizePixel = 0
+		band.BackgroundColor3 = zone.Color
+		band.Position = UDim2.fromScale(0, top)
+		band.Size = UDim2.fromScale(1, height)
+		band.Parent = bands
+		if i > 1 then
+			local seam = Instance.new("Frame")
+			seam.BorderSizePixel = 0
+			seam.BackgroundColor3 = C.Ink
+			seam.Size = UDim2.new(1, 0, 0, 2)
+			seam.Parent = band
+		end
+	end
+end
+
+-- y position (in gauge pixels) of a depth
+local function gaugeY(world, depth)
+	local total = -world.Zones[#world.Zones].Bottom
+	return 50 + math.clamp(depth / total, 0, 1) * GAUGE_H
+end
+
 task.spawn(function()
 	while true do
-		task.wait(0.2)
+		task.wait(0.15)
 		local character = player.Character
 		local root = character and character:FindFirstChild("HumanoidRootPart")
 		if root then
 			local world = currentWorld()
+			if world ~= gaugeWorld then drawBands(world) end
 			local feetY = root.Position.Y - 3
 			local depth = math.max(0, math.floor(world.Origin.Y - feetY + 0.5))
 			local offset = root.Position - world.Origin
 			local inPit = Vector3.new(offset.X, 0, offset.Z).Magnitude < world.PitRadius + 7
 
-			local zoneIndex, zone = GameConfig.GetZoneAt(world, feetY)
+			local _, zone = GameConfig.GetZoneAt(world, feetY)
 			zone = zone or {Name = "Bedrock", Color = Color3.fromRGB(150, 150, 160)}
-			local text = "DEPTH " .. depth .. "m  •  " .. string.upper(zone.Name)
-			-- warn when the next zone down is too hard for this shovel
-			if equippedDef and zoneIndex and zoneIndex == equippedDef.MaxZone and zoneIndex < #world.Zones then
-				local floorDepth = -world.Zones[zoneIndex].Bottom
-				if floorDepth - depth <= 12 then
-					text ..= "  •  LIMIT " .. floorDepth .. "m"
-				end
-			end
-			depthLabel.Text = text
-			zoneDot.BackgroundColor3 = zone.Color
-			depthStroke.Color = zoneIndex and equippedDef and zoneIndex >= equippedDef.MaxZone and C.Coral or C.Ink
+			depthLabel.Text = depth .. "m"
+			zoneLabel.Text = string.upper(zone.Name)
+			zonePill.BackgroundColor3 = zone.Color
+			marker.Position = UDim2.new(0.5, -14, 0, gaugeY(world, depth))
 
+			if equippedDef and equippedDef.World == world.Id then
+				local maxDepth = -world.Zones[equippedDef.MaxZone].Bottom
+				limitLine.Visible = equippedDef.MaxZone < #world.Zones
+				shovelLabel.Visible = limitLine.Visible
+				limitLine.Position = UDim2.new(0.5, 8, 0, gaugeY(world, maxDepth))
+				shovelLabel.Position = UDim2.new(0.5, 30, 0, gaugeY(world, maxDepth))
+				shovelLabel.Text = "MAX"
+				-- marker turns red when you're right at your shovel's limit
+				marker.BackgroundColor3 = (limitLine.Visible and maxDepth - depth <= 8) and C.Coral or C.Sun
+			else
+				limitLine.Visible = false
+				shovelLabel.Visible = false
+				marker.BackgroundColor3 = C.Sun
+			end
+
+			depthPanel.Visible = equippedDef ~= nil or (inPit and depth > 4)
 			surfaceButton.Visible = inPit and depth > 4
 
 			-- small light so you can see underground
@@ -262,9 +339,7 @@ end
 local function onToolEquipped(tool)
 	local def = GameConfig.GetShovel(tool:GetAttribute("ShovelId")) or GameConfig.Shovels[1]
 	local baseGrip = tool.Grip
-	local world = GameConfig.GetWorld(def.World) or GameConfig.Worlds[1]
 	equippedDef = def
-	shovelLabel.Text = def.Name .. "  •  digs to " .. -world.Zones[def.MaxZone].Bottom .. "m"
 	depthPanel.Visible = true
 
 	local activatedConn = tool.Activated:Connect(function()
@@ -287,7 +362,6 @@ local function onToolEquipped(tool)
 		activatedConn:Disconnect()
 		stopDigAnimation()
 		tool.Grip = baseGrip
-		depthPanel.Visible = false
 		if equippedDef == def then equippedDef = nil end
 	end)
 end
