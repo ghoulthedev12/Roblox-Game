@@ -743,33 +743,52 @@ return GameConfig
 ]=])
 install(game:GetService("ServerScriptService"), "Architecture", "ModuleScript", [=[
 -- Architecture (ModuleScript in ServerScriptService)
--- Shared building kit for the 2050 look: a desaturated palette (slate, concrete,
--- corroded metal, brushed foil), structural steel I-beams, columns with base plates,
--- recessed wall panels, staggered platforms and recessed downlights.
+-- Shared building kit for the cartoony 2050 look: chunky rounded shapes (discs, capsules,
+-- domes, rings, arches, rounded blocks), a bright soft palette (white, lilac, sky, mint,
+-- sunshine) and gentle pastel glow trims.
 -- ShopBuilder, WorldGate and MuseumStyle all build with this.
 
 local Architecture = {}
 
 ---------------------------------------------------------------------
--- PALETTE (dark charcoals, raw concrete, brushed steel)
+-- PALETTE
 ---------------------------------------------------------------------
 local rgb = Color3.fromRGB
+local PLASTIC = Enum.Material.SmoothPlastic
 Architecture.Palette = {
-	Charcoal      = {Color = rgb(34, 35, 38),    Material = Enum.Material.Slate},
-	Graphite      = {Color = rgb(52, 54, 58),    Material = Enum.Material.Slate},
-	SlateGrey     = {Color = rgb(78, 80, 84),    Material = Enum.Material.Slate},
-	Concrete      = {Color = rgb(122, 120, 115), Material = Enum.Material.Concrete},
-	ConcreteLight = {Color = rgb(152, 149, 143), Material = Enum.Material.Concrete},
-	ConcreteDark  = {Color = rgb(88, 87, 84),    Material = Enum.Material.Concrete},
-	Steel         = {Color = rgb(138, 141, 146), Material = Enum.Material.Foil},
-	SteelDark     = {Color = rgb(72, 74, 78),    Material = Enum.Material.CorrodedMetal},
-	Weathered     = {Color = rgb(96, 90, 84),    Material = Enum.Material.CorrodedMetal},
-	SmokedGlass   = {Color = rgb(44, 48, 52),    Material = Enum.Material.Glass, Transparency = 0.35, Reflectance = 0.25},
-	Screen        = {Color = rgb(24, 25, 27),    Material = Enum.Material.SmoothPlastic},
+	White    = {Color = rgb(246, 247, 252), Material = PLASTIC},
+	Cloud    = {Color = rgb(222, 227, 242), Material = PLASTIC},
+	Lilac    = {Color = rgb(178, 158, 255), Material = PLASTIC},
+	Violet   = {Color = rgb(122, 92, 232),  Material = PLASTIC},
+	Sky      = {Color = rgb(92, 186, 255),  Material = PLASTIC},
+	Mint     = {Color = rgb(96, 226, 190),  Material = PLASTIC},
+	Sun      = {Color = rgb(255, 206, 84),  Material = PLASTIC},
+	Coral    = {Color = rgb(255, 122, 138), Material = PLASTIC},
+	Navy     = {Color = rgb(52, 56, 118),   Material = PLASTIC},
+	Ink      = {Color = rgb(34, 36, 74),    Material = PLASTIC},
+	Chrome   = {Color = rgb(214, 220, 232), Material = Enum.Material.Metal, Reflectance = 0.2},
+	Glass    = {Color = rgb(168, 228, 255), Material = Enum.Material.Glass, Transparency = 0.45, Reflectance = 0.15},
+	GlowCyan = {Color = rgb(120, 236, 255), Material = Enum.Material.Neon},
+	GlowPink = {Color = rgb(255, 140, 222), Material = Enum.Material.Neon},
+	GlowSun  = {Color = rgb(255, 222, 120), Material = Enum.Material.Neon},
+	GlowMint = {Color = rgb(120, 255, 205), Material = Enum.Material.Neon},
+	Portal   = {Color = rgb(170, 130, 255), Material = Enum.Material.ForceField},
 }
-Architecture.TextColor = rgb(222, 218, 210)   -- off-white engraved-look text
-Architecture.AccentText = rgb(160, 168, 176)  -- cool steel grey for sub-lines
-Architecture.LightColor = rgb(255, 228, 196)  -- warm architectural light (never neon)
+Architecture.TextColor = rgb(255, 255, 255)
+Architecture.TitleColor = rgb(255, 222, 110)
+Architecture.AccentText = rgb(150, 230, 255)
+Architecture.LightColor = rgb(225, 240, 255)
+
+local UPRIGHT = CFrame.Angles(0, 0, math.rad(90)) -- turns a cylinder (X axis) to stand up (Y axis)
+
+-- A CFrame at `position` whose X axis points along `direction` (for rods and capsules)
+function Architecture.alongX(position, direction)
+	local x = direction.Unit
+	local helper = math.abs(x.Y) > 0.95 and Vector3.zAxis or Vector3.yAxis
+	local z = x:Cross(helper).Unit
+	local y = z:Cross(x)
+	return CFrame.fromMatrix(position, x, y, z)
+end
 
 ---------------------------------------------------------------------
 -- BUILDER: every position is relative to `base` (a CFrame)
@@ -781,9 +800,9 @@ function Architecture.builder(parent, base)
 	return setmetatable({Parent = parent, Base = base}, Builder)
 end
 
--- A plain anchored block. `finish` is a palette name (see above).
+-- A plain anchored part. `finish` is a palette name (see above).
 function Builder:box(name, size, offset, finish, props)
-	local f = Architecture.Palette[finish] or Architecture.Palette.Concrete
+	local f = Architecture.Palette[finish] or Architecture.Palette.White
 	local p = Instance.new("Part")
 	p.Name = name
 	p.Anchored = true
@@ -795,7 +814,7 @@ function Builder:box(name, size, offset, finish, props)
 	p.Reflectance = f.Reflectance or 0
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
-	if f.Transparency then
+	if f.Transparency or f.Material == Enum.Material.Neon then
 		p.CastShadow = false
 	end
 	if props then
@@ -807,84 +826,110 @@ function Builder:box(name, size, offset, finish, props)
 	return p
 end
 
--- Wide-flange steel I-beam from point a to point b (local coordinates).
--- `depth` = beam height, `width` = flange width.
-function Builder:iBeam(name, a, b, depth, width, finish)
-	finish = finish or "SteelDark"
+-- Flat round disc / short cylinder standing upright, centered at `offset`.
+function Builder:disc(name, diameter, height, offset, finish, props)
+	local p = self:box(name, Vector3.new(height, diameter, diameter), offset * UPRIGHT, finish, props)
+	p.Shape = Enum.PartType.Cylinder
+	return p
+end
+
+-- Cylinder lying along the local X axis of `offset`.
+function Builder:rod(name, length, diameter, offset, finish, props)
+	local p = self:box(name, Vector3.new(length, diameter, diameter), offset, finish, props)
+	p.Shape = Enum.PartType.Cylinder
+	return p
+end
+
+function Builder:ball(name, diameter, offset, finish, props)
+	local p = self:box(name, Vector3.new(diameter, diameter, diameter), offset, finish, props)
+	p.Shape = Enum.PartType.Ball
+	return p
+end
+
+-- Squashed/stretched sphere (domes, saucers, blobs). `size` is the full ellipsoid size.
+function Builder:ellipsoid(name, size, offset, finish, props)
+	local p = self:box(name, size, offset, finish, props)
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Sphere
+	mesh.Parent = p
+	return p
+end
+
+-- Capsule from point a to point b: a rod with a ball on each end.
+function Builder:pill(name, a, b, diameter, finish)
 	local length = (b - a).Magnitude
-	local dir = (b - a).Unit
-	local up = math.abs(dir.Y) > 0.95 and Vector3.xAxis or Vector3.yAxis
-	local cf = CFrame.lookAt((a + b) / 2, b, up)
-	local flange = math.max(depth * 0.12, 0.12)
-	self:box(name .. "FlangeTop", Vector3.new(width, flange, length), cf * CFrame.new(0, depth / 2 - flange / 2, 0), finish)
-	self:box(name .. "FlangeBottom", Vector3.new(width, flange, length), cf * CFrame.new(0, -depth / 2 + flange / 2, 0), finish)
-	self:box(name .. "Web", Vector3.new(math.max(width * 0.18, 0.1), depth - flange * 2, length), cf, finish)
+	self:rod(name, length, diameter, Architecture.alongX((a + b) / 2, b - a), finish)
+	self:ball(name .. "CapA", diameter, CFrame.new(a), finish)
+	self:ball(name .. "CapB", diameter, CFrame.new(b), finish)
 end
 
--- Square steel column standing on a base plate, with a cap plate on top.
-function Builder:column(name, position, height, width, finish)
-	finish = finish or "Steel"
-	self:box(name .. "BasePlate", Vector3.new(width * 1.8, 0.2, width * 1.8), CFrame.new(position + Vector3.new(0, 0.1, 0)), "SteelDark")
-	for _, corner in ipairs({Vector3.new(1, 0, 1), Vector3.new(-1, 0, 1), Vector3.new(1, 0, -1), Vector3.new(-1, 0, -1)}) do
-		self:box(name .. "Bolt", Vector3.new(0.18, 0.18, 0.18), CFrame.new(position + corner * width * 0.7 + Vector3.new(0, 0.25, 0)), "Steel")
+-- A block with rounded vertical edges (size = full outer size, radius = corner radius).
+function Builder:roundedBlock(name, size, offset, radius, finish)
+	radius = math.min(radius, size.X / 2, size.Z / 2)
+	local core = self:box(name, Vector3.new(size.X - radius * 2, size.Y, size.Z), offset, finish)
+	self:box(name .. "Side", Vector3.new(size.X, size.Y, size.Z - radius * 2), offset, finish)
+	for _, sx in ipairs({-1, 1}) do
+		for _, sz in ipairs({-1, 1}) do
+			self:disc(name .. "Corner", radius * 2, size.Y,
+				offset * CFrame.new(sx * (size.X / 2 - radius), 0, sz * (size.Z / 2 - radius)), finish)
+		end
 	end
-	self:box(name, Vector3.new(width, height, width), CFrame.new(position + Vector3.new(0, height / 2, 0)), finish)
-	self:box(name .. "CapPlate", Vector3.new(width * 1.5, 0.2, width * 1.5), CFrame.new(position + Vector3.new(0, height + 0.1, 0)), "SteelDark")
+	return core
 end
 
--- A panel set back into a wall: raised frame, shadow reveal, and a darker inset.
--- `cf` is the panel's center on the wall face, facing out along -Z of `cf`.
-function Builder:recessedPanel(name, cf, width, height, frameFinish, insetFinish)
-	frameFinish = frameFinish or "ConcreteLight"
-	insetFinish = insetFinish or "Graphite"
-	local t = 0.5 -- frame thickness
-	self:box(name .. "FrameTop", Vector3.new(width, t, 0.5), cf * CFrame.new(0, height / 2 - t / 2, -0.25), frameFinish)
-	self:box(name .. "FrameBottom", Vector3.new(width, t, 0.5), cf * CFrame.new(0, -height / 2 + t / 2, -0.25), frameFinish)
-	self:box(name .. "FrameL", Vector3.new(t, height - t * 2, 0.5), cf * CFrame.new(-width / 2 + t / 2, 0, -0.25), frameFinish)
-	self:box(name .. "FrameR", Vector3.new(t, height - t * 2, 0.5), cf * CFrame.new(width / 2 - t / 2, 0, -0.25), frameFinish)
-	self:box(name .. "Reveal", Vector3.new(width - t * 2, height - t * 2, 0.1), cf * CFrame.new(0, 0, -0.05), "Charcoal")
-	return self:box(name .. "Inset", Vector3.new(width - t * 2 - 0.3, height - t * 2 - 0.3, 0.2), cf * CFrame.new(0, 0, -0.12), insetFinish)
+-- A ring (torus) made of short rods. `cf` is the ring's center; the ring lies in the
+-- XY plane of `cf` (so it faces along Z, like a doorway). Use `arc` < 360 for an arch.
+function Builder:ring(name, cf, radius, thickness, finish, segments, arc, startAngle)
+	segments = segments or 28
+	arc = arc or 360
+	startAngle = startAngle or 0
+	local step = arc / segments
+	local segLength = 2 * radius * math.sin(math.rad(step / 2)) + thickness * 0.35
+	for i = 0, segments - 1 do
+		local a = math.rad(startAngle + step * (i + 0.5))
+		local point = Vector3.new(math.cos(a) * radius, math.sin(a) * radius, 0)
+		-- the rod runs along the circle's tangent
+		local rodCF = cf * CFrame.new(point) * CFrame.Angles(0, 0, a + math.pi / 2)
+		self:rod(name, segLength, thickness, rodCF, finish)
+	end
+	if arc < 360 then
+		for _, a in ipairs({startAngle, startAngle + arc}) do
+			local r = math.rad(a)
+			self:ball(name .. "End", thickness, cf * CFrame.new(math.cos(r) * radius, math.sin(r) * radius, 0), finish)
+		end
+	end
 end
 
--- Stacked slabs that shrink and twist as they go up (a staggered platform).
--- tiers = {{width, height, depth, finish}, ...}, bottom first. Returns the top slab.
-function Builder:stagger(name, cf, tiers, twistDegrees, shift)
+-- Stacked discs that shrink as they go up (a staggered round platform).
+-- tiers = {{diameter, height, finish}, ...}, bottom first. Returns the top part and the total height.
+function Builder:tiers(name, cf, list)
 	local y = 0
 	local top
-	for i, tier in ipairs(tiers) do
-		local w, h, d, finish = tier[1], tier[2], tier[3], tier[4]
-		local offset = CFrame.new((shift or Vector3.zero) * (i - 1)) * CFrame.Angles(0, math.rad((twistDegrees or 0) * (i - 1)), 0)
-		top = self:box(name .. "Tier" .. i, Vector3.new(w, h, d), cf * offset * CFrame.new(0, y + h / 2, 0), finish)
-		y += h
+	for i, tier in ipairs(list) do
+		top = self:disc(name .. "Tier" .. i, tier[1], tier[2], cf * CFrame.new(0, y + tier[2] / 2, 0), tier[3])
+		y += tier[2]
 	end
 	return top, y
 end
 
--- A small recessed can light in a ceiling, shining down with warm light.
-function Builder:downlight(name, position, range, brightness)
-	self:box(name, Vector3.new(0.9, 0.15, 0.9), CFrame.new(position), "Charcoal", {CanCollide = false, CastShadow = false})
-	local lens = self:box(name .. "Lens", Vector3.new(0.6, 0.05, 0.6), CFrame.new(position - Vector3.new(0, 0.09, 0)), "Steel", {CanCollide = false, CastShadow = false})
-	lens.Material = Enum.Material.Glass
-	lens.Color = Color3.fromRGB(235, 225, 210)
-	lens.Transparency = 0.1
-	local light = Instance.new("SpotLight")
-	light.Face = Enum.NormalId.Bottom
-	light.Color = Architecture.LightColor
-	light.Range = range or 16
-	light.Brightness = brightness or 1.4
-	light.Angle = 75
-	light.Shadows = true
-	light.Parent = lens
-	return lens
+-- A soft glowing light bulb (small neon ball with a light).
+function Builder:bulb(name, diameter, offset, finish, range)
+	local p = self:ball(name, diameter, offset, finish or "GlowCyan")
+	local light = Instance.new("PointLight")
+	light.Color = p.Color
+	light.Range = range or 10
+	light.Brightness = 0.8
+	light.Parent = p
+	return p
 end
 
--- Engraved-look sign text on a part's front face (no neon, no glow).
-function Architecture.sign(part, title, subtitle, face)
+-- Big friendly sign text on a part's face.
+function Architecture.sign(part, title, subtitle, face, titleColor)
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = face or Enum.NormalId.Front
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	gui.PixelsPerStud = 40
-	gui.LightInfluence = 0.6
+	gui.LightInfluence = 0
 	gui.Parent = part
 	local function line(text, color, y, h, font)
 		local l = Instance.new("TextLabel")
@@ -896,11 +941,15 @@ function Architecture.sign(part, title, subtitle, face)
 		l.Font = font
 		l.TextScaled = true
 		l.Parent = gui
+		local s = Instance.new("UIStroke")
+		s.Thickness = 3
+		s.Color = Color3.fromRGB(30, 26, 70)
+		s.Parent = l
 		return l
 	end
-	line(title, Architecture.TextColor, subtitle and 0.1 or 0.15, subtitle and 0.52 or 0.7, Enum.Font.GothamMedium)
+	line(title, titleColor or Architecture.TitleColor, subtitle and 0.06 or 0.12, subtitle and 0.58 or 0.76, Enum.Font.FredokaOne)
 	if subtitle then
-		line(subtitle, Architecture.AccentText, 0.66, 0.24, Enum.Font.Gotham)
+		line(subtitle, Architecture.AccentText, 0.66, 0.28, Enum.Font.FredokaOne)
 	end
 	return gui
 end
@@ -1454,29 +1503,16 @@ print("DigManager ready: " .. #enabledWorlds() .. " world(s), 250-stud pits, sho
 install(game:GetService("ServerScriptService"), "MuseumStyle", "ModuleScript", [=[
 -- MuseumStyle (ModuleScript in ServerScriptService)
 -- Restyles ServerStorage.MuseumTemplate once, on server start, before any museum is cloned:
---   1. Swaps the white-plastic + bright-neon look for a desaturated 2050 palette
---      (concrete, slate, corroded metal, brushed foil, smoked glass, dimmed light strips).
---   2. Adds layered architecture to the outside: facade steel fins, floor-line spandrels,
---      recessed side panels, a deep entrance portal, a two-layer cantilevered roof on
---      I-beams, ribbed corner towers and staggered sculpture plinths on the plaza.
+--   1. Softens the colors into a friendly cartoony palette (pastel glow instead of harsh
+--      neon, playful indigo instead of dark navy, cartoon trees instead of glowing glass).
+--   2. Adds chunky rounded 2050 architecture to the outside: capsule corner towers with
+--      domed caps, a glass bubble dome on the roof, porthole windows, rounded floor bands,
+--      a bubble canopy and capsule pillars at the entrance, and floating orb pedestals.
 -- Slot, elevator and sign parts keep their names and positions, so nothing that looks
 -- them up by name breaks.
 
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
 local P = Architecture.Palette
-
-local function luminance(c)
-	return 0.299 * c.R + 0.587 * c.G + 0.114 * c.B
-end
-
--- Pulls a color toward grey and darkens it (amount 0 = unchanged, 1 = fully grey)
-local function mute(c, amount, darken)
-	local l = luminance(c)
-	local grey = Color3.new(l, l, l)
-	local m = grey:Lerp(c, 1 - amount)
-	darken = darken or 1
-	return Color3.new(m.R * darken, m.G * darken, m.B * darken)
-end
 
 local function near(c, r, g, b)
 	return math.abs(c.R * 255 - r) < 12 and math.abs(c.G * 255 - g) < 12 and math.abs(c.B * 255 - b) < 12
@@ -1499,51 +1535,30 @@ end
 local function restylePart(part)
 	local c = part.Color
 	local m = part.Material
-	local name = part.Name
 
 	if m == Enum.Material.Neon then
-		-- light strips stay as thin, dim, desaturated glows; big glowing panels become steel
-		local s = part.Size
-		local dims = {s.X, s.Y, s.Z}
-		table.sort(dims)
-		if dims[2] > 3 then
-			apply(part, P.SteelDark)
-		else
-			part.Color = mute(c, 0.8, 0.42)
-		end
+		-- keep the hue, make it a soft pastel glow instead of a blinding one
+		part.Color = c:Lerp(Color3.new(1, 1, 1), 0.22)
 	elseif m == Enum.Material.Glass then
-		if luminance(c) > 0.5 and c.G > c.R * 1.25 and c.G > 0.8 then
-			-- glowing sci-fi foliage becomes real planting
-			part.Material = Enum.Material.Grass
-			part.Color = Color3.fromRGB(78, 94, 72)
+		local name = part.Name
+		if name == "Bush" or name == "TreeCrown" or name == "Leaves" then
+			-- glowing sci-fi foliage becomes chunky cartoon greenery
+			part.Material = Enum.Material.SmoothPlastic
+			part.Color = Color3.fromRGB(96, 214, 150)
 			part.Transparency = 0
 		else
-			apply(part, P.SmokedGlass)
+			apply(part, P.Glass)
 		end
-	elseif m == Enum.Material.ForceField then
-		part.Color = mute(c, 0.85, 0.7)
-	elseif m == Enum.Material.Metal then
-		apply(part, P.Steel)
-	elseif m == Enum.Material.Fabric then
-		part.Color = mute(c, 0.45, 0.7)
 	elseif m == Enum.Material.Grass then
-		part.Color = mute(c, 0.5, 0.75)
+		part.Material = Enum.Material.SmoothPlastic
+		part.Color = Color3.fromRGB(110, 200, 120)
 	elseif m == Enum.Material.SmoothPlastic or m == Enum.Material.Plastic then
-		if hasGui(part) then
-			apply(part, P.Screen) -- keep signs and screens smooth so text stays readable
-		elseif name:find("Floor") or name == "Plaza" or name == "Runner" or name:find("Slab") then
-			apply(part, P.Graphite)
-			part.Reflectance = 0.05
-		elseif near(c, 238, 240, 245) or near(c, 222, 226, 234) or near(c, 208, 212, 220) then
-			apply(part, P.Concrete)
+		if near(c, 238, 240, 245) then
+			apply(part, P.White)
+		elseif near(c, 222, 226, 234) or near(c, 208, 212, 220) then
+			apply(part, P.Cloud)
 		elseif near(c, 28, 34, 60) or near(c, 20, 22, 34) or near(c, 40, 32, 66) then
-			apply(part, P.Charcoal)
-		elseif near(c, 150, 155, 165) then
-			apply(part, P.SlateGrey)
-		else
-			-- any other colored plastic: keep its hue but desaturate it heavily
-			part.Color = mute(c, 0.75, 0.75)
-			part.Material = Enum.Material.Slate
+			apply(part, hasGui(part) and P.Ink or P.Navy)
 		end
 	end
 end
@@ -1551,19 +1566,14 @@ end
 local function restyleDescendant(d)
 	if d:IsA("BasePart") then
 		restylePart(d)
-	elseif d:IsA("Light") then
-		d.Color = Architecture.LightColor
-		d.Brightness = d.Brightness * 0.8
-	elseif d:IsA("TextLabel") or d:IsA("TextButton") then
-		d.TextColor3 = mute(d.TextColor3, 0.7, 1):Lerp(Architecture.TextColor, 0.35)
 	elseif d:IsA("UIStroke") then
-		d.Color = Color3.fromRGB(12, 12, 14)
+		d.Color = Color3.fromRGB(30, 26, 70)
 	end
 end
 
 ---------------------------------------------------------------------
 -- 2. ARCHITECTURE PASS (template coordinates: entrance faces -Z,
---    building spans X -48..48, Z 28..163, Y 0..96)
+--    building spans X -48..48, Z 28..163, Y 0..96, floors every 32)
 ---------------------------------------------------------------------
 local function addArchitecture(template)
 	local folder = Instance.new("Folder")
@@ -1572,85 +1582,91 @@ local function addArchitecture(template)
 	-- the template's own space: every template part position is measured from here
 	local b = Architecture.builder(folder, CFrame.new())
 
-	-- A. Facade steel fins on the front wall (skip the entrance zone)
-	for _, x in ipairs({21, 28, 35, 42}) do
-		for _, side in ipairs({-1, 1}) do
-			b:box("FacadeFin", Vector3.new(0.8, 94, 1.8), CFrame.new(side * x, 49, 27.1), "SteelDark")
+	-- A. Capsule corner towers: round shells, colored bands per floor, domed caps with a bulb
+	local bandColors = {"Sky", "Lilac", "Mint"}
+	for _, x in ipairs({-48, 48}) do
+		for _, z in ipairs({27, 163}) do
+			b:disc("TowerShell", 8, 99, CFrame.new(x, 49.5, z), "White")
+			b:disc("TowerFoot", 9.6, 1.4, CFrame.new(x, 0.7, z), "Violet")
+			for i, y in ipairs({32, 64, 96}) do
+				b:disc("TowerBand", 8.8, 1.6, CFrame.new(x, y, z), bandColors[i])
+			end
+			b:ellipsoid("TowerDome", Vector3.new(8.8, 7, 8.8), CFrame.new(x, 99, z), "Lilac")
+			b:bulb("TowerBulb", 1.6, CFrame.new(x, 103.2, z), "GlowSun", 16)
 		end
 	end
 
-	-- B. Floor-line spandrels: heavy concrete bands that project past the facade
-	for _, y in ipairs({33.4, 65.4}) do
-		b:box("Spandrel", Vector3.new(98, 2.4, 3), CFrame.new(0, y, 26.6), "ConcreteLight")
-		b:box("SpandrelShadow", Vector3.new(96, 0.3, 2.6), CFrame.new(0, y - 1.35, 26.8), "Charcoal")
+	-- B. Rounded floor bands wrapping the front and both sides
+	for i, y in ipairs({32.4, 64.4}) do
+		local finish = i == 1 and "Sky" or "Lilac"
+		b:rod("FrontBand", 96, 2.2, CFrame.new(0, y, 27.1), finish)
+		for _, side in ipairs({-1, 1}) do
+			b:rod("SideBand", 134, 2.2, CFrame.new(side * 48.6, y, 95) * CFrame.Angles(0, math.rad(90), 0), finish)
+		end
 	end
 
-	-- C. Recessed panels on both side walls, between the existing fins, per floor
+	-- C. Round porthole windows along both side walls, between the existing fins
 	for _, side in ipairs({-1, 1}) do
 		for z = 47, 143, 16 do
 			for _, y in ipairs({16, 48, 80}) do
-				-- set against the wall face, facing outward; the existing fins stand 1 stud proud of it
-				local cf = CFrame.new(side * 47, y, z) * CFrame.Angles(0, math.rad(-side * 90), 0)
-				b:recessedPanel("SidePanel", cf, 13.6, 28, "Concrete", "Graphite")
+				b:rod("PortholeRim", 0.7, 9.4, CFrame.new(side * 47.3, y, z), "Lilac")
+				b:rod("PortholeGlass", 0.8, 7.6, CFrame.new(side * 47.35, y, z), "Glass")
+				b:ball("PortholeShine", 1.4, CFrame.new(side * 47.75, y + 1.9, z - 1.9), "White", {CastShadow = false})
 			end
 		end
 	end
 
-	-- D. Deep entrance portal: projecting reveal walls, a heavy lintel, and an
-	--    upper steel canopy layered over the existing concrete one
+	-- D. Entrance: bubble canopy, capsule pillars, rounded sign backing
+	b:ellipsoid("CanopyBubble", Vector3.new(38, 3.4, 13), CFrame.new(0, 25.2, 24.5), "Sky")
+	b:ellipsoid("CanopyBubbleTop", Vector3.new(34, 2.2, 10.5), CFrame.new(0, 26.4, 24.5), "White")
+	for i = -3, 3 do
+		b:bulb("CanopyBulb", 0.9, CFrame.new(i * 5, 23.7, 18.5), i % 2 == 0 and "GlowSun" or "GlowPink", 8)
+	end
 	for _, side in ipairs({-1, 1}) do
-		b:box("PortalReveal", Vector3.new(0.8, 18, 6), CFrame.new(side * 10.8, 9.5, 26), "ConcreteDark")
+		b:disc("PillarShell", 7, 22.4, CFrame.new(side * 14, 11.2, 27), "Lilac")
+		b:ball("PillarTop", 7.2, CFrame.new(side * 14, 22.4, 27), "Lilac")
+		b:disc("PillarBand", 7.6, 1.2, CFrame.new(side * 14, 6, 27), "Sun")
+		b:disc("PillarBand", 7.6, 1.2, CFrame.new(side * 14, 17, 27), "Sun")
+		b:disc("PillarFoot", 8.6, 1.2, CFrame.new(side * 14, 0.6, 27), "Violet")
 	end
-	b:box("PortalLintel", Vector3.new(22.4, 3, 7), CFrame.new(0, 20, 25.5), "Concrete")
-	-- thin steel plate slung under the concrete canopy, reaching further out, hung on rods
-	b:box("CanopyUpper", Vector3.new(46, 0.5, 14), CFrame.new(0, 23.7, 19), "Steel")
-	for _, x in ipairs({-21.5, 21.5}) do
-		b:iBeam("CanopyHanger", Vector3.new(x, 23.9, 12.5), Vector3.new(x, 39, 27.5), 0.5, 0.35)
-	end
-	for _, x in ipairs({-12, -4, 4, 12}) do
-		b:downlight("EntranceLight", Vector3.new(x, 23.35, 16), 18, 1.2)
-	end
+	b:roundedBlock("EntranceSignBack", Vector3.new(40, 10.6, 0.8), CFrame.new(0, 30, 24.2), 3, "Violet")
+	b:roundedBlock("RoofSignBack", Vector3.new(53.5, 12, 1), CFrame.new(0, 103.5, 34.5), 3.5, "Violet")
 
-	-- E. Two-layer cantilevered roof on exposed I-beams
-	b:box("RoofOverhang", Vector3.new(108, 1.2, 22), CFrame.new(0, 97.5, 29), "ConcreteLight")
-	b:box("RoofOverhangLower", Vector3.new(116, 0.6, 12), CFrame.new(-3, 96.3, 24), "Steel")
-	for x = -48, 48, 12 do
-		b:iBeam("RoofBeam", Vector3.new(x, 95.5, 18.5), Vector3.new(x, 95.5, 34), 0.9, 0.5)
-	end
-	for _, x in ipairs({-36, -12, 12, 36}) do
-		b:downlight("SoffitLight", Vector3.new(x, 95.9, 22), 30, 1)
-	end
+	-- E. Glass bubble dome on the roof with a floating meme orb inside
+	b:disc("DomeDrum", 46, 4, CFrame.new(0, 101, 80), "White")
+	b:disc("DomeDrumBand", 47, 1.4, CFrame.new(0, 101.6, 80), "Sky")
+	local dome = b:ellipsoid("RoofDome", Vector3.new(44, 30, 44), CFrame.new(0, 103, 80), "Glass")
+	dome.Color = Color3.fromRGB(196, 176, 255)
+	dome.Transparency = 0.3
+	b:ring("RoofDomeRing", CFrame.new(0, 103.2, 80) * CFrame.Angles(math.rad(90), 0, 0), 22.2, 1.4, "Lilac", 40)
+	b:ball("MemeOrb", 8, CFrame.new(0, 109, 80), "Coral")
+	b:ring("MemeOrbRing", CFrame.new(0, 109, 80) * CFrame.Angles(math.rad(70), 0, math.rad(15)), 6.2, 0.7, "Sun", 24)
+	b:disc("DomeCap", 6, 1.2, CFrame.new(0, 118, 80), "Lilac")
+	b:bulb("DomeBeacon", 2.4, CFrame.new(0, 119.6, 80), "GlowPink", 30)
 
-	-- F. Ribbed corner towers
-	for _, x in ipairs({-48, 48}) do
-		for _, z in ipairs({27, 163}) do
-			for y = 8, 92, 12 do
-				b:box("TowerRib", Vector3.new(7, 0.8, 7), CFrame.new(x, y, z), "ConcreteDark")
-			end
-		end
-	end
-
-	-- G. Staggered sculpture plinths on the plaza, each carrying a slate monolith
+	-- F. Floating orb pedestals on the plaza
 	for _, side in ipairs({-1, 1}) do
 		local cf = CFrame.new(side * 16.5, 0.6, 10)
-		local _, height = b:stagger("PlazaPlinth", cf, {
-			{8, 0.6, 8, "Graphite"},
-			{6.2, 0.6, 6.2, "ConcreteDark"},
-			{4.4, 0.5, 4.4, "Steel"},
-		}, side * 14, Vector3.zero)
-		b:box("Monolith", Vector3.new(1.6, 8, 3.2), cf * CFrame.Angles(0, math.rad(side * 28), 0) * CFrame.new(0, height + 4, 0), "Charcoal")
-		b:box("MonolithInlay", Vector3.new(1.7, 6.5, 0.15), cf * CFrame.Angles(0, math.rad(side * 28), 0) * CFrame.new(0, height + 4, -0.6), "Steel")
+		local _, h = b:tiers("PlazaPedestal", cf, {
+			{8, 0.6, "Violet"},
+			{6.4, 0.8, "White"},
+			{5, 0.4, "Sky"},
+		})
+		local orb = cf * CFrame.new(0, h + 3.4, 0)
+		b:ball("PlazaOrb", 3.2, orb, side < 0 and "Sun" or "Mint")
+		b:ring("PlazaOrbRing", orb * CFrame.Angles(math.rad(75), 0, math.rad(side * 18)), 2.6, 0.35, "Lilac", 18)
+		b:disc("PlazaOrbGlow", 3.6, 0.15, cf * CFrame.new(0, h + 0.08, 0), "GlowCyan")
 	end
 end
 
 ---------------------------------------------------------------------
 return function(template)
-	if template:GetAttribute("Styled2050") then return end
+	if template:GetAttribute("StyledCartoon2050") then return end
 	for _, d in ipairs(template:GetDescendants()) do
 		restyleDescendant(d)
 	end
 	addArchitecture(template)
-	template:SetAttribute("Styled2050", true)
+	template:SetAttribute("StyledCartoon2050", true)
 end
 ]=])
 install(game:GetService("ServerScriptService"), "PlayerData", "ModuleScript", [=[
@@ -2125,28 +2141,28 @@ end
 ]=])
 install(game:GetService("ServerScriptService"), "ShopBuilder", "ModuleScript", [=[
 -- ShopBuilder (ModuleScript in ServerScriptService)
--- Builds a world's Shovel Shop pavilion next to its dig site: staggered slate plinths,
--- a recessed concrete back wall, angled blade walls, steel columns and I-beams carrying
--- two overlapping cantilevered roof plates, and the world's shovels displayed on
--- stepped pedestals (one per depth zone). DigManager calls this once per world on start.
+-- Builds a world's Shovel Shop: a cartoony 2050 pavilion on a round tiered platform,
+-- with a flying-saucer roof held up by chunky capsule pillars, a curved back wall,
+-- glass display capsules on stepped pedestals (one shovel per depth zone), a floating
+-- robot shopkeeper, a big glowing sign with a giant shovel, and a depth meter.
+-- DigManager calls this once per world on server start.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local ShovelModels = require(script.Parent:WaitForChild("ShovelModels"))
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
 
--- Floats a shovel model upright (blade down) at a spot, scaled up for display
-local function displayShovel(parent, def, target)
+-- Places a copy of a shovel model at `target` (blade down), scaled up
+local function displayShovel(parent, def, target, scale)
 	local tool = ShovelModels(def)
 	local handle = tool:FindFirstChild("Handle")
-	local DISPLAY_SCALE = 1.6
 	local display = Instance.new("Model")
 	display.Name = "Display_" .. def.Id
 	for _, piece in ipairs(tool:GetChildren()) do
 		if piece:IsA("BasePart") and piece ~= handle then
 			local rel = handle.CFrame:ToObjectSpace(piece.CFrame)
-			piece.Size = piece.Size * DISPLAY_SCALE
-			piece.CFrame = target * CFrame.new(rel.Position * DISPLAY_SCALE) * rel.Rotation
+			piece.Size = piece.Size * scale
+			piece.CFrame = target * CFrame.new(rel.Position * scale) * rel.Rotation
 			piece.Anchored = true
 			piece.CanCollide = false
 			for _, c in ipairs(piece:GetChildren()) do
@@ -2160,6 +2176,12 @@ local function displayShovel(parent, def, target)
 	return display
 end
 
+-- a point on a circle around the shop center (0 degrees = straight back, +X to the right)
+local function around(deg, radius, y)
+	local a = math.rad(deg)
+	return Vector3.new(math.sin(a) * radius, y, math.cos(a) * radius)
+end
+
 -- parent: where the shop goes. world: a GameConfig world. base: the shop's CFrame
 -- (its front, local -Z, faces the pit).
 return function(parent, world, base)
@@ -2168,73 +2190,95 @@ return function(parent, world, base)
 	local b = Architecture.builder(shop, base)
 
 	-----------------------------------------------------------------
-	-- STAGGERED BASE: three offset tiers of slate and concrete
+	-- ROUND TIERED PLATFORM with a glowing lip
 	-----------------------------------------------------------------
-	b:box("BaseTier1", Vector3.new(32, 0.6, 24), CFrame.new(0, 0.3, 0), "Graphite")
-	b:box("BaseTier2", Vector3.new(27, 0.5, 19), CFrame.new(1, 0.85, 1.5), "ConcreteDark")
-	local floor = b:box("Floor", Vector3.new(24, 0.2, 16.5), CFrame.new(1, 1.2, 2), "Charcoal")
-	floor.Reflectance = 0.06
-	-- inlaid steel joints in the floor
-	for x = -8, 10, 6 do
-		b:box("FloorJoint", Vector3.new(0.12, 0.05, 16.5), CFrame.new(x, 1.31, 2), "Steel")
-	end
-	-- low step across the front
-	b:box("FrontStep", Vector3.new(14, 0.3, 2), CFrame.new(0, 0.75, -11.5), "SlateGrey")
+	b:disc("PlatformLip", 30, 0.5, CFrame.new(0, 0.25, 0), "Sky")
+	b:disc("PlatformGlow", 29.2, 0.3, CFrame.new(0, 0.62, 0), "GlowCyan")
+	b:disc("Platform", 28.4, 0.7, CFrame.new(0, 0.85, 0), "White")
+	b:disc("PlatformInner", 22, 0.3, CFrame.new(0, 1.35, 0), "Cloud")
+	b:disc("FloorStar", 9, 0.06, CFrame.new(0, 1.52, -2.5), "Lilac")
+	b:disc("FloorStarCore", 5, 0.08, CFrame.new(0, 1.54, -2.5), "White")
+	-- chunky front steps
+	b:roundedBlock("StepLow", Vector3.new(10, 0.5, 3), CFrame.new(0, 0.25, -14.6), 1.4, "Cloud")
 
 	-----------------------------------------------------------------
-	-- BACK WALL: board-formed concrete with three recessed panels
+	-- CURVED BACK WALL: rounded panels with porthole windows
 	-----------------------------------------------------------------
-	b:box("BackWall", Vector3.new(24, 14, 1.4), CFrame.new(1, 8.3, 9.6), "Concrete")
-	b:box("BackWallCap", Vector3.new(24.6, 0.4, 1.8), CFrame.new(1, 15.5, 9.6), "SteelDark")
-	for i, x in ipairs({-6.5, 1, 8.5}) do
-		b:recessedPanel("BackPanel" .. i, CFrame.new(x, 8.6, 8.9), 6.6, 9.4, "ConcreteLight", "Graphite")
-	end
-	-- horizontal board-form lines
-	for y = 3, 13, 2.5 do
-		b:box("FormLine", Vector3.new(24, 0.08, 0.05), CFrame.new(1, y, 8.88), "ConcreteDark")
-	end
-
-	-----------------------------------------------------------------
-	-- ANGLED BLADE WALLS on both sides
-	-----------------------------------------------------------------
-	for _, side in ipairs({-1, 1}) do
-		local cf = CFrame.new(1 + side * 12.6, 7.4, 3.2) * CFrame.Angles(0, math.rad(side * -9), 0)
-		b:box("BladeWall", Vector3.new(1.2, 12.4, 11), cf, "Graphite")
-		b:box("BladeWallReveal", Vector3.new(0.2, 11.2, 0.35), cf * CFrame.new(-side * 0.62, 0, -2.5), "Weathered")
-		b:box("BladeWallCoping", Vector3.new(1.6, 0.3, 11.4), cf * CFrame.new(0, 6.35, 0), "SteelDark")
+	for i, deg in ipairs({-72, -36, 0, 36, 72}) do
+		local p = around(deg, 11.2, 7)
+		local cf = CFrame.lookAt(p, Vector3.new(0, 7, 0))
+		b:roundedBlock("WallPanel", Vector3.new(7.4, 11, 1.4), cf, 0.7, i % 2 == 1 and "White" or "Cloud")
+		b:ball("WallTop", 1.6, cf * CFrame.new(0, 5.9, 0), "Lilac")
+		-- porthole: glass disc in a lilac frame
+		b:rod("PortholeRim", 0.4, 3.6, cf * CFrame.new(0, 1.2, -0.6) * CFrame.Angles(0, math.rad(90), 0), "Lilac")
+		b:rod("Porthole", 0.5, 2.8, cf * CFrame.new(0, 1.2, -0.65) * CFrame.Angles(0, math.rad(90), 0), "Glass")
+		b:box("WallStripe", Vector3.new(6.6, 0.35, 0.2), cf * CFrame.new(0, -3.5, -0.75), "GlowPink")
 	end
 
 	-----------------------------------------------------------------
-	-- STRUCTURE: two steel columns, a header beam, joists, two roof plates
+	-- CAPSULE PILLARS holding up the saucer roof
 	-----------------------------------------------------------------
-	for _, x in ipairs({-10.2, 12.2}) do
-		b:column("FrontColumn", Vector3.new(x, 1.3, -6.8), 11.9, 0.8, "Steel")
-	end
-	b:iBeam("HeaderBeam", Vector3.new(-12.5, 13.65, -6.8), Vector3.new(14.5, 13.65, -6.8), 1.1, 0.7)
-	for i, x in ipairs({-8, -2.5, 3, 8.5}) do
-		b:iBeam("Joist" .. i, Vector3.new(x, 13.75, -9.2), Vector3.new(x, 13.75, 9.8), 0.9, 0.5)
-	end
-	-- lower roof: thick concrete plate
-	b:box("RoofLower", Vector3.new(29, 1, 21), CFrame.new(1, 14.7, 0.4), "ConcreteLight")
-	-- upper roof: thinner brushed-steel plate, shifted forward and sideways so the two overhang each other
-	b:box("RoofUpper", Vector3.new(22, 0.5, 17), CFrame.new(3.5, 15.45, -3.8), "Steel")
-	b:box("RoofUpperEdge", Vector3.new(22.2, 0.7, 0.3), CFrame.new(3.5, 15.4, -12.35), "SteelDark")
-	-- fascia sign hung from the upper plate
-	local fascia = b:box("Fascia", Vector3.new(17, 2.3, 0.5), CFrame.new(3.5, 14.0, -12.2), "Charcoal")
-	Architecture.sign(fascia, "SHOVEL SHOP", "DEPTH-RATED EXCAVATION TOOLS  ·  EST. 2050")
-	-- recessed can lights in the lower plate
-	for _, pos in ipairs({Vector3.new(-6, 14.12, -3), Vector3.new(1, 14.12, -3), Vector3.new(8, 14.12, -3),
-		Vector3.new(-6, 14.12, 4.5), Vector3.new(1, 14.12, 4.5), Vector3.new(8, 14.12, 4.5)}) do
-		b:downlight("Downlight", pos, 14, 1.1)
+	for _, deg in ipairs({-140, 140}) do
+		local p = around(deg, 12.6, 0)
+		b:pill("Pillar", p + Vector3.new(0, 2.2, 0), p + Vector3.new(0, 13.2, 0), 1.9, "Lilac")
+		b:disc("PillarFoot", 3.4, 0.9, CFrame.new(p + Vector3.new(0, 1.65, 0)), "Violet")
+		b:disc("PillarBand", 2.3, 0.35, CFrame.new(p + Vector3.new(0, 9, 0)), "GlowSun")
 	end
 
 	-----------------------------------------------------------------
-	-- COUNTER: a monolithic concrete block on a recessed charcoal plinth
+	-- FLYING-SAUCER ROOF: disc rim with bulbs, a glass bubble dome on top
 	-----------------------------------------------------------------
-	b:box("CounterKick", Vector3.new(9.4, 0.6, 1.8), CFrame.new(1, 1.6, -2.2), "Charcoal")
-	local counter = b:box("Counter", Vector3.new(10, 2.8, 2.4), CFrame.new(1, 3.3, -2.4), "Concrete")
-	b:box("CounterTop", Vector3.new(10.4, 0.2, 2.8), CFrame.new(1, 4.8, -2.4), "Steel")
-	b:box("CounterInlay", Vector3.new(9.6, 0.5, 0.06), CFrame.new(1, 3.6, -3.62), "SteelDark")
+	b:ellipsoid("SaucerUnder", Vector3.new(30, 3.2, 30), CFrame.new(0, 13.9, 0), "Sky")
+	b:disc("SaucerRim", 31, 1.1, CFrame.new(0, 14.6, 0), "Sky")
+	b:disc("SaucerRimGlow", 31.4, 0.3, CFrame.new(0, 14.1, 0), "GlowCyan")
+	b:ellipsoid("SaucerTop", Vector3.new(29, 4, 29), CFrame.new(0, 15.1, 0), "White")
+	for i = 0, 15 do
+		local p = around(i * 22.5, 15.4, 14.6)
+		b:bulb("RimBulb", 0.8, CFrame.new(p), i % 2 == 0 and "GlowSun" or "GlowPink", 6)
+	end
+	b:ellipsoid("Bubble", Vector3.new(13, 9, 13), CFrame.new(0, 17, 1.5), "Glass")
+	b:disc("BubbleRing", 13.6, 0.5, CFrame.new(0, 17.1, 1.5), "Lilac")
+	b:ball("Beacon", 1.5, CFrame.new(0, 21.6, 1.5), "GlowPink")
+	b:rod("BeaconStem", 1.2, 0.3, CFrame.new(0, 21, 1.5) * CFrame.Angles(0, 0, math.rad(90)), "Chrome")
+	-- ceiling light under the saucer
+	local ceiling = b:disc("CeilingLight", 8, 0.2, CFrame.new(0, 12.25, 0), "GlowCyan")
+	local light = Instance.new("PointLight")
+	light.Color = Architecture.LightColor
+	light.Range = 22
+	light.Brightness = 1.2
+	light.Parent = ceiling
+
+	-----------------------------------------------------------------
+	-- BIG SIGN on top, with a giant shovel leaning on it
+	-----------------------------------------------------------------
+	b:pill("SignPost", Vector3.new(-5, 16.5, -6), Vector3.new(-5, 19.5, -6), 0.7, "Chrome")
+	b:pill("SignPost", Vector3.new(5, 16.5, -6), Vector3.new(5, 19.5, -6), 0.7, "Chrome")
+	b:roundedBlock("SignBack", Vector3.new(19, 5.2, 1.2), CFrame.new(0, 21.8, -6), 2.2, "Violet")
+	local sign = b:roundedBlock("Sign", Vector3.new(18, 4.4, 1.4), CFrame.new(0, 21.8, -6.1), 1.9, "Navy")
+	Architecture.sign(sign, "SHOVEL SHOP", "DIG DEEPER, FIND WEIRDER!")
+	b:box("SignGlow", Vector3.new(18.4, 0.3, 1.5), CFrame.new(0, 19.35, -6.1), "GlowSun")
+	-- a giant cartoon shovel leaning against the sign
+	local grip = Vector3.new(8, 26, -4.6)
+	local tip = Vector3.new(11.4, 17.2, -4.6)
+	local dir = (tip - grip).Unit
+	b:pill("GiantHandle", grip, tip - dir * 3.4, 0.9, "Violet")
+	b:rod("GiantGrip", 2.4, 0.7, Architecture.alongX(grip, dir:Cross(Vector3.zAxis)), "Sun")
+	b:ball("GiantGripEndA", 0.9, CFrame.new(grip + dir:Cross(Vector3.zAxis).Unit * 1.2), "Sun")
+	b:ball("GiantGripEndB", 0.9, CFrame.new(grip - dir:Cross(Vector3.zAxis).Unit * 1.2), "Sun")
+	local bladeCF = Architecture.alongX(tip - dir * 1.6, dir)
+	b:ellipsoid("GiantBlade", Vector3.new(4.4, 3.4, 0.7), bladeCF, "Sun")
+	b:ellipsoid("GiantBladeShine", Vector3.new(2.6, 1.4, 0.75), bladeCF * CFrame.new(-0.6, 0.5, 0), "White")
+	b:rod("GiantCollar", 0.8, 1.2, Architecture.alongX(tip - dir * 3.5, dir), "Chrome")
+
+	-----------------------------------------------------------------
+	-- COUNTER (rounded, two-tone) with the shop prompt
+	-----------------------------------------------------------------
+	local counter = b:roundedBlock("Counter", Vector3.new(10, 3, 2.8), CFrame.new(0, 3, -4.2), 1.3, "Sky")
+	b:roundedBlock("CounterTop", Vector3.new(10.8, 0.5, 3.4), CFrame.new(0, 4.7, -4.2), 1.6, "White")
+	b:box("CounterStripe", Vector3.new(7.6, 0.4, 0.2), CFrame.new(0, 3.2, -5.62), "GlowSun")
+	for _, x in ipairs({-3, 0, 3}) do
+		b:ball("CounterDot", 0.7, CFrame.new(x, 2.2, -5.55), "White")
+	end
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Browse"
@@ -2245,61 +2289,63 @@ return function(parent, world, base)
 	prompt.Parent = counter
 
 	-----------------------------------------------------------------
-	-- STAGGERED DISPLAY: one shovel per depth zone, each plinth taller and set further back
+	-- ROBOT SHOPKEEPER floating behind the counter
 	-----------------------------------------------------------------
+	local bot = Vector3.new(0, 7.4, -1.2)
+	b:ball("RobotHead", 3, CFrame.new(bot), "White")
+	b:ellipsoid("RobotVisor", Vector3.new(2.4, 1.2, 1), CFrame.new(bot + Vector3.new(0, 0.1, -1.15)), "Ink")
+	b:ball("RobotEyeL", 0.45, CFrame.new(bot + Vector3.new(-0.5, 0.15, -1.62)), "GlowCyan")
+	b:ball("RobotEyeR", 0.45, CFrame.new(bot + Vector3.new(0.5, 0.15, -1.62)), "GlowCyan")
+	b:ellipsoid("RobotBlushL", Vector3.new(0.5, 0.25, 0.1), CFrame.new(bot + Vector3.new(-1, -0.45, -1.3)), "Coral")
+	b:ellipsoid("RobotBlushR", Vector3.new(0.5, 0.25, 0.1), CFrame.new(bot + Vector3.new(1, -0.45, -1.3)), "Coral")
+	b:rod("RobotAntenna", 1.1, 0.16, CFrame.new(bot + Vector3.new(0, 1.9, 0)) * CFrame.Angles(0, 0, math.rad(90)), "Chrome")
+	b:bulb("RobotAntennaTip", 0.55, CFrame.new(bot + Vector3.new(0, 2.5, 0)), "GlowPink", 6)
+	b:ellipsoid("RobotBody", Vector3.new(2.2, 2.2, 1.8), CFrame.new(bot + Vector3.new(0, -2.2, 0)), "Lilac")
+	b:ring("RobotHoverRing", CFrame.new(bot + Vector3.new(0, -3.5, 0)) * CFrame.Angles(math.rad(90), 0, 0), 1.2, 0.25, "GlowCyan", 14)
+
+	-----------------------------------------------------------------
+	-- GLASS DISPLAY CAPSULES on stepped pedestals (one per depth zone)
+	-----------------------------------------------------------------
+	local spots = {-60, -22, 22, 60}
 	for zoneIndex, zone in ipairs(world.Zones) do
 		local def = GameConfig.GetFirstShovelForZone(world, zoneIndex)
-		local x = -8.5 + (zoneIndex - 1) * 5.6
-		local z = 4.6 + ((zoneIndex % 2 == 0) and 1.4 or 0)
-		local cf = CFrame.new(x, 1.3, z)
-		local _, height = b:stagger("Plinth" .. zoneIndex, cf, {
-			{3.6, 0.4, 3.0, "Graphite"},
-			{3.0, 0.6 + zoneIndex * 0.55, 2.4, "Concrete"},
-			{3.3, 0.15, 2.7, "Steel"},
-		}, 0, Vector3.zero)
-		local plaque = b:box("Plaque", Vector3.new(2.6, 0.7, 0.1), cf * CFrame.new(0, 0.9, -1.25), "Screen")
-		Architecture.sign(plaque, string.upper(zone.Name), -zone.Top .. "–" .. -zone.Bottom .. "m")
+		local p = around(spots[zoneIndex], 7.6, 1.5)
+		local cf = CFrame.new(p)
+		local _, h = b:tiers("Pedestal" .. zoneIndex, cf, {
+			{3.8, 0.4, "Violet"},
+			{3.2, 0.3 + zoneIndex * 0.45, "White"},
+			{3.5, 0.3, "Sky"},
+		})
+		local capsuleH = 6.6
+		local mid = cf * CFrame.new(0, h + capsuleH / 2, 0)
+		b:disc("CapsuleGlass", 3, capsuleH, mid, "Glass", {Transparency = 0.6})
+		b:ellipsoid("CapsuleDome", Vector3.new(3.1, 1.9, 3.1), mid * CFrame.new(0, capsuleH / 2, 0), "Glass", {Transparency = 0.6})
+		b:disc("CapsuleCap", 3.2, 0.35, mid * CFrame.new(0, capsuleH / 2, 0), "Lilac")
+		b:disc("CapsuleGlow", 3, 0.2, cf * CFrame.new(0, h + 0.1, 0), "GlowMint")
+		local tag = b:roundedBlock("ZoneTag", Vector3.new(3.2, 1.1, 0.4), cf * CFrame.new(0, h - 0.9, -1.75), 0.2, "Navy")
+		Architecture.sign(tag, string.upper(zone.Name), -zone.Top .. "-" .. -zone.Bottom .. "m")
 		if def then
-			local top = base * cf * CFrame.new(0, height + 2.6, 0)
-			displayShovel(shop, def, top * CFrame.Angles(0, math.rad(90), 0) * CFrame.Angles(math.rad(-90), 0, math.rad(10)))
+			-- blade down, facing out; raised a little so the blade clears the capsule floor
+			displayShovel(shop, def, base * mid * CFrame.new(0, 0.6, 0) * CFrame.Angles(math.rad(-90), 0, math.rad(8)), 1.3)
 		end
 	end
 
 	-----------------------------------------------------------------
-	-- DEPTH TOTEM: freestanding slate slab explaining which shovel digs how deep
+	-- DEPTH METER: a tall capsule split into the zone colors, labels on the front
 	-----------------------------------------------------------------
-	local totemCF = CFrame.new(-13.4, 0.6, -9.2) * CFrame.Angles(0, math.rad(20), 0)
-	b:box("TotemBase", Vector3.new(3, 0.4, 2.2), totemCF * CFrame.new(0, 0.2, 0), "SteelDark")
-	local totem = b:box("DepthTotem", Vector3.new(2.4, 11, 0.9), totemCF * CFrame.new(0, 5.9, 0), "Graphite")
+	local meter = Vector3.new(-15.5, 0, -8)
+	b:disc("MeterBase", 4, 0.8, CFrame.new(meter + Vector3.new(0, 0.4, 0)), "Violet")
+	local segment = 2.6
 	for i, zone in ipairs(world.Zones) do
-		b:box("TotemBand", Vector3.new(2.5, 0.12, 0.95), totemCF * CFrame.new(0, 10.4 - i * 2.4, 0), "Steel")
+		local y = 1 + (#world.Zones - i) * segment + segment / 2
+		local seg = b:disc("MeterSegment", 2.6, segment - 0.15, CFrame.new(meter + Vector3.new(0, y, 0)), "White")
+		seg.Color = zone.Color
+		local tag = b:box("MeterLabel", Vector3.new(3.6, 1.6, 0.2), CFrame.new(meter + Vector3.new(0, y, -1.45)), "Navy")
+		Architecture.sign(tag, string.upper(zone.Name), -zone.Top .. "-" .. -zone.Bottom .. "m", nil, Color3.new(1, 1, 1))
 	end
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Front
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 40
-	gui.LightInfluence = 0.6
-	gui.Parent = totem
-	local listLayout = Instance.new("UIListLayout")
-	listLayout.Padding = UDim.new(0.02, 0)
-	listLayout.Parent = gui
-	local function totemLine(text, color, h, font)
-		local l = Instance.new("TextLabel")
-		l.BackgroundTransparency = 1
-		l.Size = UDim2.fromScale(1, h)
-		l.Text = text
-		l.TextColor3 = color
-		l.Font = font
-		l.TextScaled = true
-		l.Parent = gui
-	end
-	totemLine("DEPTH RATING", Architecture.TextColor, 0.06, Enum.Font.GothamMedium)
-	for i, zone in ipairs(world.Zones) do
-		local first = GameConfig.GetFirstShovelForZone(world, i)
-		totemLine(string.upper(zone.Name), zone.Color, 0.06, Enum.Font.GothamMedium)
-		totemLine(-zone.Top .. "–" .. -zone.Bottom .. "m", Architecture.AccentText, 0.05, Enum.Font.Gotham)
-		totemLine(first and ("needs " .. first.Name) or "", Architecture.AccentText, 0.1, Enum.Font.Gotham)
-	end
+	local topY = 1 + #world.Zones * segment
+	b:ellipsoid("MeterTop", Vector3.new(2.7, 1.8, 2.7), CFrame.new(meter + Vector3.new(0, topY, 0)), "Lilac")
+	b:bulb("MeterBulb", 0.8, CFrame.new(meter + Vector3.new(0, topY + 1.1, 0)), "GlowSun", 8)
 
 	shop.Parent = parent
 	return shop, prompt
@@ -2747,9 +2793,9 @@ end
 ]=])
 install(game:GetService("ServerScriptService"), "WorldGate", "ModuleScript", [=[
 -- WorldGate (ModuleScript in ServerScriptService)
--- Builds the portal players use to travel between worlds: a stepped slate plinth,
--- two channelled pylons carrying a concrete box-beam lintel under an offset steel cap,
--- a cantilevered canopy, a smoked-glass portal plane and a terminal kiosk.
+-- Builds the portal players use to travel between worlds: a big chunky portal ring
+-- with a swirling energy film, standing on a round tiered base between two capsule
+-- towers, with orbiting planets, a rounded sign and a friendly terminal kiosk.
 -- Returns the gate model and its ProximityPrompt.
 
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
@@ -2760,54 +2806,62 @@ return function(parent, base, subtitle)
 	gate.Name = "WorldGate"
 	local b = Architecture.builder(gate, base)
 
-	-- staggered plinth
-	b:stagger("GatePlinth", CFrame.new(0, 0, 0), {
-		{22, 0.6, 13, "Graphite"},
-		{18, 0.5, 10, "ConcreteDark"},
-		{14.5, 0.3, 7.5, "SlateGrey"},
-	}, 0, Vector3.new(0, 0, 0.6))
-	local floorY = 1.4
+	-- round tiered base with a glowing lip
+	local _, floorY = b:tiers("GateBase", CFrame.new(0, 0, 0), {
+		{24, 0.5, "Sky"},
+		{23.2, 0.3, "GlowCyan"},
+		{22, 0.7, "White"},
+		{15, 0.4, "Cloud"},
+	})
+	b:roundedBlock("GateStep", Vector3.new(10, 0.5, 3), CFrame.new(0, 0.25, -12.4), 1.4, "Cloud")
 
-	-- pylons with a recessed vertical channel and steel reveal
-	for _, side in ipairs({-1, 1}) do
-		local x = side * 6.3
-		b:box("Pylon", Vector3.new(3.4, 18, 4.2), CFrame.new(x, floorY + 9, 0.6), "Graphite")
-		b:box("PylonChannel", Vector3.new(1.1, 15.5, 0.25), CFrame.new(x, floorY + 9, -1.45), "Charcoal")
-		b:box("PylonReveal", Vector3.new(0.15, 15.5, 0.3), CFrame.new(x + side * 0.7, floorY + 9, -1.5), "Steel")
-		b:box("PylonFoot", Vector3.new(4.2, 0.8, 5), CFrame.new(x, floorY + 0.4, 0.6), "SteelDark")
-	end
-
-	-- lintel: concrete box beam with an offset steel cap plate
-	b:box("Lintel", Vector3.new(17, 2.8, 4.8), CFrame.new(0, floorY + 19.4, 0.6), "Concrete")
-	b:box("LintelCap", Vector3.new(19.5, 0.5, 6.4), CFrame.new(0.8, floorY + 21.05, 1.2), "Steel")
-	b:box("LintelShadow", Vector3.new(16.6, 0.3, 4.4), CFrame.new(0, floorY + 17.9, 0.6), "Charcoal")
-	local signPlate = b:box("GateSign", Vector3.new(12, 2, 0.2), CFrame.new(0, floorY + 19.4, -1.9), "Screen")
-	Architecture.sign(signPlate, "WORLD GATE", subtitle or "TRAVEL  ·  UNLOCK NEW DIG SITES")
-
-	-- cantilevered canopy with two I-beam outriggers
-	b:box("Canopy", Vector3.new(13, 0.6, 7), CFrame.new(-1, floorY + 22.4, -4.6), "ConcreteLight")
-	for _, x in ipairs({-5, 3}) do
-		b:iBeam("Outrigger", Vector3.new(x, floorY + 21.7, 2.4), Vector3.new(x, floorY + 21.7, -8), 0.8, 0.45)
-	end
-	b:downlight("GateLight", Vector3.new(-1, floorY + 22.0, -4.6), 22, 1.3)
-
-	-- portal plane: smoked glass with a faint energy film (walk-through)
-	local portal = b:box("Portal", Vector3.new(9.2, 16.2, 0.3), CFrame.new(0, floorY + 8.1, 0.6), "SmokedGlass", {CanCollide = false})
-	local film = b:box("PortalFilm", Vector3.new(9.2, 16.2, 0.1), CFrame.new(0, floorY + 8.1, 0.35), "SteelDark", {CanCollide = false, CastShadow = false})
-	film.Material = Enum.Material.ForceField
-	film.Color = Color3.fromRGB(150, 170, 182)
-	film.Transparency = 0.55
+	-- the portal: a thick white ring, a lilac inner ring, a glowing edge and the energy film
+	local center = CFrame.new(0, floorY + 9.5, 0)
+	b:ring("PortalRing", center, 8.2, 2.2, "White", 32)
+	b:ring("PortalInner", center * CFrame.new(0, 0, -0.9), 7, 0.7, "Lilac", 32)
+	b:ring("PortalGlow", center * CFrame.new(0, 0, -1.2), 7.2, 0.3, "GlowPink", 32)
+	local film = b:rod("PortalFilm", 0.3, 13.6, center * CFrame.Angles(0, math.rad(90), 0), "Portal", {CanCollide = false})
+	film.Transparency = 0.25
+	local swirl = b:rod("PortalSwirl", 0.2, 9, center * CFrame.new(0, 0, -0.2) * CFrame.Angles(0, math.rad(90), 0), "GlowCyan", {CanCollide = false})
+	swirl.Transparency = 0.55
 	local glow = Instance.new("PointLight")
-	glow.Color = Color3.fromRGB(190, 205, 215)
-	glow.Range = 14
-	glow.Brightness = 0.6
-	glow.Parent = portal
+	glow.Color = Color3.fromRGB(200, 170, 255)
+	glow.Range = 18
+	glow.Brightness = 1.2
+	glow.Parent = film
+	-- chunky feet holding the ring
+	for _, side in ipairs({-1, 1}) do
+		b:roundedBlock("RingFoot", Vector3.new(3.2, 2.4, 3.2), CFrame.new(side * 5.4, floorY + 1.2, 0), 1.2, "Violet")
+	end
+	-- sparkle bulbs around the ring
+	for i = 0, 11 do
+		local a = math.rad(i * 30 + 15)
+		b:bulb("RingBulb", 0.7, center * CFrame.new(math.cos(a) * 8.2, math.sin(a) * 8.2, -1.25), i % 2 == 0 and "GlowSun" or "GlowCyan", 5)
+	end
 
-	-- terminal kiosk
-	b:box("KioskBase", Vector3.new(2.8, 0.3, 1.8), CFrame.new(0, floorY + 0.15, -5.6), "SteelDark")
-	local kiosk = b:box("Kiosk", Vector3.new(2.4, 3.6, 1.2), CFrame.new(0, floorY + 2.1, -5.6), "Concrete")
-	local screen = b:box("KioskScreen", Vector3.new(2.2, 1.3, 0.12), CFrame.new(0, floorY + 4.1, -5.9) * CFrame.Angles(math.rad(-25), 0, 0), "Screen")
-	Architecture.sign(screen, "WORLD MAP", "PRESS TO OPEN")
+	-- capsule towers either side, topped with little planets
+	for _, side in ipairs({-1, 1}) do
+		local x = side * 11.5
+		b:disc("TowerFoot", 3.6, 0.8, CFrame.new(x, floorY + 0.4, 1), "Violet")
+		b:pill("Tower", Vector3.new(x, floorY + 1.5, 1), Vector3.new(x, floorY + 14, 1), 2.4, "White")
+		b:disc("TowerBand", 2.7, 0.4, CFrame.new(x, floorY + 5, 1), "GlowMint")
+		b:disc("TowerBand", 2.7, 0.4, CFrame.new(x, floorY + 10, 1), "Lilac")
+		local planet = CFrame.new(x, floorY + 17, 1)
+		b:ball("Planet", 3, planet, side < 0 and "Sun" or "Mint")
+		b:ring("PlanetRing", planet * CFrame.Angles(math.rad(70), 0, math.rad(side * 20)), 2.3, 0.3, side < 0 and "Coral" or "Lilac", 16)
+	end
+
+	-- rounded sign on top of the ring
+	local sign = b:roundedBlock("GateSign", Vector3.new(15, 3.6, 1.2), center * CFrame.new(0, 10.6, -0.2), 1.6, "Navy")
+	b:roundedBlock("GateSignBack", Vector3.new(15.8, 4.2, 1), center * CFrame.new(0, 10.6, 0.2), 1.9, "Violet")
+	Architecture.sign(sign, "WORLD GATE", subtitle or "TRAVEL BETWEEN DIG SITES")
+	b:ball("SignStar", 1.4, center * CFrame.new(0, 13.2, 0), "GlowSun")
+
+	-- terminal kiosk (a friendly capsule with a tilted screen)
+	b:disc("KioskFoot", 3, 0.4, CFrame.new(0, floorY + 0.2, -7), "Violet")
+	local kiosk = b:roundedBlock("Kiosk", Vector3.new(2.6, 3.4, 1.6), CFrame.new(0, floorY + 2.1, -7), 0.8, "Sky")
+	local screen = b:roundedBlock("KioskScreen", Vector3.new(3, 1.8, 0.3), CFrame.new(0, floorY + 4.2, -7.3) * CFrame.Angles(math.rad(-25), 0, 0), 0.15, "Navy")
+	Architecture.sign(screen, "WORLD MAP", "PRESS E", nil, Color3.new(1, 1, 1))
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Open World Map"
