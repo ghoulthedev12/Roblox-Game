@@ -48,16 +48,19 @@ ArtifactData.Areas = {
 	{Name = "Floppy Fossil Beds",   Era = "Paleolithic"},
 	{Name = "The Homepage Ruins",   Era = "Paleolithic"},
 	{Name = "The First Server",     Era = "Paleolithic"},
+	-- Secret 2050 memes, only found in World 1's Abyss (worth one step above The Homepage Ruins)
+	{Name = "The Abyss",            Era = "Abyss", Multiplier = ArtifactData.AreaMultiplier ^ 15},
 }
 for i, area in ipairs(ArtifactData.Areas) do
 	area.Index = i
-	area.Multiplier = ArtifactData.AreaMultiplier ^ (i - 1)
+	area.Multiplier = area.Multiplier or ArtifactData.AreaMultiplier ^ (i - 1)
 end
 
 ArtifactData.Eras = {
 	Brainrot    = {DisplayName = "The Brainrot Epoch",  Years = "2016-2024", FirstArea = 1},
 	GoldenAge   = {DisplayName = "The Golden Age",      Years = "2005-2015", FirstArea = 8},
 	Paleolithic = {DisplayName = "The Paleolithic Web", Years = "1990-2004", FirstArea = 15},
+	Abyss       = {DisplayName = "The Abyss",           Years = "2050",      FirstArea = 21},
 }
 for _, era in pairs(ArtifactData.Eras) do
 	era.Multiplier = ArtifactData.Areas[era.FirstArea].Multiplier
@@ -313,6 +316,17 @@ local AREA_ARTIFACTS = {
 		{"CE", "ActualWeb", "The World Wide Web (An Actual Web)", "A cosmic spiderweb holding all the data together."},
 		{"T", "InternetSourceCode", "The Source Code of the Internet", "Everything began here. Even you. Even this museum."},
 	},
+	-- 21. THE ABYSS (secret 2050 memes, Mythic and above only)
+	[21] = {
+		{"M", "LastHumanMeme", "The Last Human-Made Meme", "Posted in 2049, right before the AIs took over comedy. It got 3 likes."},
+		{"M", "AIGirlfriendFirmware", "Deprecated AI Companion Firmware", "Version 11.4. Still says 'I understand how you feel' on boot."},
+		{"D", "BrainrotCoreSample", "Frozen Brainrot Core Sample", "Drilled from 240 studs down. Every layer is a different trend."},
+		{"D", "SkibidiMonolith", "The Skibidi Monolith", "Nobody knows who built it. It hums when someone says 'Ohio.'"},
+		{"CE", "FinalUpvote", "The Final Upvote", "The last upvote ever cast on the old internet. Still warm."},
+		{"CE", "QuantumDoge", "Quantum Doge Relic", "Such superposition. Very both. Wow."},
+		{"T", "MemeSingularity", "Patient Zero of the Meme Singularity", "The moment memes became self-aware. It is looking at you right now."},
+		{"T", "SourceOfIrony", "The Source Code of Irony", "Unironically the most important artifact in the museum."},
+	},
 }
 
 ---------------------------------------------------------------------
@@ -412,6 +426,40 @@ function ArtifactData.RollArtifact(where, luck)
 		index -= 1
 	end
 	return nil
+end
+
+-- Digs up an artifact for a depth zone (see GameConfig.Worlds). ONLY the zone's rarities
+-- can come out, from the zone's areas. Higher luck makes the rarer ones in the zone more likely.
+function ArtifactData.RollForZone(zone, luck)
+	luck = luck or 1
+	-- which of the zone's rarities actually have artifacts in the zone's areas
+	local options, total = {}, 0
+	for i, rarityName in ipairs(zone.Rarities) do
+		local list = {}
+		for _, areaIndex in ipairs(zone.Areas) do
+			local pool = pools[areaIndex]
+			for _, artifact in ipairs(pool and pool[rarityName] or {}) do
+				table.insert(list, artifact)
+			end
+		end
+		if #list > 0 then
+			local rarity = rarityByName[rarityName]
+			local weight = (i == 1) and rarity.Chance or rarity.Chance * luck
+			table.insert(options, {Weight = weight, List = list})
+			total += weight
+		end
+	end
+	if #options == 0 then return nil end
+	local roll = rng:NextNumber(0, total)
+	local running = 0
+	for _, option in ipairs(options) do
+		running += option.Weight
+		if roll <= running then
+			return option.List[rng:NextInteger(1, #option.List)]
+		end
+	end
+	local last = options[#options].List
+	return last[rng:NextInteger(1, #last)]
 end
 
 -- Turns 1500000 into "$1.5M"

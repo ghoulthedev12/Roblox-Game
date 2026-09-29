@@ -1,6 +1,7 @@
 -- DigManager (Script in ServerScriptService)
--- Real terrain digging with shovels: carves holes, finds artifacts by layer,
--- Lucky Dig minigame, Dig Permits, pit resets, and the Shovel Shop.
+-- Real terrain digging with shovels across every world: carves holes in a 250-stud pit,
+-- blocks shovels from breaking into zones deeper than they're rated for, finds artifacts
+-- by depth zone, Lucky Dig minigame, pit resets, the Shovel Shops and the World Gates.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -9,6 +10,9 @@ local Debris = game:GetService("Debris")
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+local ShovelModels = require(script.Parent:WaitForChild("ShovelModels"))
+local ShopBuilder = require(script.Parent:WaitForChild("ShopBuilder"))
+local WorldGate = require(script.Parent:WaitForChild("WorldGate"))
 
 local terrain = workspace.Terrain
 
@@ -18,10 +22,12 @@ local terrain = workspace.Terrain
 local MINIGAME_TIMEOUT = 8
 local MINIGAME_LUCK = {Perfect = 3, Good = 1.5, Miss = 1} -- multiplies the shovel's luck
 local ANNOUNCE_FROM = ArtifactData.GetRarityIndex("Mythic")
-local PIT_CENTER = Vector3.new(0, 0, 0)
-local PIT_RADIUS = 41          -- how far from the center you can dig
-local CENTER_NO_DIG_RADIUS = 9 -- keeps the giant hard drive standing
-local MAX_REACH = 14           -- how far from your character you can dig
+local MAX_REACH = 14 -- how far from your character you can dig
+local SURFACE_RING = 52 -- where "Return to Surface" puts you (distance from the pit center)
+
+-- Where the shop and the World Gate stand around each pit (angle, distance from center)
+local SHOP_SPOT = {Angle = 30, Distance = 80}
+local GATE_SPOT = {Angle = -30, Distance = 86}
 
 ---------------------------------------------------------------------
 -- REMOTES
@@ -39,136 +45,44 @@ local minigameRemote = getRemote("DigMinigame")
 local resultRemote = getRemote("DigResult")
 local announceRemote = getRemote("Announcement")
 local swingRemote = getRemote("DigSwing")          -- client -> server: swing at a position
-local digMessageRemote = getRemote("DigProgress")  -- server -> client: short messages
+local digMessageRemote = getRemote("DigProgress")  -- server -> client: short messages (text, color)
 local surfaceRemote = getRemote("ReturnToSurface")
-local openShopRemote = getRemote("OpenShovelShop")
+local openShopRemote = getRemote("OpenShovelShop") -- server -> client: (worldId)
 local buyShovelRemote = getRemote("BuyShovel")
 local equipShovelRemote = getRemote("EquipShovel")
-local buyLayerRemote = getRemote("BuyLayer")
 local shopMessageRemote = getRemote("ShopMessage")
+local openWorldMapRemote = getRemote("OpenWorldMap")
+local buyWorldRemote = getRemote("BuyWorld")
+local travelRemote = getRemote("TravelToWorld")
 
 local digSite = workspace:WaitForChild("DigSite")
 
 ---------------------------------------------------------------------
--- SHOVEL TOOLS (a realistic spade built from parts)
+-- SHOVEL TOOLS
 ---------------------------------------------------------------------
-local WOOD = Color3.fromRGB(125, 88, 56)
 local toolTemplates = {}
-
-local function toolPart(tool, name, size, cframe, color, material, shape)
-	local p = Instance.new("Part")
-	p.Name = name
-	p.Size = size
-	p.CFrame = cframe
-	p.Color = color
-	p.Material = material
-	if shape then p.Shape = shape end
-	p.CanCollide = false
-	p.CanQuery = false
-	p.CanTouch = false
-	p.Massless = true
-	p.TopSurface = Enum.SurfaceType.Smooth
-	p.BottomSurface = Enum.SurfaceType.Smooth
-	p.Parent = tool
-	return p
-end
-
--- A bar from point a to point b
-local function toolBar(tool, name, a, b, thickness, color, material)
-	local length = (b - a).Magnitude
-	return toolPart(tool, name, Vector3.new(thickness, thickness, length), CFrame.lookAt((a + b) / 2, b), color, material)
-end
-
-local ALONG_Z = CFrame.Angles(0, math.rad(90), 0) -- turns a cylinder to point along the shaft
-
-local function buildShovelTool(def)
-	local tool = Instance.new("Tool")
-	tool.Name = def.Name
-	tool.ToolTip = def.Name
-	tool.CanBeDropped = false
-	tool.RequiresHandle = true
-	tool:SetAttribute("ShovelId", def.Id)
-	tool.Grip = CFrame.new(0, 0, 1.4) * CFrame.Angles(math.rad(50), 0, 0) -- shovel points forward and down
-
-	local bladeMat = Enum.Material[def.Material] or Enum.Material.Metal
-	local fancy = def.Material == "Neon" or def.Material == "ForceField" or def.Material == "Glass"
-	local shaftColor = fancy and Color3.fromRGB(28, 30, 42) or WOOD
-	local shaftMat = fancy and Enum.Material.Metal or Enum.Material.Wood
-	local metalColor = fancy and def.Color or Color3.fromRGB(95, 98, 105)
-	local metalMat = fancy and bladeMat or Enum.Material.Metal
-	if def.Material == "CorrodedMetal" then
-		metalColor = def.Color
-		metalMat = Enum.Material.CorrodedMetal
-	end
-
-	-- Invisible handle (the hand holds this), everything else is welded to it
-	local handle = toolPart(tool, "Handle", Vector3.new(0.3, 0.3, 4.4), CFrame.new(), shaftColor, shaftMat)
-	handle.Transparency = 1
-
-	local parts = {}
-	local function add(p) table.insert(parts, p) return p end
-
-	-- Round shaft
-	add(toolPart(tool, "Shaft", Vector3.new(4.4, 0.22, 0.22), ALONG_Z, shaftColor, shaftMat, Enum.PartType.Cylinder))
-	-- Grip wrap near the hand
-	add(toolPart(tool, "GripWrap", Vector3.new(0.9, 0.26, 0.26), CFrame.new(0, 0, 1.4) * ALONG_Z, Color3.fromRGB(30, 30, 30), Enum.Material.Fabric, Enum.PartType.Cylinder))
-	-- D-shaped grip at the top
-	add(toolBar(tool, "GripSideL", Vector3.new(0, 0, 2.15), Vector3.new(-0.42, 0, 2.8), 0.14, shaftColor, shaftMat))
-	add(toolBar(tool, "GripSideR", Vector3.new(0, 0, 2.15), Vector3.new(0.42, 0, 2.8), 0.14, shaftColor, shaftMat))
-	add(toolPart(tool, "GripBar", Vector3.new(0.95, 0.18, 0.18), CFrame.new(0, 0, 2.82), Color3.fromRGB(30, 30, 30), Enum.Material.Fabric, Enum.PartType.Cylinder))
-	-- Metal socket where the blade meets the shaft
-	add(toolPart(tool, "Socket", Vector3.new(0.8, 0.3, 0.3), CFrame.new(0, 0, -2.35) * ALONG_Z, metalColor, metalMat, Enum.PartType.Cylinder))
-
-	-- Blade (slightly angled, curved sides, pointed tip, foot step on top)
-	local bladeCF = CFrame.new(0, -0.05, -2.7) * CFrame.Angles(math.rad(-14), 0, 0)
-	local blade = add(toolPart(tool, "Blade", Vector3.new(1.3, 0.08, 1.3), bladeCF * CFrame.new(0, 0, -0.65), def.Color, bladeMat))
-	add(toolPart(tool, "BladeTip", Vector3.new(0.92, 0.08, 0.92), bladeCF * CFrame.new(0, 0, -1.3) * CFrame.Angles(0, math.rad(45), 0), def.Color, bladeMat))
-	add(toolPart(tool, "BladeSideL", Vector3.new(0.28, 0.08, 1.3), bladeCF * CFrame.new(-0.72, 0.06, -0.65) * CFrame.Angles(0, 0, math.rad(-22)), def.Color, bladeMat))
-	add(toolPart(tool, "BladeSideR", Vector3.new(0.28, 0.08, 1.3), bladeCF * CFrame.new(0.72, 0.06, -0.65) * CFrame.Angles(0, 0, math.rad(22)), def.Color, bladeMat))
-	add(toolPart(tool, "FootStep", Vector3.new(1.45, 0.12, 0.12), bladeCF * CFrame.new(0, 0.04, 0), metalColor, metalMat, Enum.PartType.Cylinder))
-
-	if def.Material ~= "CorrodedMetal" and def.Material ~= "SmoothPlastic" then
-		blade.Reflectance = 0.15
-	end
-	if fancy then
-		local light = Instance.new("PointLight")
-		light.Color = def.Color
-		light.Range = 9
-		light.Brightness = 1.2
-		light.Parent = blade
-	end
-
-	-- Make the whole shovel smaller
-	local SCALE = 0.65
-	for _, part in ipairs(tool:GetChildren()) do
-		if part:IsA("BasePart") then
-			local rotation = part.CFrame.Rotation
-			part.Size = part.Size * SCALE
-			part.CFrame = CFrame.new(part.Position * SCALE) * rotation
-		end
-	end
-	tool.Grip = CFrame.new(0, 0, 1.4 * SCALE) * CFrame.Angles(math.rad(50), 0, 0)
-
-	for _, part in ipairs(parts) do
-		local weld = Instance.new("WeldConstraint")
-		weld.Part0 = handle
-		weld.Part1 = part
-		weld.Parent = handle
-	end
-	return tool
-end
-
-buildShovelTool = require(script.Parent:WaitForChild("ShovelModels"))
 for _, def in ipairs(GameConfig.Shovels) do
-	toolTemplates[def.Id] = buildShovelTool(def)
+	toolTemplates[def.Id] = ShovelModels(def)
 end
 
 ---------------------------------------------------------------------
--- PLAYER SHOVEL / PERMIT STATE
+-- PLAYER STATE: which world they're in, which shovel they hold there
 ---------------------------------------------------------------------
-local function getEquippedDef(player)
+local currentWorld = {} -- [player] = world
+
+local function getWorld(player)
+	return currentWorld[player] or GameConfig.Worlds[1]
+end
+
+local function getEquippedDef(player, world)
+	world = world or getWorld(player)
 	local data = PlayerData.Get(player)
-	return (data and GameConfig.GetShovel(data.EquippedShovel)) or GameConfig.Shovels[1]
+	local id = data and data.EquippedShovels[tostring(world.Id)]
+	local def = id and GameConfig.GetShovel(id)
+	if def and def.World == world.Id and data.OwnedShovels[def.Id] then
+		return def
+	end
+	return GameConfig.GetStarterShovel(world)
 end
 
 local function keysToString(t)
@@ -182,11 +96,14 @@ end
 local function updateAttributes(player)
 	local data = PlayerData.Get(player)
 	if not data then return end
+	local def = getEquippedDef(player)
 	player:SetAttribute("OwnedShovels", keysToString(data.OwnedShovels))
-	player:SetAttribute("EquippedShovel", data.EquippedShovel)
-	player:SetAttribute("UnlockedLayers", keysToString(data.UnlockedLayers))
+	player:SetAttribute("EquippedShovel", def and def.Id or "")
+	player:SetAttribute("UnlockedWorlds", keysToString(data.UnlockedWorlds))
+	player:SetAttribute("CurrentWorld", getWorld(player).Id)
 end
 
+-- Puts the shovel for the player's current world in their backpack (removes any other)
 local function giveShovel(player)
 	local def = getEquippedDef(player)
 	for _, container in ipairs({player:FindFirstChild("Backpack"), player.Character}) do
@@ -199,7 +116,7 @@ local function giveShovel(player)
 		end
 	end
 	local backpack = player:FindFirstChild("Backpack")
-	if backpack then
+	if backpack and def then
 		toolTemplates[def.Id]:Clone().Parent = backpack
 	end
 end
@@ -212,7 +129,7 @@ local lastSwing = {}  -- [player] = time of last swing
 local sessions = {}   -- [player] = Lucky Dig session
 local resetting = false
 
-local function dirtBurst(position, color)
+local function burst(position, color, count, speed)
 	local anchor = Instance.new("Part")
 	anchor.Anchored = true
 	anchor.CanCollide = false
@@ -223,18 +140,18 @@ local function dirtBurst(position, color)
 	anchor.CFrame = CFrame.new(position)
 	anchor.Parent = workspace
 
-	local burst = Instance.new("ParticleEmitter")
-	burst.Enabled = false
-	burst.Color = ColorSequence.new(color)
-	burst.Size = NumberSequence.new(0.5, 0.1)
-	burst.Lifetime = NumberRange.new(0.5, 0.9)
-	burst.Speed = NumberRange.new(10, 16)
-	burst.SpreadAngle = Vector2.new(40, 40)
-	burst.Acceleration = Vector3.new(0, -45, 0)
-	burst.Rotation = NumberRange.new(0, 360)
-	burst.EmissionDirection = Enum.NormalId.Top
-	burst.Parent = anchor
-	burst:Emit(18)
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Enabled = false
+	emitter.Color = ColorSequence.new(color)
+	emitter.Size = NumberSequence.new(0.5, 0.1)
+	emitter.Lifetime = NumberRange.new(0.5, 0.9)
+	emitter.Speed = NumberRange.new(speed or 10, (speed or 10) * 1.6)
+	emitter.SpreadAngle = Vector2.new(40, 40)
+	emitter.Acceleration = Vector3.new(0, -45, 0)
+	emitter.Rotation = NumberRange.new(0, 360)
+	emitter.EmissionDirection = Enum.NormalId.Top
+	emitter.Parent = anchor
+	emitter:Emit(count or 18)
 	Debris:AddItem(anchor, 2)
 end
 
@@ -255,8 +172,8 @@ local function isSolid(position)
 	return false
 end
 
-local function giveArtifact(player, era, luck, grade)
-	local artifact = ArtifactData.RollArtifact(era, luck)
+local function giveArtifact(player, zone, luck, grade)
+	local artifact = ArtifactData.RollForZone(zone, luck)
 	local data = PlayerData.Get(player)
 	if not artifact or not data then return end
 
@@ -275,7 +192,7 @@ local function giveArtifact(player, era, luck, grade)
 		Grade = grade,
 	})
 	if rarityIndex >= ANNOUNCE_FROM then
-		announceRemote:FireAllClients(player.DisplayName .. " found a " .. string.upper(artifact.Rarity) .. " " .. artifact.Name .. "!", rarity.Color)
+		announceRemote:FireAllClients(player.DisplayName .. " found a " .. string.upper(artifact.Rarity) .. " " .. artifact.Name .. " in " .. zone.Name .. "!", rarity.Color)
 	end
 end
 
@@ -283,12 +200,12 @@ local function finishLuckyDig(player, grade)
 	local session = sessions[player]
 	if not session then return end
 	sessions[player] = nil
-	giveArtifact(player, session.Era, session.ShovelLuck * (MINIGAME_LUCK[grade] or 1), grade)
+	giveArtifact(player, session.Zone, session.ShovelLuck * (MINIGAME_LUCK[grade] or 1), grade)
 end
 
-local function onFind(player, def, era)
+local function onFind(player, def, zone)
 	if rng:NextNumber() < GameConfig.MinigameChance then
-		local session = {Started = os.clock(), ShovelLuck = def.Luck, Era = era}
+		local session = {Started = os.clock(), ShovelLuck = def.Luck, Zone = zone}
 		sessions[player] = session
 		minigameRemote:FireClient(player)
 		task.delay(MINIGAME_TIMEOUT, function()
@@ -297,8 +214,23 @@ local function onFind(player, def, era)
 			end
 		end)
 	else
-		giveArtifact(player, era, def.Luck, nil)
+		giveArtifact(player, zone, def.Luck, nil)
 	end
+end
+
+-- The shovel hits a zone it isn't rated for: sparks fly and it bounces off
+local lastBounceMessage = {}
+local function bounceOff(player, world, def, zoneIndex, zone, position)
+	burst(position, Color3.fromRGB(255, 214, 150), 10, 16)
+	burst(position, zone.Color, 6, 6)
+	if os.clock() - (lastBounceMessage[player] or 0) < 1.5 then return end
+	lastBounceMessage[player] = os.clock()
+	local needed = GameConfig.GetFirstShovelForZone(world, zoneIndex)
+	local text = "CLANG! Your " .. def.Name .. " bounces off " .. string.upper(zone.Name) .. " (" .. -zone.Top .. "m+)."
+	if needed then
+		text ..= " You need the " .. needed.Name .. " or better."
+	end
+	digMessageRemote:FireClient(player, text, Color3.fromRGB(255, 120, 100))
 end
 
 swingRemote.OnServerEvent:Connect(function(player, target)
@@ -311,7 +243,9 @@ swingRemote.OnServerEvent:Connect(function(player, target)
 	local tool = character and character:FindFirstChildOfClass("Tool")
 	if not root or not tool or not tool:GetAttribute("ShovelId") then return end
 
-	local def = getEquippedDef(player)
+	local world = getWorld(player)
+	local def = getEquippedDef(player, world)
+	if not def or tool:GetAttribute("ShovelId") ~= def.Id then return end
 	local now = os.clock()
 	if now - (lastSwing[player] or 0) < def.Cooldown * 0.85 then return end
 	lastSwing[player] = now
@@ -321,13 +255,13 @@ swingRemote.OnServerEvent:Connect(function(player, target)
 		target = root.Position + root.CFrame.LookVector * 3 - Vector3.new(0, 3, 0)
 	end
 
-	local flat = Vector3.new(target.X - PIT_CENTER.X, 0, target.Z - PIT_CENTER.Z).Magnitude
-	if flat > PIT_RADIUS or flat < CENTER_NO_DIG_RADIUS or target.Y > GameConfig.Layers[1].Top + 5 then
+	local origin = world.Origin
+	local flat = Vector3.new(target.X - origin.X, 0, target.Z - origin.Z).Magnitude
+	if flat > world.PitRadius or flat < world.CenterNoDigRadius or target.Y > origin.Y + 5 then
 		digMessageRemote:FireClient(player, "Dig inside the pit!")
 		return
 	end
 
-	-- Which layer is this?
 	-- Aim into the ground: a bit past the clicked point, snapped to the 4-stud terrain grid
 	local head = root.Position + Vector3.new(0, 1.5, 0)
 	local dir = (target - head).Unit
@@ -345,28 +279,31 @@ swingRemote.OnServerEvent:Connect(function(player, target)
 		return -- nothing but air there
 	end
 
-	local layerIndex, layer = GameConfig.GetLayerAt(carveAt.Y)
-	if not layer then
-		digMessageRemote:FireClient(player, "Bedrock! You can't dig any deeper.")
+	-- Which depth zone is this, and is this shovel rated for it?
+	local zoneIndex, zone = GameConfig.GetZoneAt(world, carveAt.Y)
+	if not zone then
+		digMessageRemote:FireClient(player, "Bedrock! This is the bottom of the Abyss.")
 		return
 	end
-	if not data.UnlockedLayers[tostring(layerIndex)] then
-		digMessageRemote:FireClient(player, "Locked! You need the Dig Permit for " .. layer.Name .. " (" .. ArtifactData.FormatMoney(layer.Price) .. "). Get it at the Shovel Shop.")
+	if zoneIndex > def.MaxZone then
+		bounceOff(player, world, def, zoneIndex, zone, carveAt + Vector3.new(0, 2, 0))
 		return
 	end
 
-	if not isSolid(carveAt) then
-		return -- swinging at air
+	-- Carve the hole and throw dirt. Wide but one block deep, plus the block above so tunnels
+	-- are tall enough to walk into. Never carve below the bottom of the shovel's deepest zone.
+	local floorY = origin.Y + world.Zones[def.MaxZone].Bottom
+	local bottomY = math.max(carveAt.Y - 2, floorY)
+	local topY = carveAt.Y + 6
+	if topY > bottomY then
+		terrain:FillBlock(CFrame.new(carveAt.X, (topY + bottomY) / 2, carveAt.Z),
+			Vector3.new(def.DigRadius + 2, topY - bottomY, def.DigRadius + 2), Enum.Material.Air)
 	end
-
-	-- Carve the hole and throw dirt
-	-- wide but one block deep, plus the block above so tunnels are tall enough to walk into
-	terrain:FillBlock(CFrame.new(carveAt + Vector3.new(0, 2, 0)), Vector3.new(def.DigRadius + 2, 8, def.DigRadius + 2), Enum.Material.Air)
-	dirtBurst(target, layer.Color)
+	burst(target, zone.Color)
 
 	-- Did we find something?
 	if rng:NextNumber() < def.FindChance then
-		onFind(player, def, layer.Era)
+		onFind(player, def, zone)
 	end
 end)
 
@@ -381,181 +318,195 @@ end)
 ---------------------------------------------------------------------
 -- GETTING OUT OF THE PIT
 ---------------------------------------------------------------------
-local function surfaceCFrame(position)
-	-- nearest of the 6 path openings, on the path just outside the rim
-	local angle = math.atan2(position.Z, position.X)
-	local snapped = math.floor(angle / (math.pi / 3) + 0.5) * (math.pi / 3)
-	local spot = Vector3.new(math.cos(snapped) * 52, 4, math.sin(snapped) * 52)
-	return CFrame.lookAt(spot, Vector3.new(0, 4, 0))
+local function surfaceCFrame(world, position)
+	local origin = world.Origin
+	local offset = position - origin
+	local angle = math.atan2(offset.Z, offset.X)
+	if world.HubPaths then
+		-- nearest of the 6 path openings, on the path just outside the rim
+		angle = math.floor(angle / (math.pi / 3) + 0.5) * (math.pi / 3)
+	end
+	local spot = origin + Vector3.new(math.cos(angle) * SURFACE_RING, 4, math.sin(angle) * SURFACE_RING)
+	return CFrame.lookAt(spot, origin + Vector3.new(0, 4, 0))
 end
 
 surfaceRemote.OnServerEvent:Connect(function(player)
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
-	if root and root.Position.Y < GameConfig.Layers[1].Top - 2 then
-		character:PivotTo(surfaceCFrame(root.Position))
+	local world = getWorld(player)
+	if root and root.Position.Y < world.Origin.Y - 2 then
+		character:PivotTo(surfaceCFrame(world, root.Position))
 	end
 end)
 
 ---------------------------------------------------------------------
--- PIT RESET (refills all the dirt)
+-- PIT RESET (refills all the dirt in every open world)
 ---------------------------------------------------------------------
-local function resetPit()
+local function enabledWorlds()
+	local list = {}
+	for _, world in ipairs(GameConfig.Worlds) do
+		if world.Enabled then
+			table.insert(list, world)
+		end
+	end
+	return list
+end
+
+local function resetPits()
 	resetting = true
 	for _, player in ipairs(Players:GetPlayers()) do
 		local character = player.Character
 		local root = character and character:FindFirstChild("HumanoidRootPart")
+		local world = getWorld(player)
 		if root then
-			local flat = Vector3.new(root.Position.X, 0, root.Position.Z).Magnitude
-			if flat < 48 and root.Position.Y < 6 then
-				character:PivotTo(surfaceCFrame(root.Position))
+			local offset = root.Position - world.Origin
+			if Vector3.new(offset.X, 0, offset.Z).Magnitude < world.PitRadius + 7 and offset.Y < 6 then
+				character:PivotTo(surfaceCFrame(world, root.Position))
 			end
 		end
 	end
 	task.wait(0.5)
-	GameConfig.FillDigTerrain(terrain)
+	for _, world in ipairs(enabledWorlds()) do
+		GameConfig.FillDigTerrain(terrain, world)
+	end
 	resetting = false
 end
 
 task.spawn(function()
-	resetPit() -- fresh ground when the server starts
+	resetPits() -- fresh ground when the server starts
 	while true do
 		task.wait(GameConfig.PitResetMinutes * 60 - 30)
 		announceRemote:FireAllClients("The Hard Drives reboot in 30 seconds! All the dirt will come back.", Color3.fromRGB(0, 225, 255))
 		task.wait(30)
-		resetPit()
+		resetPits()
 		announceRemote:FireAllClients("The Hard Drives have rebooted. Fresh ground to dig!", Color3.fromRGB(90, 255, 120))
 	end
 end)
 
 ---------------------------------------------------------------------
--- SHOVEL SHOP + DIG PERMITS
+-- SHOVEL SHOP
 ---------------------------------------------------------------------
 buyShovelRemote.OnServerEvent:Connect(function(player, shovelId)
 	local data = PlayerData.Get(player)
 	local def = typeof(shovelId) == "string" and GameConfig.GetShovel(shovelId)
 	if not data or not def or data.OwnedShovels[def.Id] then return end
+	if not data.UnlockedWorlds[tostring(def.World)] then
+		shopMessageRemote:FireClient(player, "Unlock " .. GameConfig.GetWorld(def.World).Name .. " first!", false)
+		return
+	end
 	if not PlayerData.SpendMoney(player, def.Price) then
 		shopMessageRemote:FireClient(player, "Not enough money!", false)
 		return
 	end
 	data.OwnedShovels[def.Id] = true
-	data.EquippedShovel = def.Id
+	data.EquippedShovels[tostring(def.World)] = def.Id
 	updateAttributes(player)
 	giveShovel(player)
-	shopMessageRemote:FireClient(player, "You bought the " .. def.Name .. "!", true)
+	shopMessageRemote:FireClient(player, "You bought the " .. def.Name .. "! It digs down to " .. -GameConfig.GetWorld(def.World).Zones[def.MaxZone].Bottom .. "m.", true)
 end)
 
 equipShovelRemote.OnServerEvent:Connect(function(player, shovelId)
 	local data = PlayerData.Get(player)
 	local def = typeof(shovelId) == "string" and GameConfig.GetShovel(shovelId)
 	if not data or not def or not data.OwnedShovels[def.Id] then return end
-	data.EquippedShovel = def.Id
+	data.EquippedShovels[tostring(def.World)] = def.Id
 	updateAttributes(player)
 	giveShovel(player)
 end)
 
-buyLayerRemote.OnServerEvent:Connect(function(player, layerIndex)
+---------------------------------------------------------------------
+-- WORLDS: travel + unlocking
+---------------------------------------------------------------------
+local arrivalSpots = {} -- [worldId] = CFrame in front of that world's gate
+
+local function ringCFrame(world, spot, height)
+	local a = math.rad(spot.Angle)
+	local pos = world.Origin + Vector3.new(math.cos(a) * spot.Distance, height or 0, math.sin(a) * spot.Distance)
+	return CFrame.lookAt(pos, Vector3.new(world.Origin.X, pos.Y, world.Origin.Z))
+end
+
+local function travel(player, world)
+	local character = player.Character
+	if not character then return end
+	sessions[player] = nil
+	currentWorld[player] = world
+	updateAttributes(player)
+	giveShovel(player)
+	character:PivotTo(arrivalSpots[world.Id] or (CFrame.new(world.Origin + Vector3.new(0, 6, SURFACE_RING))))
+end
+
+travelRemote.OnServerEvent:Connect(function(player, worldId)
 	local data = PlayerData.Get(player)
-	local layer = typeof(layerIndex) == "number" and GameConfig.Layers[layerIndex]
-	if not data or not layer or data.UnlockedLayers[tostring(layerIndex)] then return end
-	if layerIndex > 1 and not data.UnlockedLayers[tostring(layerIndex - 1)] then
-		shopMessageRemote:FireClient(player, "Unlock the layer above first!", false)
+	local world = typeof(worldId) == "number" and GameConfig.GetWorld(worldId)
+	if not data or not world then return end
+	if not world.Enabled then
+		shopMessageRemote:FireClient(player, world.Name .. " is still being excavated. Coming soon!", false)
+	elseif not data.UnlockedWorlds[tostring(world.Id)] then
+		shopMessageRemote:FireClient(player, "Unlock " .. world.Name .. " first!", false)
+	else
+		travel(player, world)
+	end
+end)
+
+buyWorldRemote.OnServerEvent:Connect(function(player, worldId)
+	local data = PlayerData.Get(player)
+	local world = typeof(worldId) == "number" and GameConfig.GetWorld(worldId)
+	if not data or not world or data.UnlockedWorlds[tostring(world.Id)] then return end
+	if not world.Enabled then
+		shopMessageRemote:FireClient(player, world.Name .. " is still being excavated. Coming soon!", false)
 		return
 	end
-	if not PlayerData.SpendMoney(player, layer.Price) then
+	if world.Id > 1 and not data.UnlockedWorlds[tostring(world.Id - 1)] then
+		shopMessageRemote:FireClient(player, "Unlock the world before this one first!", false)
+		return
+	end
+	if not PlayerData.SpendMoney(player, world.Price) then
 		shopMessageRemote:FireClient(player, "Not enough money!", false)
 		return
 	end
-	data.UnlockedLayers[tostring(layerIndex)] = true
+	data.UnlockedWorlds[tostring(world.Id)] = true
+	local starter = GameConfig.GetStarterShovel(world)
+	if starter then
+		data.OwnedShovels[starter.Id] = true
+		data.EquippedShovels[tostring(world.Id)] = data.EquippedShovels[tostring(world.Id)] or starter.Id
+	end
 	updateAttributes(player)
-	shopMessageRemote:FireClient(player, "Dig Permit unlocked: " .. layer.Name .. "!", true)
+	shopMessageRemote:FireClient(player, "World unlocked: " .. world.Name .. "!", true)
+	announceRemote:FireAllClients(player.DisplayName .. " unlocked " .. world.Name .. "!", Color3.fromRGB(200, 205, 215))
 end)
 
--- Shop booth next to the dig site
-local function buildShopBooth()
-	if digSite:FindFirstChild("ShovelShop") then
-		return digSite.ShovelShop
+---------------------------------------------------------------------
+-- BUILD EACH WORLD'S SHOP + GATE
+---------------------------------------------------------------------
+local worldsFolder = workspace:FindFirstChild("Worlds") or Instance.new("Folder")
+worldsFolder.Name = "Worlds"
+worldsFolder.Parent = workspace
+
+for _, world in ipairs(enabledWorlds()) do
+	local container = digSite
+	if world.Id ~= 1 then
+		container = Instance.new("Model")
+		container.Name = "World" .. world.Id
+		container.Parent = worldsFolder
 	end
-	local shop = Instance.new("Model")
-	shop.Name = "ShovelShop"
-
-	local angle = math.rad(30)
-	local pos = Vector3.new(math.cos(angle) * 76, 0, math.sin(angle) * 76)
-	local base = CFrame.lookAt(pos, Vector3.new(0, 0, 0))
-	local GOLD = Color3.fromRGB(255, 200, 60)
-	local DARK = Color3.fromRGB(20, 22, 34)
-	local NAVY = Color3.fromRGB(28, 34, 60)
-	local WHITE = Color3.fromRGB(238, 240, 245)
-
-	local function part(name, size, offset, color, material)
-		local p = Instance.new("Part")
-		p.Name = name
-		p.Anchored = true
-		p.Size = size
-		p.CFrame = base * offset
-		p.Color = color
-		p.Material = material or Enum.Material.SmoothPlastic
-		p.TopSurface = Enum.SurfaceType.Smooth
-		p.BottomSurface = Enum.SurfaceType.Smooth
-		if p.Material == Enum.Material.Neon then p.CastShadow = false end
-		p.Parent = shop
-		return p
+	-- Rebuild every start so the look always matches the code
+	for _, name in ipairs({"ShovelShop", "WorldGate"}) do
+		local old = container:FindFirstChild(name)
+		if old then old:Destroy() end
 	end
 
-	part("Platform", Vector3.new(14, 0.6, 10), CFrame.new(0, 0.3, 0), NAVY)
-	local counter = part("Counter", Vector3.new(12, 3.5, 2.5), CFrame.new(0, 2.35, -2.5), DARK)
-	part("CounterTop", Vector3.new(12.4, 0.3, 3), CFrame.new(0, 4.25, -2.5), WHITE)
-	part("CounterGlow", Vector3.new(12, 0.25, 0.2), CFrame.new(0, 3.5, -3.8), Color3.new(GOLD.R * 0.6, GOLD.G * 0.6, GOLD.B * 0.6), Enum.Material.Neon)
-	part("BackWall", Vector3.new(14, 10, 0.8), CFrame.new(0, 5.6, 4.6), NAVY)
-	part("PostL", Vector3.new(0.8, 10, 0.8), CFrame.new(-6.8, 5.6, -4.6), WHITE)
-	part("PostR", Vector3.new(0.8, 10, 0.8), CFrame.new(6.8, 5.6, -4.6), WHITE)
-	part("Roof", Vector3.new(15, 0.6, 11), CFrame.new(0, 10.9, 0), WHITE)
-	part("RoofGlow", Vector3.new(15, 0.3, 0.3), CFrame.new(0, 10.5, -5.4), GOLD, Enum.Material.Neon)
+	local _, shopPrompt = ShopBuilder(container, world, ringCFrame(world, SHOP_SPOT))
+	shopPrompt.Triggered:Connect(function(player)
+		openShopRemote:FireClient(player, world.Id)
+	end)
 
-	local colors = {Color3.fromRGB(255, 200, 40), Color3.fromRGB(175, 180, 190), Color3.fromRGB(255, 60, 200), Color3.fromRGB(120, 240, 255)}
-	for i, color in ipairs(colors) do
-		local x = -4.5 + (i - 1) * 3
-		local lean = CFrame.new(x, 4.9, 3.8) * CFrame.Angles(math.rad(-10), 0, 0)
-		part("DisplayShaft", Vector3.new(0.25, 6, 0.25), lean, WOOD, Enum.Material.Wood)
-		part("DisplayBlade", Vector3.new(1.3, 1.5, 0.12), lean * CFrame.new(0, -3.5, 0), color, Enum.Material.Metal)
-	end
-
-	local sign = part("Sign", Vector3.new(12, 2.5, 0.4), CFrame.new(0, 12.5, -4.8), DARK)
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Front
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 40
-	gui.LightInfluence = 0
-	gui.Parent = sign
-	local title = Instance.new("TextLabel")
-	title.BackgroundTransparency = 1
-	title.Size = UDim2.fromScale(1, 1)
-	title.Text = "SHOVEL SHOP"
-	title.TextColor3 = GOLD
-	title.Font = Enum.Font.GothamBlack
-	title.TextScaled = true
-	title.Parent = gui
-
-	local prompt = Instance.new("ProximityPrompt")
-	prompt.ActionText = "Browse"
-	prompt.ObjectText = "Shovels & Dig Permits"
-	prompt.HoldDuration = 0
-	prompt.MaxActivationDistance = 12
-	prompt.RequiresLineOfSight = false
-	prompt.Parent = counter
-
-	shop.Parent = digSite
-	return shop
+	local gateCF = ringCFrame(world, GATE_SPOT)
+	local _, gatePrompt = WorldGate(container, gateCF, world.Id == 1 and "8 NEW DIG SITES  ·  UNLOCK WITH CASH" or "RETURN  ·  TRAVEL")
+	gatePrompt.Triggered:Connect(function(player)
+		openWorldMapRemote:FireClient(player)
+	end)
+	arrivalSpots[world.Id] = gateCF * CFrame.new(0, 5, -10) -- in front of the gate, facing the pit
 end
-
--- Rebuild the booth each start so it matches the new ground height
-local oldShop = digSite:FindFirstChild("ShovelShop")
-if oldShop then oldShop:Destroy() end
-local shop = require(script.Parent:WaitForChild("ShopBuilder"))(digSite)
-shop:FindFirstChildWhichIsA("ProximityPrompt", true).Triggered:Connect(function(player)
-	openShopRemote:FireClient(player)
-end)
 
 ---------------------------------------------------------------------
 -- PLAYERS
@@ -563,8 +514,11 @@ end)
 local function onPlayerAdded(player)
 	PlayerData.WaitForData(player)
 	if not player.Parent then return end
+	currentWorld[player] = GameConfig.Worlds[1] -- everyone spawns at their museum in world 1
 	updateAttributes(player)
 	player.CharacterAdded:Connect(function()
+		currentWorld[player] = GameConfig.Worlds[1]
+		updateAttributes(player)
 		task.wait(0.2)
 		giveShovel(player)
 	end)
@@ -581,6 +535,8 @@ end
 Players.PlayerRemoving:Connect(function(player)
 	lastSwing[player] = nil
 	sessions[player] = nil
+	currentWorld[player] = nil
+	lastBounceMessage[player] = nil
 end)
 
-print("DigManager ready: terrain digging active")
+print("DigManager ready: " .. #enabledWorlds() .. " world(s), 250-stud pits, shovel depth zones active")

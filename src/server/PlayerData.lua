@@ -38,8 +38,9 @@ local function defaultData()
 		UnlockedSlots = unlockedSlots,
 		UnlockedFloors = {["1"] = true},
 		OwnedShovels = {RustyShovel = true},
-		EquippedShovel = "RustyShovel",
-		UnlockedLayers = {["1"] = true},
+		EquippedShovels = {["1"] = "RustyShovel"}, -- [worldId] = shovel id equipped in that world
+		UnlockedWorlds = {["1"] = true},
+		PermitsRefunded = true, -- new players never bought the old Dig Permits
 		LastOnline = os.time(),
 		Stats = {TotalEarned = 0, TotalDigs = 0},
 	}
@@ -109,6 +110,27 @@ local function makeLeaderstats(player)
 	stats.Parent = player
 end
 
+-- Upgrades saves from before worlds + shovel depth zones existed
+local OLD_PERMIT_PRICES = {["2"] = 100000, ["3"] = 250e6} -- the removed Dig Permits
+local function migrate(data)
+	if data.EquippedShovels == nil then
+		data.EquippedShovels = {["1"] = data.EquippedShovel or "RustyShovel"}
+	end
+	data.EquippedShovel = nil
+	-- Depth is now decided by your shovel, so give back what was paid for Dig Permits
+	if not data.PermitsRefunded then
+		local refund = 0
+		for layer, price in pairs(OLD_PERMIT_PRICES) do
+			if data.UnlockedLayers and data.UnlockedLayers[layer] then
+				refund += price
+			end
+		end
+		data.Money = (data.Money or 0) + refund
+		data.PermitsRefunded = true
+	end
+	data.UnlockedLayers = nil
+end
+
 ---------------------------------------------------------------------
 -- LOAD / SAVE
 ---------------------------------------------------------------------
@@ -125,6 +147,9 @@ local function load(player)
 	if not player.Parent then return end -- left while loading
 
 	local data = saved or defaultData()
+	if saved then
+		migrate(saved)
+	end
 	reconcile(data, defaultData())
 
 	-- Offline earnings

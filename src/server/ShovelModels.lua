@@ -177,6 +177,24 @@ local STYLES = {
 		Edge = rgb(255, 240, 150), Strips = {rgb(255, 230, 120), rgb(255, 230, 120)},
 		Glow = rgb(255, 210, 80), Sparkles = rgb(255, 240, 170), Rivets = true,
 	},
+	-- World 1 Abyss shovels: industrial, desaturated, built for bedrock
+	TectonicAuger = {
+		Shape = "Trowel", Grip = "T",
+		Shaft = rgb(58, 60, 64), ShaftMat = "CorrodedMetal",
+		Blade = rgb(150, 154, 160), BladeMat = "Foil", Shine = 0.25,
+		Metal = rgb(92, 95, 100), MetalMat = "Metal",
+		GripColor = rgb(28, 28, 30), GripMat = "Fabric",
+		Rings = rgb(170, 160, 140), Rivets = true,
+	},
+	SingularitySpade = {
+		Shape = "Spade", Grip = "D",
+		Shaft = rgb(30, 31, 34), ShaftMat = "Metal",
+		Blade = rgb(52, 54, 60), BladeMat = "Foil", Shine = 0.45,
+		Metal = rgb(140, 144, 150), MetalMat = "Foil",
+		GripColor = rgb(18, 18, 20), GripMat = "Fabric",
+		Edge = rgb(200, 205, 212), Core = rgb(150, 196, 214), Glow = rgb(150, 196, 214),
+		Sparkles = rgb(190, 215, 225),
+	},
 }
 
 -- A decent look for any shovel that has no style above (e.g. new shovels you add later)

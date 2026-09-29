@@ -7,6 +7,8 @@ local ServerStorage = game:GetService("ServerStorage")
 local RunService = game:GetService("RunService")
 
 local template = ServerStorage:WaitForChild("MuseumTemplate")
+-- Give the template the 2050 look once, before any museum is copied from it
+require(script.Parent:WaitForChild("MuseumStyle"))(template)
 local plotsFolder = workspace:WaitForChild("Plots")
 
 local museumsFolder = workspace:FindFirstChild("Museums") or Instance.new("Folder")

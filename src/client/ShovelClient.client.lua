@@ -1,6 +1,6 @@
 -- ShovelClient (LocalScript in StarterPlayer > StarterPlayerScripts)
--- Shovel swing + dig animation, depth display, underground light,
--- Return to Surface button, and the Shovel Shop menu (shovels + Dig Permits).
+-- Shovel swing + dig animation, depth + zone display, underground light,
+-- Return to Surface button, and the Shovel Shop menu (each world's shovels + their depth rating).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,7 +16,6 @@ local surfaceRemote = remotes:WaitForChild("ReturnToSurface")
 local openShopRemote = remotes:WaitForChild("OpenShovelShop")
 local buyShovelRemote = remotes:WaitForChild("BuyShovel")
 local equipShovelRemote = remotes:WaitForChild("EquipShovel")
-local buyLayerRemote = remotes:WaitForChild("BuyLayer")
 local shopMessageRemote = remotes:WaitForChild("ShopMessage")
 
 local player = Players.LocalPlayer
@@ -109,9 +108,9 @@ local function showHint(text, color)
 	end)
 end
 
-digMessageRemote.OnClientEvent:Connect(function(message)
+digMessageRemote.OnClientEvent:Connect(function(message, color)
 	if typeof(message) == "string" then
-		showHint(message)
+		showHint(message, typeof(color) == "Color3" and color or nil)
 	end
 end)
 
@@ -139,26 +138,37 @@ surfaceButton.MouseButton1Click:Connect(function()
 end)
 
 local headlamp -- PointLight on our character when underground
+local equippedDef -- the shovel currently in hand
 
-local surfaceY = GameConfig.Layers[1].Top
+local function currentWorld()
+	return GameConfig.GetWorld(player:GetAttribute("CurrentWorld") or 1) or GameConfig.Worlds[1]
+end
+
 task.spawn(function()
 	while true do
 		task.wait(0.2)
 		local character = player.Character
 		local root = character and character:FindFirstChild("HumanoidRootPart")
 		if root then
+			local world = currentWorld()
 			local feetY = root.Position.Y - 3
-			local depth = math.max(0, math.floor(surfaceY - feetY + 0.5))
-			local flat = Vector3.new(root.Position.X, 0, root.Position.Z).Magnitude
-			local inPit = flat < 48
+			local depth = math.max(0, math.floor(world.Origin.Y - feetY + 0.5))
+			local offset = root.Position - world.Origin
+			local inPit = Vector3.new(offset.X, 0, offset.Z).Magnitude < world.PitRadius + 7
 
-			local _, layer = GameConfig.GetLayerAt(feetY)
-			if depth <= 1 or not layer then
-				layer = layer or {Name = "Bedrock", Color = Color3.fromRGB(150, 150, 160)}
+			local zoneIndex, zone = GameConfig.GetZoneAt(world, feetY)
+			zone = zone or {Name = "Bedrock", Color = Color3.fromRGB(150, 150, 160)}
+			local text = "DEPTH " .. depth .. "m  •  " .. string.upper(zone.Name)
+			-- warn when the next zone down is too hard for this shovel
+			if equippedDef and zoneIndex and zoneIndex == equippedDef.MaxZone and zoneIndex < #world.Zones then
+				local floorDepth = -world.Zones[zoneIndex].Bottom
+				if floorDepth - depth <= 12 then
+					text ..= "  •  LIMIT " .. floorDepth .. "m"
+				end
 			end
-			depthLabel.Text = "DEPTH " .. depth .. "m  •  " .. string.upper(layer.Name)
-			depthLabel.TextColor3 = layer.Color
-			depthStroke.Color = layer.Color
+			depthLabel.Text = text
+			depthLabel.TextColor3 = zone.Color
+			depthStroke.Color = zone.Color
 
 			surfaceButton.Visible = inPit and depth > 4
 
@@ -314,7 +324,9 @@ end
 local function onToolEquipped(tool)
 	local def = GameConfig.GetShovel(tool:GetAttribute("ShovelId")) or GameConfig.Shovels[1]
 	local baseGrip = tool.Grip
-	shovelLabel.Text = string.upper(def.Name) .. "  •  " .. math.floor(def.FindChance * 100 + 0.5) .. "% find chance"
+	local world = GameConfig.GetWorld(def.World) or GameConfig.Worlds[1]
+	equippedDef = def
+	shovelLabel.Text = string.upper(def.Name) .. "  •  " .. math.floor(def.FindChance * 100 + 0.5) .. "% find  •  digs to " .. -world.Zones[def.MaxZone].Bottom .. "m"
 	depthPanel.Visible = true
 
 	local activatedConn = tool.Activated:Connect(function()
@@ -338,6 +350,7 @@ local function onToolEquipped(tool)
 		stopDigAnimation()
 		tool.Grip = baseGrip
 		depthPanel.Visible = false
+		if equippedDef == def then equippedDef = nil end
 	end)
 end
 
@@ -355,7 +368,7 @@ if player.Character then
 end
 
 ---------------------------------------------------------------------
--- SHOP MENU (shovels + Dig Permits)
+-- SHOP MENU (the world's shovels + its depth zones)
 ---------------------------------------------------------------------
 local shop = Instance.new("Frame")
 shop.Size = UDim2.new(0, 600, 0, 480)
@@ -417,33 +430,44 @@ local function makeRow(color, title, stats, description)
 end
 
 local shovelButtons = {}
-local layerButtons = {}
+local shopWorld = GameConfig.Worlds[1] -- which world's shop is open
 
-header("SHOVELS")
-for _, def in ipairs(GameConfig.Shovels) do
-	local stats = "Hole size " .. def.DigRadius .. "  •  " .. math.floor(def.FindChance * 100) .. "% find  •  Luck x" .. def.Luck
-	local b = makeRow(def.Color, def.Name, stats, def.Description)
-	shovelButtons[def.Id] = b
-	b.MouseButton1Click:Connect(function()
-		local owned = string.split(player:GetAttribute("OwnedShovels") or "", ",")
-		if table.find(owned, def.Id) then
-			equipShovelRemote:FireServer(def.Id)
-		else
-			buyShovelRemote:FireServer(def.Id)
-		end
-	end)
+local function zoneLabel(world, def)
+	local zone = world.Zones[def.MaxZone]
+	return "Digs to " .. -zone.Bottom .. "m (" .. zone.Name .. ")"
 end
 
-header("DIG PERMITS (DEEPER LAYERS)")
-for i, layer in ipairs(GameConfig.Layers) do
-	if i > 1 then
-		local era = ArtifactData.Eras[layer.Era]
-		local stats = "Depth " .. math.floor(-layer.Top) .. "-" .. math.floor(-layer.Bottom) .. "m  •  Artifacts earn x" .. (era and era.Multiplier or 1)
-		local b = makeRow(layer.Color, layer.Name, stats, "Lets your shovel break into this layer.")
-		layerButtons[i] = b
+-- Fills the list with one world's shovels
+local function buildRows(world)
+	for _, child in ipairs(list:GetChildren()) do
+		if not child:IsA("UIListLayout") then
+			child:Destroy()
+		end
+	end
+	shovelButtons = {}
+	order = 0
+	header(string.upper(world.Name) .. "  •  SHOVELS")
+	for _, def in ipairs(world.Shovels) do
+		local stats = zoneLabel(world, def) .. "  •  " .. math.floor(def.FindChance * 100 + 0.5) .. "% find  •  Luck x" .. def.Luck
+		local b = makeRow(def.Color, def.Name, stats, def.Description)
+		shovelButtons[def.Id] = b
 		b.MouseButton1Click:Connect(function()
-			buyLayerRemote:FireServer(i)
+			local owned = string.split(player:GetAttribute("OwnedShovels") or "", ",")
+			if table.find(owned, def.Id) then
+				equipShovelRemote:FireServer(def.Id)
+			else
+				buyShovelRemote:FireServer(def.Id)
+			end
 		end)
+	end
+	header("DEPTH ZONES")
+	for i, zone in ipairs(world.Zones) do
+		local first = GameConfig.GetFirstShovelForZone(world, i)
+		order += 1
+		local line = label(list, string.upper(zone.Name) .. "   " .. -zone.Top .. "-" .. -zone.Bottom .. "m   •   "
+			.. table.concat(zone.Rarities, ", ") .. "   •   needs " .. (first and first.Name or "?"),
+			UDim2.new(1, -10, 0, 18), UDim2.new(), zone.Color, Enum.Font.GothamBold)
+		line.LayoutOrder = order
 	end
 end
 
@@ -451,11 +475,11 @@ local function refreshShop()
 	local money = player:GetAttribute("Money") or 0
 	local owned = string.split(player:GetAttribute("OwnedShovels") or "", ",")
 	local equipped = player:GetAttribute("EquippedShovel")
-	local layers = string.split(player:GetAttribute("UnlockedLayers") or "1", ",")
 	moneyLabel.Text = ArtifactData.FormatMoney(money)
 
-	for _, def in ipairs(GameConfig.Shovels) do
+	for _, def in ipairs(shopWorld.Shovels) do
 		local b = shovelButtons[def.Id]
+		if not b then continue end
 		if def.Id == equipped then
 			b.Text = "EQUIPPED"
 			b.BackgroundColor3 = GREY
@@ -467,16 +491,6 @@ local function refreshShop()
 			b.BackgroundColor3 = (money >= def.Price) and GREEN or RED
 		end
 	end
-	for i, b in pairs(layerButtons) do
-		local layer = GameConfig.Layers[i]
-		if table.find(layers, tostring(i)) then
-			b.Text = "UNLOCKED"
-			b.BackgroundColor3 = GREY
-		else
-			b.Text = "BUY " .. ArtifactData.FormatMoney(layer.Price)
-			b.BackgroundColor3 = (money >= layer.Price) and GREEN or RED
-		end
-	end
 end
 
 player:GetAttributeChangedSignal("Money"):Connect(function()
@@ -484,12 +498,13 @@ player:GetAttributeChangedSignal("Money"):Connect(function()
 end)
 player:GetAttributeChangedSignal("OwnedShovels"):Connect(refreshShop)
 player:GetAttributeChangedSignal("EquippedShovel"):Connect(refreshShop)
-player:GetAttributeChangedSignal("UnlockedLayers"):Connect(refreshShop)
 
 local shopScale = Instance.new("UIScale")
 shopScale.Parent = shop
 
-openShopRemote.OnClientEvent:Connect(function()
+openShopRemote.OnClientEvent:Connect(function(worldId)
+	shopWorld = GameConfig.GetWorld(worldId) or GameConfig.Worlds[1]
+	buildRows(shopWorld)
 	refreshShop()
 	shop.Visible = true
 	shopScale.Scale = 0.6
