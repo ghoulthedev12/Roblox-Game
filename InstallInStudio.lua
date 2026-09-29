@@ -588,6 +588,16 @@ return {
 	FinalUpvote = "🔼", QuantumDoge = "🐕", MemeSingularity = "🕳️", SourceOfIrony = "🙃",
 }
 ]=])
+install(game:GetService("ReplicatedStorage"), "ArtifactImages", "ModuleScript", [=[
+-- ArtifactImages (ModuleScript in ReplicatedStorage)
+-- The uploaded meme picture for each artifact. tools/upload_meme_images.py fills this in
+-- automatically after uploading assets/meme_images/*.png to Roblox; any artifact without
+-- a picture here shows its emoji icon instead (see ArtifactIcons).
+-- Format: ArtifactId = "rbxthumb://type=Asset&id=<decal id>&w=420&h=420",
+
+return {
+}
+]=])
 install(game:GetService("ReplicatedStorage"), "GameConfig", "ModuleScript", [=[
 -- GameConfig (ModuleScript in ReplicatedStorage)
 -- All the numbers you might want to tweak, in one place.
@@ -1871,7 +1881,7 @@ end
 ---------------------------------------------------------------------
 -- MEME ICON: the artifact's emoji on a tile in its rarity color, with a rarity badge
 ---------------------------------------------------------------------
-local ArtifactData, ArtifactIcons -- loaded on first use
+local ArtifactData, ArtifactIcons, ArtifactImages -- loaded on first use
 local RARITY_SHORT = {Common = "C", Uncommon = "U", Rare = "R", Epic = "E", Legendary = "L",
 	Mythic = "M", Divine = "D", Celestial = "CE", Transcendent = "T"}
 
@@ -1879,6 +1889,7 @@ function UIKit.artifactIcon(parent, artifact, props)
 	props = props or {}
 	ArtifactData = ArtifactData or require(ReplicatedStorage:WaitForChild("ArtifactData"))
 	ArtifactIcons = ArtifactIcons or require(ReplicatedStorage:WaitForChild("ArtifactIcons"))
+	ArtifactImages = ArtifactImages or require(ReplicatedStorage:WaitForChild("ArtifactImages"))
 	local rarity = ArtifactData.GetRarity(artifact.Rarity)
 	local color = rarity and rarity.Color or C.Lilac
 	local tile = UIKit.panel(parent, {
@@ -1886,11 +1897,27 @@ function UIKit.artifactIcon(parent, artifact, props)
 		Color = color:Lerp(C.White, 0.45), Radius = props.Radius or 16, Stroke = props.Stroke or 3, ShadeAmount = 0.25,
 	})
 	tile.Name = "ArtifactIcon"
+	local image = ArtifactImages[artifact.Id]
+	if image then
+		-- the uploaded meme picture fills the tile (the emoji is only a fallback)
+		local picture = Instance.new("ImageLabel")
+		picture.Name = "Picture"
+		picture.BackgroundTransparency = 1
+		picture.Size = UDim2.new(1, -8, 1, -8)
+		picture.Position = UDim2.fromScale(0.5, 0.5)
+		picture.AnchorPoint = Vector2.new(0.5, 0.5)
+		picture.Image = image
+		picture.ScaleType = Enum.ScaleType.Crop
+		picture.Parent = tile
+		UIKit.corner(picture, math.max((props.Radius or 16) - 4, 4))
+	end
 	-- soft glow disc behind the emoji
 	local glow = UIKit.panel(tile, {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
 		Color = C.White, Radius = 999, Stroke = false, Shade = false})
 	glow.BackgroundTransparency = 0.45
+	glow.Visible = image == nil
 	local emoji = Instance.new("TextLabel")
+	emoji.Visible = image == nil
 	emoji.BackgroundTransparency = 1
 	emoji.Size = UDim2.fromScale(0.72, 0.72)
 	emoji.Position = UDim2.fromScale(0.5, 0.52)
