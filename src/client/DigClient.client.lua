@@ -128,7 +128,9 @@ minigameRemote.OnClientEvent:Connect(startMinigame)
 ---------------------------------------------------------------------
 -- "YOU FOUND" POPUP
 ---------------------------------------------------------------------
-local popup = UIKit.panel(gui, {Size = UDim2.fromOffset(400, 250), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), Radius = 24, Stroke = 5})
+local claimRemote = remotes:WaitForChild("ClaimFind")
+
+local popup = UIKit.panel(gui, {Size = UDim2.fromOffset(420, 330), Position = UDim2.fromScale(0.5, 0.45), AnchorPoint = Vector2.new(0.5, 0.5), Radius = 24, Stroke = 5})
 popup.Visible = false
 local popupStroke = popup:FindFirstChildOfClass("UIStroke")
 local popupScale = Instance.new("UIScale")
@@ -136,12 +138,22 @@ popupScale.Parent = popup
 
 local foundTab = UIKit.panel(popup, {Size = UDim2.new(0.62, 0, 0, 42), Position = UDim2.new(0.5, 0, 0, -20), AnchorPoint = Vector2.new(0.5, 0), Color = C.Violet, Radius = 14})
 local foundLabel = UIKit.label(foundTab, "YOU FOUND", {Size = UDim2.new(1, -16, 0.78, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
-local nameLabel = UIKit.label(popup, "", {Size = UDim2.new(0.9, 0, 0, 38), Position = UDim2.new(0.5, 0, 0, 34), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0})
-local rarityTag = UIKit.panel(popup, {Size = UDim2.fromOffset(190, 34), Position = UDim2.new(0.5, 0, 0, 78), AnchorPoint = Vector2.new(0.5, 0), Color = C.Lilac, Radius = 17})
+local iconHolder = Instance.new("Frame")
+iconHolder.BackgroundTransparency = 1
+iconHolder.Size = UDim2.fromOffset(96, 96)
+iconHolder.Position = UDim2.fromOffset(20, 34)
+iconHolder.Parent = popup
+local nameLabel = UIKit.label(popup, "", {Size = UDim2.new(1, -140, 0, 34), Position = UDim2.fromOffset(128, 36), Align = "Left", Color = C.Ink, Stroke = 0})
+local rarityTag = UIKit.panel(popup, {Size = UDim2.fromOffset(170, 30), Position = UDim2.fromOffset(128, 74), Color = C.Lilac, Radius = 15})
 local rarityLabel = UIKit.label(rarityTag, "", {Size = UDim2.new(1, -16, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
-local incomeLabel = UIKit.label(popup, "", {Size = UDim2.new(0.9, 0, 0, 26), Position = UDim2.new(0.5, 0, 0, 120), AnchorPoint = Vector2.new(0.5, 0), Color = C.Money, Stroke = 2})
-local descLabel = UIKit.label(popup, "", {Size = UDim2.new(0.86, 0, 0, 48), Position = UDim2.new(0.5, 0, 0, 152), AnchorPoint = Vector2.new(0.5, 0), Color = C.Grey, Stroke = 0, Font = Enum.Font.GothamMedium, TextSize = 15})
-UIKit.label(popup, "Added to your inventory", {Size = UDim2.new(0.9, 0, 0, 18), Position = UDim2.new(0.5, 0, 1, -28), AnchorPoint = Vector2.new(0.5, 0), Color = C.Violet, Stroke = 0})
+local incomeLabel = UIKit.label(popup, "", {Size = UDim2.new(1, -140, 0, 24), Position = UDim2.fromOffset(128, 108), Align = "Left", Color = C.Money, Stroke = 2})
+local descLabel = UIKit.label(popup, "", {Size = UDim2.new(1, -40, 0, 48), Position = UDim2.new(0.5, 0, 0, 142), AnchorPoint = Vector2.new(0.5, 0), Color = C.Grey, Stroke = 0, Font = Enum.Font.GothamMedium, TextSize = 15})
+
+local pickButton = UIKit.button(popup, "PICK UP  [E]", {Size = UDim2.new(0.5, -26, 0, 54), Position = UDim2.new(0, 20, 1, -86), Color = C.Mint})
+local leaveButton = UIKit.button(popup, "LEAVE IT", {Size = UDim2.new(0.5, -26, 0, 54), Position = UDim2.new(1, -20, 1, -86), AnchorPoint = Vector2.new(1, 0), Color = C.Coral})
+-- countdown: the find is left in the dirt when this runs out
+local timerTrack = UIKit.panel(popup, {Size = UDim2.new(1, -40, 0, 12), Position = UDim2.new(0.5, 0, 1, -24), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 6, Stroke = 2, Shade = false})
+local timerFill = UIKit.panel(timerTrack, {Size = UDim2.fromScale(1, 1), Color = C.Sun, Radius = 6, Stroke = false, Shade = false})
 
 local flash = Instance.new("Frame")
 flash.Size = UDim2.fromScale(1, 1)
@@ -154,6 +166,23 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 -- the find visibly pops out of the hole: a glowing orb in the rarity's color jumps out of
 -- the ground and arcs into the player's hands, then the popup shows
+local heldOrb -- the orb floating above the player while they decide
+
+-- what happens to the floating orb: picked up (flies into the player) or left (drops and fades)
+local function finishOrb(take)
+	local orb = heldOrb
+	heldOrb = nil
+	if not orb then return end
+	orb:SetAttribute("Done", true)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local goal = take and root and root.Position or (orb.Position - Vector3.new(0, 6, 0))
+	local tween = TweenService:Create(orb, TweenInfo.new(take and 0.3 or 0.6, Enum.EasingStyle.Back, Enum.EasingDirection.In),
+		{Position = goal, Size = Vector3.one * (take and 0.2 or 0.6), Transparency = take and 0 or 1})
+	tween:Play()
+	tween.Completed:Once(function() orb:Destroy() end)
+end
+
 local function treasurePop(position, color, onArrive)
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
@@ -193,10 +222,20 @@ local function treasurePop(position, color, onArrive)
 	local conn
 	conn = RunService.RenderStepped:Connect(function()
 		local t = (os.clock() - start) / DURATION
-		local goal = root.Parent and (root.Position + Vector3.new(0, 1.5, 0)) or position
+		local goal = root.Parent and (root.Position + Vector3.new(0, 4.5, 0)) or position
 		if t >= 1 then
 			conn:Disconnect()
-			orb:Destroy()
+			-- float above the player's head, bobbing, until they pick it up or leave it
+			heldOrb = orb
+			local bob
+			bob = RunService.RenderStepped:Connect(function()
+				if orb:GetAttribute("Done") or not orb.Parent or not root.Parent then
+					bob:Disconnect()
+					return
+				end
+				local c = os.clock()
+				orb.CFrame = CFrame.new(root.Position + Vector3.new(0, 4.5 + math.sin(c * 3) * 0.3, 0)) * CFrame.Angles(0, c * 2, 0)
+			end)
 			onArrive()
 			return
 		end
@@ -211,6 +250,23 @@ local function treasurePop(position, color, onArrive)
 end
 
 local popupToken = 0
+local awaiting -- popup token of the find waiting for a choice
+
+local function choose(take)
+	if not awaiting then return end
+	awaiting = nil
+	claimRemote:FireServer(take)
+	popup.Visible = false
+	finishOrb(take)
+end
+pickButton.MouseButton1Click:Connect(function() choose(true) end)
+leaveButton.MouseButton1Click:Connect(function() choose(false) end)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if not gameProcessed and input.KeyCode == Enum.KeyCode.E and awaiting then
+		choose(true)
+	end
+end)
+
 resultRemote.OnClientEvent:Connect(function(info)
 	popupToken += 1
 	local myToken = popupToken
@@ -226,6 +282,8 @@ resultRemote.OnClientEvent:Connect(function(info)
 	treasurePop(info.Position, info.Color, function()
 		if popupToken ~= myToken then return end
 
+		for _, child in ipairs(iconHolder:GetChildren()) do child:Destroy() end
+		UIKit.artifactIcon(iconHolder, {Id = info.Id, Rarity = info.Rarity}, {Size = UDim2.fromScale(1, 1), Radius = 20})
 		nameLabel.Text = info.Name
 		rarityLabel.Text = string.upper(info.Rarity)
 		rarityTag.BackgroundColor3 = info.Color
@@ -247,9 +305,16 @@ resultRemote.OnClientEvent:Connect(function(info)
 			TweenService:Create(flash, TweenInfo.new(1.2), {BackgroundTransparency = 1}):Play()
 		end
 
-		task.delay(big and 6 or 4, function()
-			if popupToken == myToken then
+		-- wait for the player's choice; the countdown bar shrinks until the find is left behind
+		local timeout = tonumber(info.Timeout) or 20
+		timerFill.Size = UDim2.fromScale(1, 1)
+		TweenService:Create(timerFill, TweenInfo.new(timeout, Enum.EasingStyle.Linear), {Size = UDim2.fromScale(0, 1)}):Play()
+		awaiting = myToken
+		task.delay(timeout, function()
+			if awaiting == myToken then
+				awaiting = nil
 				popup.Visible = false
+				finishOrb(false)
 			end
 		end)
 	end)

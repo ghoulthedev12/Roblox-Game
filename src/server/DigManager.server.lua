@@ -23,6 +23,7 @@ local MINIGAME_TIMEOUT = 8
 local MINIGAME_LUCK = {Perfect = 3, Good = 1.5, Miss = 1} -- multiplies the shovel's luck
 local ANNOUNCE_FROM = ArtifactData.GetRarityIndex("Mythic")
 local MAX_REACH = 14 -- how far from your character you can dig
+local PICKUP_SECONDS = 20  -- how long a find waits for "pick up" before it's left in the dirt
 local COMBO_WINDOW = 1.4   -- seconds between digs to keep a combo going
 local COMBO_MAX = 10
 local COMBO_LUCK = 0.04    -- each combo step adds +4% find chance (x10 combo = +36%)
@@ -50,6 +51,11 @@ local announceRemote = getRemote("Announcement")
 local swingRemote = getRemote("DigSwing")          -- client -> server: swing at a position
 local swingFxRemote = getRemote("ShovelSwingFx")   -- server -> other clients: play this player's swing
 local digHitRemote = getRemote("DigHit")           -- server -> digger: impact info for juice (combo, color, spot)
+local claimRemote = getRemote("ClaimFind")         -- client -> server: pick up (true) or leave (false) the find
+local inventoryChangedRemote = getRemote("InventoryChanged") -- server -> client: inventory changed, refresh UI
+local getInventory = remotes:FindFirstChild("GetInventory") or Instance.new("RemoteFunction")
+getInventory.Name = "GetInventory"
+getInventory.Parent = remotes
 local digMessageRemote = getRemote("DigProgress")  -- server -> client: short messages (text, color)
 local surfaceRemote = getRemote("ReturnToSurface")
 local openShopRemote = getRemote("OpenShovelShop") -- server -> client: (worldId)
@@ -179,13 +185,54 @@ local function isSolid(position)
 	return false
 end
 
+-- A find waits in pending[player] until the player picks it up or leaves it
+local pending = {} -- [player] = {Artifact = artifact}
+
+local function resolveFind(player, take)
+	local find = pending[player]
+	if not find then return end
+	pending[player] = nil
+	local data = PlayerData.Get(player)
+	if take and data then
+		PlayerData.AddArtifact(player, find.Artifact.Id)
+		data.Stats.TotalDigs += 1
+		inventoryChangedRemote:FireClient(player)
+		shopMessageRemote:FireClient(player, find.Artifact.Name .. " added to your inventory!", true)
+	else
+		digMessageRemote:FireClient(player, "You left the " .. find.Artifact.Name .. " in the dirt.", Color3.fromRGB(200, 200, 215))
+	end
+end
+
+claimRemote.OnServerEvent:Connect(function(player, take)
+	resolveFind(player, take == true)
+end)
+
+getInventory.OnServerInvoke = function(player)
+	local data = PlayerData.WaitForData(player)
+	local counts = {}
+	for _, artifactId in pairs(data and data.Inventory or {}) do
+		counts[artifactId] = (counts[artifactId] or 0) + 1
+	end
+	local list = {}
+	for artifactId, count in pairs(counts) do
+		table.insert(list, {Id = artifactId, Count = count})
+	end
+	return list
+end
+
 local function giveArtifact(player, zone, luck, grade, position)
 	local artifact = ArtifactData.RollForZone(zone, luck)
 	local data = PlayerData.Get(player)
 	if not artifact or not data then return end
 
-	PlayerData.AddArtifact(player, artifact.Id)
-	data.Stats.TotalDigs += 1
+	-- don't add it yet: the player chooses to pick it up or leave it
+	local find = {Artifact = artifact}
+	pending[player] = find
+	task.delay(PICKUP_SECONDS, function()
+		if pending[player] == find then
+			resolveFind(player, false)
+		end
+	end)
 
 	local rarity = ArtifactData.GetRarity(artifact.Rarity)
 	local rarityIndex = ArtifactData.GetRarityIndex(artifact.Rarity)
@@ -198,6 +245,9 @@ local function giveArtifact(player, zone, luck, grade, position)
 		Description = artifact.Description,
 		Grade = grade,
 		Position = position, -- where it popped out of the ground
+		Id = artifact.Id,
+		Pickup = true,
+		Timeout = PICKUP_SECONDS,
 	})
 	if rarityIndex >= ANNOUNCE_FROM then
 		announceRemote:FireAllClients(player.DisplayName .. " found a " .. string.upper(artifact.Rarity) .. " " .. artifact.Name .. " in " .. zone.Name .. "!", rarity.Color)
@@ -243,6 +293,10 @@ end
 
 swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	if resetting or sessions[player] then return end
+	if pending[player] then
+		digMessageRemote:FireClient(player, "Pick up your find or leave it first!")
+		return
+	end
 	local data = PlayerData.Get(player)
 	if not data then return end
 
@@ -578,6 +632,7 @@ Players.PlayerRemoving:Connect(function(player)
 	lastSwing[player] = nil
 	lastHit[player] = nil
 	combos[player] = nil
+	pending[player] = nil
 	sessions[player] = nil
 	currentWorld[player] = nil
 	lastBounceMessage[player] = nil

@@ -501,6 +501,93 @@ end
 
 return ArtifactData
 ]=])
+install(game:GetService("ReplicatedStorage"), "ArtifactIcons", "ModuleScript", [=[
+-- ArtifactIcons (ModuleScript in ReplicatedStorage)
+-- One emoji per meme artifact. UIKit.artifactIcon draws it big on a tile in the rarity's color.
+-- To give a new artifact an icon, add a line: ArtifactId = "emoji".
+-- (Only emoji from Unicode 11 or older are used, so they show up on every device.)
+
+return {
+	-- 1. The Scroll Pit
+	RustyFidgetSpinner = "🌀", CrackedDancePhone = "📱", HalfFullBottle = "🧴", DeepFriedChip = "🍟",
+	SingingThrone = "🚽", GoldenRingLight = "💡", RizzScroll = "📜", ScrollingThumb = "👆",
+	MainCharacterCrown = "👑", AlgorithmEye = "🧿", FinalBrainrot = "🧠",
+	-- 2. Hashtag Hollow
+	HashtagSign = "#️⃣", EmptyIceBucket = "🥶", MannequinStatue = "🕴️", ChallengeTrophy = "🏆",
+	ViralDanceStage = "💃", TrendingCrown = "📈", ChallengeScroll = "🗒️", HashtagConstellation = "✨",
+	BrokeTheInternet = "💥",
+	-- 3. Filter Fields
+	SelfieStick = "🤳", PuppyEars = "🐶", RainbowLens = "👅", PerfectMirror = "💄", SunsetCrystal = "🌅",
+	FilterMask = "🎭", FirstSelfie = "🖼️", AuroraPrism = "🔷", UnfilteredTruth = "📸",
+	-- 4. Emoji Quarry
+	ThumbsUpFossil = "👍", CryLaughStone = "😂", SkullRelic = "💀", FireTorch = "🔥", HeartEyesIdol = "😍",
+	HundredTablet = "💯", EmojiKeyboard = "⌨️", SparkleNebula = "💫", FirstSmiley = "🙂",
+	-- 5. Algorithm Gorge
+	FeedFragment = "📰", RecommendedCard = "🃏", AutoplayClock = "⏰", SkipAdButton = "⏭️",
+	EngagementEngine = "⚙️", ShadowbanCloak = "👻", FeedOracle = "🔮", NeuralChandelier = "🧬",
+	MasterAlgorithm = "🤖",
+	-- 6. Influencer Caverns
+	DiscountCoupon = "🎟️", UnboxingBox = "📦", SponsoredDrink = "⚡", CheckmarkBadge = "✅",
+	MillionRing = "💍", CollabKey = "🔑", SubscriberPlaque = "💎", ViralAura = "😇", FirstInfluencer = "🎤",
+	-- 7. Brainrot Abyss
+	NonsenseTablet = "🔤", SharkSneakers = "🦈", SplitScreen = "📺", RizzMeter = "📊",
+	SigmaStatue = "🏋️", AuraVault = "🏦", BrainrotCodex = "📚", MewingMeteorite = "🌑",
+	BrainrotFinalBoss = "👹",
+	-- 8. Rage Comic Ridge
+	FlipPhone = "📟", AngryDoodle = "😠", DentedAirhorn = "📯", PixelSunglasses = "😎",
+	CatCassette = "📼", SacredPlank = "📏", TrickshotHeadset = "🎧", ForeverAlone = "😔",
+	ChallengeBanner = "🚩", GrinningMoon = "🌝", OriginalFourPanel = "🗞️",
+	-- 9. Montage Mines
+	HeadsetMic = "🎙️", SodaPyramid = "🥤", HitmarkerPin = "❌", DubstepSpeaker = "🔊",
+	TriangleChipCrown = "🔺", AllSeeingTriangle = "👁️", QuickscopeRelic = "🎯", LensFlareStar = "🔆",
+	UltimateMontage = "🎬",
+	-- 10. Cat Video Canyon
+	LaserDot = "🔴", CatInBox = "🐈", FrowningCat = "😾", PianoKitten = "🎹", ToastCatMachine = "🍞",
+	CatVideoHall = "🏛️", TableCat = "😼", LoafNebula = "🥖", FirstInternetCat = "🐱",
+	-- 11. Airhorn Crater
+	CrackedSoundboard = "🎛️", SadTrombone = "🎺", DramaticHamster = "🐹", BassDetonator = "💣",
+	GoldenAirhorn = "📣", Volume100Amp = "📢", FanfareOrgan = "🎼", SonicBoomComet = "☄️",
+	FirstSoundMeme = "🎵",
+	-- 12. Planking Plateau
+	OwlingPerch = "🦉", DuckFaceMirror = "🦆", PhotobombCutout = "📷", DancePartyHelmet = "🕺",
+	DoubleRainbowPrism = "🌈", TableTower = "🏗️", InvisibleHorseSaddle = "🐴", PlankConstellation = "🌠",
+	OriginalPlank = "🛌",
+	-- 13. Viral Valley
+	ForwardedJoke = "📨", CryptidPhoto = "👣", LoopingGif = "🔁", BittenBandage = "🤕",
+	WeekendCalendar = "📅", SuperfanTear = "😭", MillionViewTrophy = "🏅", ShareSupernova = "🌟",
+	PatientZeroVideo = "🦠",
+	-- 14. The Golden Server
+	OverheatedDrive = "🥵", BlinkingLight = "🚨", ModBadge = "🛡️", FirstCommentPlaque = "🥇",
+	GoldenUpvote = "⬆️", ServerThrone = "💺", LostThreadsArchive = "🗄️", ActualCloud = "☁️",
+	GoldenServerCore = "🌕",
+	-- 15. Dial-Up Dunes
+	FloppyDisk = "💾", DialUpModem = "📠", ConstructionSign = "🚧", HitCounter = "🔢", ChainEmail = "⛓️",
+	PixelPet = "🐣", EmoticonStone = "😃", GoldenModem = "📡", OriginalHomepage = "🏠",
+	HandshakeComet = "🤝", FirstConnection = "📶",
+	-- 16. Pixel Pits
+	DeadPixel = "⬛", PixelHeart = "❤️", Spinning3DLogo = "🔄", HeroSprite = "👾", CoinSlot = "🕹️",
+	LowPolyCrown = "💠", CursorIdol = "🖱️", PixelGalaxy = "🌌", FirstPixel = "🟩",
+	-- 17. Guestbook Graveyard
+	UnsignedGuestbook = "📖", FlameDivider = "🕯️", WebringChain = "⭕", MidiMusicBox = "🎶",
+	MarqueeScroll = "🎞️", NotFoundTombstone = "⚰️", MillionthVisitor = "🎉", PopupAurora = "🗯️",
+	LastSignature = "✍️",
+	-- 18. Floppy Fossil Beds
+	MouseBallFossil = "🎱", CDRomShard = "💿", TangledCable = "➰", AssistantFossil = "📎",
+	BeigeTower = "🖥️", BurnedMixCD = "📀", ScreensaverPipes = "🧵", SaveConstellation = "⭐",
+	OriginalSaveIcon = "📥",
+	-- 19. The Homepage Ruins
+	BrokenHyperlink = "🔗", SpinningGlobe = "🌍", ComicFontTablet = "🔠", GlitterCrown = "👸",
+	TiledMosaic = "🧩", FrameThrone = "🗂️", HandCodedTablet = "📝", HitCounterGalaxy = "🔭",
+	HomepageOfHomepages = "🏰",
+	-- 20. The First Server
+	AncientEthernet = "🔌", CommandLineRune = "💻", FirstEmail = "✉️", PrimordialSpam = "🥫",
+	FirstMemeStone = "🗿", ServerHeart = "💓", CreationHyperlink = "🌐", ActualWeb = "🕸️",
+	InternetSourceCode = "🧾",
+	-- 21. The Abyss (secret 2050 memes)
+	LastHumanMeme = "😢", AIGirlfriendFirmware = "💘", BrainrotCoreSample = "❄️", SkibidiMonolith = "🗼",
+	FinalUpvote = "🔼", QuantumDoge = "🐕", MemeSingularity = "🕳️", SourceOfIrony = "🙃",
+}
+]=])
 install(game:GetService("ReplicatedStorage"), "GameConfig", "ModuleScript", [=[
 -- GameConfig (ModuleScript in ReplicatedStorage)
 -- All the numbers you might want to tweak, in one place.
@@ -1781,6 +1868,47 @@ function UIKit.shovelIcon(parent, def, props)
 	return vp
 end
 
+---------------------------------------------------------------------
+-- MEME ICON: the artifact's emoji on a tile in its rarity color, with a rarity badge
+---------------------------------------------------------------------
+local ArtifactData, ArtifactIcons -- loaded on first use
+local RARITY_SHORT = {Common = "C", Uncommon = "U", Rare = "R", Epic = "E", Legendary = "L",
+	Mythic = "M", Divine = "D", Celestial = "CE", Transcendent = "T"}
+
+function UIKit.artifactIcon(parent, artifact, props)
+	props = props or {}
+	ArtifactData = ArtifactData or require(ReplicatedStorage:WaitForChild("ArtifactData"))
+	ArtifactIcons = ArtifactIcons or require(ReplicatedStorage:WaitForChild("ArtifactIcons"))
+	local rarity = ArtifactData.GetRarity(artifact.Rarity)
+	local color = rarity and rarity.Color or C.Lilac
+	local tile = UIKit.panel(parent, {
+		Size = props.Size or UDim2.fromOffset(80, 80), Position = props.Position, AnchorPoint = props.AnchorPoint,
+		Color = color:Lerp(C.White, 0.45), Radius = props.Radius or 16, Stroke = props.Stroke or 3, ShadeAmount = 0.25,
+	})
+	tile.Name = "ArtifactIcon"
+	-- soft glow disc behind the emoji
+	local glow = UIKit.panel(tile, {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+		Color = C.White, Radius = 999, Stroke = false, Shade = false})
+	glow.BackgroundTransparency = 0.45
+	local emoji = Instance.new("TextLabel")
+	emoji.BackgroundTransparency = 1
+	emoji.Size = UDim2.fromScale(0.72, 0.72)
+	emoji.Position = UDim2.fromScale(0.5, 0.52)
+	emoji.AnchorPoint = Vector2.new(0.5, 0.5)
+	emoji.Text = ArtifactIcons[artifact.Id] or "❓"
+	emoji.TextScaled = true
+	emoji.Font = Enum.Font.GothamBold
+	emoji.Parent = tile
+	-- rarity badge in the corner (the higher the rarity, the more it stands out)
+	if props.Badge ~= false then
+		local badge = UIKit.panel(tile, {Size = UDim2.fromScale(0.36, 0.26), Position = UDim2.new(1, 4, 0, -4), AnchorPoint = Vector2.new(1, 0),
+			Color = color, Radius = 8, Stroke = 2, Shade = false})
+		UIKit.label(badge, RARITY_SHORT[artifact.Rarity] or "?", {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5),
+			AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+	end
+	return tile
+end
+
 return UIKit
 ]=])
 install(game:GetService("ReplicatedStorage"), "VehicleModels", "ModuleScript", [=[
@@ -2508,6 +2636,7 @@ local MINIGAME_TIMEOUT = 8
 local MINIGAME_LUCK = {Perfect = 3, Good = 1.5, Miss = 1} -- multiplies the shovel's luck
 local ANNOUNCE_FROM = ArtifactData.GetRarityIndex("Mythic")
 local MAX_REACH = 14 -- how far from your character you can dig
+local PICKUP_SECONDS = 20  -- how long a find waits for "pick up" before it's left in the dirt
 local COMBO_WINDOW = 1.4   -- seconds between digs to keep a combo going
 local COMBO_MAX = 10
 local COMBO_LUCK = 0.04    -- each combo step adds +4% find chance (x10 combo = +36%)
@@ -2535,6 +2664,11 @@ local announceRemote = getRemote("Announcement")
 local swingRemote = getRemote("DigSwing")          -- client -> server: swing at a position
 local swingFxRemote = getRemote("ShovelSwingFx")   -- server -> other clients: play this player's swing
 local digHitRemote = getRemote("DigHit")           -- server -> digger: impact info for juice (combo, color, spot)
+local claimRemote = getRemote("ClaimFind")         -- client -> server: pick up (true) or leave (false) the find
+local inventoryChangedRemote = getRemote("InventoryChanged") -- server -> client: inventory changed, refresh UI
+local getInventory = remotes:FindFirstChild("GetInventory") or Instance.new("RemoteFunction")
+getInventory.Name = "GetInventory"
+getInventory.Parent = remotes
 local digMessageRemote = getRemote("DigProgress")  -- server -> client: short messages (text, color)
 local surfaceRemote = getRemote("ReturnToSurface")
 local openShopRemote = getRemote("OpenShovelShop") -- server -> client: (worldId)
@@ -2664,13 +2798,54 @@ local function isSolid(position)
 	return false
 end
 
+-- A find waits in pending[player] until the player picks it up or leaves it
+local pending = {} -- [player] = {Artifact = artifact}
+
+local function resolveFind(player, take)
+	local find = pending[player]
+	if not find then return end
+	pending[player] = nil
+	local data = PlayerData.Get(player)
+	if take and data then
+		PlayerData.AddArtifact(player, find.Artifact.Id)
+		data.Stats.TotalDigs += 1
+		inventoryChangedRemote:FireClient(player)
+		shopMessageRemote:FireClient(player, find.Artifact.Name .. " added to your inventory!", true)
+	else
+		digMessageRemote:FireClient(player, "You left the " .. find.Artifact.Name .. " in the dirt.", Color3.fromRGB(200, 200, 215))
+	end
+end
+
+claimRemote.OnServerEvent:Connect(function(player, take)
+	resolveFind(player, take == true)
+end)
+
+getInventory.OnServerInvoke = function(player)
+	local data = PlayerData.WaitForData(player)
+	local counts = {}
+	for _, artifactId in pairs(data and data.Inventory or {}) do
+		counts[artifactId] = (counts[artifactId] or 0) + 1
+	end
+	local list = {}
+	for artifactId, count in pairs(counts) do
+		table.insert(list, {Id = artifactId, Count = count})
+	end
+	return list
+end
+
 local function giveArtifact(player, zone, luck, grade, position)
 	local artifact = ArtifactData.RollForZone(zone, luck)
 	local data = PlayerData.Get(player)
 	if not artifact or not data then return end
 
-	PlayerData.AddArtifact(player, artifact.Id)
-	data.Stats.TotalDigs += 1
+	-- don't add it yet: the player chooses to pick it up or leave it
+	local find = {Artifact = artifact}
+	pending[player] = find
+	task.delay(PICKUP_SECONDS, function()
+		if pending[player] == find then
+			resolveFind(player, false)
+		end
+	end)
 
 	local rarity = ArtifactData.GetRarity(artifact.Rarity)
 	local rarityIndex = ArtifactData.GetRarityIndex(artifact.Rarity)
@@ -2683,6 +2858,9 @@ local function giveArtifact(player, zone, luck, grade, position)
 		Description = artifact.Description,
 		Grade = grade,
 		Position = position, -- where it popped out of the ground
+		Id = artifact.Id,
+		Pickup = true,
+		Timeout = PICKUP_SECONDS,
 	})
 	if rarityIndex >= ANNOUNCE_FROM then
 		announceRemote:FireAllClients(player.DisplayName .. " found a " .. string.upper(artifact.Rarity) .. " " .. artifact.Name .. " in " .. zone.Name .. "!", rarity.Color)
@@ -2728,6 +2906,10 @@ end
 
 swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	if resetting or sessions[player] then return end
+	if pending[player] then
+		digMessageRemote:FireClient(player, "Pick up your find or leave it first!")
+		return
+	end
 	local data = PlayerData.Get(player)
 	if not data then return end
 
@@ -3063,6 +3245,7 @@ Players.PlayerRemoving:Connect(function(player)
 	lastSwing[player] = nil
 	lastHit[player] = nil
 	combos[player] = nil
+	pending[player] = nil
 	sessions[player] = nil
 	currentWorld[player] = nil
 	lastBounceMessage[player] = nil
@@ -4410,7 +4593,9 @@ minigameRemote.OnClientEvent:Connect(startMinigame)
 ---------------------------------------------------------------------
 -- "YOU FOUND" POPUP
 ---------------------------------------------------------------------
-local popup = UIKit.panel(gui, {Size = UDim2.fromOffset(400, 250), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), Radius = 24, Stroke = 5})
+local claimRemote = remotes:WaitForChild("ClaimFind")
+
+local popup = UIKit.panel(gui, {Size = UDim2.fromOffset(420, 330), Position = UDim2.fromScale(0.5, 0.45), AnchorPoint = Vector2.new(0.5, 0.5), Radius = 24, Stroke = 5})
 popup.Visible = false
 local popupStroke = popup:FindFirstChildOfClass("UIStroke")
 local popupScale = Instance.new("UIScale")
@@ -4418,12 +4603,22 @@ popupScale.Parent = popup
 
 local foundTab = UIKit.panel(popup, {Size = UDim2.new(0.62, 0, 0, 42), Position = UDim2.new(0.5, 0, 0, -20), AnchorPoint = Vector2.new(0.5, 0), Color = C.Violet, Radius = 14})
 local foundLabel = UIKit.label(foundTab, "YOU FOUND", {Size = UDim2.new(1, -16, 0.78, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
-local nameLabel = UIKit.label(popup, "", {Size = UDim2.new(0.9, 0, 0, 38), Position = UDim2.new(0.5, 0, 0, 34), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0})
-local rarityTag = UIKit.panel(popup, {Size = UDim2.fromOffset(190, 34), Position = UDim2.new(0.5, 0, 0, 78), AnchorPoint = Vector2.new(0.5, 0), Color = C.Lilac, Radius = 17})
+local iconHolder = Instance.new("Frame")
+iconHolder.BackgroundTransparency = 1
+iconHolder.Size = UDim2.fromOffset(96, 96)
+iconHolder.Position = UDim2.fromOffset(20, 34)
+iconHolder.Parent = popup
+local nameLabel = UIKit.label(popup, "", {Size = UDim2.new(1, -140, 0, 34), Position = UDim2.fromOffset(128, 36), Align = "Left", Color = C.Ink, Stroke = 0})
+local rarityTag = UIKit.panel(popup, {Size = UDim2.fromOffset(170, 30), Position = UDim2.fromOffset(128, 74), Color = C.Lilac, Radius = 15})
 local rarityLabel = UIKit.label(rarityTag, "", {Size = UDim2.new(1, -16, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
-local incomeLabel = UIKit.label(popup, "", {Size = UDim2.new(0.9, 0, 0, 26), Position = UDim2.new(0.5, 0, 0, 120), AnchorPoint = Vector2.new(0.5, 0), Color = C.Money, Stroke = 2})
-local descLabel = UIKit.label(popup, "", {Size = UDim2.new(0.86, 0, 0, 48), Position = UDim2.new(0.5, 0, 0, 152), AnchorPoint = Vector2.new(0.5, 0), Color = C.Grey, Stroke = 0, Font = Enum.Font.GothamMedium, TextSize = 15})
-UIKit.label(popup, "Added to your inventory", {Size = UDim2.new(0.9, 0, 0, 18), Position = UDim2.new(0.5, 0, 1, -28), AnchorPoint = Vector2.new(0.5, 0), Color = C.Violet, Stroke = 0})
+local incomeLabel = UIKit.label(popup, "", {Size = UDim2.new(1, -140, 0, 24), Position = UDim2.fromOffset(128, 108), Align = "Left", Color = C.Money, Stroke = 2})
+local descLabel = UIKit.label(popup, "", {Size = UDim2.new(1, -40, 0, 48), Position = UDim2.new(0.5, 0, 0, 142), AnchorPoint = Vector2.new(0.5, 0), Color = C.Grey, Stroke = 0, Font = Enum.Font.GothamMedium, TextSize = 15})
+
+local pickButton = UIKit.button(popup, "PICK UP  [E]", {Size = UDim2.new(0.5, -26, 0, 54), Position = UDim2.new(0, 20, 1, -86), Color = C.Mint})
+local leaveButton = UIKit.button(popup, "LEAVE IT", {Size = UDim2.new(0.5, -26, 0, 54), Position = UDim2.new(1, -20, 1, -86), AnchorPoint = Vector2.new(1, 0), Color = C.Coral})
+-- countdown: the find is left in the dirt when this runs out
+local timerTrack = UIKit.panel(popup, {Size = UDim2.new(1, -40, 0, 12), Position = UDim2.new(0.5, 0, 1, -24), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 6, Stroke = 2, Shade = false})
+local timerFill = UIKit.panel(timerTrack, {Size = UDim2.fromScale(1, 1), Color = C.Sun, Radius = 6, Stroke = false, Shade = false})
 
 local flash = Instance.new("Frame")
 flash.Size = UDim2.fromScale(1, 1)
@@ -4436,6 +4631,23 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 -- the find visibly pops out of the hole: a glowing orb in the rarity's color jumps out of
 -- the ground and arcs into the player's hands, then the popup shows
+local heldOrb -- the orb floating above the player while they decide
+
+-- what happens to the floating orb: picked up (flies into the player) or left (drops and fades)
+local function finishOrb(take)
+	local orb = heldOrb
+	heldOrb = nil
+	if not orb then return end
+	orb:SetAttribute("Done", true)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local goal = take and root and root.Position or (orb.Position - Vector3.new(0, 6, 0))
+	local tween = TweenService:Create(orb, TweenInfo.new(take and 0.3 or 0.6, Enum.EasingStyle.Back, Enum.EasingDirection.In),
+		{Position = goal, Size = Vector3.one * (take and 0.2 or 0.6), Transparency = take and 0 or 1})
+	tween:Play()
+	tween.Completed:Once(function() orb:Destroy() end)
+end
+
 local function treasurePop(position, color, onArrive)
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
@@ -4475,10 +4687,20 @@ local function treasurePop(position, color, onArrive)
 	local conn
 	conn = RunService.RenderStepped:Connect(function()
 		local t = (os.clock() - start) / DURATION
-		local goal = root.Parent and (root.Position + Vector3.new(0, 1.5, 0)) or position
+		local goal = root.Parent and (root.Position + Vector3.new(0, 4.5, 0)) or position
 		if t >= 1 then
 			conn:Disconnect()
-			orb:Destroy()
+			-- float above the player's head, bobbing, until they pick it up or leave it
+			heldOrb = orb
+			local bob
+			bob = RunService.RenderStepped:Connect(function()
+				if orb:GetAttribute("Done") or not orb.Parent or not root.Parent then
+					bob:Disconnect()
+					return
+				end
+				local c = os.clock()
+				orb.CFrame = CFrame.new(root.Position + Vector3.new(0, 4.5 + math.sin(c * 3) * 0.3, 0)) * CFrame.Angles(0, c * 2, 0)
+			end)
 			onArrive()
 			return
 		end
@@ -4493,6 +4715,23 @@ local function treasurePop(position, color, onArrive)
 end
 
 local popupToken = 0
+local awaiting -- popup token of the find waiting for a choice
+
+local function choose(take)
+	if not awaiting then return end
+	awaiting = nil
+	claimRemote:FireServer(take)
+	popup.Visible = false
+	finishOrb(take)
+end
+pickButton.MouseButton1Click:Connect(function() choose(true) end)
+leaveButton.MouseButton1Click:Connect(function() choose(false) end)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if not gameProcessed and input.KeyCode == Enum.KeyCode.E and awaiting then
+		choose(true)
+	end
+end)
+
 resultRemote.OnClientEvent:Connect(function(info)
 	popupToken += 1
 	local myToken = popupToken
@@ -4508,6 +4747,8 @@ resultRemote.OnClientEvent:Connect(function(info)
 	treasurePop(info.Position, info.Color, function()
 		if popupToken ~= myToken then return end
 
+		for _, child in ipairs(iconHolder:GetChildren()) do child:Destroy() end
+		UIKit.artifactIcon(iconHolder, {Id = info.Id, Rarity = info.Rarity}, {Size = UDim2.fromScale(1, 1), Radius = 20})
 		nameLabel.Text = info.Name
 		rarityLabel.Text = string.upper(info.Rarity)
 		rarityTag.BackgroundColor3 = info.Color
@@ -4529,9 +4770,16 @@ resultRemote.OnClientEvent:Connect(function(info)
 			TweenService:Create(flash, TweenInfo.new(1.2), {BackgroundTransparency = 1}):Play()
 		end
 
-		task.delay(big and 6 or 4, function()
-			if popupToken == myToken then
+		-- wait for the player's choice; the countdown bar shrinks until the find is left behind
+		local timeout = tonumber(info.Timeout) or 20
+		timerFill.Size = UDim2.fromScale(1, 1)
+		TweenService:Create(timerFill, TweenInfo.new(timeout, Enum.EasingStyle.Linear), {Size = UDim2.fromScale(0, 1)}):Play()
+		awaiting = myToken
+		task.delay(timeout, function()
+			if awaiting == myToken then
+				awaiting = nil
 				popup.Visible = false
+				finishOrb(false)
 			end
 		end)
 	end)
@@ -4836,6 +5084,132 @@ task.spawn(function()
 			if slot.Button.Parent then styleSlot(slot) end
 		end
 	end
+end)
+]=])
+install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "InventoryClient", "LocalScript", [=[
+-- InventoryClient (LocalScript in StarterPlayer > StarterPlayerScripts)
+-- The Inventory window: every meme you've picked up, as icon tiles sorted from rarest to
+-- most common, with how many you have and how much each one earns on display.
+-- Open it with the bag button on the left or the B key.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local C = UIKit.Colors
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+local getInventory = remotes:WaitForChild("GetInventory")
+local inventoryChangedRemote = remotes:WaitForChild("InventoryChanged")
+
+local player = Players.LocalPlayer
+local gui = UIKit.screen(player, "InventoryGui", 3)
+
+---------------------------------------------------------------------
+-- BAG BUTTON (left side, under the money pills)
+---------------------------------------------------------------------
+local bagButton = UIKit.button(gui, "", {Size = UDim2.fromOffset(64, 64), Position = UDim2.new(0, 16, 0, 186), Color = C.Sun, Radius = 20})
+local bagEmoji = Instance.new("TextLabel")
+bagEmoji.BackgroundTransparency = 1
+bagEmoji.Size = UDim2.fromScale(0.62, 0.62)
+bagEmoji.Position = UDim2.fromScale(0.5, 0.45)
+bagEmoji.AnchorPoint = Vector2.new(0.5, 0.5)
+bagEmoji.Text = "🎒"
+bagEmoji.TextScaled = true
+bagEmoji.Parent = bagButton
+UIKit.label(bagButton, "BAG (B)", {Size = UDim2.new(1.2, 0, 0, 16), Position = UDim2.new(0.5, 0, 1, -2), AnchorPoint = Vector2.new(0.5, 0), Stroke = 2})
+
+---------------------------------------------------------------------
+-- WINDOW
+---------------------------------------------------------------------
+local window, content = UIKit.window(gui, "INVENTORY", UDim2.fromOffset(720, 540), C.Sun)
+local countLabel = UIKit.label(content, "", {Size = UDim2.new(1, 0, 0, 28), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0})
+
+local gridHolder = Instance.new("ScrollingFrame")
+gridHolder.BackgroundTransparency = 1
+gridHolder.BorderSizePixel = 0
+gridHolder.Size = UDim2.new(1, 0, 1, -44)
+gridHolder.Position = UDim2.fromOffset(0, 42)
+gridHolder.ScrollBarThickness = 8
+gridHolder.ScrollBarImageColor3 = C.Lilac
+gridHolder.AutomaticCanvasSize = Enum.AutomaticSize.Y
+gridHolder.CanvasSize = UDim2.new()
+gridHolder.Parent = content
+local grid = Instance.new("UIGridLayout")
+grid.CellSize = UDim2.fromOffset(150, 186)
+grid.CellPadding = UDim2.fromOffset(12, 12)
+grid.SortOrder = Enum.SortOrder.LayoutOrder
+grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+grid.Parent = gridHolder
+local pad = Instance.new("UIPadding")
+pad.PaddingTop = UDim.new(0, 8)
+pad.PaddingBottom = UDim.new(0, 8)
+pad.Parent = gridHolder
+
+local emptyLabel = UIKit.label(content, "Nothing here yet... go dig up some memes!", {
+	Size = UDim2.new(0.9, 0, 0, 30), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Grey, Stroke = 0,
+})
+
+local function refresh()
+	local ok, list = pcall(function() return getInventory:InvokeServer() end)
+	if not ok or type(list) ~= "table" then return end
+	for _, child in ipairs(gridHolder:GetChildren()) do
+		if child:IsA("GuiObject") then child:Destroy() end
+	end
+	-- rarest first, then by name
+	local entries, total = {}, 0
+	for _, item in ipairs(list) do
+		local artifact = ArtifactData.GetArtifact(item.Id)
+		if artifact then
+			table.insert(entries, {Artifact = artifact, Count = item.Count})
+			total += item.Count
+		end
+	end
+	table.sort(entries, function(a, b)
+		local ra, rb = ArtifactData.GetRarityIndex(a.Artifact.Rarity), ArtifactData.GetRarityIndex(b.Artifact.Rarity)
+		if ra ~= rb then return ra > rb end
+		return a.Artifact.Name < b.Artifact.Name
+	end)
+	countLabel.Text = total .. " memes  •  " .. #entries .. " different"
+	emptyLabel.Visible = #entries == 0
+
+	for i, entry in ipairs(entries) do
+		local artifact = entry.Artifact
+		local rarity = ArtifactData.GetRarity(artifact.Rarity)
+		local card = UIKit.panel(gridHolder, {Size = UDim2.fromOffset(150, 186), Color = C.Row, Radius = 18})
+		card.LayoutOrder = i
+		UIKit.artifactIcon(card, artifact, {Size = UDim2.fromOffset(96, 96), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0)})
+		if entry.Count > 1 then
+			local countTag = UIKit.panel(card, {Size = UDim2.fromOffset(44, 28), Position = UDim2.fromOffset(8, 8), Color = C.Violet, Radius = 14, Stroke = 2})
+			UIKit.label(countTag, "x" .. entry.Count, {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+		end
+		UIKit.label(card, artifact.Name, {Size = UDim2.new(1, -14, 0, 34), Position = UDim2.new(0.5, 0, 0, 110), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0})
+		local rarityTag = UIKit.panel(card, {Size = UDim2.new(1, -24, 0, 18), Position = UDim2.new(0.5, 0, 0, 146), AnchorPoint = Vector2.new(0.5, 0), Color = rarity.Color, Radius = 9, Stroke = 2, Shade = false})
+		UIKit.label(rarityTag, string.upper(artifact.Rarity), {Size = UDim2.fromScale(0.9, 0.85), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+		UIKit.label(card, ArtifactData.FormatMoney(ArtifactData.GetIncome(artifact)) .. "/s", {Size = UDim2.new(1, -14, 0, 16), Position = UDim2.new(0.5, 0, 1, -20), AnchorPoint = Vector2.new(0.5, 0), Color = C.Money, Stroke = 0})
+	end
+end
+
+local function toggle()
+	if window.Visible then
+		window.Visible = false
+	else
+		refresh()
+		UIKit.open(window)
+	end
+end
+
+bagButton.MouseButton1Click:Connect(toggle)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if not gameProcessed and input.KeyCode == Enum.KeyCode.B then
+		toggle()
+	end
+end)
+inventoryChangedRemote.OnClientEvent:Connect(function()
+	if window.Visible then refresh() end
+	-- little bounce on the bag so players notice the new item
+	UIKit.pop(bagButton, 1.3)
 end)
 ]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "ShovelClient", "LocalScript", [=[

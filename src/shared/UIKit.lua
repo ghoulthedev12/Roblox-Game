@@ -297,4 +297,45 @@ function UIKit.shovelIcon(parent, def, props)
 	return vp
 end
 
+---------------------------------------------------------------------
+-- MEME ICON: the artifact's emoji on a tile in its rarity color, with a rarity badge
+---------------------------------------------------------------------
+local ArtifactData, ArtifactIcons -- loaded on first use
+local RARITY_SHORT = {Common = "C", Uncommon = "U", Rare = "R", Epic = "E", Legendary = "L",
+	Mythic = "M", Divine = "D", Celestial = "CE", Transcendent = "T"}
+
+function UIKit.artifactIcon(parent, artifact, props)
+	props = props or {}
+	ArtifactData = ArtifactData or require(ReplicatedStorage:WaitForChild("ArtifactData"))
+	ArtifactIcons = ArtifactIcons or require(ReplicatedStorage:WaitForChild("ArtifactIcons"))
+	local rarity = ArtifactData.GetRarity(artifact.Rarity)
+	local color = rarity and rarity.Color or C.Lilac
+	local tile = UIKit.panel(parent, {
+		Size = props.Size or UDim2.fromOffset(80, 80), Position = props.Position, AnchorPoint = props.AnchorPoint,
+		Color = color:Lerp(C.White, 0.45), Radius = props.Radius or 16, Stroke = props.Stroke or 3, ShadeAmount = 0.25,
+	})
+	tile.Name = "ArtifactIcon"
+	-- soft glow disc behind the emoji
+	local glow = UIKit.panel(tile, {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+		Color = C.White, Radius = 999, Stroke = false, Shade = false})
+	glow.BackgroundTransparency = 0.45
+	local emoji = Instance.new("TextLabel")
+	emoji.BackgroundTransparency = 1
+	emoji.Size = UDim2.fromScale(0.72, 0.72)
+	emoji.Position = UDim2.fromScale(0.5, 0.52)
+	emoji.AnchorPoint = Vector2.new(0.5, 0.5)
+	emoji.Text = ArtifactIcons[artifact.Id] or "❓"
+	emoji.TextScaled = true
+	emoji.Font = Enum.Font.GothamBold
+	emoji.Parent = tile
+	-- rarity badge in the corner (the higher the rarity, the more it stands out)
+	if props.Badge ~= false then
+		local badge = UIKit.panel(tile, {Size = UDim2.fromScale(0.36, 0.26), Position = UDim2.new(1, 4, 0, -4), AnchorPoint = Vector2.new(1, 0),
+			Color = color, Radius = 8, Stroke = 2, Shade = false})
+		UIKit.label(badge, RARITY_SHORT[artifact.Rarity] or "?", {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5),
+			AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+	end
+	return tile
+end
+
 return UIKit
