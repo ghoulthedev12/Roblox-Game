@@ -131,7 +131,30 @@ local function applySky(sky)
 	end
 end
 
+-- Only the island you're on is drawn: the other worlds' buildings and decorations are
+-- taken out on this screen only (they're also ~9000 studs away, lost in the haze).
+local worldsFolder = workspace:WaitForChild("Worlds", 30)
+local worldModels = {} -- [model name] = model, even while it's hidden
+local function showOnlyWorld(worldId)
+	if not worldsFolder then return end
+	for _, model in ipairs(worldsFolder:GetChildren()) do
+		worldModels[model.Name] = model
+	end
+	for name, model in pairs(worldModels) do
+		model.Parent = (name == "World" .. worldId) and worldsFolder or nil
+	end
+end
+if worldsFolder then
+	worldsFolder.ChildAdded:Connect(function(model)
+		worldModels[model.Name] = model
+		if model.Name ~= "World" .. (player:GetAttribute("CurrentWorld") or 1) then
+			task.defer(function() model.Parent = nil end)
+		end
+	end)
+end
+
 local function onWorldChanged()
+	showOnlyWorld(player:GetAttribute("CurrentWorld") or 1)
 	local world = GameConfig.GetWorld(player:GetAttribute("CurrentWorld") or 1)
 	if world and world.Sky then
 		home = home or capture()

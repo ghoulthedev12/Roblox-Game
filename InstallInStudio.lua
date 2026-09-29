@@ -23,27 +23,30 @@ install(game:GetService("ReplicatedStorage"), "ArtifactData", "ModuleScript", [=
 local ArtifactData = {}
 
 ---------------------------------------------------------------------
--- RARITIES (worst to best). Income = money per second in AREA 1.
+-- RARITIES (worst to best). Income = money per second in WORLD 1.
+-- Every later world multiplies this by its WorldMultipliers entry (below), so only the
+-- best of the best (Divine and up, in the late worlds) ever pass $50M/s.
 ---------------------------------------------------------------------
 ArtifactData.Rarities = {
-	{Name = "Common",       Code = "C",  Income = 10,        Chance = 60,    Color = Color3.fromRGB(190, 190, 190)},
-	{Name = "Uncommon",     Code = "U",  Income = 100,       Chance = 25,    Color = Color3.fromRGB(85, 200, 85)},
-	{Name = "Rare",         Code = "R",  Income = 1000,      Chance = 10,    Color = Color3.fromRGB(60, 140, 255)},
-	{Name = "Epic",         Code = "E",  Income = 10000,     Chance = 3.5,   Color = Color3.fromRGB(170, 80, 255)},
-	{Name = "Legendary",    Code = "L",  Income = 100000,    Chance = 1.1,   Color = Color3.fromRGB(255, 170, 0)},
-	{Name = "Mythic",       Code = "M",  Income = 500000,    Chance = 0.3,   Color = Color3.fromRGB(255, 60, 90)},
-	{Name = "Divine",       Code = "D",  Income = 2500000,   Chance = 0.07,  Color = Color3.fromRGB(255, 240, 150)},
-	{Name = "Celestial",    Code = "CE", Income = 10000000,  Chance = 0.025, Color = Color3.fromRGB(120, 255, 255)},
-	{Name = "Transcendent", Code = "T",  Income = 50000000,  Chance = 0.005, Color = Color3.fromRGB(255, 255, 255)},
+	{Name = "Common",       Code = "C",  Income = 5,         Chance = 60,    Color = Color3.fromRGB(190, 190, 190)},
+	{Name = "Uncommon",     Code = "U",  Income = 20,        Chance = 25,    Color = Color3.fromRGB(85, 200, 85)},
+	{Name = "Rare",         Code = "R",  Income = 80,        Chance = 10,    Color = Color3.fromRGB(60, 140, 255)},
+	{Name = "Epic",         Code = "E",  Income = 400,       Chance = 3.5,   Color = Color3.fromRGB(170, 80, 255)},
+	{Name = "Legendary",    Code = "L",  Income = 2000,      Chance = 1.1,   Color = Color3.fromRGB(255, 170, 0)},
+	{Name = "Mythic",       Code = "M",  Income = 12000,     Chance = 0.3,   Color = Color3.fromRGB(255, 60, 90)},
+	{Name = "Divine",       Code = "D",  Income = 60000,     Chance = 0.07,  Color = Color3.fromRGB(255, 240, 150)},
+	{Name = "Celestial",    Code = "CE", Income = 300000,    Chance = 0.025, Color = Color3.fromRGB(120, 255, 255)},
+	{Name = "Transcendent", Code = "T",  Income = 1500000,   Chance = 0.005, Color = Color3.fromRGB(255, 255, 255)},
 }
 
 -- Sell value = income per second x this number
 ArtifactData.SellMultiplier = 100
 
 ---------------------------------------------------------------------
--- DIG AREAS. Every area multiplies artifact value by AreaMultiplier.
+-- DIG AREAS. Areas 1-21 are World 1's memes (all worth the base income above).
+-- Areas 22-29 are worlds 2-9, each worth WorldMultipliers[k] times more.
 ---------------------------------------------------------------------
-ArtifactData.AreaMultiplier = 4
+ArtifactData.WorldMultipliers = {3, 10, 25, 60, 150, 400, 1000, 2500} -- worlds 2..9
 ArtifactData.Areas = {
 	{Name = "The Scroll Pit",       Era = "Brainrot"},
 	{Name = "Hashtag Hollow",       Era = "Brainrot"},
@@ -66,17 +69,16 @@ ArtifactData.Areas = {
 	{Name = "The Homepage Ruins",   Era = "Paleolithic"},
 	{Name = "The First Server",     Era = "Paleolithic"},
 	-- Secret 2050 memes, only found in World 1's Abyss (worth one step above The Homepage Ruins)
-	{Name = "The Abyss",            Era = "Abyss", Multiplier = ArtifactData.AreaMultiplier ^ 15},
+	{Name = "The Abyss",            Era = "Abyss"},
 }
--- Worlds 2-9 each add one area (22-29) from ArtifactsWorlds. Every world is worth 3 steps
--- (x64) more than the one before, starting 3 steps above World 1's Abyss.
+-- Worlds 2-9 each add one area (22-29) from ArtifactsWorlds.
 local ArtifactsWorlds = require(script.Parent:WaitForChild("ArtifactsWorlds"))
 for k, area in ipairs(ArtifactsWorlds.Areas) do
-	table.insert(ArtifactData.Areas, {Name = area.Name, Era = area.Era, Multiplier = ArtifactData.AreaMultiplier ^ (15 + 3 * k)})
+	table.insert(ArtifactData.Areas, {Name = area.Name, Era = area.Era, Multiplier = ArtifactData.WorldMultipliers[k]})
 end
 for i, area in ipairs(ArtifactData.Areas) do
 	area.Index = i
-	area.Multiplier = area.Multiplier or ArtifactData.AreaMultiplier ^ (i - 1)
+	area.Multiplier = area.Multiplier or 1
 end
 
 ArtifactData.Eras = {
@@ -903,35 +905,35 @@ GameConfig.Worlds = {
 				DigRadius = 4, FindChance = 0.012, Luck = 1, Cooldown = 0.5,
 				Color = Color3.fromRGB(150, 85, 50), Material = "CorrodedMetal",
 				Description = "Found in a dumpster in 2049. Still works. Mostly."},
-			{Id = "PlasticShovel", Name = "Plastic Beach Shovel", Price = 1000, MaxZone = 2,
+			{Id = "PlasticShovel", Name = "Plastic Beach Shovel", Price = 500, MaxZone = 2,
 				DigRadius = 4.5, FindChance = 0.013, Luck = 1.1, Cooldown = 0.47,
 				Color = Color3.fromRGB(255, 200, 40), Material = "SmoothPlastic",
 				Description = "Built for sandcastles. Somehow better than rust."},
-			{Id = "GardenSpade", Name = "Garden Spade", Price = 7500, MaxZone = 2,
+			{Id = "GardenSpade", Name = "Garden Spade", Price = 3000, MaxZone = 2,
 				DigRadius = 5, FindChance = 0.015, Luck = 1.2, Cooldown = 0.45,
 				Color = Color3.fromRGB(90, 170, 80), Material = "Metal",
 				Description = "Borrowed from a grandma. She wants it back."},
-			{Id = "IronShovel", Name = "Iron Shovel", Price = 40000, MaxZone = 2,
+			{Id = "IronShovel", Name = "Iron Shovel", Price = 15000, MaxZone = 2,
 				DigRadius = 5.5, FindChance = 0.017, Luck = 1.35, Cooldown = 0.42,
 				Color = Color3.fromRGB(175, 180, 190), Material = "Metal",
 				Description = "A real tool for a real archaeologist."},
-			{Id = "SteelSpade", Name = "Steel Spade", Price = 200000, MaxZone = 3,
+			{Id = "SteelSpade", Name = "Steel Spade", Price = 60000, MaxZone = 3,
 				DigRadius = 6, FindChance = 0.018, Luck = 1.5, Cooldown = 0.39,
 				Color = Color3.fromRGB(120, 140, 170), Material = "Metal",
 				Description = "Sharp enough to cut through ancient comment sections."},
-			{Id = "GoldenShovel", Name = "Golden Shovel", Price = 500000, MaxZone = 3,
+			{Id = "GoldenShovel", Name = "Golden Shovel", Price = 200000, MaxZone = 3,
 				DigRadius = 6.5, FindChance = 0.02, Luck = 1.7, Cooldown = 0.37,
 				Color = Color3.fromRGB(255, 200, 60), Material = "Metal",
 				Description = "Shiny. Heavy. Completely unnecessary. Perfect."},
-			{Id = "GamerShovel", Name = "RGB Gamer Shovel", Price = 1000000, MaxZone = 3,
+			{Id = "GamerShovel", Name = "RGB Gamer Shovel", Price = 750000, MaxZone = 3,
 				DigRadius = 7, FindChance = 0.022, Luck = 2, Cooldown = 0.35,
 				Color = Color3.fromRGB(255, 60, 200), Material = "Neon",
 				Description = "The RGB lights add +200% digging power. Science."},
-			{Id = "TectonicAuger", Name = "Tectonic Auger", Price = 10000000, MaxZone = 4,
+			{Id = "TectonicAuger", Name = "Tectonic Auger", Price = 3000000, MaxZone = 4,
 				DigRadius = 7.5, FindChance = 0.024, Luck = 2.4, Cooldown = 0.33,
 				Color = Color3.fromRGB(128, 132, 138), Material = "Foil",
 				Description = "Legendary. Rated for bedrock, permafrost and 2049-era server racks."},
-			{Id = "SingularitySpade", Name = "Singularity Spade", Price = 50000000, MaxZone = 4,
+			{Id = "SingularitySpade", Name = "Singularity Spade", Price = 10000000, MaxZone = 4,
 				DigRadius = 8, FindChance = 0.027, Luck = 3, Cooldown = 0.31,
 				Color = Color3.fromRGB(62, 64, 70), Material = "Foil",
 				Description = "Mythic. Folds the Abyss around the blade. Do not dig near pets."},
@@ -971,7 +973,9 @@ for i, info in ipairs(WorldsData.Worlds) do
 	end
 	table.insert(GameConfig.Worlds, {
 		Id = id, Name = info.Name, Enabled = true, Price = info.Price, Theme = info.Theme, Tagline = info.Tagline,
-		Origin = Vector3.new(0, 0, 3000 * id), -- far away along +Z, clear of the city
+		-- on a huge ring far from World 1 and from each other (~9000 studs apart), so no
+		-- island can see another one
+		Origin = Vector3.new(math.cos(math.rad(i * 45)) * 12000, 0, math.sin(math.rad(i * 45)) * 12000),
 		PitRadius = 41, CenterNoDigRadius = 0, HubPaths = false,
 		IslandRadius = 125, -- floating island around the pit (built by WorldBuilder)
 		TopMaterial = info.Top, WallMaterial = info.Wall,
@@ -2575,16 +2579,16 @@ local rgb = Color3.fromRGB
 
 local WorldsData = {}
 
--- Every world's 7 shovels follow the same progression; prices scale with the world's price.
+-- Every world's 7 shovels follow the same progression; price = PriceFactor x the world's price.
 -- MaxZone: 1 = Shallow, 2 = Mid, 3 = Deep, 4 = Abyss
 WorldsData.ShovelTiers = {
 	{MaxZone = 1, DigRadius = 4.5, FindChance = 0.012, Luck = 1,   Cooldown = 0.5,  PriceFactor = 0},
-	{MaxZone = 2, DigRadius = 5,   FindChance = 0.014, Luck = 1.2, Cooldown = 0.46, PriceFactor = 0.02},
-	{MaxZone = 2, DigRadius = 5.5, FindChance = 0.016, Luck = 1.4, Cooldown = 0.43, PriceFactor = 0.08},
-	{MaxZone = 3, DigRadius = 6,   FindChance = 0.018, Luck = 1.7, Cooldown = 0.4,  PriceFactor = 0.3},
+	{MaxZone = 2, DigRadius = 5,   FindChance = 0.014, Luck = 1.2, Cooldown = 0.46, PriceFactor = 0.05},
+	{MaxZone = 2, DigRadius = 5.5, FindChance = 0.016, Luck = 1.4, Cooldown = 0.43, PriceFactor = 0.15},
+	{MaxZone = 3, DigRadius = 6,   FindChance = 0.018, Luck = 1.7, Cooldown = 0.4,  PriceFactor = 0.4},
 	{MaxZone = 3, DigRadius = 6.5, FindChance = 0.02,  Luck = 2,   Cooldown = 0.37, PriceFactor = 1},
-	{MaxZone = 4, DigRadius = 7.5, FindChance = 0.024, Luck = 2.5, Cooldown = 0.34, PriceFactor = 3},
-	{MaxZone = 4, DigRadius = 8,   FindChance = 0.027, Luck = 3,   Cooldown = 0.31, PriceFactor = 10},
+	{MaxZone = 4, DigRadius = 7.5, FindChance = 0.024, Luck = 2.5, Cooldown = 0.34, PriceFactor = 2.5},
+	{MaxZone = 4, DigRadius = 8,   FindChance = 0.027, Luck = 3,   Cooldown = 0.31, PriceFactor = 6},
 }
 
 -- Terrain colors are shared by the whole map (Roblox paints each material one color
@@ -2605,13 +2609,13 @@ WorldsData.TerrainColors = {
 WorldsData.Worlds = {
 	-----------------------------------------------------------------
 	{
-		Name = "Neon Sakura Grove", Theme = "Sakura", Price = 3e17,
+		Name = "Neon Sakura Grove", Theme = "Sakura", Price = 15e6,
 		Tagline = "Pink blossoms, paper lanterns and robot koi.",
 		Top = "LeafyGrass", Wall = "Rock",
 		Zones = {"Mud", "Brick", "WoodPlanks", "Salt"},
 		Look = {Main = rgb(255, 170, 205), Second = rgb(255, 238, 244), Dark = rgb(128, 62, 80), Glow = rgb(255, 120, 180), Accent = rgb(255, 214, 120)},
 		Sky = {ClockTime = 17.3, Ambient = rgb(120, 96, 120), OutdoorAmbient = rgb(160, 130, 160), Tint = rgb(255, 232, 242),
-			Fog = rgb(255, 200, 225), Decay = rgb(200, 130, 170), Density = 0.28, Clouds = 0.55},
+			Fog = rgb(255, 200, 225), Decay = rgb(200, 130, 170), Density = 0.32, Clouds = 0.55},
 		Shovels = {
 			{"Blossom Trowel", "A little pink trowel. Leaves petals everywhere it digs.", "Spade", "D"},
 			{"Bamboo Spade", "Light, strong and grown in a week.", "Spade", "T"},
@@ -2624,13 +2628,13 @@ WorldsData.Worlds = {
 	},
 	-----------------------------------------------------------------
 	{
-		Name = "Galaxy Drift", Theme = "Galaxy", Price = 1.9e19,
+		Name = "Galaxy Drift", Theme = "Galaxy", Price = 500e6,
 		Tagline = "A dig site floating between the stars.",
 		Top = "Asphalt", Wall = "Rock",
 		Zones = {"Pavement", "Limestone", "Basalt", "Ice"},
 		Look = {Main = rgb(130, 96, 255), Second = rgb(40, 36, 96), Dark = rgb(22, 20, 52), Glow = rgb(110, 220, 255), Accent = rgb(255, 214, 110)},
 		Sky = {ClockTime = 0, Ambient = rgb(118, 110, 170), OutdoorAmbient = rgb(140, 130, 200), Tint = rgb(226, 222, 255),
-			Fog = rgb(80, 60, 160), Decay = rgb(40, 30, 100), Density = 0.2, Clouds = 0},
+			Fog = rgb(80, 60, 160), Decay = rgb(40, 30, 100), Density = 0.32, Clouds = 0},
 		Shovels = {
 			{"Meteor Scoop", "Made from a meteor that landed on a meme.", "Scoop", "T"},
 			{"Rocket Spade", "Has tiny thrusters. Mostly for style.", "Spade", "T"},
@@ -2643,7 +2647,7 @@ WorldsData.Worlds = {
 	},
 	-----------------------------------------------------------------
 	{
-		Name = "Frostbyte Tundra", Theme = "Frost", Price = 1.2e21,
+		Name = "Frostbyte Tundra", Theme = "Frost", Price = 1e9,
 		Tagline = "Snowy servers, ice crystals and a big aurora.",
 		Top = "Snow", Wall = "Rock",
 		Zones = {"Ice", "Concrete", "Glacier", "Cobblestone"},
@@ -2662,7 +2666,7 @@ WorldsData.Worlds = {
 	},
 	-----------------------------------------------------------------
 	{
-		Name = "Chrome Dunes", Theme = "Dunes", Price = 7.9e22,
+		Name = "Chrome Dunes", Theme = "Dunes", Price = 5e9,
 		Tagline = "Golden sand, chrome pyramids and solar towers.",
 		Top = "Sand", Wall = "Rock",
 		Zones = {"Sandstone", "Ground", "Brick", "Salt"},
@@ -2681,7 +2685,7 @@ WorldsData.Worlds = {
 	},
 	-----------------------------------------------------------------
 	{
-		Name = "Coral Circuit", Theme = "Coral", Price = 5e24,
+		Name = "Coral Circuit", Theme = "Coral", Price = 30e9,
 		Tagline = "A bubbly reef of coral, shells and glowing jellies.",
 		Top = "Sand", Wall = "Rock",
 		Zones = {"Brick", "Limestone", "Ice", "Pavement"},
@@ -2700,13 +2704,13 @@ WorldsData.Worlds = {
 	},
 	-----------------------------------------------------------------
 	{
-		Name = "Candy Mainframe", Theme = "Candy", Price = 3.2e26,
+		Name = "Candy Mainframe", Theme = "Candy", Price = 100e9,
 		Tagline = "A sugar-coated server farm made of sweets.",
 		Top = "Salt", Wall = "Rock",
 		Zones = {"LeafyGrass", "Sand", "Mud", "Ice"},
 		Look = {Main = rgb(255, 120, 190), Second = rgb(130, 236, 200), Dark = rgb(120, 70, 60), Glow = rgb(255, 170, 230), Accent = rgb(255, 226, 110)},
 		Sky = {ClockTime = 14, Ambient = rgb(130, 110, 130), OutdoorAmbient = rgb(175, 150, 175), Tint = rgb(255, 238, 248),
-			Fog = rgb(255, 214, 240), Decay = rgb(220, 160, 210), Density = 0.25, Clouds = 0.6},
+			Fog = rgb(255, 214, 240), Decay = rgb(220, 160, 210), Density = 0.32, Clouds = 0.6},
 		Shovels = {
 			{"Lollipop Scoop", "Swirly, sticky and surprisingly strong.", "Scoop", "T"},
 			{"Candy Cane Spade", "Minty fresh digging.", "Spade", "D"},
@@ -2719,7 +2723,7 @@ WorldsData.Worlds = {
 	},
 	-----------------------------------------------------------------
 	{
-		Name = "Volcano Forge", Theme = "Forge", Price = 2e28,
+		Name = "Volcano Forge", Theme = "Forge", Price = 500e9,
 		Tagline = "Lava rivers, obsidian and a giant meme forge.",
 		Top = "Basalt", Wall = "Rock",
 		Zones = {"Ground", "Brick", "Asphalt", "CrackedLava"},
@@ -2738,13 +2742,13 @@ WorldsData.Worlds = {
 	},
 	-----------------------------------------------------------------
 	{
-		Name = "Glitch Nexus", Theme = "Glitch", Price = 1.3e30,
+		Name = "Glitch Nexus", Theme = "Glitch", Price = 2.5e12,
 		Tagline = "The edge of the simulation. Things don't load right here.",
 		Top = "Concrete", Wall = "Rock",
 		Zones = {"Cobblestone", "Asphalt", "Limestone", "Snow"},
 		Look = {Main = rgb(90, 255, 150), Second = rgb(255, 80, 220), Dark = rgb(20, 18, 30), Glow = rgb(90, 255, 170), Accent = rgb(90, 200, 255)},
 		Sky = {ClockTime = 21.5, Ambient = rgb(100, 120, 120), OutdoorAmbient = rgb(125, 150, 150), Tint = rgb(236, 255, 244),
-			Fog = rgb(40, 60, 70), Decay = rgb(90, 40, 110), Density = 0.25, Clouds = 0},
+			Fog = rgb(40, 60, 70), Decay = rgb(90, 40, 110), Density = 0.32, Clouds = 0},
 		Shovels = {
 			{"Placeholder Spade", "TODO: add a description.", "Spade", "D"},
 			{"Pixel Shovel", "Rendered at 8 pixels. Works anyway.", "Spade", "T"},
@@ -8093,7 +8097,30 @@ local function applySky(sky)
 	end
 end
 
+-- Only the island you're on is drawn: the other worlds' buildings and decorations are
+-- taken out on this screen only (they're also ~9000 studs away, lost in the haze).
+local worldsFolder = workspace:WaitForChild("Worlds", 30)
+local worldModels = {} -- [model name] = model, even while it's hidden
+local function showOnlyWorld(worldId)
+	if not worldsFolder then return end
+	for _, model in ipairs(worldsFolder:GetChildren()) do
+		worldModels[model.Name] = model
+	end
+	for name, model in pairs(worldModels) do
+		model.Parent = (name == "World" .. worldId) and worldsFolder or nil
+	end
+end
+if worldsFolder then
+	worldsFolder.ChildAdded:Connect(function(model)
+		worldModels[model.Name] = model
+		if model.Name ~= "World" .. (player:GetAttribute("CurrentWorld") or 1) then
+			task.defer(function() model.Parent = nil end)
+		end
+	end)
+end
+
 local function onWorldChanged()
+	showOnlyWorld(player:GetAttribute("CurrentWorld") or 1)
 	local world = GameConfig.GetWorld(player:GetAttribute("CurrentWorld") or 1)
 	if world and world.Sky then
 		home = home or capture()

@@ -6,27 +6,30 @@
 local ArtifactData = {}
 
 ---------------------------------------------------------------------
--- RARITIES (worst to best). Income = money per second in AREA 1.
+-- RARITIES (worst to best). Income = money per second in WORLD 1.
+-- Every later world multiplies this by its WorldMultipliers entry (below), so only the
+-- best of the best (Divine and up, in the late worlds) ever pass $50M/s.
 ---------------------------------------------------------------------
 ArtifactData.Rarities = {
-	{Name = "Common",       Code = "C",  Income = 10,        Chance = 60,    Color = Color3.fromRGB(190, 190, 190)},
-	{Name = "Uncommon",     Code = "U",  Income = 100,       Chance = 25,    Color = Color3.fromRGB(85, 200, 85)},
-	{Name = "Rare",         Code = "R",  Income = 1000,      Chance = 10,    Color = Color3.fromRGB(60, 140, 255)},
-	{Name = "Epic",         Code = "E",  Income = 10000,     Chance = 3.5,   Color = Color3.fromRGB(170, 80, 255)},
-	{Name = "Legendary",    Code = "L",  Income = 100000,    Chance = 1.1,   Color = Color3.fromRGB(255, 170, 0)},
-	{Name = "Mythic",       Code = "M",  Income = 500000,    Chance = 0.3,   Color = Color3.fromRGB(255, 60, 90)},
-	{Name = "Divine",       Code = "D",  Income = 2500000,   Chance = 0.07,  Color = Color3.fromRGB(255, 240, 150)},
-	{Name = "Celestial",    Code = "CE", Income = 10000000,  Chance = 0.025, Color = Color3.fromRGB(120, 255, 255)},
-	{Name = "Transcendent", Code = "T",  Income = 50000000,  Chance = 0.005, Color = Color3.fromRGB(255, 255, 255)},
+	{Name = "Common",       Code = "C",  Income = 5,         Chance = 60,    Color = Color3.fromRGB(190, 190, 190)},
+	{Name = "Uncommon",     Code = "U",  Income = 20,        Chance = 25,    Color = Color3.fromRGB(85, 200, 85)},
+	{Name = "Rare",         Code = "R",  Income = 80,        Chance = 10,    Color = Color3.fromRGB(60, 140, 255)},
+	{Name = "Epic",         Code = "E",  Income = 400,       Chance = 3.5,   Color = Color3.fromRGB(170, 80, 255)},
+	{Name = "Legendary",    Code = "L",  Income = 2000,      Chance = 1.1,   Color = Color3.fromRGB(255, 170, 0)},
+	{Name = "Mythic",       Code = "M",  Income = 12000,     Chance = 0.3,   Color = Color3.fromRGB(255, 60, 90)},
+	{Name = "Divine",       Code = "D",  Income = 60000,     Chance = 0.07,  Color = Color3.fromRGB(255, 240, 150)},
+	{Name = "Celestial",    Code = "CE", Income = 300000,    Chance = 0.025, Color = Color3.fromRGB(120, 255, 255)},
+	{Name = "Transcendent", Code = "T",  Income = 1500000,   Chance = 0.005, Color = Color3.fromRGB(255, 255, 255)},
 }
 
 -- Sell value = income per second x this number
 ArtifactData.SellMultiplier = 100
 
 ---------------------------------------------------------------------
--- DIG AREAS. Every area multiplies artifact value by AreaMultiplier.
+-- DIG AREAS. Areas 1-21 are World 1's memes (all worth the base income above).
+-- Areas 22-29 are worlds 2-9, each worth WorldMultipliers[k] times more.
 ---------------------------------------------------------------------
-ArtifactData.AreaMultiplier = 4
+ArtifactData.WorldMultipliers = {3, 10, 25, 60, 150, 400, 1000, 2500} -- worlds 2..9
 ArtifactData.Areas = {
 	{Name = "The Scroll Pit",       Era = "Brainrot"},
 	{Name = "Hashtag Hollow",       Era = "Brainrot"},
@@ -49,17 +52,16 @@ ArtifactData.Areas = {
 	{Name = "The Homepage Ruins",   Era = "Paleolithic"},
 	{Name = "The First Server",     Era = "Paleolithic"},
 	-- Secret 2050 memes, only found in World 1's Abyss (worth one step above The Homepage Ruins)
-	{Name = "The Abyss",            Era = "Abyss", Multiplier = ArtifactData.AreaMultiplier ^ 15},
+	{Name = "The Abyss",            Era = "Abyss"},
 }
--- Worlds 2-9 each add one area (22-29) from ArtifactsWorlds. Every world is worth 3 steps
--- (x64) more than the one before, starting 3 steps above World 1's Abyss.
+-- Worlds 2-9 each add one area (22-29) from ArtifactsWorlds.
 local ArtifactsWorlds = require(script.Parent:WaitForChild("ArtifactsWorlds"))
 for k, area in ipairs(ArtifactsWorlds.Areas) do
-	table.insert(ArtifactData.Areas, {Name = area.Name, Era = area.Era, Multiplier = ArtifactData.AreaMultiplier ^ (15 + 3 * k)})
+	table.insert(ArtifactData.Areas, {Name = area.Name, Era = area.Era, Multiplier = ArtifactData.WorldMultipliers[k]})
 end
 for i, area in ipairs(ArtifactData.Areas) do
 	area.Index = i
-	area.Multiplier = area.Multiplier or ArtifactData.AreaMultiplier ^ (i - 1)
+	area.Multiplier = area.Multiplier or 1
 end
 
 ArtifactData.Eras = {

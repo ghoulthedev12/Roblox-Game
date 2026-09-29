@@ -47,6 +47,10 @@ through the World Gate, each unlocked with cash:
 | 8 | Volcano Forge | Ground, Brick, Asphalt, CrackedLava |
 | 9 | Glitch Nexus | Cobblestone, Asphalt, Limestone, Snow |
 
+- Prices to unlock: $15M, $500M, $1B, $5B, $30B, $100B, $500B, $2.5T.
+- Meme income = rarity income (`ArtifactData.Rarities`, World 1) x the world's
+  `ArtifactData.WorldMultipliers`. Only Divine+ memes in the late worlds pass $50M/s.
+- Each world sits ~9000 studs from the others; players only see the island they're on.
 - `src/shared/WorldsData.lua`: each world's price, materials, colors, sky and 7 shovels.
   (Terrain colors are global per material, see `WorldsData.TerrainColors`.)
 - `src/shared/ArtifactsWorlds.lua`: each world's 14 memes.

@@ -14,16 +14,16 @@ local rgb = Color3.fromRGB
 
 local WorldsData = {}
 
--- Every world's 7 shovels follow the same progression; prices scale with the world's price.
+-- Every world's 7 shovels follow the same progression; price = PriceFactor x the world's price.
 -- MaxZone: 1 = Shallow, 2 = Mid, 3 = Deep, 4 = Abyss
 WorldsData.ShovelTiers = {
 	{MaxZone = 1, DigRadius = 4.5, FindChance = 0.012, Luck = 1,   Cooldown = 0.5,  PriceFactor = 0},
-	{MaxZone = 2, DigRadius = 5,   FindChance = 0.014, Luck = 1.2, Cooldown = 0.46, PriceFactor = 0.02},
-	{MaxZone = 2, DigRadius = 5.5, FindChance = 0.016, Luck = 1.4, Cooldown = 0.43, PriceFactor = 0.08},
-	{MaxZone = 3, DigRadius = 6,   FindChance = 0.018, Luck = 1.7, Cooldown = 0.4,  PriceFactor = 0.3},
+	{MaxZone = 2, DigRadius = 5,   FindChance = 0.014, Luck = 1.2, Cooldown = 0.46, PriceFactor = 0.05},
+	{MaxZone = 2, DigRadius = 5.5, FindChance = 0.016, Luck = 1.4, Cooldown = 0.43, PriceFactor = 0.15},
+	{MaxZone = 3, DigRadius = 6,   FindChance = 0.018, Luck = 1.7, Cooldown = 0.4,  PriceFactor = 0.4},
 	{MaxZone = 3, DigRadius = 6.5, FindChance = 0.02,  Luck = 2,   Cooldown = 0.37, PriceFactor = 1},
-	{MaxZone = 4, DigRadius = 7.5, FindChance = 0.024, Luck = 2.5, Cooldown = 0.34, PriceFactor = 3},
-	{MaxZone = 4, DigRadius = 8,   FindChance = 0.027, Luck = 3,   Cooldown = 0.31, PriceFactor = 10},
+	{MaxZone = 4, DigRadius = 7.5, FindChance = 0.024, Luck = 2.5, Cooldown = 0.34, PriceFactor = 2.5},
+	{MaxZone = 4, DigRadius = 8,   FindChance = 0.027, Luck = 3,   Cooldown = 0.31, PriceFactor = 6},
 }
 
 -- Terrain colors are shared by the whole map (Roblox paints each material one color
@@ -44,13 +44,13 @@ WorldsData.TerrainColors = {
 WorldsData.Worlds = {
 	-----------------------------------------------------------------
 	{
-		Name = "Neon Sakura Grove", Theme = "Sakura", Price = 3e17,
+		Name = "Neon Sakura Grove", Theme = "Sakura", Price = 15e6,
 		Tagline = "Pink blossoms, paper lanterns and robot koi.",
 		Top = "LeafyGrass", Wall = "Rock",
 		Zones = {"Mud", "Brick", "WoodPlanks", "Salt"},
 		Look = {Main = rgb(255, 170, 205), Second = rgb(255, 238, 244), Dark = rgb(128, 62, 80), Glow = rgb(255, 120, 180), Accent = rgb(255, 214, 120)},
 		Sky = {ClockTime = 17.3, Ambient = rgb(120, 96, 120), OutdoorAmbient = rgb(160, 130, 160), Tint = rgb(255, 232, 242),
-			Fog = rgb(255, 200, 225), Decay = rgb(200, 130, 170), Density = 0.28, Clouds = 0.55},
+			Fog = rgb(255, 200, 225), Decay = rgb(200, 130, 170), Density = 0.32, Clouds = 0.55},
 		Shovels = {
 			{"Blossom Trowel", "A little pink trowel. Leaves petals everywhere it digs.", "Spade", "D"},
 			{"Bamboo Spade", "Light, strong and grown in a week.", "Spade", "T"},
@@ -63,13 +63,13 @@ WorldsData.Worlds = {
 	},
 	-----------------------------------------------------------------
 	{
-		Name = "Galaxy Drift", Theme = "Galaxy", Price = 1.9e19,
+		Name = "Galaxy Drift", Theme = "Galaxy", Price = 500e6,
 		Tagline = "A dig site floating between the stars.",
 		Top = "Asphalt", Wall = "Rock",
 		Zones = {"Pavement", "Limestone", "Basalt", "Ice"},
 		Look = {Main = rgb(130, 96, 255), Second = rgb(40, 36, 96), Dark = rgb(22, 20, 52), Glow = rgb(110, 220, 255), Accent = rgb(255, 214, 110)},
 		Sky = {ClockTime = 0, Ambient = rgb(118, 110, 170), OutdoorAmbient = rgb(140, 130, 200), Tint = rgb(226, 222, 255),
-			Fog = rgb(80, 60, 160), Decay = rgb(40, 30, 100), Density = 0.2, Clouds = 0},
+			Fog = rgb(80, 60, 160), Decay = rgb(40, 30, 100), Density = 0.32, Clouds = 0},
 		Shovels = {
 			{"Meteor Scoop", "Made from a meteor that landed on a meme.", "Scoop", "T"},
 			{"Rocket Spade", "Has tiny thrusters. Mostly for style.", "Spade", "T"},
@@ -82,7 +82,7 @@ WorldsData.Worlds = {
 	},
 	-----------------------------------------------------------------
 	{
-		Name = "Frostbyte Tundra", Theme = "Frost", Price = 1.2e21,
+		Name = "Frostbyte Tundra", Theme = "Frost", Price = 1e9,
 		Tagline = "Snowy servers, ice crystals and a big aurora.",
 		Top = "Snow", Wall = "Rock",
 		Zones = {"Ice", "Concrete", "Glacier", "Cobblestone"},
@@ -101,7 +101,7 @@ WorldsData.Worlds = {
 	},
 	-----------------------------------------------------------------
 	{
-		Name = "Chrome Dunes", Theme = "Dunes", Price = 7.9e22,
+		Name = "Chrome Dunes", Theme = "Dunes", Price = 5e9,
 		Tagline = "Golden sand, chrome pyramids and solar towers.",
 		Top = "Sand", Wall = "Rock",
 		Zones = {"Sandstone", "Ground", "Brick", "Salt"},
@@ -120,7 +120,7 @@ WorldsData.Worlds = {
 	},
 	-----------------------------------------------------------------
 	{
-		Name = "Coral Circuit", Theme = "Coral", Price = 5e24,
+		Name = "Coral Circuit", Theme = "Coral", Price = 30e9,
 		Tagline = "A bubbly reef of coral, shells and glowing jellies.",
 		Top = "Sand", Wall = "Rock",
 		Zones = {"Brick", "Limestone", "Ice", "Pavement"},
@@ -139,13 +139,13 @@ WorldsData.Worlds = {
 	},
 	-----------------------------------------------------------------
 	{
-		Name = "Candy Mainframe", Theme = "Candy", Price = 3.2e26,
+		Name = "Candy Mainframe", Theme = "Candy", Price = 100e9,
 		Tagline = "A sugar-coated server farm made of sweets.",
 		Top = "Salt", Wall = "Rock",
 		Zones = {"LeafyGrass", "Sand", "Mud", "Ice"},
 		Look = {Main = rgb(255, 120, 190), Second = rgb(130, 236, 200), Dark = rgb(120, 70, 60), Glow = rgb(255, 170, 230), Accent = rgb(255, 226, 110)},
 		Sky = {ClockTime = 14, Ambient = rgb(130, 110, 130), OutdoorAmbient = rgb(175, 150, 175), Tint = rgb(255, 238, 248),
-			Fog = rgb(255, 214, 240), Decay = rgb(220, 160, 210), Density = 0.25, Clouds = 0.6},
+			Fog = rgb(255, 214, 240), Decay = rgb(220, 160, 210), Density = 0.32, Clouds = 0.6},
 		Shovels = {
 			{"Lollipop Scoop", "Swirly, sticky and surprisingly strong.", "Scoop", "T"},
 			{"Candy Cane Spade", "Minty fresh digging.", "Spade", "D"},
@@ -158,7 +158,7 @@ WorldsData.Worlds = {
 	},
 	-----------------------------------------------------------------
 	{
-		Name = "Volcano Forge", Theme = "Forge", Price = 2e28,
+		Name = "Volcano Forge", Theme = "Forge", Price = 500e9,
 		Tagline = "Lava rivers, obsidian and a giant meme forge.",
 		Top = "Basalt", Wall = "Rock",
 		Zones = {"Ground", "Brick", "Asphalt", "CrackedLava"},
@@ -177,13 +177,13 @@ WorldsData.Worlds = {
 	},
 	-----------------------------------------------------------------
 	{
-		Name = "Glitch Nexus", Theme = "Glitch", Price = 1.3e30,
+		Name = "Glitch Nexus", Theme = "Glitch", Price = 2.5e12,
 		Tagline = "The edge of the simulation. Things don't load right here.",
 		Top = "Concrete", Wall = "Rock",
 		Zones = {"Cobblestone", "Asphalt", "Limestone", "Snow"},
 		Look = {Main = rgb(90, 255, 150), Second = rgb(255, 80, 220), Dark = rgb(20, 18, 30), Glow = rgb(90, 255, 170), Accent = rgb(90, 200, 255)},
 		Sky = {ClockTime = 21.5, Ambient = rgb(100, 120, 120), OutdoorAmbient = rgb(125, 150, 150), Tint = rgb(236, 255, 244),
-			Fog = rgb(40, 60, 70), Decay = rgb(90, 40, 110), Density = 0.25, Clouds = 0},
+			Fog = rgb(40, 60, 70), Decay = rgb(90, 40, 110), Density = 0.32, Clouds = 0},
 		Shovels = {
 			{"Placeholder Spade", "TODO: add a description.", "Spade", "D"},
 			{"Pixel Shovel", "Rendered at 8 pixels. Works anyway.", "Spade", "T"},
