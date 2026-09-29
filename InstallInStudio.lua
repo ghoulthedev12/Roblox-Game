@@ -12,6 +12,7 @@ local function install(parent, name, className, source)
 	s.Parent = parent
 	count += 1
 end
+pcall(function() game:GetService("Lighting").Technology = Enum.Technology.Future end)
 do local old = game:GetService("ServerScriptService"):FindFirstChild("DataManager") if old then old:Destroy() print("Removed DataManager") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
 install(game:GetService("ReplicatedStorage"), "ArtifactData", "ModuleScript", [=[
@@ -862,6 +863,11 @@ GameConfig.Sounds = {
 	Combo = "",  -- combo goes up
 }
 
+-- How shovels look: "Crystal" = the blocky/crystal design, upgraded procedurally by each
+-- shovel's Power (size, crystal color, spinning orbiters, particles). "Classic" = the older
+-- hand-made models (World 1 cartoon shovels + themed world shovels).
+GameConfig.ShovelLook = "Crystal"
+
 -- Chance that a find becomes a "Lucky Dig" with the bonus minigame (0.1 = 1 in 10)
 GameConfig.MinigameChance = 0.1
 
@@ -912,43 +918,43 @@ GameConfig.Worlds = {
 				Material = "Glacier", Color = Color3.fromRGB(150, 196, 214)},
 		}),
 		-- SHOVELS (shop order). MaxZone: 1 = Shallow, 2 = Mid, 3 = Deep, 4 = Abyss.
-		-- DigRadius = hole size, FindChance = chance per swing to find something (0.02 = 1 in 50),
+		-- Power = how big a crater each swing carves (radius = GameConfig.DigRadiusForPower), FindChance = chance per swing to find something (0.02 = 1 in 50),
 		-- Luck = rare find multiplier, Cooldown = seconds between swings
 		Shovels = {
 			{Id = "RustyShovel", Name = "Rusty Shovel", Price = 0, MaxZone = 1,
-				DigRadius = 4, FindChance = 0.012, Luck = 1, Cooldown = 0.5,
+				Power = 1, FindChance = 0.012, Luck = 1, Cooldown = 0.5,
 				Color = Color3.fromRGB(150, 85, 50), Material = "CorrodedMetal",
 				Description = "Found in a dumpster in 2049. Still works. Mostly."},
 			{Id = "PlasticShovel", Name = "Plastic Beach Shovel", Price = 500, MaxZone = 2,
-				DigRadius = 4.5, FindChance = 0.013, Luck = 1.1, Cooldown = 0.47,
+				Power = 2, FindChance = 0.013, Luck = 1.1, Cooldown = 0.47,
 				Color = Color3.fromRGB(255, 200, 40), Material = "SmoothPlastic",
 				Description = "Built for sandcastles. Somehow better than rust."},
 			{Id = "GardenSpade", Name = "Garden Spade", Price = 3000, MaxZone = 2,
-				DigRadius = 5, FindChance = 0.015, Luck = 1.2, Cooldown = 0.45,
+				Power = 3, FindChance = 0.015, Luck = 1.2, Cooldown = 0.45,
 				Color = Color3.fromRGB(90, 170, 80), Material = "Metal",
 				Description = "Borrowed from a grandma. She wants it back."},
 			{Id = "IronShovel", Name = "Iron Shovel", Price = 15000, MaxZone = 2,
-				DigRadius = 5.5, FindChance = 0.017, Luck = 1.35, Cooldown = 0.42,
+				Power = 4, FindChance = 0.017, Luck = 1.35, Cooldown = 0.42,
 				Color = Color3.fromRGB(175, 180, 190), Material = "Metal",
 				Description = "A real tool for a real archaeologist."},
 			{Id = "SteelSpade", Name = "Steel Spade", Price = 60000, MaxZone = 3,
-				DigRadius = 6, FindChance = 0.018, Luck = 1.5, Cooldown = 0.39,
+				Power = 5, FindChance = 0.018, Luck = 1.5, Cooldown = 0.39,
 				Color = Color3.fromRGB(120, 140, 170), Material = "Metal",
 				Description = "Sharp enough to cut through ancient comment sections."},
 			{Id = "GoldenShovel", Name = "Golden Shovel", Price = 200000, MaxZone = 3,
-				DigRadius = 6.5, FindChance = 0.02, Luck = 1.7, Cooldown = 0.37,
+				Power = 6, FindChance = 0.02, Luck = 1.7, Cooldown = 0.37,
 				Color = Color3.fromRGB(255, 200, 60), Material = "Metal",
 				Description = "Shiny. Heavy. Completely unnecessary. Perfect."},
 			{Id = "GamerShovel", Name = "RGB Gamer Shovel", Price = 750000, MaxZone = 3,
-				DigRadius = 7, FindChance = 0.022, Luck = 2, Cooldown = 0.35,
+				Power = 7, FindChance = 0.022, Luck = 2, Cooldown = 0.35,
 				Color = Color3.fromRGB(255, 60, 200), Material = "Neon",
 				Description = "The RGB lights add +200% digging power. Science."},
 			{Id = "TectonicAuger", Name = "Tectonic Auger", Price = 3000000, MaxZone = 4,
-				DigRadius = 7.5, FindChance = 0.024, Luck = 2.4, Cooldown = 0.33,
+				Power = 8, FindChance = 0.024, Luck = 2.4, Cooldown = 0.33,
 				Color = Color3.fromRGB(128, 132, 138), Material = "Foil",
 				Description = "Legendary. Rated for bedrock, permafrost and 2049-era server racks."},
 			{Id = "SingularitySpade", Name = "Singularity Spade", Price = 10000000, MaxZone = 4,
-				DigRadius = 8, FindChance = 0.027, Luck = 3, Cooldown = 0.31,
+				Power = 9, FindChance = 0.027, Luck = 3, Cooldown = 0.31,
 				Color = Color3.fromRGB(62, 64, 70), Material = "Foil",
 				Description = "Mythic. Folds the Abyss around the blade. Do not dig near pets."},
 		},
@@ -979,7 +985,7 @@ for i, info in ipairs(WorldsData.Worlds) do
 		table.insert(shovels, {
 			Id = (entry[1]:gsub("[^%w]", "")), Name = entry[1], Description = entry[2],
 			Price = tier.PriceFactor * info.Price, MaxZone = tier.MaxZone,
-			DigRadius = tier.DigRadius, FindChance = tier.FindChance, Luck = tier.Luck, Cooldown = tier.Cooldown,
+			Power = tier.Power, FindChance = tier.FindChance, Luck = tier.Luck, Cooldown = tier.Cooldown,
 			Color = t % 2 == 1 and info.Look.Main or info.Look.Second, Material = "SmoothPlastic",
 			-- ShovelModels builds these from the world's colors (Theme decides the decorations)
 			Look = {Theme = info.Theme, Tier = t, Blade = entry[3], Grip = entry[4], Colors = info.Look},
@@ -1001,12 +1007,18 @@ end
 
 GameConfig.BedrockThickness = 8
 
+-- Crater size: every point of Power adds half a stud to the radius of the hole a swing digs
+function GameConfig.DigRadiusForPower(power)
+	return 3.5 + 0.5 * power
+end
+
 -- Every shovel from every world, in one list (ids must be unique across worlds)
 GameConfig.Shovels = {}
 local shovelById = {}
 for _, world in ipairs(GameConfig.Worlds) do
 	for _, shovel in ipairs(world.Shovels) do
 		shovel.World = world.Id
+		shovel.DigRadius = GameConfig.DigRadiusForPower(shovel.Power)
 		table.insert(GameConfig.Shovels, shovel)
 		shovelById[shovel.Id] = shovel
 	end
@@ -1112,6 +1124,8 @@ install(game:GetService("ReplicatedStorage"), "ShovelModels", "ModuleScript", [=
 -- World 1's shovels each have a hand-made cartoon design (see CUSTOM below); any other
 -- shovel is built from its STYLES entry. The server uses it for the tools and the shop
 -- displays, the client uses it to draw 3D shovel icons in the UI.
+
+local GameConfig = require(script.Parent:WaitForChild("GameConfig"))
 
 local SCALE = 0.62 -- overall size of the shovels
 local ALONG_Z = CFrame.Angles(0, math.rad(90), 0) -- points a cylinder along the shaft
@@ -1439,6 +1453,7 @@ local function kit(tool)
 		return bar(tool, name, a, b, thickness, color, material or "SmoothPlastic")
 	end
 	k.blade = CFrame.new(0, -0.05, -2.7) * CFrame.Angles(math.rad(-14), 0, 0)
+	k.tool = tool
 	return k
 end
 
@@ -1894,6 +1909,180 @@ local function themed(k, def)
 end
 
 ---------------------------------------------------------------------
+-- CRYSTAL SHOVELS (the default look, see GameConfig.ShovelLook)
+-- One blocky/crystal base design: a dark square-section handle with metal bands, a
+-- T-grip with crystal caps, and a cyan crystal blade (glassy plate, glowing core, round
+-- tip, faceted shards). Every shovel is this base, upgraded procedurally by its tier
+-- (its Power, 1-9):
+--   * Size:      the whole shovel grows 4% per tier
+--   * Color:     the crystals shift cyan -> aqua -> lime -> gold -> orange -> rose -> violet -> royal blue -> prismatic
+--   * Shards:    2 + tier faceted crystals on the blade
+--   * Orbits:    tier 3+ a ring of crystals spins around the collar, tier 6+ a second ring
+--                around the blade, tier 8+ a halo over the grip (they spin in ShovelClient /
+--                ShovelSpinner using the OrbitCenter/OrbitSpeed attributes)
+--   * VFX:       particles whose Rate, LightEmission and Size rise with the tier, plus a light
+-- Shovels from worlds 2-9 tint their dark metal and orbiters with their world's colors.
+---------------------------------------------------------------------
+local CRYSTAL_TIERS = {
+	rgb(90, 230, 255),  -- 1 cyan (the base design)
+	rgb(60, 255, 205),  -- 2 aqua
+	rgb(150, 255, 90),  -- 3 lime
+	rgb(255, 215, 70),  -- 4 gold
+	rgb(255, 140, 60),  -- 5 orange
+	rgb(255, 80, 150),  -- 6 rose
+	rgb(170, 90, 255),  -- 7 violet
+	rgb(80, 110, 255),  -- 8 royal blue
+	rgb(236, 244, 255), -- 9 prismatic white
+}
+
+-- visual numbers for a tier (exposed so other scripts could reuse them)
+local function tierStats(tier)
+	return {
+		Scale = 1 + (tier - 1) * 0.04,
+		Crystal = CRYSTAL_TIERS[math.clamp(tier, 1, #CRYSTAL_TIERS)],
+		Shards = 2 + tier,
+		ParticleRate = 2 + tier * 3,                  -- particles per second
+		ParticleLight = math.min(0.15 + tier * 0.095, 1), -- LightEmission 0.25 .. 1
+		ParticleSize = 0.08 + tier * 0.03,            -- starting particle size (studs, before SCALE)
+		LightBrightness = 0.4 + tier * 0.12,
+		LightRange = 4 + tier,
+	}
+end
+
+local function orbit(part, center, speed)
+	part:SetAttribute("OrbitCenter", center)
+	part:SetAttribute("OrbitSpeed", speed)
+	return part
+end
+
+local function crystal(k, def)
+	local tier = math.clamp(def.Power or 1, 1, 12)
+	local t = tierStats(tier)
+	local c = t.Crystal
+	local bright = c:Lerp(Color3.new(1, 1, 1), 0.45)
+	local look = def.Look and def.Look.Colors
+	local dark = look and look.Dark:Lerp(rgb(34, 34, 44), 0.5) or rgb(38, 38, 50)
+	local metal = look and look.Second:Lerp(rgb(120, 124, 140), 0.55) or rgb(118, 122, 138)
+	local accent = look and look.Glow or bright
+
+	-- HANDLE: blocky dark shaft with metal bands (glowing seams from tier 4)
+	k.part("Shaft", Vector3.new(0.3, 0.3, TOP + 2.3), CFrame.new(0, 0, (TOP - 2.3) / 2), dark)
+	for i, z in ipairs({1.05, -0.15, -1.35}) do
+		k.part("Band", Vector3.new(0.4, 0.4, 0.16), CFrame.new(0, 0, z), metal, "Metal")
+		if tier >= 4 then
+			k.part("BandGlow", Vector3.new(0.42, 0.42, 0.04), CFrame.new(0, 0, z + (i == 1 and 0.1 or -0.1)), c, "Neon")
+		end
+	end
+	k.part("GripWrap", Vector3.new(0.36, 0.36, 0.7), CFrame.new(0, 0, TOP - 0.55), rgb(24, 24, 30), "Fabric")
+	-- T-grip with a crystal cap on each end and one on top
+	k.part("TBar", Vector3.new(1.2, 0.3, 0.3), CFrame.new(0, 0, TOP), dark)
+	for _, side in ipairs({-1, 1}) do
+		k.part("GripCrystal", Vector3.new(0.34, 0.34, 0.34), CFrame.new(side * 0.68, 0, TOP) * CFrame.Angles(math.rad(45), math.rad(45), 0), c, "Glass")
+	end
+	k.part("Pommel", Vector3.new(0.3, 0.3, 0.3), CFrame.new(0, 0, TOP + 0.34) * CFrame.Angles(math.rad(45), math.rad(35), 0), c, "Glass")
+	k.hold = TOP
+
+	-- COLLAR where the blade meets the handle
+	k.part("Socket", Vector3.new(0.56, 0.56, 0.9), CFrame.new(0, 0, -2.35), dark, "Metal")
+	k.part("CollarGlow", Vector3.new(0.6, 0.6, 0.08), CFrame.new(0, 0, -1.98), c, "Neon")
+
+	-- BLADE: glassy crystal plate with a glowing core, a round tip and dark side guards
+	local b = k.blade
+	local plate = k.part("Blade", Vector3.new(1.7, 0.16, 1.4), b * CFrame.new(0, 0, -0.7), c, "Glass")
+	plate.Transparency = 0.12
+	plate.Reflectance = 0.2
+	local tip = k.part("BladeTip", Vector3.new(0.16, 1.7, 1.7), b * CFrame.new(0, 0, -1.4) * CFrame.Angles(0, 0, math.rad(90)), c, "Glass", Enum.PartType.Cylinder)
+	tip.Transparency = 0.12
+	tip.Reflectance = 0.2
+	k.part("CrystalCore", Vector3.new(0.5, 0.18, 0.9), b * CFrame.new(0, 0.005, -0.85) * CFrame.Angles(0, math.rad(45), 0), bright, "Neon")
+	k.part("CrystalCoreTip", Vector3.new(0.18, 0.55, 0.55), b * CFrame.new(0, 0.005, -1.45) * CFrame.Angles(0, 0, math.rad(90)), bright, "Neon", Enum.PartType.Cylinder)
+	k.part("FootStep", Vector3.new(1.95, 0.26, 0.26), b, dark, "Metal")
+	for _, side in ipairs({-1, 1}) do
+		k.part("SideGuard", Vector3.new(0.14, 0.24, 0.9), b * CFrame.new(side * 0.9, 0.02, -0.45), dark, "Metal")
+	end
+
+	-- faceted crystal shards growing out of the blade (more every tier)
+	for i = 1, t.Shards do
+		local row = (i - 1) % 4
+		local col = math.floor((i - 1) / 4)
+		local x = (row - 1.5) * 0.36 + (col % 2) * 0.12
+		local z = -0.25 - col * 0.42
+		local h = 0.24 + ((i * 7) % 5) * 0.05
+		k.part("Shard", Vector3.new(0.2, h, 0.2), b * CFrame.new(x, 0.1 + h * 0.3, z) * CFrame.Angles(math.rad(-20 + (i % 3) * 10), math.rad(i * 37), math.rad(45)),
+			i % 3 == 0 and bright or c, "Glass")
+	end
+
+	-- ROTATING DECORATIONS
+	if tier >= 3 then
+		local center = Vector3.new(0, 0, -1.9)
+		local n = 2 + math.floor(tier / 3)
+		for i = 1, n do
+			local a = math.pi * 2 * i / n
+			orbit(k.part("OrbitCrystal", Vector3.new(0.2, 0.2, 0.2), CFrame.new(center + Vector3.new(math.cos(a) * 0.75, math.sin(a) * 0.75, 0)) * CFrame.Angles(math.rad(45), math.rad(45), 0), accent, "Neon"), center, 2.4)
+		end
+	end
+	if tier >= 6 then
+		local center = Vector3.new(0, -0.2, -3.5)
+		local n = 3 + (tier - 6)
+		for i = 1, n do
+			local a = math.pi * 2 * i / n
+			orbit(k.part("OrbitShard", Vector3.new(0.16, 0.34, 0.16), CFrame.new(center + Vector3.new(math.cos(a) * 1.35, math.sin(a) * 1.35, 0)) * CFrame.Angles(0, 0, a), c, "Glass"), center, -1.7)
+		end
+	end
+	if tier >= 8 then
+		local center = Vector3.new(0, 0, TOP + 0.75)
+		for i = 1, 8 do
+			local a = math.pi * 2 * i / 8
+			orbit(k.part("Halo", Vector3.new(0.12, 0.12, 0.12), CFrame.new(center + Vector3.new(math.cos(a) * 0.55, math.sin(a) * 0.55, 0)), bright, "Neon", Enum.PartType.Ball), center, 3.2)
+		end
+	end
+
+	-- VFX: particles and light that grow with the tier
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Name = "CrystalDust"
+	emitter.Rate = t.ParticleRate
+	emitter.LightEmission = t.ParticleLight
+	emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, t.ParticleSize), NumberSequenceKeypoint.new(1, 0)})
+	emitter.Lifetime = NumberRange.new(0.5, 0.9 + tier * 0.05)
+	emitter.Speed = NumberRange.new(0.4, 0.8 + tier * 0.1)
+	emitter.SpreadAngle = Vector2.new(180, 180)
+	emitter.Color = ColorSequence.new(bright, c)
+	emitter.Transparency = NumberSequence.new(0.1, 1)
+	emitter.Parent = plate
+	if tier >= 5 then
+		local sparks = Instance.new("ParticleEmitter")
+		sparks.Name = "CrystalSparks"
+		sparks.Rate = (tier - 4) * 4
+		sparks.LightEmission = 1
+		sparks.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, t.ParticleSize * 0.6), NumberSequenceKeypoint.new(1, 0)})
+		sparks.Lifetime = NumberRange.new(0.3, 0.6)
+		sparks.Speed = NumberRange.new(2, 4)
+		sparks.Acceleration = Vector3.new(0, -6, 0)
+		sparks.SpreadAngle = Vector2.new(60, 60)
+		sparks.Color = ColorSequence.new(accent)
+		sparks.Parent = tip
+	end
+	light(plate, c, t.LightRange)
+	local l = plate:FindFirstChildOfClass("PointLight")
+	if l then l.Brightness = t.LightBrightness end
+
+	-- SIZE UPGRADE: scale everything up around the tool's origin
+	if t.Scale ~= 1 then
+		for _, part in ipairs(k.tool:GetChildren()) do
+			if part:IsA("BasePart") and part.Name ~= "Handle" then
+				local rotation = part.CFrame.Rotation
+				part.Size = part.Size * t.Scale
+				part.CFrame = CFrame.new(part.Position * t.Scale) * rotation
+				local center = part:GetAttribute("OrbitCenter")
+				if center then part:SetAttribute("OrbitCenter", center * t.Scale) end
+			end
+		end
+		k.hold = TOP * t.Scale
+		emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, t.ParticleSize * t.Scale), NumberSequenceKeypoint.new(1, 0)})
+	end
+end
+
+---------------------------------------------------------------------
 -- BUILD A SHOVEL TOOL
 ---------------------------------------------------------------------
 return function(def)
@@ -1910,7 +2099,12 @@ return function(def)
 	local handle = newPart(tool, "Handle", Vector3.new(0.3, 0.3, 4.4), CFrame.new(), s.Shaft, s.ShaftMat)
 	handle.Transparency = 1
 
-	local custom = CUSTOM[def.Id] or (def.Look and themed)
+	local custom
+	if GameConfig.ShovelLook == "Crystal" then
+		custom = crystal
+	else
+		custom = CUSTOM[def.Id] or (def.Look and themed)
+	end
 	local rightZ, leftZ -- where the right and left hands hold the shaft (before scaling)
 	if custom then
 		local k = kit(tool)
@@ -2018,11 +2212,17 @@ return function(def)
 			local rotation = part.CFrame.Rotation
 			part.Size = part.Size * SCALE
 			part.CFrame = CFrame.new(part.Position * SCALE) * rotation
+			local center = part:GetAttribute("OrbitCenter")
+			if center then part:SetAttribute("OrbitCenter", center * SCALE) end
 		end
 	end
 	for _, emitter in ipairs(tool:GetDescendants()) do
 		if emitter:IsA("ParticleEmitter") then
-			emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.12 * SCALE), NumberSequenceKeypoint.new(1, 0)})
+			local keys = {}
+			for _, key in ipairs(emitter.Size.Keypoints) do
+				table.insert(keys, NumberSequenceKeypoint.new(key.Time, key.Value * SCALE, key.Envelope * SCALE))
+			end
+			emitter.Size = NumberSequence.new(keys)
 		end
 	end
 
@@ -2710,7 +2910,12 @@ install(game:GetService("ReplicatedStorage"), "WorldsData", "ModuleScript", [=[
 --   Top / Wall      terrain material of the island surface and of the pit walls
 --   Zones           terrain material + color of the 4 depth zones (Shallow, Mid, Deep, Abyss)
 --   Look            colors for the island decorations and the world's shovels
---   Sky             lighting players see while they're in the world
+--   Sky             lighting players see while they're in the world (WorldClient applies it):
+--                   ClockTime, Latitude (sun angle), Brightness, Exposure (ExposureCompensation),
+--                   Ambient/OutdoorAmbient, Fog/Decay/Density/Offset/Haze/Glare (Atmosphere),
+--                   Tint/Saturation/Contrast (color grade), Bloom {Intensity, Size, Threshold},
+--                   SunRays {Intensity, Spread}, Clouds (cover). Lighting.Technology is set to
+--                   Future by the installer for realistic lights and reflections.
 --   Shovels         {name, description, blade shape, grip}; stats come from SHOVEL_TIERS
 
 local rgb = Color3.fromRGB
@@ -2720,13 +2925,13 @@ local WorldsData = {}
 -- Every world's 7 shovels follow the same progression; price = PriceFactor x the world's price.
 -- MaxZone: 1 = Shallow, 2 = Mid, 3 = Deep, 4 = Abyss
 WorldsData.ShovelTiers = {
-	{MaxZone = 1, DigRadius = 4.5, FindChance = 0.012, Luck = 1,   Cooldown = 0.5,  PriceFactor = 0},
-	{MaxZone = 2, DigRadius = 5,   FindChance = 0.014, Luck = 1.2, Cooldown = 0.46, PriceFactor = 0.05},
-	{MaxZone = 2, DigRadius = 5.5, FindChance = 0.016, Luck = 1.4, Cooldown = 0.43, PriceFactor = 0.15},
-	{MaxZone = 3, DigRadius = 6,   FindChance = 0.018, Luck = 1.7, Cooldown = 0.4,  PriceFactor = 0.4},
-	{MaxZone = 3, DigRadius = 6.5, FindChance = 0.02,  Luck = 2,   Cooldown = 0.37, PriceFactor = 1},
-	{MaxZone = 4, DigRadius = 7.5, FindChance = 0.024, Luck = 2.5, Cooldown = 0.34, PriceFactor = 2.5},
-	{MaxZone = 4, DigRadius = 8,   FindChance = 0.027, Luck = 3,   Cooldown = 0.31, PriceFactor = 6},
+	{MaxZone = 1, Power = 2, FindChance = 0.012, Luck = 1,   Cooldown = 0.5,  PriceFactor = 0},
+	{MaxZone = 2, Power = 3,   FindChance = 0.014, Luck = 1.2, Cooldown = 0.46, PriceFactor = 0.05},
+	{MaxZone = 2, Power = 4, FindChance = 0.016, Luck = 1.4, Cooldown = 0.43, PriceFactor = 0.15},
+	{MaxZone = 3, Power = 5,   FindChance = 0.018, Luck = 1.7, Cooldown = 0.4,  PriceFactor = 0.4},
+	{MaxZone = 3, Power = 6, FindChance = 0.02,  Luck = 2,   Cooldown = 0.37, PriceFactor = 1},
+	{MaxZone = 4, Power = 8, FindChance = 0.024, Luck = 2.5, Cooldown = 0.34, PriceFactor = 2.5},
+	{MaxZone = 4, Power = 9,   FindChance = 0.027, Luck = 3,   Cooldown = 0.31, PriceFactor = 6},
 }
 
 -- Terrain colors are shared by the whole map (Roblox paints each material one color
@@ -2753,7 +2958,8 @@ WorldsData.Worlds = {
 		Zones = {"Mud", "Brick", "WoodPlanks", "Salt"},
 		Look = {Main = rgb(255, 170, 205), Second = rgb(255, 238, 244), Dark = rgb(128, 62, 80), Glow = rgb(255, 120, 180), Accent = rgb(255, 214, 120)},
 		Sky = {ClockTime = 17.3, Ambient = rgb(120, 96, 120), OutdoorAmbient = rgb(160, 130, 160), Tint = rgb(255, 232, 242),
-			Fog = rgb(255, 200, 225), Decay = rgb(200, 130, 170), Density = 0.32, Clouds = 0.55},
+			Fog = rgb(255, 200, 225), Decay = rgb(200, 130, 170), Density = 0.32, Clouds = 0.55,
+			Brightness = 2.6, Exposure = 0.15, Latitude = 30, Offset = 0.25, Haze = 1.6, Glare = 0.6, Saturation = 0.12, Contrast = 0.08, Bloom = {0.35, 24, 1.9}, SunRays = {0.12, 0.25}},
 		Shovels = {
 			{"Blossom Trowel", "A little pink trowel. Leaves petals everywhere it digs.", "Spade", "D"},
 			{"Bamboo Spade", "Light, strong and grown in a week.", "Spade", "T"},
@@ -2772,7 +2978,8 @@ WorldsData.Worlds = {
 		Zones = {"Pavement", "Limestone", "Basalt", "Ice"},
 		Look = {Main = rgb(130, 96, 255), Second = rgb(40, 36, 96), Dark = rgb(22, 20, 52), Glow = rgb(110, 220, 255), Accent = rgb(255, 214, 110)},
 		Sky = {ClockTime = 0, Ambient = rgb(118, 110, 170), OutdoorAmbient = rgb(140, 130, 200), Tint = rgb(226, 222, 255),
-			Fog = rgb(80, 60, 160), Decay = rgb(40, 30, 100), Density = 0.32, Clouds = 0},
+			Fog = rgb(80, 60, 160), Decay = rgb(40, 30, 100), Density = 0.32, Clouds = 0,
+			Brightness = 1.2, Exposure = 0.35, Latitude = 20, Offset = 0.3, Haze = 0.3, Glare = 0, Saturation = 0.15, Contrast = 0.12, Bloom = {0.5, 28, 1.4}, SunRays = {0, 0.1}},
 		Shovels = {
 			{"Meteor Scoop", "Made from a meteor that landed on a meme.", "Scoop", "T"},
 			{"Rocket Spade", "Has tiny thrusters. Mostly for style.", "Spade", "T"},
@@ -2791,7 +2998,8 @@ WorldsData.Worlds = {
 		Zones = {"Ice", "Concrete", "Glacier", "Cobblestone"},
 		Look = {Main = rgb(150, 226, 255), Second = rgb(246, 250, 255), Dark = rgb(56, 88, 140), Glow = rgb(130, 255, 220), Accent = rgb(190, 170, 255)},
 		Sky = {ClockTime = 9.5, Ambient = rgb(110, 120, 150), OutdoorAmbient = rgb(150, 165, 195), Tint = rgb(236, 246, 255),
-			Fog = rgb(215, 235, 255), Decay = rgb(140, 170, 220), Density = 0.3, Clouds = 0.7},
+			Fog = rgb(215, 235, 255), Decay = rgb(140, 170, 220), Density = 0.3, Clouds = 0.7,
+			Brightness = 3.2, Exposure = 0.05, Latitude = 65, Offset = 0.2, Haze = 2.2, Glare = 0.3, Saturation = -0.05, Contrast = 0.1, Bloom = {0.3, 20, 2.2}, SunRays = {0.06, 0.2}},
 		Shovels = {
 			{"Snowball Scoop", "Packs perfect snowballs. Also digs.", "Scoop", "T"},
 			{"Icicle Spade", "Sharp, shiny and a bit drippy.", "Spade", "D"},
@@ -2810,7 +3018,8 @@ WorldsData.Worlds = {
 		Zones = {"Sandstone", "Ground", "Brick", "Salt"},
 		Look = {Main = rgb(255, 196, 90), Second = rgb(226, 232, 244), Dark = rgb(120, 76, 50), Glow = rgb(255, 150, 70), Accent = rgb(80, 210, 220)},
 		Sky = {ClockTime = 13, Ambient = rgb(128, 112, 96), OutdoorAmbient = rgb(170, 150, 128), Tint = rgb(255, 244, 226),
-			Fog = rgb(255, 222, 170), Decay = rgb(220, 160, 110), Density = 0.3, Clouds = 0.2},
+			Fog = rgb(255, 222, 170), Decay = rgb(220, 160, 110), Density = 0.3, Clouds = 0.2,
+			Brightness = 3.6, Exposure = 0.1, Latitude = 15, Offset = 0.2, Haze = 2.6, Glare = 0.9, Saturation = 0.08, Contrast = 0.14, Bloom = {0.3, 24, 2.1}, SunRays = {0.1, 0.3}},
 		Shovels = {
 			{"Sandy Scoop", "Full of sand. Always. Forever.", "Scoop", "T"},
 			{"Cactus Spade", "Hug it at your own risk.", "Spade", "D"},
@@ -2829,7 +3038,8 @@ WorldsData.Worlds = {
 		Zones = {"Brick", "Limestone", "Ice", "Pavement"},
 		Look = {Main = rgb(255, 128, 150), Second = rgb(90, 220, 220), Dark = rgb(30, 80, 120), Glow = rgb(120, 240, 255), Accent = rgb(255, 230, 160)},
 		Sky = {ClockTime = 15, Ambient = rgb(90, 120, 140), OutdoorAmbient = rgb(120, 160, 180), Tint = rgb(226, 250, 255),
-			Fog = rgb(120, 210, 230), Decay = rgb(60, 140, 180), Density = 0.35, Clouds = 0.4},
+			Fog = rgb(120, 210, 230), Decay = rgb(60, 140, 180), Density = 0.35, Clouds = 0.4,
+			Brightness = 2.8, Exposure = 0.1, Latitude = 25, Offset = 0.3, Haze = 1.8, Glare = 0.2, Saturation = 0.18, Contrast = 0.06, Bloom = {0.35, 24, 1.9}, SunRays = {0.15, 0.35}},
 		Shovels = {
 			{"Seashell Scoop", "Hold it to your ear: you hear dirt.", "Scoop", "D"},
 			{"Anchor Spade", "Heavy. Very heavy. Digs straight down.", "Spade", "T"},
@@ -2848,7 +3058,8 @@ WorldsData.Worlds = {
 		Zones = {"LeafyGrass", "Sand", "Mud", "Ice"},
 		Look = {Main = rgb(255, 120, 190), Second = rgb(130, 236, 200), Dark = rgb(120, 70, 60), Glow = rgb(255, 170, 230), Accent = rgb(255, 226, 110)},
 		Sky = {ClockTime = 14, Ambient = rgb(130, 110, 130), OutdoorAmbient = rgb(175, 150, 175), Tint = rgb(255, 238, 248),
-			Fog = rgb(255, 214, 240), Decay = rgb(220, 160, 210), Density = 0.32, Clouds = 0.6},
+			Fog = rgb(255, 214, 240), Decay = rgb(220, 160, 210), Density = 0.32, Clouds = 0.6,
+			Brightness = 3, Exposure = 0.05, Latitude = 35, Offset = 0.25, Haze = 1.2, Glare = 0.3, Saturation = 0.2, Contrast = 0.05, Bloom = {0.3, 24, 2}, SunRays = {0.08, 0.25}},
 		Shovels = {
 			{"Lollipop Scoop", "Swirly, sticky and surprisingly strong.", "Scoop", "T"},
 			{"Candy Cane Spade", "Minty fresh digging.", "Spade", "D"},
@@ -2867,7 +3078,8 @@ WorldsData.Worlds = {
 		Zones = {"Ground", "Brick", "Asphalt", "CrackedLava"},
 		Look = {Main = rgb(255, 120, 50), Second = rgb(60, 52, 70), Dark = rgb(34, 28, 40), Glow = rgb(255, 150, 60), Accent = rgb(255, 214, 90)},
 		Sky = {ClockTime = 18.6, Ambient = rgb(120, 86, 80), OutdoorAmbient = rgb(150, 105, 95), Tint = rgb(255, 232, 220),
-			Fog = rgb(200, 110, 80), Decay = rgb(120, 60, 50), Density = 0.35, Clouds = 0.5},
+			Fog = rgb(200, 110, 80), Decay = rgb(120, 60, 50), Density = 0.35, Clouds = 0.5,
+			Brightness = 2.2, Exposure = 0.2, Latitude = 40, Offset = 0.2, Haze = 2.4, Glare = 1.2, Saturation = 0.1, Contrast = 0.18, Bloom = {0.5, 28, 1.6}, SunRays = {0.2, 0.3}},
 		Shovels = {
 			{"Ember Spade", "Always a little bit warm.", "Spade", "D"},
 			{"Anvil Shovel", "Forged on an anvil. Kind of shaped like one too.", "Spade", "T"},
@@ -2886,7 +3098,8 @@ WorldsData.Worlds = {
 		Zones = {"Cobblestone", "Asphalt", "Limestone", "Snow"},
 		Look = {Main = rgb(90, 255, 150), Second = rgb(255, 80, 220), Dark = rgb(20, 18, 30), Glow = rgb(90, 255, 170), Accent = rgb(90, 200, 255)},
 		Sky = {ClockTime = 21.5, Ambient = rgb(100, 120, 120), OutdoorAmbient = rgb(125, 150, 150), Tint = rgb(236, 255, 244),
-			Fog = rgb(40, 60, 70), Decay = rgb(90, 40, 110), Density = 0.32, Clouds = 0},
+			Fog = rgb(40, 60, 70), Decay = rgb(90, 40, 110), Density = 0.32, Clouds = 0,
+			Brightness = 1.4, Exposure = 0.3, Latitude = 0, Offset = 0.25, Haze = 0.8, Glare = 0, Saturation = 0.25, Contrast = 0.2, Bloom = {0.6, 30, 1.3}, SunRays = {0, 0.1}},
 		Shovels = {
 			{"Placeholder Spade", "TODO: add a description.", "Spade", "D"},
 			{"Pixel Shovel", "Rendered at 8 pixels. Works anyway.", "Spade", "T"},
@@ -3297,6 +3510,103 @@ end
 
 local STYLES = {stackTower, tubeTower, twistTower, podTower}
 
+---------------------------------------------------------------------
+-- MEGATOWERS: the towering landmarks of the 2050 skyline (the 8 sturdiest tower spots).
+-- Blended cartoony-realism: tinted Glass floors that twist as they rise (each floor is
+-- turned a little more with CFrame.Angles), thin white floor plates, Neon corner ribs that
+-- spiral up with the twist, cantilevered sky gardens, a stepped crown and a glowing spire.
+---------------------------------------------------------------------
+local MEGA_COUNT = 8
+local MEGA_GLASS = {
+	{Name = "MegaGlassSky", Color = Color3.fromRGB(120, 200, 255)},
+	{Name = "MegaGlassLilac", Color = Color3.fromRGB(180, 160, 255)},
+	{Name = "MegaGlassMint", Color = Color3.fromRGB(110, 235, 205)},
+	{Name = "MegaGlassRose", Color = Color3.fromRGB(255, 160, 205)},
+}
+for _, g in ipairs(MEGA_GLASS) do
+	P[g.Name] = {Color = g.Color, Material = Enum.Material.Glass, Transparency = 0.25, Reflectance = 0.25}
+end
+P.MegaSteel = {Color = Color3.fromRGB(236, 240, 248), Material = Enum.Material.Metal, Reflectance = 0.1}
+local MEGA_NEON = {
+	{Name = "MegaNeonCyan", Color = Color3.fromRGB(90, 220, 255)},
+	{Name = "MegaNeonPink", Color = Color3.fromRGB(255, 110, 200)},
+	{Name = "MegaNeonGold", Color = Color3.fromRGB(255, 205, 90)},
+	{Name = "MegaNeonMint", Color = Color3.fromRGB(90, 255, 190)},
+}
+for _, g in ipairs(MEGA_NEON) do
+	P[g.Name] = {Color = g.Color, Material = Enum.Material.Neon}
+end
+
+local function megaTower(b, w, h, rng)
+	local glass = pick(rng, MEGA_GLASS).Name
+	local neon = pick(rng, MEGA_NEON).Name
+	local twistPerFloor = math.rad(rng:NextNumber(2.2, 3.6)) * (rng:NextNumber() < 0.5 and -1 or 1)
+	local floorH = 12
+	local podiumH = 14
+
+	-- podium: two rounded steps with a glowing lip
+	b:roundedBlock("MegaPodium", Vector3.new(w + 14, podiumH * 0.6, w + 14), CFrame.new(0, podiumH * 0.3, 0), 8, "MegaSteel")
+	b:roundedBlock("MegaPodiumLip", Vector3.new(w + 15, 0.8, w + 15), CFrame.new(0, podiumH * 0.6, 0), 8.2, neon)
+	b:roundedBlock("MegaLobby", Vector3.new(w + 6, podiumH * 0.4, w + 6), CFrame.new(0, podiumH * 0.8, 0), 6, glass)
+
+	local floors = math.floor((h - podiumH - 40) / floorH)
+	local prevCorners
+	for i = 0, floors - 1 do
+		local y = podiumH + i * floorH
+		local t = i / math.max(floors - 1, 1)
+		-- slim waist at 60% height, slight flare near the top (an elegant hourglass taper)
+		local size = w * (1 - 0.28 * math.sin(t * math.pi * 0.85)) * (1 - 0.15 * t)
+		local turn = CFrame.Angles(0, i * twistPerFloor, 0)
+		local floorCF = CFrame.new(0, y + floorH / 2, 0) * turn
+		-- (plain boxes keep the part count low: 2 parts per floor)
+		b:box("MegaFloor", Vector3.new(size, floorH - 1, size), floorCF, glass)
+		b:box("MegaPlate", Vector3.new(size + 1.4, 1, size + 1.4), CFrame.new(0, y, 0) * turn, "MegaSteel")
+
+		-- corner ribs: every 2 floors a neon rod joins each corner to the same corner two floors
+		-- up, which is turned further, so the ribs spiral around the tower
+		local inset = size * 0.5
+		local corners = {}
+		for k = 0, 3 do
+			local a = math.rad(45 + k * 90)
+			corners[k + 1] = (CFrame.new(0, y, 0) * turn * CFrame.new(math.cos(a) * inset * 1.414 + math.cos(a) * 0.4, 0, math.sin(a) * inset * 1.414 + math.sin(a) * 0.4)).Position
+		end
+		if i % 3 == 0 then
+			if prevCorners then
+				for k = 1, 4 do
+					local a, c = prevCorners[k], corners[k]
+					b:rod("MegaRib", (c - a).Magnitude + 0.6, 0.9, Architecture.alongX((a + c) / 2, c - a), neon)
+				end
+			end
+			prevCorners = corners
+		end
+
+		-- sky gardens at one third and two thirds of the height
+		if i == math.floor(floors / 3) or i == math.floor(floors * 2 / 3) then
+			local gardenCF = CFrame.new(0, y + 0.5, 0) * turn
+			b:disc("SkyGarden", size * 1.5, 1.4, gardenCF, "MegaSteel")
+			b:ring("SkyGardenRail", gardenCF * CFrame.new(0, 1.4, 0) * CFrame.Angles(math.rad(90), 0, 0), size * 0.75, 0.5, neon, 28)
+			for k = 1, 6 do
+				local a = math.pi * 2 * k / 6
+				local spot = gardenCF * CFrame.new(math.cos(a) * size * 0.62, 0.7, math.sin(a) * size * 0.62)
+				b:pill("GardenTrunk", spot.Position, (spot * CFrame.new(0, 3, 0)).Position, 0.6, "Chrome")
+				b:ball("GardenTree", 3.4, spot * CFrame.new(0, 4.2, 0), k % 2 == 0 and "Mint" or "GlowMint")
+			end
+		end
+	end
+
+	-- crown: stepped discs, a halo ring and a spire with a beacon
+	local topY = podiumH + floors * floorH
+	local crownW = w * 0.6
+	local _, crownH = b:tiers("MegaCrown", CFrame.new(0, topY, 0) * CFrame.Angles(0, floors * twistPerFloor, 0), {
+		{crownW, 4, "MegaSteel"}, {crownW * 0.78, 3, glass}, {crownW * 0.55, 3, "MegaSteel"}, {crownW * 0.3, 6, glass},
+	})
+	b:ring("MegaHalo", CFrame.new(0, topY + crownH + 4, 0) * CFrame.Angles(math.rad(90), 0, 0), crownW * 0.5, 1, neon, 32)
+	local spireTop = topY + crownH + 30
+	b:pill("MegaSpire", Vector3.new(0, topY + crownH, 0), Vector3.new(0, spireTop, 0), 1.6, "Chrome")
+	b:bulb("MegaBeacon", 3, CFrame.new(0, spireTop + 2, 0), neon, 40)
+end
+
+
 -- Podium + little park around every tower
 local function base(b, w, rng, accent)
 	b:disc("Park", w * 1.9, 0.4, CFrame.new(0, 0.2, 0), "Mint")
@@ -3349,6 +3659,11 @@ function CityBuilder.rebuildTowers(city)
 	if not towers or towers:GetAttribute("Cartoon2050") then return end
 	local list = findTowers(towers)
 	towers:ClearAllChildren()
+	-- the sturdiest footprints become megatowers
+	local bySize = table.clone(list)
+	table.sort(bySize, function(a, c) return math.min(a.Size.X, a.Size.Z) > math.min(c.Size.X, c.Size.Z) end)
+	local mega = {}
+	for i = 1, math.min(MEGA_COUNT, #bySize) do mega[bySize[i]] = true end
 	for i, tower in ipairs(list) do
 		local pos = tower.CFrame.Position
 		local rng = Random.new(i * 7919)
@@ -3360,8 +3675,13 @@ function CityBuilder.rebuildTowers(city)
 		local body = pick(rng, BODIES)
 		local accent = pick(rng, ACCENTS)
 		local glow = pick(rng, GLOWS)
-		base(b, w, rng, accent)
-		STYLES[(i - 1) % #STYLES + 1](b, w, h, rng, body, accent, glow)
+		if mega[tower] then
+			model.Name = "MegaTower"
+			megaTower(b, math.clamp(math.min(tower.Size.X, tower.Size.Z) - 4, 24, 40), math.clamp(math.max(h * 1.6, 400), 400, 580), rng)
+		else
+			base(b, w, rng, accent)
+			STYLES[(i - 1) % #STYLES + 1](b, w, h, rng, body, accent, glow)
+		end
 		model.Parent = towers
 	end
 	towers:SetAttribute("Cartoon2050", true)
@@ -3799,7 +4119,8 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	-- bit below the clicked cell and up enough to walk into, but never below the bottom of
 	-- the shovel's deepest zone.
 	local floorY = origin.Y + world.Zones[def.MaxZone].Bottom
-	local radius = (def.DigRadius + 2) / 2 + 0.75
+	-- the crater's radius scales straight with the shovel's Power (see GameConfig.DigRadiusForPower)
+	local radius = (GameConfig.DigRadiusForPower(def.Power) + 2) / 2 + 0.75
 	local centerY = math.max(carveAt.Y + radius * 0.35, floorY + radius)
 	terrain:FillBall(Vector3.new(carveAt.X, centerY, carveAt.Z), radius, Enum.Material.Air)
 	burst(target, zone.Color, 28, 14)
@@ -4901,8 +5222,11 @@ end
 ]=])
 install(game:GetService("ServerScriptService"), "PlayerData", "ModuleScript", [=[
 -- PlayerData (ModuleScript in ServerScriptService)
--- Loads and saves each player's progress, pays income every second,
--- gives offline earnings, and lets other server scripts change the data safely.
+-- Loads and saves each player's progress with ProfileService (session-locked, auto-saving,
+-- safe against two servers editing the same save), pays passive income every second from
+-- the memes on display, gives offline earnings, and lets other server scripts change the
+-- data safely. Museum slot and floor purchases go through UnlockSlot/UnlockFloor here
+-- (MuseumManager checks the price and takes the money first).
 
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
@@ -4911,12 +5235,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
-local STORE_NAME = "PlayerData_v1" -- change the version to wipe everyone's data (e.g. before launch)
-local AUTOSAVE_SECONDS = 60
-local store = DataStoreService:GetDataStore(STORE_NAME)
+local ProfileService = require(script.Parent:WaitForChild("ProfileService"))
+
+local STORE_NAME = "PlayerProfiles_v1" -- change the version to wipe everyone's data (e.g. before launch)
+local OLD_STORE_NAME = "PlayerData_v1"  -- saves from before ProfileService; imported once per player
+local oldStore = DataStoreService:GetDataStore(OLD_STORE_NAME)
 
 local PlayerData = {}
-local sessions = {} -- [player] = data table
+local sessions = {} -- [player] = data table (the profile's Data, saved automatically)
+local profiles = {} -- [player] = ProfileService profile
 
 local changedEvent = Instance.new("BindableEvent")
 PlayerData.Changed = changedEvent.Event -- fires (player, data) whenever something changes
@@ -4958,6 +5285,9 @@ local function reconcile(data, template)
 		end
 	end
 end
+
+-- every new profile starts as a copy of this; Reconcile() adds new fields to old saves
+local profileStore = ProfileService.GetProfileStore(STORE_NAME, defaultData())
 
 local function retry(fn)
 	for attempt = 1, 3 do
@@ -5038,41 +5368,71 @@ end
 ---------------------------------------------------------------------
 local function load(player)
 	local key = "Player_" .. player.UserId
-	local ok, saved = retry(function()
-		return store:GetAsync(key)
-	end)
-	if not ok then
-		-- Never start with empty data if loading failed, or we'd overwrite their real save
+	-- "ForceLoad": if another server still holds this save (e.g. the player just hopped
+	-- servers), ProfileService asks it to let go and waits, instead of loading stale data
+	local profile = profileStore:LoadProfileAsync(key, "ForceLoad")
+	if not profile then
+		-- Never play on empty data if loading failed, or we'd overwrite their real save
 		player:Kick("Couldn't load your museum data. Please rejoin!")
 		return
 	end
-	if not player.Parent then return end -- left while loading
-
-	local data = saved or defaultData()
-	if saved then
-		migrate(saved)
+	profile:AddUserId(player.UserId) -- GDPR: lets Roblox erase it on request
+	profile:Reconcile()
+	profile:ListenToRelease(function()
+		profiles[player] = nil
+		sessions[player] = nil
+		-- the save was taken by another server: this session must stop using it
+		if player.Parent then
+			player:Kick("Your museum was opened on another server. Please rejoin!")
+		end
+	end)
+	if not player.Parent then
+		profile:Release() -- left while loading
+		return
 	end
-	reconcile(data, defaultData())
+
+	local data = profile.Data
+	-- First time on ProfileService: bring over the save from the old DataStore
+	local returning = profile.MetaData.SessionLoadCount > 1
+	if not data.ImportedOldSave then
+		local ok, old = retry(function()
+			return oldStore:GetAsync(key)
+		end)
+		if not ok then
+			profile:Release()
+			player:Kick("Couldn't load your museum data. Please rejoin!")
+			return
+		end
+		if type(old) == "table" then
+			for field, value in pairs(old) do
+				data[field] = value
+			end
+			migrate(data)
+			reconcile(data, defaultData())
+			returning = true
+			print("[LOAD] Imported " .. player.Name .. "'s old save into ProfileService")
+		end
+		data.ImportedOldSave = true
+	end
+	migrate(data)
 
 	-- Offline earnings
-	if not saved then
-		print("[LOAD] No save found for " .. player.Name .. ", starting fresh")
-	end
-	if saved then
+	if returning then
 		local away = math.max(0, os.time() - (data.LastOnline or os.time()))
 		local counted = math.min(away, GameConfig.OfflineCapHours * 3600)
 		local earned = math.floor(computeIncome(data) * counted * GameConfig.OfflineMultiplier)
-		print("[LOAD] " .. player.Name .. " was away " .. away .. " seconds, income on display: "
-			.. ArtifactData.FormatMoney(computeIncome(data)) .. "/s")
 		if earned > 0 then
 			data.Money += earned
 			data.Stats.TotalEarned += earned
 			player:SetAttribute("OfflineEarnings", earned)
 			print(player.Name .. " earned " .. ArtifactData.FormatMoney(earned) .. " while offline")
 		end
+	else
+		print("[LOAD] New player " .. player.Name .. ", starting fresh")
 	end
 	data.LastOnline = os.time()
 
+	profiles[player] = profile
 	sessions[player] = data
 	makeLeaderstats(player)
 	refresh(player)
@@ -5080,21 +5440,14 @@ local function load(player)
 	print(player.Name .. "'s data loaded. Money: " .. ArtifactData.FormatMoney(data.Money))
 end
 
-local function save(player)
-	local data = sessions[player]
-	if not data then return end
-	data.LastOnline = os.time()
-	local key = "Player_" .. player.UserId
-	local ok = retry(function()
-		store:UpdateAsync(key, function()
-			return data
-		end)
-	end)
-	if ok then
-		print("[SAVE] " .. player.Name .. "'s data saved. Money: " .. ArtifactData.FormatMoney(data.Money))
-	else
-		warn("Failed to save data for " .. player.Name)
-	end
+-- ProfileService saves on its own every ~30 seconds; releasing does the final save
+local function release(player)
+	local profile = profiles[player]
+	if not profile then return end
+	profile.Data.LastOnline = os.time()
+	profiles[player] = nil
+	sessions[player] = nil
+	profile:Release()
 end
 
 ---------------------------------------------------------------------
@@ -5200,10 +5553,7 @@ for _, player in ipairs(Players:GetPlayers()) do
 	task.spawn(load, player)
 end
 
-Players.PlayerRemoving:Connect(function(player)
-	save(player)
-	sessions[player] = nil
-end)
+Players.PlayerRemoving:Connect(release)
 
 -- Pay income every second
 task.spawn(function()
@@ -5220,31 +5570,8 @@ task.spawn(function()
 	end
 end)
 
--- Autosave
-task.spawn(function()
-	while true do
-		task.wait(AUTOSAVE_SECONDS)
-		for player in pairs(sessions) do
-			task.spawn(save, player)
-		end
-	end
-end)
-
--- Save everyone when the server shuts down
-game:BindToClose(function()
-	local running = 0
-	for player in pairs(sessions) do
-		running += 1
-		task.spawn(function()
-			save(player)
-			running -= 1
-		end)
-	end
-	local start = os.clock()
-	while running > 0 and os.clock() - start < 25 do
-		task.wait(0.1)
-	end
-end)
+-- Autosaving and saving on shutdown are handled by ProfileService (it releases every
+-- profile when the server closes).
 
 return PlayerData
 ]=])
@@ -5372,6 +5699,2424 @@ for _, player in ipairs(Players:GetPlayers()) do
 	task.spawn(onPlayerAdded, player)
 end
 ]=])
+install(game:GetService("ServerScriptService"), "ProfileService", "ModuleScript", [=[
+-- ProfileService by MadStudio (loleris), Apache License 2.0.
+-- Source: https://github.com/MadStudioRoblox/ProfileService (full license: third_party/ProfileService/LICENSE)
+-- Unmodified copy; PlayerData uses it for session-locked saving.
+-- local Madwork = _G.Madwork
+--[[
+{Madwork}
+
+-[ProfileService]---------------------------------------
+	(STANDALONE VERSION)
+	DataStore profiles - universal session-locked savable table API
+	
+	Official documentation:
+		https://madstudioroblox.github.io/ProfileService/
+
+	DevForum discussion:
+		https://devforum.roblox.com/t/ProfileService/667805
+	
+	WARNINGS FOR "Profile.Data" VALUES:
+	 	! Do not create numeric tables with gaps - attempting to replicate such tables will result in an error;
+		! Do not create mixed tables (some values indexed by number and others by string key), as only
+		     the data indexed by number will be replicated.
+		! Do not index tables by anything other than numbers and strings.
+		! Do not reference Roblox Instances
+		! Do not reference userdata (Vector3, Color3, CFrame...) - Serialize userdata before referencing
+		! Do not reference functions
+		
+	WARNING: Calling ProfileStore:LoadProfileAsync() with a "profile_key" which wasn't released in the SAME SESSION will result
+		in an error! If you want to "ProfileStore:LoadProfileAsync()" instead of using the already loaded profile, :Release()
+		the old Profile object.
+		
+	Members:
+	
+		ProfileService.ServiceLocked         [bool]
+		
+		ProfileService.IssueSignal           [ScriptSignal] (error_message, profile_store_name, profile_key)
+		ProfileService.CorruptionSignal      [ScriptSignal] (profile_store_name, profile_key)
+		ProfileService.CriticalStateSignal   [ScriptSignal] (is_critical_state)
+	
+	Functions:
+	
+		ProfileService.GetProfileStore(profile_store_index, profile_template) --> [ProfileStore]
+			profile_store_index   [string] -- DataStore name
+			OR
+			profile_store_index   [table]: -- Allows the developer to define more GlobalDataStore variables
+				{
+					Name = "StoreName", -- [string] -- DataStore name
+					-- Optional arguments:
+					Scope = "StoreScope", -- [string] -- DataStore scope
+				}
+			profile_template      [table] -- Profiles will default to given table (hard-copy) when no data was saved previously
+
+		ProfileService.IsLive() --> [bool] -- (CAN YIELD!!!)
+			-- Returns true if ProfileService is connected to live Roblox DataStores
+				
+	Members [ProfileStore]:
+	
+		ProfileStore.Mock   [ProfileStore] -- Reflection of ProfileStore methods, but the methods will use a mock DataStore
+		
+	Methods [ProfileStore]:
+	
+		ProfileStore:LoadProfileAsync(profile_key, not_released_handler) --> [Profile] or nil -- not_released_handler(place_id, game_job_id)
+			profile_key            [string] -- DataStore key
+			not_released_handler   nil or []: -- Defaults to "ForceLoad"
+				[string] "ForceLoad" -- Force loads profile on first call
+				OR
+				[string] "Steal" -- Steals the profile ignoring it's session lock
+				OR
+				[function] (place_id, game_job_id) --> [string] "Repeat", "Cancel", "ForceLoad" or "Steal"
+					place_id      [number] or nil
+					game_job_id   [string] or nil
+
+				-- not_released_handler [function] will be triggered in cases where the profile is not released by a session. This
+				--	function may yield for as long as desirable and must return one of three string values:
+
+						["Repeat"] - ProfileService will repeat the profile loading proccess and may trigger the release handler again
+						["Cancel"] - ProfileStore:LoadProfileAsync() will immediately return nil
+						["ForceLoad"] - ProfileService will repeat the profile loading call, but will return Profile object afterwards
+							and release the profile for another session that has loaded the profile
+						["Steal"] - The profile will usually be loaded immediately, ignoring an existing remote session lock and applying
+							a session lock for this session.
+
+		ProfileStore:GlobalUpdateProfileAsync(profile_key, update_handler) --> [GlobalUpdates] or nil
+			-- Returns GlobalUpdates object if update was successful, otherwise returns nil
+			profile_key      [string] -- DataStore key
+			update_handler   [function] (global_updates [GlobalUpdates])
+			
+		ProfileStore:ViewProfileAsync(profile_key, version) --> [Profile] or nil
+			-- Reads profile without requesting a session lock; Data will not be saved and profile doesn't need to be released
+			profile_key   [string] -- DataStore key
+			version       nil or [string] -- DataStore key version
+
+		ProfileStore:ProfileVersionQuery(profile_key, sort_direction, min_date, max_date) --> [ProfileVersionQuery]
+			profile_key      [string]
+			sort_direction   nil or [Enum.SortDirection]
+			min_date         nil or [DateTime]
+			max_date         nil or [DateTime]
+			
+		ProfileStore:WipeProfileAsync(profile_key) --> is_wipe_successful [bool]
+			-- Completely wipes out profile data from the DataStore / mock DataStore with no way to recover it.
+						
+		* Parameter description for "ProfileStore:GlobalUpdateProfileAsync()":
+		
+			profile_key      [string] -- DataStore key
+			update_handler   [function] (GlobalUpdates) -- This function gains access to GlobalUpdates object methods
+				(update_handler can't yield)
+
+	Methods [ProfileVersionQuery]:
+
+		ProfileVersionQuery:NextAsync() --> [Profile] or nil -- (Yields)
+			-- Returned profile has the same rules as profile returned by :ViewProfileAsync()
+		
+	Members [Profile]:
+	
+		Profile.Data              [table] -- Writable table that gets saved automatically and once the profile is released
+		Profile.MetaData          [table] (Read-only) -- Information about this profile
+		
+			Profile.MetaData.ProfileCreateTime   [number] (Read-only) -- os.time() timestamp of profile creation
+			Profile.MetaData.SessionLoadCount    [number] (Read-only) -- Amount of times the profile was loaded
+			Profile.MetaData.ActiveSession       [table] (Read-only) {place_id, game_job_id} / nil -- Set to a session link if a
+				game session is currently having this profile loaded; nil if released
+			Profile.MetaData.MetaTags            [table] {["tag_name"] = tag_value, ...} -- Saved and auto-saved just like Profile.Data
+			Profile.MetaData.MetaTagsLatest      [table] (Read-only) -- Latest version of MetaData.MetaTags that was definetly saved to DataStore
+				(You can use Profile.MetaData.MetaTagsLatest for product purchase save confirmation, but create a system to clear old tags after
+				they pile up)
+
+		Profile.MetaTagsUpdated   [ScriptSignal] (meta_tags_latest) -- Fires after every auto-save, after
+			--	Profile.MetaData.MetaTagsLatest has been updated with the version that's guaranteed to be saved;
+			--  .MetaTagsUpdated will fire regardless of whether .MetaTagsLatest changed after update;
+			--	.MetaTagsUpdated may fire after the Profile is released - changes to Profile.Data are not saved
+			--	after release.
+
+		Profile.RobloxMetaData    [table] -- Writable table that gets saved automatically and once the profile is released
+		Profile.UserIds           [table] -- (Read-only) -- {user_id [number], ...} -- User ids associated with this profile
+
+		Profile.KeyInfo           [DataStoreKeyInfo]
+		Profile.KeyInfoUpdated    [ScriptSignal] (key_info [DataStoreKeyInfo])
+		
+		Profile.GlobalUpdates     [GlobalUpdates]
+		
+	Methods [Profile]:
+	
+		-- SAFE METHODS - Will not error after profile expires:
+		Profile:IsActive() --> [bool] -- Returns true while the profile is active and can be written to
+			
+		Profile:GetMetaTag(tag_name) --> value [any]
+			tag_name   [string]
+		
+		Profile:Reconcile() -- Fills in missing (nil) [string_key] = [value] pairs to the Profile.Data structure
+		
+		Profile:ListenToRelease(listener) --> [ScriptConnection] (place_id / nil, game_job_id / nil)
+			-- WARNING: Profiles can be released externally if another session force-loads
+			--	this profile - use :ListenToRelease() to handle player leaving cleanup.
+			
+		Profile:Release() -- Call after the session has finished working with this profile
+			e.g., after the player leaves (Profile object will become expired) (Does not yield)
+
+		Profile:ListenToHopReady(listener) --> [ScriptConnection] () -- Passed listener will be executed after the releasing UpdateAsync call finishes;
+			--	Wrap universe teleport requests with this method AFTER releasing the profile to improve session lock sharing between universe places;
+			--  :ListenToHopReady() will usually call the listener in around a second, but may ocassionally take up to 7 seconds when a release happens
+			--	next to an auto-update in regular usage scenarios.
+
+		Profile:AddUserId(user_id) -- Associates user_id with profile (GDPR compliance)
+			user_id   [number]
+
+		Profile:RemoveUserId(user_id) -- Unassociates user_id with profile (safe function)
+			user_id   [number]
+
+		Profile:Identify() --> [string] -- Returns a string containing DataStore name, scope and key; Used for debug;
+			-- Example return: "[Store:"GameData";Scope:"Live";Key:"Player_2312310"]"
+		
+		Profile:SetMetaTag(tag_name, value) -- Equivalent of Profile.MetaData.MetaTags[tag_name] = value
+			tag_name   [string]
+			value      [any]
+		
+		Profile:Save() -- Call to quickly progress global update state or to speed up save validation processes (Does not yield)
+
+		-- VIEW-MODE ONLY:
+
+		Profile:ClearGlobalUpdates() -- Clears all global updates data from a profile payload
+
+		Profile:OverwriteAsync() -- (Yields) Saves the profile payload to the DataStore and removes the session lock
+		
+	Methods [GlobalUpdates]:
+	
+	-- ALWAYS PUBLIC:
+		GlobalUpdates:GetActiveUpdates() --> [table] {{update_id, update_data [table]}, ...}
+		GlobalUpdates:GetLockedUpdates() --> [table] {{update_id, update_data [table]}, ...}
+		
+	-- ONLY WHEN FROM "Profile.GlobalUpdates":
+		GlobalUpdates:ListenToNewActiveUpdate(listener) --> [ScriptConnection] (update_id, update_data)
+			update_data   [table]
+		GlobalUpdates:ListenToNewLockedUpdate(listener) --> [ScriptConnection] (update_id, update_data)
+			update_data   [table]
+		GlobalUpdates:LockActiveUpdate(update_id)  -- WARNING: will error after profile expires
+		GlobalUpdates:ClearLockedUpdate(update_id) -- WARNING: will error after profile expires
+		
+	-- EXPOSED TO "update_handler" DURING ProfileStore:GlobalUpdateProfileAsync() CALL
+		GlobalUpdates:AddActiveUpdate(update_data)
+			update_data   [table]
+		GlobalUpdates:ChangeActiveUpdate(update_id, update_data)
+			update_data   [table]
+		GlobalUpdates:ClearActiveUpdate(update_id)
+		
+--]]
+
+local SETTINGS = {
+
+	AutoSaveProfiles = 30, -- Seconds (This value may vary - ProfileService will split the auto save load evenly in the given time)
+	RobloxWriteCooldown = 7, -- Seconds between successive DataStore calls for the same key
+	ForceLoadMaxSteps = 8, -- Steps taken before ForceLoad request steals the active session for a profile
+	AssumeDeadSessionLock = 30 * 60, -- (seconds) If a profile hasn't been updated for 30 minutes, assume the session lock is dead
+		-- As of writing, os.time() is not completely reliable, so we can only assume session locks are dead after a significant amount of time.
+	
+	IssueCountForCriticalState = 5, -- Issues to collect to announce critical state
+	IssueLast = 120, -- Seconds
+	CriticalStateLast = 120, -- Seconds
+	
+	MetaTagsUpdatedValues = { -- Technical stuff - do not alter
+		ProfileCreateTime = true,
+		SessionLoadCount = true,
+		ActiveSession = true,
+		ForceLoadSession = true,
+		LastUpdate = true,
+	},
+	
+}
+
+local Madwork -- Standalone Madwork reference for portable version of ProfileService
+do
+
+	local MadworkScriptSignal = {}
+
+	local FreeRunnerThread = nil
+	
+	local function AcquireRunnerThreadAndCallEventHandler(fn, ...)
+		local acquired_runner_thread = FreeRunnerThread
+		FreeRunnerThread = nil
+		fn(...)
+		FreeRunnerThread = acquired_runner_thread
+	end
+	
+	local function RunEventHandlerInFreeThread(...)
+		AcquireRunnerThreadAndCallEventHandler(...)
+		while true do
+			AcquireRunnerThreadAndCallEventHandler(coroutine.yield())
+		end
+	end
+	
+	-- ScriptConnection object:
+
+	local ScriptConnection = {
+		--[[
+			_listener = listener,
+			_script_signal = script_signal,
+			_disconnect_listener = disconnect_listener,
+			_disconnect_param = disconnect_param,
+			
+			_next = next_script_connection,
+			_is_connected = is_connected,
+		--]]
+	}
+	ScriptConnection.__index = ScriptConnection
+
+	function ScriptConnection:Disconnect()
+
+		if self._is_connected == false then
+			return
+		end
+
+		self._is_connected = false
+		self._script_signal._listener_count -= 1
+
+		if self._script_signal._head == self then
+			self._script_signal._head = self._next
+		else
+			local prev = self._script_signal._head
+			while prev ~= nil and prev._next ~= self do
+				prev = prev._next
+			end
+			if prev ~= nil then
+				prev._next = self._next
+			end
+		end
+
+		if self._disconnect_listener ~= nil then
+			if not FreeRunnerThread then
+				FreeRunnerThread = coroutine.create(RunEventHandlerInFreeThread)
+			end
+			task.spawn(FreeRunnerThread, self._disconnect_listener, self._disconnect_param)
+			self._disconnect_listener = nil
+		end
+
+	end
+	
+	-- ScriptSignal object:
+
+	local ScriptSignal = {
+		--[[
+			_head = nil,
+			_listener_count = 0,
+		--]]
+	}
+	ScriptSignal.__index = ScriptSignal
+
+	function ScriptSignal:Connect(listener, disconnect_listener, disconnect_param) --> [ScriptConnection]
+
+		local script_connection = {
+			_listener = listener,
+			_script_signal = self,
+			_disconnect_listener = disconnect_listener,
+			_disconnect_param = disconnect_param,
+
+			_next = self._head,
+			_is_connected = true,
+		}
+		setmetatable(script_connection, ScriptConnection)
+
+		self._head = script_connection
+		self._listener_count += 1
+
+		return script_connection
+
+	end
+
+	function ScriptSignal:GetListenerCount() --> [number]
+		return self._listener_count
+	end
+
+	function ScriptSignal:Fire(...)
+		local item = self._head
+		while item ~= nil do
+			if item._is_connected == true then
+				if not FreeRunnerThread then
+					FreeRunnerThread = coroutine.create(RunEventHandlerInFreeThread)
+				end
+				task.spawn(FreeRunnerThread, item._listener, ...)
+			end
+			item = item._next
+		end
+	end
+
+	function ScriptSignal:FireUntil(continue_callback, ...)
+		local item = self._head
+		while item ~= nil do
+			if item._is_connected == true then
+				item._listener(...)
+				if continue_callback() ~= true then
+					return
+				end
+			end
+			item = item._next
+		end
+	end
+
+	function MadworkScriptSignal.NewScriptSignal() --> [ScriptSignal]
+		return {
+			_head = nil,
+			_listener_count = 0,
+			Connect = ScriptSignal.Connect,
+			GetListenerCount = ScriptSignal.GetListenerCount,
+			Fire = ScriptSignal.Fire,
+			FireUntil = ScriptSignal.FireUntil,
+		}
+	end
+
+	-- Madwork framework namespace:
+	
+	Madwork = {
+		NewScriptSignal = MadworkScriptSignal.NewScriptSignal,
+		ConnectToOnClose = function(task, run_in_studio_mode)
+			if game:GetService("RunService"):IsStudio() == false or run_in_studio_mode == true then
+				game:BindToClose(task)
+			end
+		end,
+	}
+
+end
+
+----- Service Table -----
+
+local ProfileService = {
+
+	ServiceLocked = false, -- Set to true once the server is shutting down
+
+	IssueSignal = Madwork.NewScriptSignal(), -- (error_message, profile_store_name, profile_key) -- Fired when a DataStore API call throws an error
+	CorruptionSignal = Madwork.NewScriptSignal(), -- (profile_store_name, profile_key) -- Fired when DataStore key returns a value that has
+	-- all or some of it's profile components set to invalid data types. E.g., accidentally setting Profile.Data to a noon table value
+
+	CriticalState = false, -- Set to true while DataStore service is throwing too many errors
+	CriticalStateSignal = Madwork.NewScriptSignal(), -- (is_critical_state) -- Fired when CriticalState is set to true
+	-- (You may alert players with this, or set up analytics)
+
+	ServiceIssueCount = 0,
+
+	_active_profile_stores = {}, -- {profile_store, ...}
+
+	_auto_save_list = {}, -- {profile, ...} -- loaded profile table which will be circularly auto-saved
+
+	_issue_queue = {}, -- [table] {issue_time, ...}
+	_critical_state_start = 0, -- [number] 0 = no critical state / os.clock() = critical state start
+
+	-- Debug:
+	_mock_data_store = {},
+	_user_mock_data_store = {},
+
+	_use_mock_data_store = false,
+
+}
+
+--[[
+	Saved profile structure:
+	
+	DataStoreProfile = {
+		Data = {},
+		MetaData = {
+			ProfileCreateTime = 0,
+			SessionLoadCount = 0,
+			ActiveSession = {place_id, game_job_id} / nil,
+			ForceLoadSession = {place_id, game_job_id} / nil,
+			MetaTags = {},
+			LastUpdate = 0, -- os.time()
+		},
+		RobloxMetaData = {},
+		UserIds = {},
+		GlobalUpdates = {
+			update_index,
+			{
+				{update_id, version_id, update_locked, update_data},
+				...
+			}
+		},
+	}
+	
+	OR
+	
+	DataStoreProfile = {
+		GlobalUpdates = {
+			update_index,
+			{
+				{update_id, version_id, update_locked, update_data},
+				...
+			}
+		},
+	}
+--]]
+
+----- Private Variables -----
+
+local ActiveProfileStores = ProfileService._active_profile_stores
+local AutoSaveList = ProfileService._auto_save_list
+local IssueQueue = ProfileService._issue_queue
+
+local DataStoreService = game:GetService("DataStoreService")
+local RunService = game:GetService("RunService")
+
+local PlaceId = game.PlaceId
+local JobId = game.JobId
+
+local AutoSaveIndex = 1 -- Next profile to auto save
+local LastAutoSave = os.clock()
+
+local LoadIndex = 0
+
+local ActiveProfileLoadJobs = 0 -- Number of active threads that are loading in profiles
+local ActiveProfileSaveJobs = 0 -- Number of active threads that are saving profiles
+
+local CriticalStateStart = 0 -- os.clock()
+
+local IsStudio = RunService:IsStudio()
+local IsLiveCheckActive = false
+
+local UseMockDataStore = false
+local MockDataStore = ProfileService._mock_data_store -- Mock data store used when API access is disabled
+
+local UserMockDataStore = ProfileService._user_mock_data_store -- Separate mock data store accessed via ProfileStore.Mock
+local UseMockTag = {}
+
+local CustomWriteQueue = {
+	--[[
+		[store] = {
+			[key] = {
+				LastWrite = os.clock(),
+				Queue = {callback, ...},
+				CleanupJob = nil,
+			},
+			...
+		},
+		...
+	--]]
+}
+
+----- Utils -----
+
+local function DeepCopyTable(t)
+	local copy = {}
+	for key, value in pairs(t) do
+		if type(value) == "table" then
+			copy[key] = DeepCopyTable(value)
+		else
+			copy[key] = value
+		end
+	end
+	return copy
+end
+
+local function ReconcileTable(target, template)
+	for k, v in pairs(template) do
+		if type(k) == "string" then -- Only string keys will be reconciled
+			if target[k] == nil then
+				if type(v) == "table" then
+					target[k] = DeepCopyTable(v)
+				else
+					target[k] = v
+				end
+			elseif type(target[k]) == "table" and type(v) == "table" then
+				ReconcileTable(target[k], v)
+			end
+		end
+	end
+end
+
+----- Private functions -----
+
+local function IdentifyProfile(store_name, store_scope, key)
+	return string.format(
+		"[Store:\"%s\";%sKey:\"%s\"]",
+		store_name,
+		store_scope ~= nil and string.format("Scope:\"%s\";", store_scope) or "",
+		key
+	)
+end
+
+local function CustomWriteQueueCleanup(store, key)
+	if CustomWriteQueue[store] ~= nil then
+		CustomWriteQueue[store][key] = nil
+		if next(CustomWriteQueue[store]) == nil then
+			CustomWriteQueue[store] = nil
+		end
+	end
+end
+
+local function CustomWriteQueueMarkForCleanup(store, key)
+	if CustomWriteQueue[store] ~= nil then
+		if CustomWriteQueue[store][key] ~= nil then
+
+			local queue_data = CustomWriteQueue[store][key]
+			local queue = queue_data.Queue
+
+			if queue_data.CleanupJob == nil then
+
+				queue_data.CleanupJob = RunService.Heartbeat:Connect(function()
+					if os.clock() - queue_data.LastWrite > SETTINGS.RobloxWriteCooldown and #queue == 0 then
+						queue_data.CleanupJob:Disconnect()
+						CustomWriteQueueCleanup(store, key)
+					end
+				end)
+
+			end
+
+		elseif next(CustomWriteQueue[store]) == nil then
+			CustomWriteQueue[store] = nil
+		end
+	end
+end
+
+local function CustomWriteQueueAsync(callback, store, key) --> ... -- Passed return from callback
+
+	if CustomWriteQueue[store] == nil then
+		CustomWriteQueue[store] = {}
+	end
+	if CustomWriteQueue[store][key] == nil then
+		CustomWriteQueue[store][key] = {LastWrite = 0, Queue = {}, CleanupJob = nil}
+	end
+
+	local queue_data = CustomWriteQueue[store][key]
+	local queue = queue_data.Queue
+
+	-- Cleanup job:
+
+	if queue_data.CleanupJob ~= nil then
+		queue_data.CleanupJob:Disconnect()
+		queue_data.CleanupJob = nil
+	end
+
+	-- Queue logic:
+
+	if os.clock() - queue_data.LastWrite > SETTINGS.RobloxWriteCooldown and #queue == 0 then
+		queue_data.LastWrite = os.clock()
+		return callback()
+	else
+		table.insert(queue, callback)
+		while true do
+			if os.clock() - queue_data.LastWrite > SETTINGS.RobloxWriteCooldown and queue[1] == callback then
+				table.remove(queue, 1)
+				queue_data.LastWrite = os.clock()
+				return callback()
+			end
+			task.wait()
+		end
+	end
+
+end
+
+local function IsCustomWriteQueueEmptyFor(store, key) --> is_empty [bool]
+	local lookup = CustomWriteQueue[store]
+	if lookup ~= nil then
+		lookup = lookup[key]
+		return lookup == nil or #lookup.Queue == 0
+	end
+	return true
+end
+
+local function WaitForLiveAccessCheck() -- This function was created to prevent the ProfileService module yielding execution when required
+	while IsLiveCheckActive == true do
+		task.wait()
+	end
+end
+
+local function WaitForPendingProfileStore(profile_store)
+	while profile_store._is_pending == true do
+		task.wait()
+	end
+end
+
+local function RegisterIssue(error_message, store_name, store_scope, profile_key) -- Called when a DataStore API call errors
+	warn("[ProfileService]: DataStore API error " .. IdentifyProfile(store_name, store_scope, profile_key) .. " - \"" .. tostring(error_message) .. "\"")
+	table.insert(IssueQueue, os.clock()) -- Adding issue time to queue
+	ProfileService.IssueSignal:Fire(tostring(error_message), store_name, profile_key)
+end
+
+local function RegisterCorruption(store_name, store_scope, profile_key) -- Called when a corrupted profile is loaded
+	warn("[ProfileService]: Resolved profile corruption " .. IdentifyProfile(store_name, store_scope, profile_key))
+	ProfileService.CorruptionSignal:Fire(store_name, profile_key)
+end
+
+local function NewMockDataStoreKeyInfo(params)
+
+	local version_id_string = tostring(params.VersionId or 0)
+	local meta_data = params.MetaData or {}
+	local user_ids = params.UserIds or {}
+
+	return {
+		CreatedTime = params.CreatedTime,
+		UpdatedTime = params.UpdatedTime,
+		Version = string.rep("0", 16) .. "."
+			.. string.rep("0", 10 - string.len(version_id_string)) .. version_id_string
+			.. "." .. string.rep("0", 16) .. "." .. "01",
+
+		GetMetadata = function()
+			return DeepCopyTable(meta_data)
+		end,
+
+		GetUserIds = function()
+			return DeepCopyTable(user_ids)
+		end,
+	}
+
+end
+
+local function MockUpdateAsync(mock_data_store, profile_store_name, key, transform_function, is_get_call) --> loaded_data, key_info
+
+	local profile_store = mock_data_store[profile_store_name]
+
+	if profile_store == nil then
+		profile_store = {}
+		mock_data_store[profile_store_name] = profile_store
+	end
+
+	local epoch_time = math.floor(os.time() * 1000)
+	local mock_entry = profile_store[key]
+	local mock_entry_was_nil = false
+
+	if mock_entry == nil then
+		mock_entry_was_nil = true
+		if is_get_call ~= true then
+			mock_entry = {
+				Data = nil,
+				CreatedTime = epoch_time,
+				UpdatedTime = epoch_time,
+				VersionId = 0,
+				UserIds = {},
+				MetaData = {},
+			}
+			profile_store[key] = mock_entry
+		end
+	end
+
+	local mock_key_info = mock_entry_was_nil == false and NewMockDataStoreKeyInfo(mock_entry) or nil
+
+	local transform, user_ids, roblox_meta_data = transform_function(mock_entry and mock_entry.Data, mock_key_info)
+
+	if transform == nil then
+		return nil
+	else
+		if mock_entry ~= nil and is_get_call ~= true then
+			mock_entry.Data = transform
+			mock_entry.UserIds = DeepCopyTable(user_ids or {})
+			mock_entry.MetaData = DeepCopyTable(roblox_meta_data or {})
+			mock_entry.VersionId += 1
+			mock_entry.UpdatedTime = epoch_time
+		end
+
+		return DeepCopyTable(transform), mock_entry ~= nil and NewMockDataStoreKeyInfo(mock_entry) or nil
+	end
+
+end
+
+local function IsThisSession(session_tag)
+	return session_tag[1] == PlaceId and session_tag[2] == JobId
+end
+
+--[[
+update_settings = {
+	ExistingProfileHandle = function(latest_data),
+	MissingProfileHandle = function(latest_data),
+	EditProfile = function(lastest_data),
+}
+--]]
+local function StandardProfileUpdateAsyncDataStore(profile_store, profile_key, update_settings, is_user_mock, is_get_call, version) --> loaded_data, key_info
+	local loaded_data, key_info
+	local success, error_message = pcall(function()
+		local transform_function = function(latest_data)
+
+			local missing_profile = false
+			local data_corrupted = false
+			local global_updates_data = {0, {}}
+
+			if latest_data == nil then
+				missing_profile = true
+			elseif type(latest_data) ~= "table" then
+				missing_profile = true
+				data_corrupted = true
+			end
+
+			if type(latest_data) == "table" then
+				-- Case #1: Profile was loaded
+				if type(latest_data.Data) == "table"
+					and type(latest_data.MetaData) == "table"
+					and type(latest_data.GlobalUpdates) == "table" then
+
+					latest_data.WasCorrupted = false -- Must be set to false if set previously
+					global_updates_data = latest_data.GlobalUpdates
+					if update_settings.ExistingProfileHandle ~= nil then
+						update_settings.ExistingProfileHandle(latest_data)
+					end
+					-- Case #2: Profile was not loaded but GlobalUpdate data exists
+				elseif latest_data.Data == nil
+					and latest_data.MetaData == nil
+					and type(latest_data.GlobalUpdates) == "table" then
+
+					latest_data.WasCorrupted = false -- Must be set to false if set previously
+					global_updates_data = latest_data.GlobalUpdates or global_updates_data
+					missing_profile = true
+				else
+					missing_profile = true
+					data_corrupted = true
+				end
+			end
+
+			-- Case #3: Profile was not created or corrupted and no GlobalUpdate data exists
+			if missing_profile == true then
+				latest_data = {
+					-- Data = nil,
+					-- MetaData = nil,
+					GlobalUpdates = global_updates_data,
+				}
+				if update_settings.MissingProfileHandle ~= nil then
+					update_settings.MissingProfileHandle(latest_data)
+				end
+			end
+
+			-- Editing profile:
+			if update_settings.EditProfile ~= nil then
+				update_settings.EditProfile(latest_data)
+			end
+
+			-- Data corruption handling (Silently override with empty profile) (Also run Case #1)
+			if data_corrupted == true then
+				latest_data.WasCorrupted = true -- Temporary tag that will be removed on first save
+			end
+
+			return latest_data, latest_data.UserIds, latest_data.RobloxMetaData
+		end
+		if is_user_mock == true then -- Used when the profile is accessed through ProfileStore.Mock
+			loaded_data, key_info = MockUpdateAsync(UserMockDataStore, profile_store._profile_store_lookup, profile_key, transform_function, is_get_call)
+			task.wait() -- Simulate API call yield
+		elseif UseMockDataStore == true then -- Used when API access is disabled
+			loaded_data, key_info = MockUpdateAsync(MockDataStore, profile_store._profile_store_lookup, profile_key, transform_function, is_get_call)
+			task.wait() -- Simulate API call yield
+		else
+			loaded_data, key_info = CustomWriteQueueAsync(
+				function() -- Callback
+					if is_get_call == true then
+						local get_data, get_key_info
+						if version ~= nil then
+							local success, error_message = pcall(function()
+								get_data, get_key_info = profile_store._global_data_store:GetVersionAsync(profile_key, version)
+							end)
+							if success == false and type(error_message) == "string" and string.find(error_message, "not valid") ~= nil then
+								warn("[ProfileService]: Passed version argument is not valid; Traceback:\n" .. debug.traceback())
+							end
+						else
+							get_data, get_key_info = profile_store._global_data_store:GetAsync(profile_key)
+						end
+						get_data = transform_function(get_data)
+						return get_data, get_key_info
+					else
+						return profile_store._global_data_store:UpdateAsync(profile_key, transform_function)
+					end
+				end,
+				profile_store._profile_store_lookup, -- Store
+				profile_key -- Key
+			)
+		end
+	end)
+	if success == true and type(loaded_data) == "table" then
+		-- Corruption handling:
+		if loaded_data.WasCorrupted == true and is_get_call ~= true then
+			RegisterCorruption(
+				profile_store._profile_store_name,
+				profile_store._profile_store_scope,
+				profile_key
+			)
+		end
+		-- Return loaded_data:
+		return loaded_data, key_info
+	else
+		RegisterIssue(
+			(error_message ~= nil) and error_message or "Undefined error",
+			profile_store._profile_store_name,
+			profile_store._profile_store_scope,
+			profile_key
+		)
+		-- Return nothing:
+		return nil
+	end
+end
+
+local function RemoveProfileFromAutoSave(profile)
+	local auto_save_index = table.find(AutoSaveList, profile)
+	if auto_save_index ~= nil then
+		table.remove(AutoSaveList, auto_save_index)
+		if auto_save_index < AutoSaveIndex then
+			AutoSaveIndex = AutoSaveIndex - 1 -- Table contents were moved left before AutoSaveIndex so move AutoSaveIndex left as well
+		end
+		if AutoSaveList[AutoSaveIndex] == nil then -- AutoSaveIndex was at the end of the AutoSaveList - reset to 1
+			AutoSaveIndex = 1
+		end
+	end
+end
+
+local function AddProfileToAutoSave(profile) -- Notice: Makes sure this profile isn't auto-saved too soon
+	-- Add at AutoSaveIndex and move AutoSaveIndex right:
+	table.insert(AutoSaveList, AutoSaveIndex, profile)
+	if #AutoSaveList > 1 then
+		AutoSaveIndex = AutoSaveIndex + 1
+	elseif #AutoSaveList == 1 then
+		-- First profile created - make sure it doesn't get immediately auto saved:
+		LastAutoSave = os.clock()
+	end
+end
+
+local function ReleaseProfileInternally(profile)
+	-- 1) Remove profile object from ProfileService references: --
+	-- Clear reference in ProfileStore:
+	local profile_store = profile._profile_store
+	local loaded_profiles = profile._is_user_mock == true and profile_store._mock_loaded_profiles or profile_store._loaded_profiles
+	loaded_profiles[profile._profile_key] = nil
+	if next(profile_store._loaded_profiles) == nil and next(profile_store._mock_loaded_profiles) == nil then -- ProfileStore has turned inactive
+		local index = table.find(ActiveProfileStores, profile_store)
+		if index ~= nil then
+			table.remove(ActiveProfileStores, index)
+		end
+	end
+	-- Clear auto update reference:
+	RemoveProfileFromAutoSave(profile)
+	-- 2) Trigger release listeners: --
+	local place_id
+	local game_job_id
+	local active_session = profile.MetaData.ActiveSession
+	if active_session ~= nil then
+		place_id = active_session[1]
+		game_job_id = active_session[2]
+	end
+	profile._release_listeners:Fire(place_id, game_job_id)
+end
+
+local function CheckForNewGlobalUpdates(profile, old_global_updates_data, new_global_updates_data)
+	local global_updates_object = profile.GlobalUpdates -- [GlobalUpdates]
+	local pending_update_lock = global_updates_object._pending_update_lock -- {update_id, ...}
+	local pending_update_clear = global_updates_object._pending_update_clear -- {update_id, ...}
+	-- "old_" or "new_" global_updates_data = {update_index, {{update_id, version_id, update_locked, update_data}, ...}}
+	for _, new_global_update in ipairs(new_global_updates_data[2]) do
+		-- Find old global update with the same update_id:
+		local old_global_update
+		for _, global_update in ipairs(old_global_updates_data[2]) do
+			if global_update[1] == new_global_update[1] then
+				old_global_update = global_update
+				break
+			end
+		end
+		-- A global update is new when it didn't exist before or its version_id or update_locked state changed:
+		local is_new = false
+		if old_global_update == nil or new_global_update[2] > old_global_update[2] or new_global_update[3] ~= old_global_update[3] then
+			is_new = true
+		end
+		if is_new == true then
+			-- Active global updates:
+			if new_global_update[3] == false then
+				-- Check if update is not pending to be locked: (Preventing firing new active update listeners more than necessary)
+				local is_pending_lock = false
+				for _, update_id in ipairs(pending_update_lock) do
+					if new_global_update[1] == update_id then
+						is_pending_lock = true
+						break
+					end
+				end
+				if is_pending_lock == false then
+					-- Trigger new active update listeners:
+					global_updates_object._new_active_update_listeners:Fire(new_global_update[1], new_global_update[4])
+				end
+			end
+			-- Locked global updates:
+			if new_global_update[3] == true then
+				-- Check if update is not pending to be cleared: (Preventing firing new locked update listeners after marking a locked update for clearing)
+				local is_pending_clear = false
+				for _, update_id in ipairs(pending_update_clear) do
+					if new_global_update[1] == update_id then
+						is_pending_clear = true
+						break
+					end
+				end
+				if is_pending_clear == false then
+					-- Trigger new locked update listeners:
+
+					global_updates_object._new_locked_update_listeners:FireUntil(
+						function()
+							-- Check if listener marked the update to be cleared:
+							-- Normally there should be only one listener per profile for new locked global updates, but
+							-- in case several listeners are connected we will not trigger more listeners after one listener
+							-- marks the locked global update to be cleared.
+							return table.find(pending_update_clear, new_global_update[1]) == nil
+						end,
+						new_global_update[1], new_global_update[4]
+					)
+
+				end
+			end
+		end
+	end
+end
+
+local function SaveProfileAsync(profile, release_from_session, is_overwriting)
+	if type(profile.Data) ~= "table" then
+		RegisterCorruption(
+			profile._profile_store._profile_store_name,
+			profile._profile_store._profile_store_scope,
+			profile._profile_key
+		)
+		error("[ProfileService]: PROFILE DATA CORRUPTED DURING RUNTIME! Profile: " .. profile:Identify())
+	end
+	if release_from_session == true and is_overwriting ~= true then
+		ReleaseProfileInternally(profile)
+	end
+	ActiveProfileSaveJobs = ActiveProfileSaveJobs + 1
+	local last_session_load_count = profile.MetaData.SessionLoadCount
+	-- Compare "SessionLoadCount" when writing to profile to prevent a rare case of repeat last save when the profile is loaded on the same server again
+	local repeat_save_flag = true -- Released Profile save calls have to repeat until they succeed
+	while repeat_save_flag == true do
+		if release_from_session ~= true then
+			repeat_save_flag = false
+		end
+		local loaded_data, key_info = StandardProfileUpdateAsyncDataStore(
+			profile._profile_store,
+			profile._profile_key,
+			{
+				ExistingProfileHandle = nil,
+				MissingProfileHandle = nil,
+				EditProfile = function(latest_data)
+
+					local session_owns_profile = false
+					local force_load_pending = false
+
+					if is_overwriting ~= true then
+						-- 1) Check if this session still owns the profile: --
+						local active_session = latest_data.MetaData.ActiveSession
+						local force_load_session = latest_data.MetaData.ForceLoadSession
+						local session_load_count = latest_data.MetaData.SessionLoadCount
+
+						if type(active_session) == "table" then
+							session_owns_profile = IsThisSession(active_session) and session_load_count == last_session_load_count
+						end
+						if type(force_load_session) == "table" then
+							force_load_pending = not IsThisSession(force_load_session)
+						end
+					else
+						session_owns_profile = true
+					end
+
+					if session_owns_profile == true then -- We may only edit the profile if this session has ownership of the profile
+
+						if is_overwriting ~= true then
+							-- 2) Manage global updates: --
+							local latest_global_updates_data = latest_data.GlobalUpdates -- {update_index, {{update_id, version_id, update_locked, update_data}, ...}}
+							local latest_global_updates_list = latest_global_updates_data[2]
+
+							local global_updates_object = profile.GlobalUpdates -- [GlobalUpdates]
+							local pending_update_lock = global_updates_object._pending_update_lock -- {update_id, ...}
+							local pending_update_clear = global_updates_object._pending_update_clear -- {update_id, ...}
+							-- Active update locking:
+							for i = 1, #latest_global_updates_list do
+								for _, lock_id in ipairs(pending_update_lock) do
+									if latest_global_updates_list[i][1] == lock_id then
+										latest_global_updates_list[i][3] = true
+										break
+									end
+								end
+							end
+							-- Locked update clearing:
+							for _, clear_id in ipairs(pending_update_clear) do
+								for i = 1, #latest_global_updates_list do
+									if latest_global_updates_list[i][1] == clear_id and latest_global_updates_list[i][3] == true then
+										table.remove(latest_global_updates_list, i)
+										break
+									end
+								end
+							end
+						end
+
+						-- 3) Save profile data: --
+						latest_data.Data = profile.Data
+						latest_data.RobloxMetaData = profile.RobloxMetaData
+						latest_data.UserIds = profile.UserIds
+
+						if is_overwriting ~= true then
+							latest_data.MetaData.MetaTags = profile.MetaData.MetaTags -- MetaData.MetaTags is the only actively savable component of MetaData
+							latest_data.MetaData.LastUpdate = os.time()
+							if release_from_session == true or force_load_pending == true then
+								latest_data.MetaData.ActiveSession = nil
+							end
+						else
+							latest_data.MetaData = profile.MetaData
+							latest_data.MetaData.ActiveSession = nil
+							latest_data.MetaData.ForceLoadSession = nil
+							latest_data.GlobalUpdates = profile.GlobalUpdates._updates_latest
+						end
+
+					end
+				end,
+			},
+			profile._is_user_mock
+		)
+		if loaded_data ~= nil and key_info ~= nil then
+			if is_overwriting == true then
+				break
+			end
+			repeat_save_flag = false
+			-- 4) Set latest data in profile: --
+			-- Updating DataStoreKeyInfo:
+			profile.KeyInfo = key_info
+			-- Setting global updates:
+			local global_updates_object = profile.GlobalUpdates -- [GlobalUpdates]
+			local old_global_updates_data = global_updates_object._updates_latest
+			local new_global_updates_data = loaded_data.GlobalUpdates
+			global_updates_object._updates_latest = new_global_updates_data
+			-- Setting MetaData:
+			local session_meta_data = profile.MetaData
+			local latest_meta_data = loaded_data.MetaData
+			for key in pairs(SETTINGS.MetaTagsUpdatedValues) do
+				session_meta_data[key] = latest_meta_data[key]
+			end
+			session_meta_data.MetaTagsLatest = latest_meta_data.MetaTags
+			-- 5) Check if session still owns the profile: --
+			local active_session = loaded_data.MetaData.ActiveSession
+			local session_load_count = loaded_data.MetaData.SessionLoadCount
+			local session_owns_profile = false
+			if type(active_session) == "table" then
+				session_owns_profile = IsThisSession(active_session) and session_load_count == last_session_load_count
+			end
+			local is_active = profile:IsActive()
+			if session_owns_profile == true then
+				-- 6) Check for new global updates: --
+				if is_active == true then -- Profile could've been released before the saving thread finished
+					CheckForNewGlobalUpdates(profile, old_global_updates_data, new_global_updates_data)
+				end
+			else
+				-- Session no longer owns the profile:
+				-- 7) Release profile if it hasn't been released yet: --
+				if is_active == true then
+					ReleaseProfileInternally(profile)
+				end
+				-- Cleanup reference in custom write queue:
+				CustomWriteQueueMarkForCleanup(profile._profile_store._profile_store_lookup, profile._profile_key)
+				-- Hop ready listeners:
+				if profile._hop_ready == false then
+					profile._hop_ready = true
+					profile._hop_ready_listeners:Fire()
+				end
+			end
+			-- Signaling MetaTagsUpdated listeners after a possible external profile release was handled:
+			profile.MetaTagsUpdated:Fire(profile.MetaData.MetaTagsLatest)
+			-- Signaling KeyInfoUpdated listeners:
+			profile.KeyInfoUpdated:Fire(key_info)
+		elseif repeat_save_flag == true then
+			task.wait() -- Prevent infinite loop in case DataStore API does not yield
+		end
+	end
+	ActiveProfileSaveJobs = ActiveProfileSaveJobs - 1
+end
+
+----- Public functions -----
+
+-- GlobalUpdates object:
+
+local GlobalUpdates = {
+	--[[
+		_updates_latest = {}, -- [table] {update_index, {{update_id, version_id, update_locked, update_data}, ...}}
+		_pending_update_lock = {update_id, ...} / nil, -- [table / nil]
+		_pending_update_clear = {update_id, ...} / nil, -- [table / nil]
+		
+		_new_active_update_listeners = [ScriptSignal] / nil, -- [table / nil]
+		_new_locked_update_listeners = [ScriptSignal] / nil, -- [table / nil]
+		
+		_profile = Profile / nil, -- [Profile / nil]
+		
+		_update_handler_mode = true / nil, -- [bool / nil]
+	--]]
+}
+GlobalUpdates.__index = GlobalUpdates
+
+-- ALWAYS PUBLIC:
+function GlobalUpdates:GetActiveUpdates() --> [table] {{update_id, update_data}, ...}
+	local query_list = {}
+	for _, global_update in ipairs(self._updates_latest[2]) do
+		if global_update[3] == false then
+			local is_pending_lock = false
+			if self._pending_update_lock ~= nil then
+				for _, update_id in ipairs(self._pending_update_lock) do
+					if global_update[1] == update_id then
+						is_pending_lock = true -- Exclude global updates pending to be locked
+						break
+					end
+				end
+			end
+			if is_pending_lock == false then
+				table.insert(query_list, {global_update[1], global_update[4]})
+			end
+		end
+	end
+	return query_list
+end
+
+function GlobalUpdates:GetLockedUpdates() --> [table] {{update_id, update_data}, ...}
+	local query_list = {}
+	for _, global_update in ipairs(self._updates_latest[2]) do
+		if global_update[3] == true then
+			local is_pending_clear = false
+			if self._pending_update_clear ~= nil then
+				for _, update_id in ipairs(self._pending_update_clear) do
+					if global_update[1] == update_id then
+						is_pending_clear = true -- Exclude global updates pending to be cleared
+						break
+					end
+				end
+			end
+			if is_pending_clear == false then
+				table.insert(query_list, {global_update[1], global_update[4]})
+			end
+		end
+	end
+	return query_list
+end
+
+-- ONLY WHEN FROM "Profile.GlobalUpdates":
+function GlobalUpdates:ListenToNewActiveUpdate(listener) --> [ScriptConnection] listener(update_id, update_data)
+	if type(listener) ~= "function" then
+		error("[ProfileService]: Only a function can be set as listener in GlobalUpdates:ListenToNewActiveUpdate()")
+	end
+	local profile = self._profile
+	if self._update_handler_mode == true then
+		error("[ProfileService]: Can't listen to new global updates in ProfileStore:GlobalUpdateProfileAsync()")
+	elseif self._new_active_update_listeners == nil then
+		error("[ProfileService]: Can't listen to new global updates in view mode")
+	elseif profile:IsActive() == false then -- Check if profile is expired
+		return { -- Do not connect listener if the profile is expired
+			Disconnect = function() end,
+		}
+	end
+	-- Connect listener:
+	return self._new_active_update_listeners:Connect(listener)
+end
+
+function GlobalUpdates:ListenToNewLockedUpdate(listener) --> [ScriptConnection] listener(update_id, update_data)
+	if type(listener) ~= "function" then
+		error("[ProfileService]: Only a function can be set as listener in GlobalUpdates:ListenToNewLockedUpdate()")
+	end
+	local profile = self._profile
+	if self._update_handler_mode == true then
+		error("[ProfileService]: Can't listen to new global updates in ProfileStore:GlobalUpdateProfileAsync()")
+	elseif self._new_locked_update_listeners == nil then
+		error("[ProfileService]: Can't listen to new global updates in view mode")
+	elseif profile:IsActive() == false then -- Check if profile is expired
+		return { -- Do not connect listener if the profile is expired
+			Disconnect = function() end,
+		}
+	end
+	-- Connect listener:
+	return self._new_locked_update_listeners:Connect(listener)
+end
+
+function GlobalUpdates:LockActiveUpdate(update_id)
+	if type(update_id) ~= "number" then
+		error("[ProfileService]: Invalid update_id")
+	end
+	local profile = self._profile
+	if self._update_handler_mode == true then
+		error("[ProfileService]: Can't lock active global updates in ProfileStore:GlobalUpdateProfileAsync()")
+	elseif self._pending_update_lock == nil then
+		error("[ProfileService]: Can't lock active global updates in view mode")
+	elseif profile:IsActive() == false then -- Check if profile is expired
+		error("[ProfileService]: PROFILE EXPIRED - Can't lock active global updates")
+	end
+	-- Check if global update exists with given update_id
+	local global_update_exists = nil
+	for _, global_update in ipairs(self._updates_latest[2]) do
+		if global_update[1] == update_id then
+			global_update_exists = global_update
+			break
+		end
+	end
+	if global_update_exists ~= nil then
+		local is_pending_lock = false
+		for _, lock_update_id in ipairs(self._pending_update_lock) do
+			if update_id == lock_update_id then
+				is_pending_lock = true -- Exclude global updates pending to be locked
+				break
+			end
+		end
+		if is_pending_lock == false and global_update_exists[3] == false then -- Avoid id duplicates in _pending_update_lock
+			table.insert(self._pending_update_lock, update_id)
+		end
+	else
+		error("[ProfileService]: Passed non-existant update_id")
+	end
+end
+
+function GlobalUpdates:ClearLockedUpdate(update_id)
+	if type(update_id) ~= "number" then
+		error("[ProfileService]: Invalid update_id")
+	end
+	local profile = self._profile
+	if self._update_handler_mode == true then
+		error("[ProfileService]: Can't clear locked global updates in ProfileStore:GlobalUpdateProfileAsync()")
+	elseif self._pending_update_clear == nil then
+		error("[ProfileService]: Can't clear locked global updates in view mode")
+	elseif profile:IsActive() == false then -- Check if profile is expired
+		error("[ProfileService]: PROFILE EXPIRED - Can't clear locked global updates")
+	end
+	-- Check if global update exists with given update_id
+	local global_update_exists = nil
+	for _, global_update in ipairs(self._updates_latest[2]) do
+		if global_update[1] == update_id then
+			global_update_exists = global_update
+			break
+		end
+	end
+	if global_update_exists ~= nil then
+		local is_pending_clear = false
+		for _, clear_update_id in ipairs(self._pending_update_clear) do
+			if update_id == clear_update_id then
+				is_pending_clear = true -- Exclude global updates pending to be cleared
+				break
+			end
+		end
+		if is_pending_clear == false and global_update_exists[3] == true then -- Avoid id duplicates in _pending_update_clear
+			table.insert(self._pending_update_clear, update_id)
+		end
+	else
+		error("[ProfileService]: Passed non-existant update_id")
+	end
+end
+
+-- EXPOSED TO "update_handler" DURING ProfileStore:GlobalUpdateProfileAsync() CALL
+function GlobalUpdates:AddActiveUpdate(update_data)
+	if type(update_data) ~= "table" then
+		error("[ProfileService]: Invalid update_data")
+	end
+	if self._new_active_update_listeners ~= nil then
+		error("[ProfileService]: Can't add active global updates in loaded Profile; Use ProfileStore:GlobalUpdateProfileAsync()")
+	elseif self._update_handler_mode ~= true then
+		error("[ProfileService]: Can't add active global updates in view mode; Use ProfileStore:GlobalUpdateProfileAsync()")
+	end
+	-- self._updates_latest = {}, -- [table] {update_index, {{update_id, version_id, update_locked, update_data}, ...}}
+	local updates_latest = self._updates_latest
+	local update_index = updates_latest[1] + 1 -- Incrementing global update index
+	updates_latest[1] = update_index
+	-- Add new active global update:
+	table.insert(updates_latest[2], {update_index, 1, false, update_data})
+end
+
+function GlobalUpdates:ChangeActiveUpdate(update_id, update_data)
+	if type(update_id) ~= "number" then
+		error("[ProfileService]: Invalid update_id")
+	end
+	if type(update_data) ~= "table" then
+		error("[ProfileService]: Invalid update_data")
+	end
+	if self._new_active_update_listeners ~= nil then
+		error("[ProfileService]: Can't change active global updates in loaded Profile; Use ProfileStore:GlobalUpdateProfileAsync()")
+	elseif self._update_handler_mode ~= true then
+		error("[ProfileService]: Can't change active global updates in view mode; Use ProfileStore:GlobalUpdateProfileAsync()")
+	end
+	-- self._updates_latest = {}, -- [table] {update_index, {{update_id, version_id, update_locked, update_data}, ...}}
+	local updates_latest = self._updates_latest
+	local get_global_update = nil
+	for _, global_update in ipairs(updates_latest[2]) do
+		if update_id == global_update[1] then
+			get_global_update = global_update
+			break
+		end
+	end
+	if get_global_update ~= nil then
+		if get_global_update[3] == true then
+			error("[ProfileService]: Can't change locked global update")
+		end
+		get_global_update[2] = get_global_update[2] + 1 -- Increment version id
+		get_global_update[4] = update_data -- Set new global update data
+	else
+		error("[ProfileService]: Passed non-existant update_id")
+	end
+end
+
+function GlobalUpdates:ClearActiveUpdate(update_id)
+	if type(update_id) ~= "number" then
+		error("[ProfileService]: Invalid update_id argument")
+	end
+	if self._new_active_update_listeners ~= nil then
+		error("[ProfileService]: Can't clear active global updates in loaded Profile; Use ProfileStore:GlobalUpdateProfileAsync()")
+	elseif self._update_handler_mode ~= true then
+		error("[ProfileService]: Can't clear active global updates in view mode; Use ProfileStore:GlobalUpdateProfileAsync()")
+	end
+	-- self._updates_latest = {}, -- [table] {update_index, {{update_id, version_id, update_locked, update_data}, ...}}
+	local updates_latest = self._updates_latest
+	local get_global_update_index = nil
+	local get_global_update = nil
+	for index, global_update in ipairs(updates_latest[2]) do
+		if update_id == global_update[1] then
+			get_global_update_index = index
+			get_global_update = global_update
+			break
+		end
+	end
+	if get_global_update ~= nil then
+		if get_global_update[3] == true then
+			error("[ProfileService]: Can't clear locked global update")
+		end
+		table.remove(updates_latest[2], get_global_update_index) -- Remove active global update
+	else
+		error("[ProfileService]: Passed non-existant update_id")
+	end
+end
+
+-- Profile object:
+
+local Profile = {
+	--[[
+		Data = {}, -- [table] -- Loaded once after ProfileStore:LoadProfileAsync() finishes
+		MetaData = {}, -- [table] -- Updated with every auto-save
+		GlobalUpdates = GlobalUpdates, -- [GlobalUpdates]
+		
+		_profile_store = ProfileStore, -- [ProfileStore]
+		_profile_key = "", -- [string]
+		
+		_release_listeners = [ScriptSignal] / nil, -- [table / nil]
+		_hop_ready_listeners = [ScriptSignal] / nil, -- [table / nil]
+		_hop_ready = false,
+		
+		_view_mode = true / nil, -- [bool] or nil
+		
+		_load_timestamp = os.clock(),
+		
+		_is_user_mock = false, -- ProfileStore.Mock
+		_mock_key_info = {},
+	--]]
+}
+Profile.__index = Profile
+
+function Profile:IsActive() --> [bool]
+	local loaded_profiles = self._is_user_mock == true and self._profile_store._mock_loaded_profiles or self._profile_store._loaded_profiles
+	return loaded_profiles[self._profile_key] == self
+end
+
+function Profile:GetMetaTag(tag_name) --> value
+	local meta_data = self.MetaData
+	if meta_data == nil then
+		return nil
+		-- error("[ProfileService]: This Profile hasn't been loaded before - MetaData not available")
+	end
+	return self.MetaData.MetaTags[tag_name]
+end
+
+function Profile:SetMetaTag(tag_name, value)
+	if type(tag_name) ~= "string" then
+		error("[ProfileService]: tag_name must be a string")
+	elseif string.len(tag_name) == 0 then
+		error("[ProfileService]: Invalid tag_name")
+	end
+	self.MetaData.MetaTags[tag_name] = value
+end
+
+function Profile:Reconcile()
+	ReconcileTable(self.Data, self._profile_store._profile_template)
+end
+
+function Profile:ListenToRelease(listener) --> [ScriptConnection] (place_id / nil, game_job_id / nil)
+	if type(listener) ~= "function" then
+		error("[ProfileService]: Only a function can be set as listener in Profile:ListenToRelease()")
+	end
+	if self._view_mode == true then
+		return {Disconnect = function() end}
+	end
+	if self:IsActive() == false then
+		-- Call release listener immediately if profile is expired
+		local place_id
+		local game_job_id
+		local active_session = self.MetaData.ActiveSession
+		if active_session ~= nil then
+			place_id = active_session[1]
+			game_job_id = active_session[2]
+		end
+		listener(place_id, game_job_id)
+		return {Disconnect = function() end}
+	else
+		return self._release_listeners:Connect(listener)
+	end
+end
+
+function Profile:Save()
+	if self._view_mode == true then
+		error("[ProfileService]: Can't save Profile in view mode - Should you be calling :OverwriteAsync() instead?")
+	end
+	if self:IsActive() == false then
+		warn("[ProfileService]: Attempted saving an inactive profile "
+			.. self:Identify() .. "; Traceback:\n" .. debug.traceback())
+		return
+	end
+	-- Reject save request if a save is already pending in the queue - this will prevent the user from
+	--	unecessary API request spam which we could not meaningfully execute anyways!
+	if IsCustomWriteQueueEmptyFor(self._profile_store._profile_store_lookup, self._profile_key) == true then
+		-- We don't want auto save to trigger too soon after manual saving - this will reset the auto save timer:
+		RemoveProfileFromAutoSave(self)
+		AddProfileToAutoSave(self)
+		-- Call save function in a new thread:
+		task.spawn(SaveProfileAsync, self)
+	end
+end
+
+function Profile:Release()
+	if self._view_mode == true then
+		return
+	end
+	if self:IsActive() == true then
+		task.spawn(SaveProfileAsync, self, true) -- Call save function in a new thread with release_from_session = true
+	end
+end
+
+function Profile:ListenToHopReady(listener) --> [ScriptConnection] ()
+	if type(listener) ~= "function" then
+		error("[ProfileService]: Only a function can be set as listener in Profile:ListenToHopReady()")
+	end
+	if self._view_mode == true then
+		return {Disconnect = function() end}
+	end
+	if self._hop_ready == true then
+		task.spawn(listener)
+		return {Disconnect = function() end}
+	else
+		return self._hop_ready_listeners:Connect(listener)
+	end
+end
+
+function Profile:AddUserId(user_id) -- Associates user_id with profile (GDPR compliance)
+
+	if type(user_id) ~= "number" or user_id % 1 ~= 0 then
+		warn("[ProfileService]: Invalid UserId argument for :AddUserId() ("
+			.. tostring(user_id) .. "); Traceback:\n" .. debug.traceback())
+		return
+	end
+
+	if user_id < 0 and self._is_user_mock ~= true and UseMockDataStore ~= true then
+		return -- Avoid giving real Roblox APIs negative UserId's
+	end
+
+	if table.find(self.UserIds, user_id) == nil then
+		table.insert(self.UserIds, user_id)
+	end
+	
+end
+
+function Profile:RemoveUserId(user_id) -- Unassociates user_id with profile (safe function)
+
+	if type(user_id) ~= "number" or user_id % 1 ~= 0 then
+		warn("[ProfileService]: Invalid UserId argument for :RemoveUserId() ("
+			.. tostring(user_id) .. "); Traceback:\n" .. debug.traceback())
+		return
+	end
+	
+	local index = table.find(self.UserIds, user_id)
+
+	if index ~= nil then
+		table.remove(self.UserIds, index)
+	end
+
+end
+
+function Profile:Identify() --> [string]
+	return IdentifyProfile(
+		self._profile_store._profile_store_name,
+		self._profile_store._profile_store_scope,
+		self._profile_key
+	)
+end
+
+function Profile:ClearGlobalUpdates() -- Clears all global updates data from a profile payload
+
+	if self._view_mode ~= true then
+		error("[ProfileService]: :ClearGlobalUpdates() can only be used in view mode")
+	end
+
+	local global_updates_object = {
+		_updates_latest = {0, {}},
+		_profile = self,
+	}
+	setmetatable(global_updates_object, GlobalUpdates)
+
+	self.GlobalUpdates = global_updates_object
+
+end
+
+function Profile:OverwriteAsync() -- Saves the profile to the DataStore and removes the session lock
+
+	if self._view_mode ~= true then
+		error("[ProfileService]: :OverwriteAsync() can only be used in view mode")
+	end
+
+	SaveProfileAsync(self, nil, true)
+
+end
+
+-- ProfileVersionQuery object:
+
+local ProfileVersionQuery = {
+	--[[
+		_profile_store = profile_store,
+		_profile_key = profile_key,
+		_sort_direction = sort_direction,
+		_min_date = min_date,
+		_max_date = max_date,
+
+		_query_pages = pages, -- [DataStoreVersionPages]
+		_query_index = index, -- [number]
+		_query_failure = false,
+
+		_is_query_yielded = false,
+		_query_queue = {},
+	--]]
+}
+ProfileVersionQuery.__index = ProfileVersionQuery
+
+function ProfileVersionQuery:_MoveQueue()
+	while #self._query_queue > 0 do
+		local queue_entry = table.remove(self._query_queue, 1)
+		task.spawn(queue_entry)
+		if self._is_query_yielded == true then
+			break
+		end
+	end
+end
+
+function ProfileVersionQuery:NextAsync(_is_stacking) --> [Profile] or nil
+
+	if self._profile_store == nil then
+		return nil
+	end
+
+	local profile
+	local is_finished = false
+
+	local function query_job()
+
+		if self._query_failure == true then
+			is_finished = true
+			return
+		end
+
+		-- First "next" call loads version pages:
+
+		if self._query_pages == nil then
+
+			self._is_query_yielded = true
+			task.spawn(function()
+				profile = self:NextAsync(true)
+				is_finished = true
+			end)
+			
+			local list_success, error_message = pcall(function()
+				self._query_pages = self._profile_store._global_data_store:ListVersionsAsync(
+					self._profile_key,
+					self._sort_direction,
+					self._min_date,
+					self._max_date
+				)
+				self._query_index = 0
+			end)
+
+			if list_success == false or self._query_pages == nil then
+				warn("[ProfileService]: Version query fail - " .. tostring(error_message))
+				self._query_failure = true
+			end
+
+			self._is_query_yielded = false
+			self:_MoveQueue()
+
+			return
+
+		end
+
+		local current_page = self._query_pages:GetCurrentPage()
+		local next_item = current_page[self._query_index + 1]
+
+		-- No more entries:
+		
+		if self._query_pages.IsFinished == true and next_item == nil then
+			is_finished = true
+			return
+		end
+
+		-- Load next page when this page is over:
+
+		if next_item == nil then
+
+			self._is_query_yielded = true
+			task.spawn(function()
+				profile = self:NextAsync(true)
+				is_finished = true
+			end)
+
+			local success = pcall(function()
+				self._query_pages:AdvanceToNextPageAsync()
+				self._query_index = 0
+			end)
+
+			if success == false or #self._query_pages:GetCurrentPage() == 0 then
+				self._query_failure = true
+			end
+
+			self._is_query_yielded = false
+			self:_MoveQueue()
+
+			return
+
+		end
+
+		-- Next page item:
+
+		self._query_index += 1
+		profile = self._profile_store:ViewProfileAsync(self._profile_key, next_item.Version)
+		is_finished = true
+
+	end
+
+	if self._is_query_yielded == false then
+		query_job()
+	else
+		if _is_stacking == true then
+			table.insert(self._query_queue, 1, query_job)
+		else
+			table.insert(self._query_queue, query_job)
+		end
+	end
+
+	while is_finished == false do
+		task.wait()
+	end
+
+	return profile
+
+end
+
+-- ProfileStore object:
+
+local ProfileStore = {
+	--[[
+		Mock = {},
+	
+		_profile_store_name = "", -- [string] -- DataStore name
+		_profile_store_scope = nil, -- [string] or [nil] -- DataStore scope
+		_profile_store_lookup = "", -- [string] -- _profile_store_name .. "\0" .. (_profile_store_scope or "")
+		
+		_profile_template = {}, -- [table]
+		_global_data_store = global_data_store, -- [GlobalDataStore] -- Object returned by DataStoreService:GetDataStore(_profile_store_name)
+		
+		_loaded_profiles = {[profile_key] = Profile, ...},
+		_profile_load_jobs = {[profile_key] = {load_id, loaded_data}, ...},
+		
+		_mock_loaded_profiles = {[profile_key] = Profile, ...},
+		_mock_profile_load_jobs = {[profile_key] = {load_id, loaded_data}, ...},
+	--]]
+}
+ProfileStore.__index = ProfileStore
+
+function ProfileStore:LoadProfileAsync(profile_key, not_released_handler, _use_mock) --> [Profile / nil] not_released_handler(place_id, game_job_id)
+
+	not_released_handler = not_released_handler or "ForceLoad"
+
+	if self._profile_template == nil then
+		error("[ProfileService]: Profile template not set - ProfileStore:LoadProfileAsync() locked for this ProfileStore")
+	end
+	if type(profile_key) ~= "string" then
+		error("[ProfileService]: profile_key must be a string")
+	elseif string.len(profile_key) == 0 then
+		error("[ProfileService]: Invalid profile_key")
+	end
+	if type(not_released_handler) ~= "function" and not_released_handler ~= "ForceLoad" and not_released_handler ~= "Steal" then
+		error("[ProfileService]: Invalid not_released_handler")
+	end
+
+	if ProfileService.ServiceLocked == true then
+		return nil
+	end
+
+	WaitForPendingProfileStore(self)
+
+	local is_user_mock = _use_mock == UseMockTag
+
+	-- Check if profile with profile_key isn't already loaded in this session:
+	for _, profile_store in ipairs(ActiveProfileStores) do
+		if profile_store._profile_store_lookup == self._profile_store_lookup then
+			local loaded_profiles = is_user_mock == true and profile_store._mock_loaded_profiles or profile_store._loaded_profiles
+			if loaded_profiles[profile_key] ~= nil then
+				error("[ProfileService]: Profile " .. IdentifyProfile(self._profile_store_name, self._profile_store_scope, profile_key) .. " is already loaded in this session")
+				-- Are you using Profile:Release() properly?
+			end
+		end
+	end
+
+	ActiveProfileLoadJobs = ActiveProfileLoadJobs + 1
+	local force_load = not_released_handler == "ForceLoad"
+	local force_load_steps = 0
+	local request_force_load = force_load -- First step of ForceLoad
+	local steal_session = false -- Second step of ForceLoad
+	local aggressive_steal = not_released_handler == "Steal" -- Developer invoked steal
+	while ProfileService.ServiceLocked == false do
+		-- Load profile:
+		-- SPECIAL CASE - If LoadProfileAsync is called for the same key before another LoadProfileAsync finishes,
+		-- yoink the DataStore return for the new call. The older call will return nil. This would prevent very rare
+		-- game breaking errors where a player rejoins the server super fast.
+		local profile_load_jobs = is_user_mock == true and self._mock_profile_load_jobs or self._profile_load_jobs
+		local loaded_data, key_info
+		local load_id = LoadIndex + 1
+		LoadIndex = load_id
+		local profile_load_job = profile_load_jobs[profile_key] -- {load_id, {loaded_data, key_info} or nil}
+		if profile_load_job ~= nil then
+			profile_load_job[1] = load_id -- Yoink load job
+			while profile_load_job[2] == nil do -- Wait for job to finish
+				task.wait()
+			end
+			if profile_load_job[1] == load_id then -- Load job hasn't been double-yoinked
+				loaded_data, key_info = table.unpack(profile_load_job[2])
+				profile_load_jobs[profile_key] = nil
+			else
+				ActiveProfileLoadJobs = ActiveProfileLoadJobs - 1
+				return nil
+			end
+		else
+			profile_load_job = {load_id, nil}
+			profile_load_jobs[profile_key] = profile_load_job
+			profile_load_job[2] = table.pack(StandardProfileUpdateAsyncDataStore(
+				self,
+				profile_key,
+				{
+					ExistingProfileHandle = function(latest_data)
+						if ProfileService.ServiceLocked == false then
+							local active_session = latest_data.MetaData.ActiveSession
+							local force_load_session = latest_data.MetaData.ForceLoadSession
+							-- IsThisSession(active_session)
+							if active_session == nil then
+								latest_data.MetaData.ActiveSession = {PlaceId, JobId}
+								latest_data.MetaData.ForceLoadSession = nil
+							elseif type(active_session) == "table" then
+								if IsThisSession(active_session) == false then
+									local last_update = latest_data.MetaData.LastUpdate
+									if last_update ~= nil then
+										if os.time() - last_update > SETTINGS.AssumeDeadSessionLock then
+											latest_data.MetaData.ActiveSession = {PlaceId, JobId}
+											latest_data.MetaData.ForceLoadSession = nil
+											return
+										end
+									end
+									if steal_session == true or aggressive_steal == true then
+										local force_load_uninterrupted = false
+										if force_load_session ~= nil then
+											force_load_uninterrupted = IsThisSession(force_load_session)
+										end
+										if force_load_uninterrupted == true or aggressive_steal == true then
+											latest_data.MetaData.ActiveSession = {PlaceId, JobId}
+											latest_data.MetaData.ForceLoadSession = nil
+										end
+									elseif request_force_load == true then
+										latest_data.MetaData.ForceLoadSession = {PlaceId, JobId}
+									end
+								else
+									latest_data.MetaData.ForceLoadSession = nil
+								end
+							end
+						end
+					end,
+					MissingProfileHandle = function(latest_data)
+						latest_data.Data = DeepCopyTable(self._profile_template)
+						latest_data.MetaData = {
+							ProfileCreateTime = os.time(),
+							SessionLoadCount = 0,
+							ActiveSession = {PlaceId, JobId},
+							ForceLoadSession = nil,
+							MetaTags = {},
+						}
+					end,
+					EditProfile = function(latest_data)
+						if ProfileService.ServiceLocked == false then
+							local active_session = latest_data.MetaData.ActiveSession
+							if active_session ~= nil and IsThisSession(active_session) == true then
+								latest_data.MetaData.SessionLoadCount = latest_data.MetaData.SessionLoadCount + 1
+								latest_data.MetaData.LastUpdate = os.time()
+							end
+						end
+					end,
+				},
+				is_user_mock
+			))
+			if profile_load_job[1] == load_id then -- Load job hasn't been yoinked
+				loaded_data, key_info = table.unpack(profile_load_job[2])
+				profile_load_jobs[profile_key] = nil
+			else
+				ActiveProfileLoadJobs = ActiveProfileLoadJobs - 1
+				return nil -- Load job yoinked
+			end
+		end
+		-- Handle load_data:
+		if loaded_data ~= nil and key_info ~= nil then
+			local active_session = loaded_data.MetaData.ActiveSession
+			if type(active_session) == "table" then
+				if IsThisSession(active_session) == true then
+					-- Special component in MetaTags:
+					loaded_data.MetaData.MetaTagsLatest = DeepCopyTable(loaded_data.MetaData.MetaTags)
+					-- Case #1: Profile is now taken by this session:
+					-- Create Profile object:
+					local global_updates_object = {
+						_updates_latest = loaded_data.GlobalUpdates,
+						_pending_update_lock = {},
+						_pending_update_clear = {},
+
+						_new_active_update_listeners = Madwork.NewScriptSignal(),
+						_new_locked_update_listeners = Madwork.NewScriptSignal(),
+
+						_profile = nil,
+					}
+					setmetatable(global_updates_object, GlobalUpdates)
+					local profile = {
+						Data = loaded_data.Data,
+						MetaData = loaded_data.MetaData,
+						MetaTagsUpdated = Madwork.NewScriptSignal(),
+
+						RobloxMetaData = loaded_data.RobloxMetaData or {},
+						UserIds = loaded_data.UserIds or {},
+						KeyInfo = key_info,
+						KeyInfoUpdated = Madwork.NewScriptSignal(),
+
+						GlobalUpdates = global_updates_object,
+
+						_profile_store = self,
+						_profile_key = profile_key,
+
+						_release_listeners = Madwork.NewScriptSignal(),
+						_hop_ready_listeners = Madwork.NewScriptSignal(),
+						_hop_ready = false,
+
+						_load_timestamp = os.clock(),
+
+						_is_user_mock = is_user_mock,
+					}
+					setmetatable(profile, Profile)
+					global_updates_object._profile = profile
+					-- Referencing Profile object in ProfileStore:
+					if next(self._loaded_profiles) == nil and next(self._mock_loaded_profiles) == nil then -- ProfileStore object was inactive
+						table.insert(ActiveProfileStores, self)
+					end
+					if is_user_mock == true then
+						self._mock_loaded_profiles[profile_key] = profile
+					else
+						self._loaded_profiles[profile_key] = profile
+					end
+					-- Adding profile to AutoSaveList;
+					AddProfileToAutoSave(profile)
+					-- Special case - finished loading profile, but session is shutting down:
+					if ProfileService.ServiceLocked == true then
+						SaveProfileAsync(profile, true) -- Release profile and yield until the DataStore call is finished
+						profile = nil -- nil will be returned by this call
+					end
+					-- Return Profile object:
+					ActiveProfileLoadJobs = ActiveProfileLoadJobs - 1
+					return profile
+				else
+					-- Case #2: Profile is taken by some other session:
+					if force_load == true then
+						local force_load_session = loaded_data.MetaData.ForceLoadSession
+						local force_load_uninterrupted = false
+						if force_load_session ~= nil then
+							force_load_uninterrupted = IsThisSession(force_load_session)
+						end
+						if force_load_uninterrupted == true then
+							if request_force_load == false then
+								force_load_steps = force_load_steps + 1
+								if force_load_steps == SETTINGS.ForceLoadMaxSteps then
+									steal_session = true
+								end
+							end
+							task.wait() -- Overload prevention
+						else
+							-- Another session tried to force load this profile:
+							ActiveProfileLoadJobs = ActiveProfileLoadJobs - 1
+							return nil
+						end
+						request_force_load = false -- Only request a force load once
+					elseif aggressive_steal == true then
+						task.wait() -- Overload prevention
+					else
+						local handler_result = not_released_handler(active_session[1], active_session[2])
+						if handler_result == "Repeat" then
+							task.wait() -- Overload prevention
+						elseif handler_result == "Cancel" then
+							ActiveProfileLoadJobs = ActiveProfileLoadJobs - 1
+							return nil
+						elseif handler_result == "ForceLoad" then
+							force_load = true
+							request_force_load = true
+							task.wait() -- Overload prevention
+						elseif handler_result == "Steal" then
+							aggressive_steal = true
+							task.wait() -- Overload prevention
+						else
+							error(
+								"[ProfileService]: Invalid return from not_released_handler (\"" .. tostring(handler_result) .. "\")(" .. type(handler_result) .. ");" ..
+									"\n" .. IdentifyProfile(self._profile_store_name, self._profile_store_scope, profile_key) ..
+									" Traceback:\n" .. debug.traceback()
+							)
+						end
+					end
+				end
+			else
+				ActiveProfileLoadJobs = ActiveProfileLoadJobs - 1
+				return nil -- In this scenario it is likely the ProfileService.ServiceLocked flag was raised
+			end
+		else
+			task.wait() -- Overload prevention
+		end
+	end
+	ActiveProfileLoadJobs = ActiveProfileLoadJobs - 1
+	return nil -- If loop breaks return nothing
+end
+
+function ProfileStore:GlobalUpdateProfileAsync(profile_key, update_handler, _use_mock) --> [GlobalUpdates / nil] (update_handler(GlobalUpdates))
+	if type(profile_key) ~= "string" or string.len(profile_key) == 0 then
+		error("[ProfileService]: Invalid profile_key")
+	end
+	if type(update_handler) ~= "function" then
+		error("[ProfileService]: Invalid update_handler")
+	end
+
+	if ProfileService.ServiceLocked == true then
+		return nil
+	end
+
+	WaitForPendingProfileStore(self)
+
+	while ProfileService.ServiceLocked == false do
+		-- Updating profile:
+		local loaded_data = StandardProfileUpdateAsyncDataStore(
+			self,
+			profile_key,
+			{
+				ExistingProfileHandle = nil,
+				MissingProfileHandle = nil,
+				EditProfile = function(latest_data)
+					-- Running update_handler:
+					local global_updates_object = {
+						_updates_latest = latest_data.GlobalUpdates,
+						_update_handler_mode = true,
+					}
+					setmetatable(global_updates_object, GlobalUpdates)
+					update_handler(global_updates_object)
+				end,
+			},
+			_use_mock == UseMockTag
+		)
+		CustomWriteQueueMarkForCleanup(self._profile_store_lookup, profile_key)
+		-- Handling loaded_data:
+		if loaded_data ~= nil then
+			-- Return GlobalUpdates object (Update successful):
+			local global_updates_object = {
+				_updates_latest = loaded_data.GlobalUpdates,
+			}
+			setmetatable(global_updates_object, GlobalUpdates)
+			return global_updates_object
+		else
+			task.wait() -- Overload prevention
+		end
+	end
+	return nil -- Return nothing (Update unsuccessful)
+end
+
+function ProfileStore:ViewProfileAsync(profile_key, version, _use_mock) --> [Profile / nil]
+	if type(profile_key) ~= "string" or string.len(profile_key) == 0 then
+		error("[ProfileService]: Invalid profile_key")
+	end
+
+	if ProfileService.ServiceLocked == true then
+		return nil
+	end
+
+	WaitForPendingProfileStore(self)
+
+	if version ~= nil and (_use_mock == UseMockTag or UseMockDataStore == true) then
+		return nil -- No version support in mock mode
+	end
+
+	while ProfileService.ServiceLocked == false do
+		-- Load profile:
+		local loaded_data, key_info = StandardProfileUpdateAsyncDataStore(
+			self,
+			profile_key,
+			{
+				ExistingProfileHandle = nil,
+				MissingProfileHandle = function(latest_data)
+					latest_data.Data = DeepCopyTable(self._profile_template)
+					latest_data.MetaData = {
+						ProfileCreateTime = os.time(),
+						SessionLoadCount = 0,
+						ActiveSession = nil,
+						ForceLoadSession = nil,
+						MetaTags = {},
+					}
+				end,
+				EditProfile = nil,
+			},
+			_use_mock == UseMockTag,
+			true, -- Use :GetAsync()
+			version -- DataStore key version
+		)
+		CustomWriteQueueMarkForCleanup(self._profile_store_lookup, profile_key)
+		-- Handle load_data:
+		if loaded_data ~= nil then
+			if key_info == nil then
+				return nil -- Load was successful, but the key was empty - return no profile object
+			end
+			-- Create Profile object:
+			local global_updates_object = {
+				_updates_latest = loaded_data.GlobalUpdates, -- {0, {}}
+				_profile = nil,
+			}
+			setmetatable(global_updates_object, GlobalUpdates)
+			local profile = {
+				Data = loaded_data.Data,
+				MetaData = loaded_data.MetaData,
+				MetaTagsUpdated = Madwork.NewScriptSignal(),
+
+				RobloxMetaData = loaded_data.RobloxMetaData or {},
+				UserIds = loaded_data.UserIds or {},
+				KeyInfo = key_info,
+				KeyInfoUpdated = Madwork.NewScriptSignal(),
+
+				GlobalUpdates = global_updates_object,
+
+				_profile_store = self,
+				_profile_key = profile_key,
+
+				_view_mode = true,
+
+				_load_timestamp = os.clock(),
+			}
+			setmetatable(profile, Profile)
+			global_updates_object._profile = profile
+			-- Returning Profile object:
+			return profile
+		else
+			task.wait() -- Overload prevention
+		end
+	end
+	return nil -- If loop breaks return nothing
+end
+
+function ProfileStore:ProfileVersionQuery(profile_key, sort_direction, min_date, max_date, _use_mock) --> [ProfileVersionQuery]
+	if type(profile_key) ~= "string" or string.len(profile_key) == 0 then
+		error("[ProfileService]: Invalid profile_key")
+	end
+
+	if ProfileService.ServiceLocked == true then
+		return setmetatable({}, ProfileVersionQuery) -- Silently fail :Next() requests
+	end
+
+	WaitForPendingProfileStore(self)
+
+	if _use_mock == UseMockTag or UseMockDataStore == true then
+		error("[ProfileService]: :ProfileVersionQuery() is not supported in mock mode")
+	end
+
+	-- Type check:
+	if sort_direction ~= nil and (typeof(sort_direction) ~= "EnumItem"
+		or sort_direction.EnumType ~= Enum.SortDirection) then
+		error("[ProfileService]: Invalid sort_direction (" .. tostring(sort_direction) .. ")")
+	end
+
+	if min_date ~= nil and typeof(min_date) ~= "DateTime" and typeof(min_date) ~= "number" then
+		error("[ProfileService]: Invalid min_date (" .. tostring(min_date) .. ")")
+	end
+
+	if max_date ~= nil and typeof(max_date) ~= "DateTime" and typeof(max_date) ~= "number" then
+		error("[ProfileService]: Invalid max_date (" .. tostring(max_date) .. ")")
+	end
+
+	min_date = typeof(min_date) == "DateTime" and min_date.UnixTimestampMillis or min_date
+	max_date = typeof(max_date) == "DateTime" and max_date.UnixTimestampMillis or max_date
+
+	local profile_version_query = {
+		_profile_store = self,
+		_profile_key = profile_key,
+		_sort_direction = sort_direction,
+		_min_date = min_date,
+		_max_date = max_date,
+
+		_query_pages = nil,
+		_query_index = 0,
+		_query_failure = false,
+
+		_is_query_yielded = false,
+		_query_queue = {},
+	}
+	setmetatable(profile_version_query, ProfileVersionQuery)
+
+	return profile_version_query
+
+end
+
+function ProfileStore:WipeProfileAsync(profile_key, _use_mock) --> is_wipe_successful [bool]
+	if type(profile_key) ~= "string" or string.len(profile_key) == 0 then
+		error("[ProfileService]: Invalid profile_key")
+	end
+
+	if ProfileService.ServiceLocked == true then
+		return false
+	end
+
+	WaitForPendingProfileStore(self)
+
+	local wipe_status = false
+
+	if _use_mock == UseMockTag then -- Used when the profile is accessed through ProfileStore.Mock
+		local mock_data_store = UserMockDataStore[self._profile_store_lookup]
+		if mock_data_store ~= nil then
+			mock_data_store[profile_key] = nil
+		end
+		wipe_status = true
+		task.wait() -- Simulate API call yield
+	elseif UseMockDataStore == true then -- Used when API access is disabled
+		local mock_data_store = MockDataStore[self._profile_store_lookup]
+		if mock_data_store ~= nil then
+			mock_data_store[profile_key] = nil
+		end
+		wipe_status = true
+		task.wait() -- Simulate API call yield
+	else
+		wipe_status = pcall(function()
+			self._global_data_store:RemoveAsync(profile_key)
+		end)
+	end
+
+	CustomWriteQueueMarkForCleanup(self._profile_store_lookup, profile_key)
+
+	return wipe_status
+end
+
+-- New ProfileStore:
+
+function ProfileService.GetProfileStore(profile_store_index, profile_template) --> [ProfileStore]
+
+	local profile_store_name
+	local profile_store_scope = nil
+
+	-- Parsing profile_store_index:
+	if type(profile_store_index) == "string" then
+		-- profile_store_index as string:
+		profile_store_name = profile_store_index
+	elseif type(profile_store_index) == "table" then
+		-- profile_store_index as table:
+		profile_store_name = profile_store_index.Name
+		profile_store_scope = profile_store_index.Scope
+	else
+		error("[ProfileService]: Invalid or missing profile_store_index")
+	end
+
+	-- Type checking:
+	if profile_store_name == nil or type(profile_store_name) ~= "string" then
+		error("[ProfileService]: Missing or invalid \"Name\" parameter")
+	elseif string.len(profile_store_name) == 0 then
+		error("[ProfileService]: ProfileStore name cannot be an empty string")
+	end
+
+	if profile_store_scope ~= nil and (type(profile_store_scope) ~= "string" or string.len(profile_store_scope) == 0) then
+		error("[ProfileService]: Invalid \"Scope\" parameter")
+	end
+
+	if type(profile_template) ~= "table" then
+		error("[ProfileService]: Invalid profile_template")
+	end
+
+	local profile_store
+	profile_store = {
+		Mock = {
+			LoadProfileAsync = function(_, profile_key, not_released_handler)
+				return profile_store:LoadProfileAsync(profile_key, not_released_handler, UseMockTag)
+			end,
+			GlobalUpdateProfileAsync = function(_, profile_key, update_handler)
+				return profile_store:GlobalUpdateProfileAsync(profile_key, update_handler, UseMockTag)
+			end,
+			ViewProfileAsync = function(_, profile_key, version)
+				return profile_store:ViewProfileAsync(profile_key, version, UseMockTag)
+			end,
+			FindProfileVersionAsync = function(_, profile_key, sort_direction, min_date, max_date)
+				return profile_store:FindProfileVersionAsync(profile_key, sort_direction, min_date, max_date, UseMockTag)
+			end,
+			WipeProfileAsync = function(_, profile_key)
+				return profile_store:WipeProfileAsync(profile_key, UseMockTag)
+			end
+		},
+
+		_profile_store_name = profile_store_name,
+		_profile_store_scope = profile_store_scope,
+		_profile_store_lookup = profile_store_name .. "\0" .. (profile_store_scope or ""),
+
+		_profile_template = profile_template,
+		_global_data_store = nil,
+		_loaded_profiles = {},
+		_profile_load_jobs = {},
+		_mock_loaded_profiles = {},
+		_mock_profile_load_jobs = {},
+		_is_pending = false,
+	}
+	setmetatable(profile_store, ProfileStore)
+
+	if IsLiveCheckActive == true then
+		profile_store._is_pending = true
+		task.spawn(function()
+			WaitForLiveAccessCheck()
+			if UseMockDataStore == false then
+				profile_store._global_data_store = DataStoreService:GetDataStore(profile_store_name, profile_store_scope)
+			end
+			profile_store._is_pending = false
+		end)
+	else
+		if UseMockDataStore == false then
+			profile_store._global_data_store = DataStoreService:GetDataStore(profile_store_name, profile_store_scope)
+		end
+	end
+
+	return profile_store
+end
+
+function ProfileService.IsLive() --> [bool] -- (CAN YIELD!!!)
+
+	WaitForLiveAccessCheck()
+
+	return UseMockDataStore == false
+
+end
+
+----- Initialize -----
+
+if IsStudio == true then
+	IsLiveCheckActive = true
+	task.spawn(function()
+		local status, message = pcall(function()
+			-- This will error if current instance has no Studio API access:
+			DataStoreService:GetDataStore("____PS"):SetAsync("____PS", os.time())
+		end)
+		local no_internet_access = status == false and string.find(message, "ConnectFail", 1, true) ~= nil
+		if no_internet_access == true then
+			warn("[ProfileService]: No internet access - check your network connection")
+		end
+		if status == false and
+			(string.find(message, "403", 1, true) ~= nil or -- Cannot write to DataStore from studio if API access is not enabled
+				string.find(message, "must publish", 1, true) ~= nil or -- Game must be published to access live keys
+				no_internet_access == true) then -- No internet access
+
+			UseMockDataStore = true
+			ProfileService._use_mock_data_store = true
+			print("[ProfileService]: Roblox API services unavailable - data will not be saved")
+		else
+			print("[ProfileService]: Roblox API services available - data will be saved")
+		end
+		IsLiveCheckActive = false
+	end)
+end
+
+----- Connections -----
+
+-- Auto saving and issue queue managing:
+RunService.Heartbeat:Connect(function()
+	-- 1) Auto saving: --
+	local auto_save_list_length = #AutoSaveList
+	if auto_save_list_length > 0 then
+		local auto_save_index_speed = SETTINGS.AutoSaveProfiles / auto_save_list_length
+		local os_clock = os.clock()
+		while os_clock - LastAutoSave > auto_save_index_speed do
+			LastAutoSave = LastAutoSave + auto_save_index_speed
+			local profile = AutoSaveList[AutoSaveIndex]
+			if os_clock - profile._load_timestamp < SETTINGS.AutoSaveProfiles then
+				-- This profile is freshly loaded - auto-saving immediately after loading will cause a warning in the log:
+				profile = nil
+				for _ = 1, auto_save_list_length - 1 do
+					-- Move auto save index to the right:
+					AutoSaveIndex = AutoSaveIndex + 1
+					if AutoSaveIndex > auto_save_list_length then
+						AutoSaveIndex = 1
+					end
+					profile = AutoSaveList[AutoSaveIndex]
+					if os_clock - profile._load_timestamp >= SETTINGS.AutoSaveProfiles then
+						break
+					else
+						profile = nil
+					end
+				end
+			end
+			-- Move auto save index to the right:
+			AutoSaveIndex = AutoSaveIndex + 1
+			if AutoSaveIndex > auto_save_list_length then
+				AutoSaveIndex = 1
+			end
+			-- Perform save call:
+			if profile ~= nil then
+				task.spawn(SaveProfileAsync, profile) -- Auto save profile in new thread
+			end
+		end
+	end
+	-- 2) Issue queue: --
+	-- Critical state handling:
+	if ProfileService.CriticalState == false then
+		if #IssueQueue >= SETTINGS.IssueCountForCriticalState then
+			ProfileService.CriticalState = true
+			ProfileService.CriticalStateSignal:Fire(true)
+			CriticalStateStart = os.clock()
+			warn("[ProfileService]: Entered critical state")
+		end
+	else
+		if #IssueQueue >= SETTINGS.IssueCountForCriticalState then
+			CriticalStateStart = os.clock()
+		elseif os.clock() - CriticalStateStart > SETTINGS.CriticalStateLast then
+			ProfileService.CriticalState = false
+			ProfileService.CriticalStateSignal:Fire(false)
+			warn("[ProfileService]: Critical state ended")
+		end
+	end
+	-- Issue queue:
+	while true do
+		local issue_time = IssueQueue[1]
+		if issue_time == nil then
+			break
+		elseif os.clock() - issue_time > SETTINGS.IssueLast then
+			table.remove(IssueQueue, 1)
+		else
+			break
+		end
+	end
+end)
+
+-- Release all loaded profiles when the server is shutting down:
+task.spawn(function()
+	WaitForLiveAccessCheck()
+	Madwork.ConnectToOnClose(
+		function()
+			ProfileService.ServiceLocked = true
+			-- 1) Release all active profiles: --
+			-- Clone AutoSaveList to a new table because AutoSaveList changes when profiles are released:
+			local on_close_save_job_count = 0
+			local active_profiles = {}
+			for index, profile in ipairs(AutoSaveList) do
+				active_profiles[index] = profile
+			end
+			-- Release the profiles; Releasing profiles can trigger listeners that release other profiles, so check active state:
+			for _, profile in ipairs(active_profiles) do
+				if profile:IsActive() == true then
+					on_close_save_job_count = on_close_save_job_count + 1
+					task.spawn(function() -- Save profile on new thread
+						SaveProfileAsync(profile, true)
+						on_close_save_job_count = on_close_save_job_count - 1
+					end)
+				end
+			end
+			-- 2) Yield until all active profile jobs are finished: --
+			while on_close_save_job_count > 0 or ActiveProfileLoadJobs > 0 or ActiveProfileSaveJobs > 0 do
+				task.wait()
+			end
+			return -- We're done!
+		end,
+		UseMockDataStore == false -- Always run this OnClose task if using Roblox API services
+	)
+end)
+
+return ProfileService]=])
 install(game:GetService("ServerScriptService"), "ShopBuilder", "ModuleScript", [=[
 -- ShopBuilder (ModuleScript in ServerScriptService)
 -- Builds a world's Shovel Shop: a cartoony 2050 pavilion on a round tiered platform,
@@ -5381,6 +8126,7 @@ install(game:GetService("ServerScriptService"), "ShopBuilder", "ModuleScript", [
 -- DigManager calls this once per world on server start.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local ShovelModels = require(ReplicatedStorage:WaitForChild("ShovelModels"))
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
@@ -5398,6 +8144,14 @@ local function displayShovel(parent, def, target, scale)
 			piece.CFrame = target * CFrame.new(rel.Position * scale) * rel.Rotation
 			piece.Anchored = true
 			piece.CanCollide = false
+			local center = piece:GetAttribute("OrbitCenter")
+			if center then
+				-- ShovelSpinner (client) spins these around the shaft
+				local pivot = target * CFrame.new(center * scale)
+				piece:SetAttribute("OrbitPivot", pivot)
+				piece:SetAttribute("OrbitOffset", pivot:ToObjectSpace(piece.CFrame))
+				CollectionService:AddTag(piece, "ShovelOrbit")
+			end
 			for _, c in ipairs(piece:GetChildren()) do
 				if c:IsA("WeldConstraint") then c:Destroy() end
 			end
@@ -5582,6 +8336,541 @@ return function(parent, world, base)
 
 	shop.Parent = parent
 	return shop, prompt
+end
+]=])
+install(game:GetService("ServerScriptService"), "VisitorManager", "Script", [=[
+-- VisitorManager (Script in ServerScriptService)
+-- Autonomous NPC visitors for every player's museum (World 1). Humans and aliens from 2050
+-- appear on the plaza, walk in through the entrance with PathfindingService, visit a few
+-- display slots that have a meme on them (taking the "lift" to the right floor), stop in
+-- front of each one, react with a floating emoji, then walk back out and fade away.
+-- Visitors never give money; they just make the museum feel alive.
+
+local Players = game:GetService("Players")
+local PathfindingService = game:GetService("PathfindingService")
+local PhysicsService = game:GetService("PhysicsService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local buildVisitor = require(script.Parent:WaitForChild("VisitorModels"))
+
+local MAX_VISITORS = 4           -- per museum at once
+local SPAWN_EVERY = {8, 18}      -- seconds between new visitors (random in this range)
+local SLOTS_PER_VISIT = {2, 4}   -- how many memes each visitor looks at
+local LOOK_TIME = {2.5, 4.5}     -- seconds spent in front of each meme
+local ALIEN_CHANCE = 0.35
+local STEP_TIMEOUT = 4           -- give up on a waypoint after this many seconds (then skip ahead)
+
+-- standard R15 animations (made by Roblox, usable in every game)
+local WALK_ANIMATION = "rbxassetid://507777826"
+local IDLE_ANIMATION = "rbxassetid://507766388"
+
+-- Emoji reactions by how rare the meme is
+local REACTIONS = {
+	Low = {"😐", "🥱", "🤔", "🙂", "🤮", "😬", "🙄"},
+	Mid = {"😮", "😄", "👍", "😂", "👏", "🤔", "😎"},
+	High = {"🤩", "😍", "🔥", "🤯", "😱", "👑", "💯"},
+}
+
+-- Visitors don't bump into players (or each other); they still stand on the floors
+for _, group in ipairs({"Visitors", "Players"}) do
+	if not PhysicsService:IsCollisionGroupRegistered(group) then
+		PhysicsService:RegisterCollisionGroup(group)
+	end
+end
+PhysicsService:CollisionGroupSetCollidable("Visitors", "Visitors", false)
+PhysicsService:CollisionGroupSetCollidable("Visitors", "Players", false)
+local function groupCharacter(character)
+	for _, d in ipairs(character:GetDescendants()) do
+		if d:IsA("BasePart") then d.CollisionGroup = "Players" end
+	end
+	character.DescendantAdded:Connect(function(d)
+		if d:IsA("BasePart") then d.CollisionGroup = "Players" end
+	end)
+end
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(groupCharacter)
+end)
+for _, player in ipairs(Players:GetPlayers()) do
+	player.CharacterAdded:Connect(groupCharacter)
+	if player.Character then groupCharacter(player.Character) end
+end
+
+local rng = Random.new()
+local visitorsFolder = workspace:FindFirstChild("MuseumVisitors") or Instance.new("Folder")
+visitorsFolder.Name = "MuseumVisitors"
+visitorsFolder.Parent = workspace
+
+---------------------------------------------------------------------
+-- MUSEUM GEOMETRY
+-- The museum template is built along +Z: entrance at z = 29, back wall at z = 163, halls
+-- 96 studs wide, floors every 32 studs. Everything here is measured from the Floor1Arrival
+-- spot (template position 0, 4, 135), so it works on every plot whatever way it faces.
+---------------------------------------------------------------------
+local ARRIVAL = Vector3.new(0, 4, 135)
+
+local function frameOf(museum)
+	local arrivals = museum:FindFirstChild("Arrivals")
+	local first = arrivals and arrivals:FindFirstChild("Floor1Arrival")
+	return first and first.CFrame
+end
+
+-- template position -> world position
+local function toWorld(frame, templatePos)
+	return frame * (templatePos - ARRIVAL)
+end
+
+local function floorArrival(museum, floor)
+	local arrivals = museum:FindFirstChild("Arrivals")
+	local part = arrivals and arrivals:FindFirstChild("Floor" .. floor .. "Arrival")
+	return part and part.Position
+end
+
+-- where a visitor stands to look at a slot: in front of its rope, facing the pedestal
+local function viewingSpot(frame, slot)
+	local spot = slot:FindFirstChild("DisplaySpot")
+	if not spot then return nil end
+	local p = frame:PointToObjectSpace(spot.Position) + ARRIVAL -- back to template coordinates
+	local floorY = 4 + (math.floor((p.Y - 4) / 32 + 0.5)) * 32
+	local side = p.X >= 0 and 1 or -1
+	local stand = Vector3.new(side * (math.abs(p.X) - 9.5), floorY, p.Z + rng:NextNumber(-1.5, 1.5))
+	return toWorld(frame, stand), spot.Position, math.clamp(math.floor((floorY - 4) / 32 + 0.5) + 1, 1, 3)
+end
+
+local function occupiedSlots(museum)
+	local list = {}
+	local slots = museum:FindFirstChild("Slots")
+	for _, slot in ipairs(slots and slots:GetChildren() or {}) do
+		local artifact = ArtifactData.GetArtifact(slot:GetAttribute("ArtifactId") or "")
+		if artifact then
+			table.insert(list, {Slot = slot, Artifact = artifact})
+		end
+	end
+	return list
+end
+
+---------------------------------------------------------------------
+-- EMOJI REACTIONS (BillboardGui over the visitor's head)
+---------------------------------------------------------------------
+local function react(npc, artifact)
+	local head = npc:FindFirstChild("Head")
+	if not head then return end
+	local rarity = ArtifactData.GetRarityIndex(artifact.Rarity)
+	local pool = rarity >= 5 and REACTIONS.High or (rarity >= 3 and REACTIONS.Mid or REACTIONS.Low)
+	-- rare memes almost always get a great reaction; common ones sometimes still impress
+	if rarity < 5 and rng:NextNumber() < 0.15 then pool = REACTIONS.High end
+
+	local old = head:FindFirstChild("Reaction")
+	if old then old:Destroy() end
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "Reaction"
+	gui.Size = UDim2.fromScale(0, 0)
+	gui.StudsOffset = Vector3.new(0, 2.6, 0)
+	gui.AlwaysOnTop = false
+	gui.MaxDistance = 90
+	gui.LightInfluence = 0
+	gui.Parent = head
+
+	local bubble = Instance.new("Frame")
+	bubble.Size = UDim2.fromScale(1, 1)
+	bubble.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	bubble.Parent = gui
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.5, 0)
+	corner.Parent = bubble
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 3
+	stroke.Color = ArtifactData.GetRarity(artifact.Rarity).Color
+	stroke.Parent = bubble
+	local emoji = Instance.new("TextLabel")
+	emoji.BackgroundTransparency = 1
+	emoji.Size = UDim2.fromScale(0.78, 0.78)
+	emoji.Position = UDim2.fromScale(0.5, 0.5)
+	emoji.AnchorPoint = Vector2.new(0.5, 0.5)
+	emoji.Text = pool[rng:NextInteger(1, #pool)]
+	emoji.TextScaled = true
+	emoji.Font = Enum.Font.GothamBold
+	emoji.Parent = bubble
+
+	-- pop in, hover, fade out
+	TweenService:Create(gui, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromScale(2.6, 2.6)}):Play()
+	TweenService:Create(gui, TweenInfo.new(2.4, Enum.EasingStyle.Sine), {StudsOffset = Vector3.new(0, 3.4, 0)}):Play()
+	task.delay(2.2, function()
+		if not gui.Parent then return end
+		local fade = TweenInfo.new(0.4)
+		TweenService:Create(bubble, fade, {BackgroundTransparency = 1}):Play()
+		TweenService:Create(stroke, fade, {Transparency = 1}):Play()
+		TweenService:Create(emoji, fade, {TextTransparency = 1}):Play()
+		task.delay(0.45, function() gui:Destroy() end)
+	end)
+end
+
+---------------------------------------------------------------------
+-- MOVEMENT
+---------------------------------------------------------------------
+local function setupAnimations(humanoid)
+	local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator")
+	animator.Parent = humanoid
+	local function load(id)
+		local a = Instance.new("Animation")
+		a.AnimationId = id
+		local ok, track = pcall(function() return animator:LoadAnimation(a) end)
+		return ok and track or nil
+	end
+	local walk, idle = load(WALK_ANIMATION), load(IDLE_ANIMATION)
+	if idle then
+		idle.Looped = true
+		idle:Play()
+	end
+	if walk then walk.Looped = true end
+	humanoid.Running:Connect(function(speed)
+		if not walk then return end
+		if speed > 0.5 then
+			if not walk.IsPlaying then walk:Play(0.15) end
+			walk:AdjustSpeed(speed / 12)
+		elseif walk.IsPlaying then
+			walk:Stop(0.2)
+		end
+	end)
+end
+
+local function stepTo(humanoid, position)
+	humanoid:MoveTo(position)
+	local done = false
+	local conn = humanoid.MoveToFinished:Connect(function() done = true end)
+	local start = os.clock()
+	while not done and os.clock() - start < STEP_TIMEOUT and humanoid.Parent do
+		task.wait(0.1)
+	end
+	conn:Disconnect()
+	return done
+end
+
+-- walks along a computed path; falls back to walking straight there if no path is found
+local function walkTo(npc, goal)
+	local humanoid = npc:FindFirstChildOfClass("Humanoid")
+	local root = npc:FindFirstChild("HumanoidRootPart")
+	if not humanoid or not root then return false end
+	local path = PathfindingService:CreatePath({AgentRadius = 1.6, AgentHeight = 5.5, AgentCanJump = false, WaypointSpacing = 6})
+	local ok = pcall(function() path:ComputeAsync(root.Position, goal) end)
+	if ok and path.Status == Enum.PathStatus.Success then
+		for i, waypoint in ipairs(path:GetWaypoints()) do
+			if i > 1 then
+				if not npc.Parent then return false end
+				stepTo(humanoid, waypoint.Position)
+			end
+		end
+		return true
+	end
+	return stepTo(humanoid, goal)
+end
+
+local function faceTowards(npc, target)
+	local root = npc:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	local flat = Vector3.new(target.X, root.Position.Y, target.Z)
+	if (flat - root.Position).Magnitude > 0.1 then
+		TweenService:Create(root, TweenInfo.new(0.3), {CFrame = CFrame.lookAt(root.Position, flat)}):Play()
+	end
+end
+
+local function teleport(npc, position)
+	local root = npc:FindFirstChild("HumanoidRootPart")
+	if root then
+		npc:PivotTo(CFrame.new(position + Vector3.new(0, 3, 0)) * root.CFrame.Rotation)
+	end
+end
+
+local function fadeOut(npc)
+	for _, d in ipairs(npc:GetDescendants()) do
+		if d:IsA("BasePart") and d.Transparency < 1 then
+			TweenService:Create(d, TweenInfo.new(0.8), {Transparency = 1}):Play()
+		elseif d:IsA("Decal") then
+			TweenService:Create(d, TweenInfo.new(0.8), {Transparency = 1}):Play()
+		end
+	end
+	task.delay(0.9, function() npc:Destroy() end)
+end
+
+---------------------------------------------------------------------
+-- ONE VISIT
+---------------------------------------------------------------------
+local function visit(museum, npc)
+	local frame = frameOf(museum)
+	local humanoid = npc:FindFirstChildOfClass("Humanoid")
+	if not frame or not humanoid then
+		npc:Destroy()
+		return
+	end
+
+	local outside = toWorld(frame, Vector3.new(rng:NextNumber(-10, 10), 4, rng:NextNumber(-22, -12)))
+	local doorway = toWorld(frame, Vector3.new(rng:NextNumber(-3, 3), 4, 34))
+	local lobby = toWorld(frame, Vector3.new(rng:NextNumber(-4, 4), 4, 48))
+	npc:PivotTo(CFrame.lookAt(outside + Vector3.new(0, 3, 0), doorway + Vector3.new(0, 3, 0)))
+	npc.Parent = visitorsFolder
+	local root = npc:FindFirstChild("HumanoidRootPart")
+	if root then pcall(function() root:SetNetworkOwner(nil) end) end
+	setupAnimations(humanoid)
+
+	walkTo(npc, doorway)
+	walkTo(npc, lobby)
+
+	-- pick which memes to look at (all on one floor, rarest memes are a bit more popular)
+	local choices = occupiedSlots(museum)
+	local byFloor = {}
+	for _, choice in ipairs(choices) do
+		local stand, target, floor = viewingSpot(frame, choice.Slot)
+		if stand then
+			choice.Stand, choice.Target = stand, target
+			byFloor[floor] = byFloor[floor] or {}
+			table.insert(byFloor[floor], choice)
+		end
+	end
+	local floors = {}
+	for floor in pairs(byFloor) do table.insert(floors, floor) end
+	local floor = #floors > 0 and floors[rng:NextInteger(1, #floors)] or 1
+	local plan = byFloor[floor] or {}
+	for i = #plan, 2, -1 do -- shuffle
+		local j = rng:NextInteger(1, i)
+		plan[i], plan[j] = plan[j], plan[i]
+	end
+
+	-- upper floors: walk to the lift spot and ride up
+	if floor > 1 then
+		walkTo(npc, floorArrival(museum, 1))
+		task.wait(0.4)
+		teleport(npc, floorArrival(museum, floor))
+	end
+
+	local count = math.min(#plan, rng:NextInteger(SLOTS_PER_VISIT[1], SLOTS_PER_VISIT[2]))
+	for i = 1, count do
+		if not museum.Parent or not npc.Parent then break end
+		local choice = plan[i]
+		walkTo(npc, choice.Stand)
+		faceTowards(npc, choice.Target)
+		task.wait(0.4)
+		-- the meme may have been swapped while they walked over: react to what's there now
+		local artifact = ArtifactData.GetArtifact(choice.Slot:GetAttribute("ArtifactId") or "")
+		if artifact then react(npc, artifact) end
+		task.wait(rng:NextNumber(LOOK_TIME[1], LOOK_TIME[2]))
+	end
+
+	-- head home
+	if floor > 1 and npc.Parent and museum.Parent then
+		walkTo(npc, floorArrival(museum, floor))
+		task.wait(0.3)
+		teleport(npc, floorArrival(museum, 1))
+	end
+	if npc.Parent and museum.Parent then
+		walkTo(npc, lobby)
+		walkTo(npc, doorway)
+		walkTo(npc, outside)
+	end
+	if npc.Parent then fadeOut(npc) end
+end
+
+---------------------------------------------------------------------
+-- ONE SPAWNER PER MUSEUM
+---------------------------------------------------------------------
+local function runMuseum(museum)
+	local active = 0
+	task.wait(rng:NextNumber(3, 8))
+	while museum.Parent do
+		if active < MAX_VISITORS and #occupiedSlots(museum) > 0 then
+			active += 1
+			task.spawn(function()
+				local ok, npc = pcall(buildVisitor, rng:NextNumber() < ALIEN_CHANCE and "Alien" or "Human", rng)
+				if ok and npc then
+					local visitOk, err = pcall(visit, museum, npc)
+					if not visitOk then
+						warn("Visitor error: " .. tostring(err))
+						if npc.Parent then npc:Destroy() end
+					end
+				else
+					warn("Couldn't build a visitor: " .. tostring(npc))
+				end
+				active -= 1
+			end)
+		end
+		task.wait(rng:NextNumber(SPAWN_EVERY[1], SPAWN_EVERY[2]))
+	end
+end
+
+local museumsFolder = workspace:WaitForChild("Museums")
+museumsFolder.ChildAdded:Connect(function(museum)
+	task.spawn(runMuseum, museum)
+end)
+for _, museum in ipairs(museumsFolder:GetChildren()) do
+	task.spawn(runMuseum, museum)
+end
+
+print("VisitorManager ready: humans and aliens will visit every museum")
+]=])
+install(game:GetService("ServerScriptService"), "VisitorModels", "ModuleScript", [=[
+-- VisitorModels (ModuleScript in ServerScriptService)
+-- Builds the museum's NPC visitors: 2050 humans (bright outfits, glowing visors, hover
+-- shoes, shoulder pads) and aliens (colored skin, big heads, huge black eyes, antennae).
+-- Each one is a normal R15 character made from a HumanoidDescription, so it can walk with
+-- Humanoid:MoveTo and play the standard walk animation. Returns a function(kind, rng) -> model.
+
+local Players = game:GetService("Players")
+
+local rgb = Color3.fromRGB
+
+local HUMAN_SKIN = {rgb(255, 219, 180), rgb(234, 184, 146), rgb(198, 140, 104), rgb(141, 94, 66), rgb(94, 62, 44), rgb(255, 204, 170)}
+local OUTFITS = { -- {top, bottom, accent glow}
+	{rgb(92, 186, 255), rgb(40, 44, 90), rgb(120, 240, 255)},
+	{rgb(255, 122, 190), rgb(60, 40, 96), rgb(255, 170, 230)},
+	{rgb(255, 206, 84), rgb(56, 58, 76), rgb(255, 230, 140)},
+	{rgb(96, 226, 190), rgb(34, 70, 80), rgb(150, 255, 220)},
+	{rgb(178, 158, 255), rgb(46, 40, 90), rgb(210, 190, 255)},
+	{rgb(246, 247, 252), rgb(90, 96, 140), rgb(120, 240, 255)},
+}
+local ALIEN_SKIN = {rgb(120, 220, 120), rgb(150, 120, 255), rgb(90, 200, 230), rgb(255, 150, 200), rgb(200, 230, 90)}
+
+local function weldTo(part, anchorPart, offset)
+	part.CFrame = anchorPart.CFrame * offset
+	part.Anchored = false
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.Massless = true
+	local w = Instance.new("WeldConstraint")
+	w.Part0 = anchorPart
+	w.Part1 = part
+	w.Parent = part
+	part.Parent = anchorPart.Parent
+	return part
+end
+
+local function piece(name, size, color, material, shape)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Size = size
+	p.Color = color
+	p.Material = material or Enum.Material.SmoothPlastic
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	if shape then p.Shape = shape end
+	return p
+end
+
+local function ellipsoid(name, size, color, material)
+	local p = piece(name, size, color, material)
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Sphere
+	mesh.Parent = p
+	return p
+end
+
+local function describe(skin, top, bottom, scale)
+	local d = Instance.new("HumanoidDescription")
+	d.HeadColor = skin
+	d.LeftArmColor = top
+	d.RightArmColor = top
+	d.TorsoColor = top
+	d.LeftLegColor = bottom
+	d.RightLegColor = bottom
+	d.HeightScale = scale.Height
+	d.WidthScale = scale.Width
+	d.HeadScale = scale.Head
+	d.BodyTypeScale = 0
+	d.ProportionScale = 0
+	return d
+end
+
+local function hands(model, color)
+	for _, name in ipairs({"LeftHand", "RightHand"}) do
+		local hand = model:FindFirstChild(name)
+		if hand then hand.Color = color end
+	end
+end
+
+local function finish(model, name)
+	model.Name = name
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	humanoid.WalkSpeed = 10
+	humanoid.BreakJointsOnDeath = false
+	humanoid.RequiresNeck = false
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming, false)
+	for _, d in ipairs(model:GetDescendants()) do
+		if d:IsA("BasePart") then
+			d.CollisionGroup = "Visitors"
+		end
+	end
+	return model
+end
+
+-- a 2050 human: outfit colors, a glowing visor, shoulder pads and hover-shoe glow
+local function human(rng)
+	local skin = HUMAN_SKIN[rng:NextInteger(1, #HUMAN_SKIN)]
+	local outfit = OUTFITS[rng:NextInteger(1, #OUTFITS)]
+	local model = Players:CreateHumanoidModelFromDescription(describe(skin, outfit[1], outfit[2],
+		{Height = rng:NextNumber(0.9, 1.08), Width = rng:NextNumber(0.9, 1.05), Head = 1}), Enum.HumanoidRigType.R15)
+	hands(model, skin)
+	local head = model:FindFirstChild("Head")
+	local upperTorso = model:FindFirstChild("UpperTorso")
+	if head then
+		weldTo(piece("Visor", Vector3.new(1.25, 0.28, 0.35), outfit[3], Enum.Material.Neon), head, CFrame.new(0, 0.12, -0.5))
+		if rng:NextNumber() < 0.5 then -- futuristic hair dome
+			weldTo(ellipsoid("Hair", Vector3.new(1.35, 0.7, 1.35), outfit[2]), head, CFrame.new(0, 0.5, 0.05))
+		end
+	end
+	if upperTorso then
+		for _, side in ipairs({-1, 1}) do
+			weldTo(ellipsoid("ShoulderPad", Vector3.new(0.8, 0.45, 0.9), outfit[2]), upperTorso, CFrame.new(side * 1.05, 0.7, 0))
+		end
+		weldTo(piece("ChestStripe", Vector3.new(0.18, 1.2, 0.1), outfit[3], Enum.Material.Neon), upperTorso, CFrame.new(0.3, 0.1, -0.52))
+	end
+	for _, name in ipairs({"LeftFoot", "RightFoot"}) do
+		local foot = model:FindFirstChild(name)
+		if foot then
+			foot.Color = outfit[2]
+			weldTo(piece("HoverGlow", Vector3.new(0.8, 0.08, 0.9), outfit[3], Enum.Material.Neon), foot, CFrame.new(0, -0.2, 0))
+		end
+	end
+	return finish(model, "Visitor2050")
+end
+
+-- an alien: colored skin, big head, big glossy eyes, antennae with glowing tips
+local function alien(rng)
+	local skin = ALIEN_SKIN[rng:NextInteger(1, #ALIEN_SKIN)]
+	local suit = OUTFITS[rng:NextInteger(1, #OUTFITS)]
+	local model = Players:CreateHumanoidModelFromDescription(describe(skin, suit[2], suit[2],
+		{Height = rng:NextNumber(0.8, 1), Width = 0.85, Head = rng:NextNumber(1.35, 1.6)}), Enum.HumanoidRigType.R15)
+	hands(model, skin)
+	local head = model:FindFirstChild("Head")
+	if head then
+		local face = head:FindFirstChildOfClass("Decal")
+		if face then face:Destroy() end -- aliens get their own eyes
+		local s = head.Size.Y / 1.2
+		for _, side in ipairs({-1, 1}) do
+			weldTo(ellipsoid("AlienEye", Vector3.new(0.42, 0.62, 0.2) * s, rgb(20, 18, 30), Enum.Material.Glass), head,
+				CFrame.new(side * 0.28 * s, 0.1 * s, -0.55 * s) * CFrame.Angles(0, 0, side * 0.35))
+			weldTo(piece("EyeShine", Vector3.new(0.1, 0.1, 0.06) * s, rgb(255, 255, 255), Enum.Material.Neon, Enum.PartType.Ball), head,
+				CFrame.new(side * 0.22 * s, 0.25 * s, -0.63 * s))
+			local stalk = weldTo(piece("Antenna", Vector3.new(0.08, 0.9, 0.08) * s, skin), head,
+				CFrame.new(side * 0.3 * s, 0.9 * s, 0) * CFrame.Angles(0, 0, -side * 0.35))
+			weldTo(piece("AntennaTip", Vector3.new(0.26, 0.26, 0.26) * s, suit[3], Enum.Material.Neon, Enum.PartType.Ball), stalk,
+				CFrame.new(0, 0.5 * s, 0))
+		end
+	end
+	local upperTorso = model:FindFirstChild("UpperTorso")
+	if upperTorso then
+		weldTo(ellipsoid("SuitBadge", Vector3.new(0.45, 0.45, 0.12), suit[3], Enum.Material.Neon), upperTorso, CFrame.new(0, 0.2, -0.5))
+	end
+	return finish(model, "AlienVisitor")
+end
+
+return function(kind, rng)
+	if kind == "Alien" then
+		return alien(rng)
+	end
+	return human(rng)
 end
 ]=])
 install(game:GetService("ServerScriptService"), "WorldBuilder", "ModuleScript", [=[
@@ -6258,6 +9547,122 @@ return function(parent, base, subtitle)
 	gate.Parent = parent
 	return gate, prompt
 end
+]=])
+install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "BackgroundWeather", "LocalScript", [=[
+-- BackgroundWeather (LocalScript in StarterPlayer > StarterPlayerScripts)
+-- Bizarre background weather: giant plain cubes, spheres and cones tumble out of the sky
+-- far away in the background, around whichever world you're in. They spawn well outside
+-- the playable area (past the city in World 1, past the island edge in worlds 2-9), fall,
+-- spin, and delete themselves at a set height, so they can never touch the ground you play
+-- on. Everything happens on this screen only (no server cost, no physics).
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+
+local player = Players.LocalPlayer
+
+local MAX_OBJECTS = 40
+local SPAWN_EVERY = 0.35      -- seconds between new objects
+local SPAWN_HEIGHT = {450, 750} -- studs above the world's ground
+local DESTROY_BELOW = -220    -- studs below the world's ground: removed here
+-- how far out they fall (studs from the world's center): World 1's city reaches ~960 studs
+-- at its corners, the islands are 125 studs across
+local DISTANCE = {World1 = {1150, 1700}, Island = {520, 1100}}
+local CONE_MESH = "rbxassetid://1033714" -- Roblox's classic cone mesh
+
+local COLORS = {
+	Color3.fromRGB(255, 110, 124), Color3.fromRGB(92, 186, 255), Color3.fromRGB(255, 206, 84),
+	Color3.fromRGB(96, 226, 190), Color3.fromRGB(178, 158, 255), Color3.fromRGB(246, 247, 252),
+}
+local MATERIALS = {Enum.Material.SmoothPlastic, Enum.Material.SmoothPlastic, Enum.Material.Neon, Enum.Material.Glass}
+
+local folder = Instance.new("Folder")
+folder.Name = "BackgroundWeather"
+folder.Parent = workspace
+
+local rng = Random.new()
+local falling = {} -- {Part, Velocity, Spin, Angles}
+
+local function currentWorld()
+	return GameConfig.GetWorld(player:GetAttribute("CurrentWorld") or 1) or GameConfig.Worlds[1]
+end
+
+local function spawnOne()
+	local world = currentWorld()
+	local range = world.Id == 1 and DISTANCE.World1 or DISTANCE.Island
+	local angle = rng:NextNumber(0, math.pi * 2)
+	local distance = rng:NextNumber(range[1], range[2])
+	local origin = world.Origin
+	local position = origin + Vector3.new(math.cos(angle) * distance, rng:NextNumber(SPAWN_HEIGHT[1], SPAWN_HEIGHT[2]), math.sin(angle) * distance)
+
+	local part = Instance.new("Part")
+	local kind = rng:NextInteger(1, 3)
+	local size = rng:NextNumber(10, 38)
+	part.Size = Vector3.one * size
+	if kind == 2 then
+		part.Shape = Enum.PartType.Ball
+	elseif kind == 3 then
+		local mesh = Instance.new("SpecialMesh")
+		mesh.MeshType = Enum.MeshType.FileMesh
+		mesh.MeshId = CONE_MESH
+		mesh.Scale = Vector3.one * size * 0.5
+		mesh.Parent = part
+	end
+	part.Color = COLORS[rng:NextInteger(1, #COLORS)]
+	part.Material = MATERIALS[rng:NextInteger(1, #MATERIALS)]
+	if part.Material == Enum.Material.Glass then part.Transparency = 0.3 end
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.CastShadow = false
+	part.CFrame = CFrame.new(position)
+	part.Parent = folder
+
+	-- drift slightly away from the world so they never curve in over it
+	local outward = Vector3.new(math.cos(angle), 0, math.sin(angle)) * rng:NextNumber(0, 12)
+	table.insert(falling, {
+		Part = part,
+		Velocity = Vector3.new(0, -rng:NextNumber(45, 95), 0) + outward,
+		Spin = Vector3.new(rng:NextNumber(-1.5, 1.5), rng:NextNumber(-1.5, 1.5), rng:NextNumber(-1.5, 1.5)),
+		Angles = Vector3.zero,
+		FloorY = origin.Y + DESTROY_BELOW,
+	})
+end
+
+local sinceSpawn = 0
+RunService.Heartbeat:Connect(function(dt)
+	sinceSpawn += dt
+	if sinceSpawn >= SPAWN_EVERY and #falling < MAX_OBJECTS then
+		sinceSpawn = 0
+		spawnOne()
+	end
+	local parts, cframes = {}, {}
+	for i = #falling, 1, -1 do
+		local f = falling[i]
+		local pos = f.Part.Position + f.Velocity * dt
+		if pos.Y < f.FloorY or not f.Part.Parent then
+			f.Part:Destroy()
+			table.remove(falling, i)
+		else
+			f.Angles += f.Spin * dt
+			table.insert(parts, f.Part)
+			table.insert(cframes, CFrame.new(pos) * CFrame.Angles(f.Angles.X, f.Angles.Y, f.Angles.Z))
+		end
+	end
+	if #parts > 0 then
+		workspace:BulkMoveTo(parts, cframes, Enum.BulkMoveMode.FireCFrameChanged)
+	end
+end)
+
+-- travelling to another world: clear the old sky right away
+player:GetAttributeChangedSignal("CurrentWorld"):Connect(function()
+	for _, f in ipairs(falling) do f.Part:Destroy() end
+	table.clear(falling)
+end)
 ]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "DigClient", "LocalScript", [=[
 -- DigClient (LocalScript in StarterPlayer > StarterPlayerScripts)
@@ -7765,7 +11170,9 @@ local function createRig(character, tool)
 			piece.CanCollide = false
 			piece.CanQuery = false
 			piece.CanTouch = false
-			table.insert(puppet, {Part = piece, Rel = handle.CFrame:ToObjectSpace(piece.CFrame)})
+			-- crystal shovels: orbit parts spin around OrbitCenter (along the shaft)
+			table.insert(puppet, {Part = piece, Rel = handle.CFrame:ToObjectSpace(piece.CFrame),
+				Center = piece:GetAttribute("OrbitCenter"), Speed = piece:GetAttribute("OrbitSpeed")})
 			if piece.Name == "Blade" or piece.Name == "DrillTip" then bladePart = piece end
 			-- lowest point of the shovel along its shaft (used to keep the blade out of the ground)
 			local rel = handle.CFrame:ToObjectSpace(piece.CFrame)
@@ -7909,7 +11316,12 @@ local function poseRig(character, rig, clock)
 	local parts, cframes = {}, {}
 	for i, p in ipairs(rig.Puppet) do
 		parts[i] = p.Part
-		cframes[i] = shovelCF * p.Rel
+		local rel = p.Rel
+		if p.Center and p.Speed then
+			local pivot = CFrame.new(p.Center)
+			rel = pivot * CFrame.Angles(0, 0, clock * p.Speed) * pivot:Inverse() * rel
+		end
+		cframes[i] = shovelCF * rel
 	end
 	workspace:BulkMoveTo(parts, cframes, Enum.BulkMoveMode.FireCFrameChanged)
 
@@ -8120,7 +11532,7 @@ local function buildCards(world)
 	end
 	cards = {}
 	worldLabel.Text = "🌍  " .. world.Name
-	local maxFind, maxLuck = maxStat(world, "FindChance"), maxStat(world, "Luck")
+	local maxFind, maxLuck, maxPower = maxStat(world, "FindChance"), maxStat(world, "Luck"), maxStat(world, "Power")
 	local minCooldown = math.huge
 	for _, def in ipairs(world.Shovels) do minCooldown = math.min(minCooldown, def.Cooldown) end
 
@@ -8138,12 +11550,13 @@ local function buildCards(world)
 
 		local statsBox = Instance.new("Frame")
 		statsBox.BackgroundTransparency = 1
-		statsBox.Size = UDim2.new(0.28, 0, 0, 80)
-		statsBox.Position = UDim2.new(0.52, 0, 0.5, -38)
+		statsBox.Size = UDim2.new(0.28, 0, 0, 82)
+		statsBox.Position = UDim2.new(0.52, 0, 0.5, -41)
 		statsBox.Parent = card
-		UIKit.statBar(statsBox, "Find", def.FindChance / maxFind, math.floor(def.FindChance * 1000 + 0.5) / 10 .. "%", C.Mint, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 0)})
-		UIKit.statBar(statsBox, "Luck", def.Luck / maxLuck, "x" .. def.Luck, C.Sun, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 26)})
-		UIKit.statBar(statsBox, "Speed", minCooldown / def.Cooldown, string.format("%.2fs", def.Cooldown), C.Sky, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 52)})
+		UIKit.statBar(statsBox, "Power", def.Power / maxPower, tostring(def.Power), C.Coral, {Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 0)})
+		UIKit.statBar(statsBox, "Find", def.FindChance / maxFind, math.floor(def.FindChance * 1000 + 0.5) / 10 .. "%", C.Mint, {Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 21)})
+		UIKit.statBar(statsBox, "Luck", def.Luck / maxLuck, "x" .. def.Luck, C.Sun, {Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 42)})
+		UIKit.statBar(statsBox, "Speed", minCooldown / def.Cooldown, string.format("%.2fs", def.Cooldown), C.Sky, {Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 63)})
 
 		local b = UIKit.button(card, "", {Size = UDim2.new(0.17, 0, 0, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5)})
 		cards[def.Id] = b
@@ -8195,6 +11608,157 @@ end)
 
 shopMessageRemote.OnClientEvent:Connect(function(message, success)
 	showHint(message, success and C.Mint or C.Coral)
+end)
+]=])
+install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "ShovelSpinner", "LocalScript", [=[
+-- ShovelSpinner (LocalScript in StarterPlayer > StarterPlayerScripts)
+-- Spins the orbiting crystals of the crystal shovels on display in the Shovel Shops.
+-- (Shovels in players' hands are spun by ShovelClient's pose system.)
+-- ShopBuilder tags each orbiting part "ShovelOrbit" and gives it OrbitPivot, OrbitOffset
+-- and OrbitSpeed attributes; the spin is local to each player, so it costs the server nothing.
+
+local CollectionService = game:GetService("CollectionService")
+local RunService = game:GetService("RunService")
+
+local spinning = {} -- [part] = {Pivot, Offset, Speed}
+
+local function add(part)
+	local pivot, offset = part:GetAttribute("OrbitPivot"), part:GetAttribute("OrbitOffset")
+	if typeof(pivot) == "CFrame" and typeof(offset) == "CFrame" then
+		spinning[part] = {Pivot = pivot, Offset = offset, Speed = part:GetAttribute("OrbitSpeed") or 2}
+	end
+end
+CollectionService:GetInstanceAddedSignal("ShovelOrbit"):Connect(add)
+CollectionService:GetInstanceRemovedSignal("ShovelOrbit"):Connect(function(part)
+	spinning[part] = nil
+end)
+for _, part in ipairs(CollectionService:GetTagged("ShovelOrbit")) do
+	add(part)
+end
+
+RunService.RenderStepped:Connect(function()
+	local t = os.clock()
+	local parts, cframes = {}, {}
+	for part, spin in pairs(spinning) do
+		if part.Parent then
+			table.insert(parts, part)
+			table.insert(cframes, spin.Pivot * CFrame.Angles(0, 0, t * spin.Speed) * spin.Offset)
+		else
+			spinning[part] = nil
+		end
+	end
+	if #parts > 0 then
+		workspace:BulkMoveTo(parts, cframes, Enum.BulkMoveMode.FireCFrameChanged)
+	end
+end)
+]=])
+install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "SkyPlanets", "LocalScript", [=[
+-- SkyPlanets (LocalScript in StarterPlayer > StarterPlayerScripts)
+-- The interconnected skybox: the other 8 worlds hang high in the sky as big faint planets,
+-- each in its world's colors, so from any world you can see where else you could go.
+-- Each planet is a softly transparent sphere inside a larger Neon glow shell (so it blends
+-- into the haze like a distant moon); some get a ring. They sit far out and high up, spin
+-- slowly, and move to surround whichever world you travel to. Local to this screen only.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+
+local player = Players.LocalPlayer
+
+local DISTANCE = 1900          -- studs from the world you're in
+local HEIGHT = {750, 1150}     -- studs above it
+local SIZE = {240, 420}        -- planet diameter
+local BODY_TRANSPARENCY = 0.35 -- the planet itself
+local GLOW_TRANSPARENCY = 0.86 -- the Neon halo around it
+local HOME_COLOR = Color3.fromRGB(112, 204, 108) -- World 1 has no theme colors
+
+local folder = Instance.new("Folder")
+folder.Name = "SkyPlanets"
+folder.Parent = workspace
+
+local planets = {} -- [worldId] = {Model, Body, Glow, Ring, Offset, Spin}
+
+local function part(name, shape, size, color, material, transparency)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Shape = shape
+	p.Size = size
+	p.Color = color
+	p.Material = material
+	p.Transparency = transparency
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	return p
+end
+
+for _, world in ipairs(GameConfig.Worlds) do
+	local main = world.Look and world.Look.Main or HOME_COLOR
+	local glowColor = world.Look and world.Look.Glow or Color3.fromRGB(150, 230, 255)
+	local rng = Random.new(world.Id * 131)
+	local size = SIZE[1] + (SIZE[2] - SIZE[1]) * rng:NextNumber()
+	local model = Instance.new("Model")
+	model.Name = "Planet_" .. world.Name
+	local body = part("Planet", Enum.PartType.Ball, Vector3.one * size, main, Enum.Material.SmoothPlastic, BODY_TRANSPARENCY)
+	body.Parent = model
+	local glow = part("Glow", Enum.PartType.Ball, Vector3.one * size * 1.18, glowColor, Enum.Material.Neon, GLOW_TRANSPARENCY)
+	glow.Parent = model
+	-- a darker band so it reads as a planet, not a ball
+	local band = part("Band", Enum.PartType.Cylinder, Vector3.new(size * 0.16, size * 1.005, size * 1.005), main:Lerp(Color3.new(0, 0, 0), 0.25), Enum.Material.SmoothPlastic, BODY_TRANSPARENCY)
+	band.Parent = model
+	local ring
+	if world.Id % 3 == 0 then
+		ring = part("Ring", Enum.PartType.Cylinder, Vector3.new(size * 0.02, size * 2, size * 2), glowColor, Enum.Material.Neon, 0.7)
+		ring.Parent = model
+	end
+	model.Parent = nil -- shown when its turn comes
+	planets[world.Id] = {
+		Model = model, Body = body, Glow = glow, Band = band, Ring = ring,
+		Angle = (world.Id - 1) / #GameConfig.Worlds * math.pi * 2 + rng:NextNumber(-0.2, 0.2),
+		Height = HEIGHT[1] + (HEIGHT[2] - HEIGHT[1]) * rng:NextNumber(),
+		Tilt = CFrame.Angles(rng:NextNumber(-0.5, 0.5), 0, rng:NextNumber(0.2, 0.6)),
+		Spin = rng:NextNumber(0.02, 0.06),
+	}
+end
+
+local centers = {} -- [worldId] = CFrame of the planet around the current world
+local function arrange()
+	local current = GameConfig.GetWorld(player:GetAttribute("CurrentWorld") or 1) or GameConfig.Worlds[1]
+	for id, planet in pairs(planets) do
+		if id == current.Id then
+			planet.Model.Parent = nil -- no planet for the world you're standing on
+			centers[id] = nil
+		else
+			local offset = Vector3.new(math.cos(planet.Angle) * DISTANCE, planet.Height, math.sin(planet.Angle) * DISTANCE)
+			centers[id] = CFrame.new(current.Origin + offset) * planet.Tilt
+			planet.Model.Parent = folder
+		end
+	end
+end
+player:GetAttributeChangedSignal("CurrentWorld"):Connect(arrange)
+arrange()
+
+RunService.Heartbeat:Connect(function()
+	local t = os.clock()
+	local parts, cframes = {}, {}
+	for id, center in pairs(centers) do
+		local planet = planets[id]
+		local spun = center * CFrame.Angles(0, t * planet.Spin, 0)
+		table.insert(parts, planet.Body); table.insert(cframes, spun)
+		table.insert(parts, planet.Glow); table.insert(cframes, spun)
+		table.insert(parts, planet.Band); table.insert(cframes, spun * CFrame.Angles(0, 0, math.rad(90)))
+		if planet.Ring then
+			table.insert(parts, planet.Ring); table.insert(cframes, center * CFrame.Angles(0, 0, math.rad(90)))
+		end
+	end
+	if #parts > 0 then
+		workspace:BulkMoveTo(parts, cframes, Enum.BulkMoveMode.FireCFrameChanged)
+	end
 end)
 ]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "WorldClient", "LocalScript", [=[
@@ -8300,31 +11864,70 @@ end)
 -- World 1's look (set by MapStyle on the server) is remembered and restored when you return.
 ---------------------------------------------------------------------
 local home -- World 1's lighting, captured the first time you leave it
+
+-- the one bloom and sun rays effect the lighting uses (made here if the place has none)
+local function effect(className)
+	local found = Lighting:FindFirstChildOfClass(className)
+	if not found then
+		found = Instance.new(className)
+		found.Intensity = 0
+		found.Parent = Lighting
+	end
+	return found
+end
+
 local function capture()
 	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
 	local grade = Lighting:FindFirstChild("Cartoon2050Grade")
 	local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
+	local bloom, rays = effect("BloomEffect"), effect("SunRaysEffect")
 	return {
-		ClockTime = Lighting.ClockTime, Ambient = Lighting.Ambient, OutdoorAmbient = Lighting.OutdoorAmbient,
+		ClockTime = Lighting.ClockTime, Latitude = Lighting.GeographicLatitude, Brightness = Lighting.Brightness,
+		Exposure = Lighting.ExposureCompensation, Ambient = Lighting.Ambient, OutdoorAmbient = Lighting.OutdoorAmbient,
+		DiffuseScale = Lighting.EnvironmentDiffuseScale, SpecularScale = Lighting.EnvironmentSpecularScale,
+		ShadowSoftness = Lighting.ShadowSoftness,
 		Tint = grade and grade.TintColor or Color3.new(1, 1, 1),
+		Saturation = grade and grade.Saturation or 0, Contrast = grade and grade.Contrast or 0,
 		Fog = atmosphere and atmosphere.Color, Decay = atmosphere and atmosphere.Decay, Density = atmosphere and atmosphere.Density,
+		Offset = atmosphere and atmosphere.Offset, Haze = atmosphere and atmosphere.Haze, Glare = atmosphere and atmosphere.Glare,
+		Bloom = {bloom.Intensity, bloom.Size, bloom.Threshold}, SunRays = {rays.Intensity, rays.Spread},
 		Clouds = clouds and clouds.Cover,
 	}
 end
 
+-- Realistic defaults for worlds 2-9 (each world's Sky overrides what it needs):
+-- stronger sun, full environment lighting and reflections, crisp shadows
+local REALISM = {Brightness = 3, Exposure = 0, Latitude = 35, DiffuseScale = 1, SpecularScale = 1, ShadowSoftness = 0.15,
+	Offset = 0.25, Haze = 1.5, Glare = 0.4, Saturation = 0.1, Contrast = 0.1, Bloom = {0.35, 24, 1.9}, SunRays = {0.1, 0.25}}
+
 local function applySky(sky)
+	local function get(key)
+		if sky[key] ~= nil then return sky[key] end
+		return REALISM[key]
+	end
 	local info = TweenInfo.new(1.2, Enum.EasingStyle.Sine)
-	-- ClockTime jumps (tweening it would spin the sun through the whole day)
+	-- ClockTime and the sun angle jump (tweening would spin the sun through the whole day)
 	Lighting.ClockTime = sky.ClockTime
-	TweenService:Create(Lighting, info, {Ambient = sky.Ambient, OutdoorAmbient = sky.OutdoorAmbient}):Play()
+	Lighting.GeographicLatitude = get("Latitude")
+	Lighting.ShadowSoftness = get("ShadowSoftness")
+	TweenService:Create(Lighting, info, {
+		Ambient = sky.Ambient, OutdoorAmbient = sky.OutdoorAmbient, Brightness = get("Brightness"),
+		ExposureCompensation = get("Exposure"), EnvironmentDiffuseScale = get("DiffuseScale"),
+		EnvironmentSpecularScale = get("SpecularScale"),
+	}):Play()
 	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
 	if atmosphere and sky.Fog then
-		TweenService:Create(atmosphere, info, {Color = sky.Fog, Decay = sky.Decay, Density = sky.Density}):Play()
+		TweenService:Create(atmosphere, info, {Color = sky.Fog, Decay = sky.Decay, Density = sky.Density,
+			Offset = get("Offset"), Haze = get("Haze"), Glare = get("Glare")}):Play()
 	end
 	local grade = Lighting:FindFirstChild("Cartoon2050Grade")
 	if grade then
-		TweenService:Create(grade, info, {TintColor = sky.Tint}):Play()
+		TweenService:Create(grade, info, {TintColor = sky.Tint, Saturation = get("Saturation"), Contrast = get("Contrast")}):Play()
 	end
+	local bloom, rays = effect("BloomEffect"), effect("SunRaysEffect")
+	local b, r = get("Bloom"), get("SunRays")
+	TweenService:Create(bloom, info, {Intensity = b[1], Size = b[2], Threshold = b[3]}):Play()
+	TweenService:Create(rays, info, {Intensity = r[1], Spread = r[2]}):Play()
 	local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
 	if clouds and sky.Clouds then
 		clouds.Cover = sky.Clouds

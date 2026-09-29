@@ -6,6 +6,7 @@
 -- DigManager calls this once per world on server start.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local ShovelModels = require(ReplicatedStorage:WaitForChild("ShovelModels"))
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
@@ -23,6 +24,14 @@ local function displayShovel(parent, def, target, scale)
 			piece.CFrame = target * CFrame.new(rel.Position * scale) * rel.Rotation
 			piece.Anchored = true
 			piece.CanCollide = false
+			local center = piece:GetAttribute("OrbitCenter")
+			if center then
+				-- ShovelSpinner (client) spins these around the shaft
+				local pivot = target * CFrame.new(center * scale)
+				piece:SetAttribute("OrbitPivot", pivot)
+				piece:SetAttribute("OrbitOffset", pivot:ToObjectSpace(piece.CFrame))
+				CollectionService:AddTag(piece, "ShovelOrbit")
+			end
 			for _, c in ipairs(piece:GetChildren()) do
 				if c:IsA("WeldConstraint") then c:Destroy() end
 			end

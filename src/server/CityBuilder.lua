@@ -144,6 +144,103 @@ end
 
 local STYLES = {stackTower, tubeTower, twistTower, podTower}
 
+---------------------------------------------------------------------
+-- MEGATOWERS: the towering landmarks of the 2050 skyline (the 8 sturdiest tower spots).
+-- Blended cartoony-realism: tinted Glass floors that twist as they rise (each floor is
+-- turned a little more with CFrame.Angles), thin white floor plates, Neon corner ribs that
+-- spiral up with the twist, cantilevered sky gardens, a stepped crown and a glowing spire.
+---------------------------------------------------------------------
+local MEGA_COUNT = 8
+local MEGA_GLASS = {
+	{Name = "MegaGlassSky", Color = Color3.fromRGB(120, 200, 255)},
+	{Name = "MegaGlassLilac", Color = Color3.fromRGB(180, 160, 255)},
+	{Name = "MegaGlassMint", Color = Color3.fromRGB(110, 235, 205)},
+	{Name = "MegaGlassRose", Color = Color3.fromRGB(255, 160, 205)},
+}
+for _, g in ipairs(MEGA_GLASS) do
+	P[g.Name] = {Color = g.Color, Material = Enum.Material.Glass, Transparency = 0.25, Reflectance = 0.25}
+end
+P.MegaSteel = {Color = Color3.fromRGB(236, 240, 248), Material = Enum.Material.Metal, Reflectance = 0.1}
+local MEGA_NEON = {
+	{Name = "MegaNeonCyan", Color = Color3.fromRGB(90, 220, 255)},
+	{Name = "MegaNeonPink", Color = Color3.fromRGB(255, 110, 200)},
+	{Name = "MegaNeonGold", Color = Color3.fromRGB(255, 205, 90)},
+	{Name = "MegaNeonMint", Color = Color3.fromRGB(90, 255, 190)},
+}
+for _, g in ipairs(MEGA_NEON) do
+	P[g.Name] = {Color = g.Color, Material = Enum.Material.Neon}
+end
+
+local function megaTower(b, w, h, rng)
+	local glass = pick(rng, MEGA_GLASS).Name
+	local neon = pick(rng, MEGA_NEON).Name
+	local twistPerFloor = math.rad(rng:NextNumber(2.2, 3.6)) * (rng:NextNumber() < 0.5 and -1 or 1)
+	local floorH = 12
+	local podiumH = 14
+
+	-- podium: two rounded steps with a glowing lip
+	b:roundedBlock("MegaPodium", Vector3.new(w + 14, podiumH * 0.6, w + 14), CFrame.new(0, podiumH * 0.3, 0), 8, "MegaSteel")
+	b:roundedBlock("MegaPodiumLip", Vector3.new(w + 15, 0.8, w + 15), CFrame.new(0, podiumH * 0.6, 0), 8.2, neon)
+	b:roundedBlock("MegaLobby", Vector3.new(w + 6, podiumH * 0.4, w + 6), CFrame.new(0, podiumH * 0.8, 0), 6, glass)
+
+	local floors = math.floor((h - podiumH - 40) / floorH)
+	local prevCorners
+	for i = 0, floors - 1 do
+		local y = podiumH + i * floorH
+		local t = i / math.max(floors - 1, 1)
+		-- slim waist at 60% height, slight flare near the top (an elegant hourglass taper)
+		local size = w * (1 - 0.28 * math.sin(t * math.pi * 0.85)) * (1 - 0.15 * t)
+		local turn = CFrame.Angles(0, i * twistPerFloor, 0)
+		local floorCF = CFrame.new(0, y + floorH / 2, 0) * turn
+		-- (plain boxes keep the part count low: 2 parts per floor)
+		b:box("MegaFloor", Vector3.new(size, floorH - 1, size), floorCF, glass)
+		b:box("MegaPlate", Vector3.new(size + 1.4, 1, size + 1.4), CFrame.new(0, y, 0) * turn, "MegaSteel")
+
+		-- corner ribs: every 2 floors a neon rod joins each corner to the same corner two floors
+		-- up, which is turned further, so the ribs spiral around the tower
+		local inset = size * 0.5
+		local corners = {}
+		for k = 0, 3 do
+			local a = math.rad(45 + k * 90)
+			corners[k + 1] = (CFrame.new(0, y, 0) * turn * CFrame.new(math.cos(a) * inset * 1.414 + math.cos(a) * 0.4, 0, math.sin(a) * inset * 1.414 + math.sin(a) * 0.4)).Position
+		end
+		if i % 3 == 0 then
+			if prevCorners then
+				for k = 1, 4 do
+					local a, c = prevCorners[k], corners[k]
+					b:rod("MegaRib", (c - a).Magnitude + 0.6, 0.9, Architecture.alongX((a + c) / 2, c - a), neon)
+				end
+			end
+			prevCorners = corners
+		end
+
+		-- sky gardens at one third and two thirds of the height
+		if i == math.floor(floors / 3) or i == math.floor(floors * 2 / 3) then
+			local gardenCF = CFrame.new(0, y + 0.5, 0) * turn
+			b:disc("SkyGarden", size * 1.5, 1.4, gardenCF, "MegaSteel")
+			b:ring("SkyGardenRail", gardenCF * CFrame.new(0, 1.4, 0) * CFrame.Angles(math.rad(90), 0, 0), size * 0.75, 0.5, neon, 28)
+			for k = 1, 6 do
+				local a = math.pi * 2 * k / 6
+				local spot = gardenCF * CFrame.new(math.cos(a) * size * 0.62, 0.7, math.sin(a) * size * 0.62)
+				b:pill("GardenTrunk", spot.Position, (spot * CFrame.new(0, 3, 0)).Position, 0.6, "Chrome")
+				b:ball("GardenTree", 3.4, spot * CFrame.new(0, 4.2, 0), k % 2 == 0 and "Mint" or "GlowMint")
+			end
+		end
+	end
+
+	-- crown: stepped discs, a halo ring and a spire with a beacon
+	local topY = podiumH + floors * floorH
+	local crownW = w * 0.6
+	local _, crownH = b:tiers("MegaCrown", CFrame.new(0, topY, 0) * CFrame.Angles(0, floors * twistPerFloor, 0), {
+		{crownW, 4, "MegaSteel"}, {crownW * 0.78, 3, glass}, {crownW * 0.55, 3, "MegaSteel"}, {crownW * 0.3, 6, glass},
+	})
+	b:ring("MegaHalo", CFrame.new(0, topY + crownH + 4, 0) * CFrame.Angles(math.rad(90), 0, 0), crownW * 0.5, 1, neon, 32)
+	local spireTop = topY + crownH + 30
+	b:pill("MegaSpire", Vector3.new(0, topY + crownH, 0), Vector3.new(0, spireTop, 0), 1.6, "Chrome")
+	b:bulb("MegaBeacon", 3, CFrame.new(0, spireTop + 2, 0), neon, 40)
+end
+
+
 -- Podium + little park around every tower
 local function base(b, w, rng, accent)
 	b:disc("Park", w * 1.9, 0.4, CFrame.new(0, 0.2, 0), "Mint")
@@ -196,6 +293,11 @@ function CityBuilder.rebuildTowers(city)
 	if not towers or towers:GetAttribute("Cartoon2050") then return end
 	local list = findTowers(towers)
 	towers:ClearAllChildren()
+	-- the sturdiest footprints become megatowers
+	local bySize = table.clone(list)
+	table.sort(bySize, function(a, c) return math.min(a.Size.X, a.Size.Z) > math.min(c.Size.X, c.Size.Z) end)
+	local mega = {}
+	for i = 1, math.min(MEGA_COUNT, #bySize) do mega[bySize[i]] = true end
 	for i, tower in ipairs(list) do
 		local pos = tower.CFrame.Position
 		local rng = Random.new(i * 7919)
@@ -207,8 +309,13 @@ function CityBuilder.rebuildTowers(city)
 		local body = pick(rng, BODIES)
 		local accent = pick(rng, ACCENTS)
 		local glow = pick(rng, GLOWS)
-		base(b, w, rng, accent)
-		STYLES[(i - 1) % #STYLES + 1](b, w, h, rng, body, accent, glow)
+		if mega[tower] then
+			model.Name = "MegaTower"
+			megaTower(b, math.clamp(math.min(tower.Size.X, tower.Size.Z) - 4, 24, 40), math.clamp(math.max(h * 1.6, 400), 400, 580), rng)
+		else
+			base(b, w, rng, accent)
+			STYLES[(i - 1) % #STYLES + 1](b, w, h, rng, body, accent, glow)
+		end
 		model.Parent = towers
 	end
 	towers:SetAttribute("Cartoon2050", true)

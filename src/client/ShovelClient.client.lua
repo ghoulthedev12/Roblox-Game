@@ -343,7 +343,9 @@ local function createRig(character, tool)
 			piece.CanCollide = false
 			piece.CanQuery = false
 			piece.CanTouch = false
-			table.insert(puppet, {Part = piece, Rel = handle.CFrame:ToObjectSpace(piece.CFrame)})
+			-- crystal shovels: orbit parts spin around OrbitCenter (along the shaft)
+			table.insert(puppet, {Part = piece, Rel = handle.CFrame:ToObjectSpace(piece.CFrame),
+				Center = piece:GetAttribute("OrbitCenter"), Speed = piece:GetAttribute("OrbitSpeed")})
 			if piece.Name == "Blade" or piece.Name == "DrillTip" then bladePart = piece end
 			-- lowest point of the shovel along its shaft (used to keep the blade out of the ground)
 			local rel = handle.CFrame:ToObjectSpace(piece.CFrame)
@@ -487,7 +489,12 @@ local function poseRig(character, rig, clock)
 	local parts, cframes = {}, {}
 	for i, p in ipairs(rig.Puppet) do
 		parts[i] = p.Part
-		cframes[i] = shovelCF * p.Rel
+		local rel = p.Rel
+		if p.Center and p.Speed then
+			local pivot = CFrame.new(p.Center)
+			rel = pivot * CFrame.Angles(0, 0, clock * p.Speed) * pivot:Inverse() * rel
+		end
+		cframes[i] = shovelCF * rel
 	end
 	workspace:BulkMoveTo(parts, cframes, Enum.BulkMoveMode.FireCFrameChanged)
 
@@ -698,7 +705,7 @@ local function buildCards(world)
 	end
 	cards = {}
 	worldLabel.Text = "🌍  " .. world.Name
-	local maxFind, maxLuck = maxStat(world, "FindChance"), maxStat(world, "Luck")
+	local maxFind, maxLuck, maxPower = maxStat(world, "FindChance"), maxStat(world, "Luck"), maxStat(world, "Power")
 	local minCooldown = math.huge
 	for _, def in ipairs(world.Shovels) do minCooldown = math.min(minCooldown, def.Cooldown) end
 
@@ -716,12 +723,13 @@ local function buildCards(world)
 
 		local statsBox = Instance.new("Frame")
 		statsBox.BackgroundTransparency = 1
-		statsBox.Size = UDim2.new(0.28, 0, 0, 80)
-		statsBox.Position = UDim2.new(0.52, 0, 0.5, -38)
+		statsBox.Size = UDim2.new(0.28, 0, 0, 82)
+		statsBox.Position = UDim2.new(0.52, 0, 0.5, -41)
 		statsBox.Parent = card
-		UIKit.statBar(statsBox, "Find", def.FindChance / maxFind, math.floor(def.FindChance * 1000 + 0.5) / 10 .. "%", C.Mint, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 0)})
-		UIKit.statBar(statsBox, "Luck", def.Luck / maxLuck, "x" .. def.Luck, C.Sun, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 26)})
-		UIKit.statBar(statsBox, "Speed", minCooldown / def.Cooldown, string.format("%.2fs", def.Cooldown), C.Sky, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 52)})
+		UIKit.statBar(statsBox, "Power", def.Power / maxPower, tostring(def.Power), C.Coral, {Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 0)})
+		UIKit.statBar(statsBox, "Find", def.FindChance / maxFind, math.floor(def.FindChance * 1000 + 0.5) / 10 .. "%", C.Mint, {Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 21)})
+		UIKit.statBar(statsBox, "Luck", def.Luck / maxLuck, "x" .. def.Luck, C.Sun, {Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 42)})
+		UIKit.statBar(statsBox, "Speed", minCooldown / def.Cooldown, string.format("%.2fs", def.Cooldown), C.Sky, {Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 63)})
 
 		local b = UIKit.button(card, "", {Size = UDim2.new(0.17, 0, 0, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5)})
 		cards[def.Id] = b

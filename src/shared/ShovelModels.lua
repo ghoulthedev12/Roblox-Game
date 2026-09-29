@@ -4,6 +4,8 @@
 -- shovel is built from its STYLES entry. The server uses it for the tools and the shop
 -- displays, the client uses it to draw 3D shovel icons in the UI.
 
+local GameConfig = require(script.Parent:WaitForChild("GameConfig"))
+
 local SCALE = 0.62 -- overall size of the shovels
 local ALONG_Z = CFrame.Angles(0, math.rad(90), 0) -- points a cylinder along the shaft
 
@@ -330,6 +332,7 @@ local function kit(tool)
 		return bar(tool, name, a, b, thickness, color, material or "SmoothPlastic")
 	end
 	k.blade = CFrame.new(0, -0.05, -2.7) * CFrame.Angles(math.rad(-14), 0, 0)
+	k.tool = tool
 	return k
 end
 
@@ -785,6 +788,180 @@ local function themed(k, def)
 end
 
 ---------------------------------------------------------------------
+-- CRYSTAL SHOVELS (the default look, see GameConfig.ShovelLook)
+-- One blocky/crystal base design: a dark square-section handle with metal bands, a
+-- T-grip with crystal caps, and a cyan crystal blade (glassy plate, glowing core, round
+-- tip, faceted shards). Every shovel is this base, upgraded procedurally by its tier
+-- (its Power, 1-9):
+--   * Size:      the whole shovel grows 4% per tier
+--   * Color:     the crystals shift cyan -> aqua -> lime -> gold -> orange -> rose -> violet -> royal blue -> prismatic
+--   * Shards:    2 + tier faceted crystals on the blade
+--   * Orbits:    tier 3+ a ring of crystals spins around the collar, tier 6+ a second ring
+--                around the blade, tier 8+ a halo over the grip (they spin in ShovelClient /
+--                ShovelSpinner using the OrbitCenter/OrbitSpeed attributes)
+--   * VFX:       particles whose Rate, LightEmission and Size rise with the tier, plus a light
+-- Shovels from worlds 2-9 tint their dark metal and orbiters with their world's colors.
+---------------------------------------------------------------------
+local CRYSTAL_TIERS = {
+	rgb(90, 230, 255),  -- 1 cyan (the base design)
+	rgb(60, 255, 205),  -- 2 aqua
+	rgb(150, 255, 90),  -- 3 lime
+	rgb(255, 215, 70),  -- 4 gold
+	rgb(255, 140, 60),  -- 5 orange
+	rgb(255, 80, 150),  -- 6 rose
+	rgb(170, 90, 255),  -- 7 violet
+	rgb(80, 110, 255),  -- 8 royal blue
+	rgb(236, 244, 255), -- 9 prismatic white
+}
+
+-- visual numbers for a tier (exposed so other scripts could reuse them)
+local function tierStats(tier)
+	return {
+		Scale = 1 + (tier - 1) * 0.04,
+		Crystal = CRYSTAL_TIERS[math.clamp(tier, 1, #CRYSTAL_TIERS)],
+		Shards = 2 + tier,
+		ParticleRate = 2 + tier * 3,                  -- particles per second
+		ParticleLight = math.min(0.15 + tier * 0.095, 1), -- LightEmission 0.25 .. 1
+		ParticleSize = 0.08 + tier * 0.03,            -- starting particle size (studs, before SCALE)
+		LightBrightness = 0.4 + tier * 0.12,
+		LightRange = 4 + tier,
+	}
+end
+
+local function orbit(part, center, speed)
+	part:SetAttribute("OrbitCenter", center)
+	part:SetAttribute("OrbitSpeed", speed)
+	return part
+end
+
+local function crystal(k, def)
+	local tier = math.clamp(def.Power or 1, 1, 12)
+	local t = tierStats(tier)
+	local c = t.Crystal
+	local bright = c:Lerp(Color3.new(1, 1, 1), 0.45)
+	local look = def.Look and def.Look.Colors
+	local dark = look and look.Dark:Lerp(rgb(34, 34, 44), 0.5) or rgb(38, 38, 50)
+	local metal = look and look.Second:Lerp(rgb(120, 124, 140), 0.55) or rgb(118, 122, 138)
+	local accent = look and look.Glow or bright
+
+	-- HANDLE: blocky dark shaft with metal bands (glowing seams from tier 4)
+	k.part("Shaft", Vector3.new(0.3, 0.3, TOP + 2.3), CFrame.new(0, 0, (TOP - 2.3) / 2), dark)
+	for i, z in ipairs({1.05, -0.15, -1.35}) do
+		k.part("Band", Vector3.new(0.4, 0.4, 0.16), CFrame.new(0, 0, z), metal, "Metal")
+		if tier >= 4 then
+			k.part("BandGlow", Vector3.new(0.42, 0.42, 0.04), CFrame.new(0, 0, z + (i == 1 and 0.1 or -0.1)), c, "Neon")
+		end
+	end
+	k.part("GripWrap", Vector3.new(0.36, 0.36, 0.7), CFrame.new(0, 0, TOP - 0.55), rgb(24, 24, 30), "Fabric")
+	-- T-grip with a crystal cap on each end and one on top
+	k.part("TBar", Vector3.new(1.2, 0.3, 0.3), CFrame.new(0, 0, TOP), dark)
+	for _, side in ipairs({-1, 1}) do
+		k.part("GripCrystal", Vector3.new(0.34, 0.34, 0.34), CFrame.new(side * 0.68, 0, TOP) * CFrame.Angles(math.rad(45), math.rad(45), 0), c, "Glass")
+	end
+	k.part("Pommel", Vector3.new(0.3, 0.3, 0.3), CFrame.new(0, 0, TOP + 0.34) * CFrame.Angles(math.rad(45), math.rad(35), 0), c, "Glass")
+	k.hold = TOP
+
+	-- COLLAR where the blade meets the handle
+	k.part("Socket", Vector3.new(0.56, 0.56, 0.9), CFrame.new(0, 0, -2.35), dark, "Metal")
+	k.part("CollarGlow", Vector3.new(0.6, 0.6, 0.08), CFrame.new(0, 0, -1.98), c, "Neon")
+
+	-- BLADE: glassy crystal plate with a glowing core, a round tip and dark side guards
+	local b = k.blade
+	local plate = k.part("Blade", Vector3.new(1.7, 0.16, 1.4), b * CFrame.new(0, 0, -0.7), c, "Glass")
+	plate.Transparency = 0.12
+	plate.Reflectance = 0.2
+	local tip = k.part("BladeTip", Vector3.new(0.16, 1.7, 1.7), b * CFrame.new(0, 0, -1.4) * CFrame.Angles(0, 0, math.rad(90)), c, "Glass", Enum.PartType.Cylinder)
+	tip.Transparency = 0.12
+	tip.Reflectance = 0.2
+	k.part("CrystalCore", Vector3.new(0.5, 0.18, 0.9), b * CFrame.new(0, 0.005, -0.85) * CFrame.Angles(0, math.rad(45), 0), bright, "Neon")
+	k.part("CrystalCoreTip", Vector3.new(0.18, 0.55, 0.55), b * CFrame.new(0, 0.005, -1.45) * CFrame.Angles(0, 0, math.rad(90)), bright, "Neon", Enum.PartType.Cylinder)
+	k.part("FootStep", Vector3.new(1.95, 0.26, 0.26), b, dark, "Metal")
+	for _, side in ipairs({-1, 1}) do
+		k.part("SideGuard", Vector3.new(0.14, 0.24, 0.9), b * CFrame.new(side * 0.9, 0.02, -0.45), dark, "Metal")
+	end
+
+	-- faceted crystal shards growing out of the blade (more every tier)
+	for i = 1, t.Shards do
+		local row = (i - 1) % 4
+		local col = math.floor((i - 1) / 4)
+		local x = (row - 1.5) * 0.36 + (col % 2) * 0.12
+		local z = -0.25 - col * 0.42
+		local h = 0.24 + ((i * 7) % 5) * 0.05
+		k.part("Shard", Vector3.new(0.2, h, 0.2), b * CFrame.new(x, 0.1 + h * 0.3, z) * CFrame.Angles(math.rad(-20 + (i % 3) * 10), math.rad(i * 37), math.rad(45)),
+			i % 3 == 0 and bright or c, "Glass")
+	end
+
+	-- ROTATING DECORATIONS
+	if tier >= 3 then
+		local center = Vector3.new(0, 0, -1.9)
+		local n = 2 + math.floor(tier / 3)
+		for i = 1, n do
+			local a = math.pi * 2 * i / n
+			orbit(k.part("OrbitCrystal", Vector3.new(0.2, 0.2, 0.2), CFrame.new(center + Vector3.new(math.cos(a) * 0.75, math.sin(a) * 0.75, 0)) * CFrame.Angles(math.rad(45), math.rad(45), 0), accent, "Neon"), center, 2.4)
+		end
+	end
+	if tier >= 6 then
+		local center = Vector3.new(0, -0.2, -3.5)
+		local n = 3 + (tier - 6)
+		for i = 1, n do
+			local a = math.pi * 2 * i / n
+			orbit(k.part("OrbitShard", Vector3.new(0.16, 0.34, 0.16), CFrame.new(center + Vector3.new(math.cos(a) * 1.35, math.sin(a) * 1.35, 0)) * CFrame.Angles(0, 0, a), c, "Glass"), center, -1.7)
+		end
+	end
+	if tier >= 8 then
+		local center = Vector3.new(0, 0, TOP + 0.75)
+		for i = 1, 8 do
+			local a = math.pi * 2 * i / 8
+			orbit(k.part("Halo", Vector3.new(0.12, 0.12, 0.12), CFrame.new(center + Vector3.new(math.cos(a) * 0.55, math.sin(a) * 0.55, 0)), bright, "Neon", Enum.PartType.Ball), center, 3.2)
+		end
+	end
+
+	-- VFX: particles and light that grow with the tier
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Name = "CrystalDust"
+	emitter.Rate = t.ParticleRate
+	emitter.LightEmission = t.ParticleLight
+	emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, t.ParticleSize), NumberSequenceKeypoint.new(1, 0)})
+	emitter.Lifetime = NumberRange.new(0.5, 0.9 + tier * 0.05)
+	emitter.Speed = NumberRange.new(0.4, 0.8 + tier * 0.1)
+	emitter.SpreadAngle = Vector2.new(180, 180)
+	emitter.Color = ColorSequence.new(bright, c)
+	emitter.Transparency = NumberSequence.new(0.1, 1)
+	emitter.Parent = plate
+	if tier >= 5 then
+		local sparks = Instance.new("ParticleEmitter")
+		sparks.Name = "CrystalSparks"
+		sparks.Rate = (tier - 4) * 4
+		sparks.LightEmission = 1
+		sparks.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, t.ParticleSize * 0.6), NumberSequenceKeypoint.new(1, 0)})
+		sparks.Lifetime = NumberRange.new(0.3, 0.6)
+		sparks.Speed = NumberRange.new(2, 4)
+		sparks.Acceleration = Vector3.new(0, -6, 0)
+		sparks.SpreadAngle = Vector2.new(60, 60)
+		sparks.Color = ColorSequence.new(accent)
+		sparks.Parent = tip
+	end
+	light(plate, c, t.LightRange)
+	local l = plate:FindFirstChildOfClass("PointLight")
+	if l then l.Brightness = t.LightBrightness end
+
+	-- SIZE UPGRADE: scale everything up around the tool's origin
+	if t.Scale ~= 1 then
+		for _, part in ipairs(k.tool:GetChildren()) do
+			if part:IsA("BasePart") and part.Name ~= "Handle" then
+				local rotation = part.CFrame.Rotation
+				part.Size = part.Size * t.Scale
+				part.CFrame = CFrame.new(part.Position * t.Scale) * rotation
+				local center = part:GetAttribute("OrbitCenter")
+				if center then part:SetAttribute("OrbitCenter", center * t.Scale) end
+			end
+		end
+		k.hold = TOP * t.Scale
+		emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, t.ParticleSize * t.Scale), NumberSequenceKeypoint.new(1, 0)})
+	end
+end
+
+---------------------------------------------------------------------
 -- BUILD A SHOVEL TOOL
 ---------------------------------------------------------------------
 return function(def)
@@ -801,7 +978,12 @@ return function(def)
 	local handle = newPart(tool, "Handle", Vector3.new(0.3, 0.3, 4.4), CFrame.new(), s.Shaft, s.ShaftMat)
 	handle.Transparency = 1
 
-	local custom = CUSTOM[def.Id] or (def.Look and themed)
+	local custom
+	if GameConfig.ShovelLook == "Crystal" then
+		custom = crystal
+	else
+		custom = CUSTOM[def.Id] or (def.Look and themed)
+	end
 	local rightZ, leftZ -- where the right and left hands hold the shaft (before scaling)
 	if custom then
 		local k = kit(tool)
@@ -909,11 +1091,17 @@ return function(def)
 			local rotation = part.CFrame.Rotation
 			part.Size = part.Size * SCALE
 			part.CFrame = CFrame.new(part.Position * SCALE) * rotation
+			local center = part:GetAttribute("OrbitCenter")
+			if center then part:SetAttribute("OrbitCenter", center * SCALE) end
 		end
 	end
 	for _, emitter in ipairs(tool:GetDescendants()) do
 		if emitter:IsA("ParticleEmitter") then
-			emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.12 * SCALE), NumberSequenceKeypoint.new(1, 0)})
+			local keys = {}
+			for _, key in ipairs(emitter.Size.Keypoints) do
+				table.insert(keys, NumberSequenceKeypoint.new(key.Time, key.Value * SCALE, key.Envelope * SCALE))
+			end
+			emitter.Size = NumberSequence.new(keys)
 		end
 	end
 

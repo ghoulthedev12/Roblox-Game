@@ -100,31 +100,70 @@ end)
 -- World 1's look (set by MapStyle on the server) is remembered and restored when you return.
 ---------------------------------------------------------------------
 local home -- World 1's lighting, captured the first time you leave it
+
+-- the one bloom and sun rays effect the lighting uses (made here if the place has none)
+local function effect(className)
+	local found = Lighting:FindFirstChildOfClass(className)
+	if not found then
+		found = Instance.new(className)
+		found.Intensity = 0
+		found.Parent = Lighting
+	end
+	return found
+end
+
 local function capture()
 	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
 	local grade = Lighting:FindFirstChild("Cartoon2050Grade")
 	local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
+	local bloom, rays = effect("BloomEffect"), effect("SunRaysEffect")
 	return {
-		ClockTime = Lighting.ClockTime, Ambient = Lighting.Ambient, OutdoorAmbient = Lighting.OutdoorAmbient,
+		ClockTime = Lighting.ClockTime, Latitude = Lighting.GeographicLatitude, Brightness = Lighting.Brightness,
+		Exposure = Lighting.ExposureCompensation, Ambient = Lighting.Ambient, OutdoorAmbient = Lighting.OutdoorAmbient,
+		DiffuseScale = Lighting.EnvironmentDiffuseScale, SpecularScale = Lighting.EnvironmentSpecularScale,
+		ShadowSoftness = Lighting.ShadowSoftness,
 		Tint = grade and grade.TintColor or Color3.new(1, 1, 1),
+		Saturation = grade and grade.Saturation or 0, Contrast = grade and grade.Contrast or 0,
 		Fog = atmosphere and atmosphere.Color, Decay = atmosphere and atmosphere.Decay, Density = atmosphere and atmosphere.Density,
+		Offset = atmosphere and atmosphere.Offset, Haze = atmosphere and atmosphere.Haze, Glare = atmosphere and atmosphere.Glare,
+		Bloom = {bloom.Intensity, bloom.Size, bloom.Threshold}, SunRays = {rays.Intensity, rays.Spread},
 		Clouds = clouds and clouds.Cover,
 	}
 end
 
+-- Realistic defaults for worlds 2-9 (each world's Sky overrides what it needs):
+-- stronger sun, full environment lighting and reflections, crisp shadows
+local REALISM = {Brightness = 3, Exposure = 0, Latitude = 35, DiffuseScale = 1, SpecularScale = 1, ShadowSoftness = 0.15,
+	Offset = 0.25, Haze = 1.5, Glare = 0.4, Saturation = 0.1, Contrast = 0.1, Bloom = {0.35, 24, 1.9}, SunRays = {0.1, 0.25}}
+
 local function applySky(sky)
+	local function get(key)
+		if sky[key] ~= nil then return sky[key] end
+		return REALISM[key]
+	end
 	local info = TweenInfo.new(1.2, Enum.EasingStyle.Sine)
-	-- ClockTime jumps (tweening it would spin the sun through the whole day)
+	-- ClockTime and the sun angle jump (tweening would spin the sun through the whole day)
 	Lighting.ClockTime = sky.ClockTime
-	TweenService:Create(Lighting, info, {Ambient = sky.Ambient, OutdoorAmbient = sky.OutdoorAmbient}):Play()
+	Lighting.GeographicLatitude = get("Latitude")
+	Lighting.ShadowSoftness = get("ShadowSoftness")
+	TweenService:Create(Lighting, info, {
+		Ambient = sky.Ambient, OutdoorAmbient = sky.OutdoorAmbient, Brightness = get("Brightness"),
+		ExposureCompensation = get("Exposure"), EnvironmentDiffuseScale = get("DiffuseScale"),
+		EnvironmentSpecularScale = get("SpecularScale"),
+	}):Play()
 	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
 	if atmosphere and sky.Fog then
-		TweenService:Create(atmosphere, info, {Color = sky.Fog, Decay = sky.Decay, Density = sky.Density}):Play()
+		TweenService:Create(atmosphere, info, {Color = sky.Fog, Decay = sky.Decay, Density = sky.Density,
+			Offset = get("Offset"), Haze = get("Haze"), Glare = get("Glare")}):Play()
 	end
 	local grade = Lighting:FindFirstChild("Cartoon2050Grade")
 	if grade then
-		TweenService:Create(grade, info, {TintColor = sky.Tint}):Play()
+		TweenService:Create(grade, info, {TintColor = sky.Tint, Saturation = get("Saturation"), Contrast = get("Contrast")}):Play()
 	end
+	local bloom, rays = effect("BloomEffect"), effect("SunRaysEffect")
+	local b, r = get("Bloom"), get("SunRays")
+	TweenService:Create(bloom, info, {Intensity = b[1], Size = b[2], Threshold = b[3]}):Play()
+	TweenService:Create(rays, info, {Intensity = r[1], Spread = r[2]}):Play()
 	local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
 	if clouds and sky.Clouds then
 		clouds.Cover = sky.Clouds

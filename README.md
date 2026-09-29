@@ -33,6 +33,30 @@ Each player gets a museum with 24 display slots over 3 floors (`MuseumManager` +
 - The Alien Art Dealer buys memes from your bag (`ArtifactData.SellMultiplier`).
 Slot prices are `GameConfig.SlotPrices`.
 
+## Saving (ProfileService)
+`src/server/PlayerData.lua` saves with [ProfileService](https://github.com/MadStudioRoblox/ProfileService)
+(`src/server/ProfileService.lua`, Apache 2.0, license in `third_party/ProfileService/`): session-locked,
+auto-saving every ~30s and on leave/shutdown. Old saves from the `PlayerData_v1` DataStore are
+imported automatically the first time each player joins. Passive income = the memes on display,
+paid every second.
+
+## Museum visitors
+`VisitorManager` + `VisitorModels`: up to 4 humans/aliens per museum walk in with PathfindingService,
+visit 2-4 displayed memes (riding to upper floors), react with an emoji bubble, and leave.
+They never give money. Tune the numbers at the top of `VisitorManager.server.lua`.
+
+## Shovels
+`GameConfig.ShovelLook = "Crystal"`: every shovel is the blocky/crystal design, upgraded by its
+`Power` (1-9): bigger, new crystal color, more shards, spinning orbit crystals, stronger particles.
+Set it to `"Classic"` for the older hand-made models. `Power` also sets the crater size:
+radius = `GameConfig.DigRadiusForPower(Power)`.
+
+## Sky
+- `BackgroundWeather` (client): giant cubes, spheres and cones fall far in the background.
+- `SkyPlanets` (client): the other 8 worlds float in the sky as faint planets.
+- Worlds 2-9 have full realistic lighting values in `WorldsData` (`Sky`); the installer
+  switches `Lighting.Technology` to Future.
+
 ## The 9 worlds
 World 1 is the Meme Dig Site next to the museums. Worlds 2-9 are floating islands reached
 through the World Gate, each unlocked with cash:

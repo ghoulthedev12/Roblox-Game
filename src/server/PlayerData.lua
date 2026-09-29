@@ -1,6 +1,9 @@
 -- PlayerData (ModuleScript in ServerScriptService)
--- Loads and saves each player's progress, pays income every second,
--- gives offline earnings, and lets other server scripts change the data safely.
+-- Loads and saves each player's progress with ProfileService (session-locked, auto-saving,
+-- safe against two servers editing the same save), pays passive income every second from
+-- the memes on display, gives offline earnings, and lets other server scripts change the
+-- data safely. Museum slot and floor purchases go through UnlockSlot/UnlockFloor here
+-- (MuseumManager checks the price and takes the money first).
 
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
@@ -9,12 +12,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
-local STORE_NAME = "PlayerData_v1" -- change the version to wipe everyone's data (e.g. before launch)
-local AUTOSAVE_SECONDS = 60
-local store = DataStoreService:GetDataStore(STORE_NAME)
+local ProfileService = require(script.Parent:WaitForChild("ProfileService"))
+
+local STORE_NAME = "PlayerProfiles_v1" -- change the version to wipe everyone's data (e.g. before launch)
+local OLD_STORE_NAME = "PlayerData_v1"  -- saves from before ProfileService; imported once per player
+local oldStore = DataStoreService:GetDataStore(OLD_STORE_NAME)
 
 local PlayerData = {}
-local sessions = {} -- [player] = data table
+local sessions = {} -- [player] = data table (the profile's Data, saved automatically)
+local profiles = {} -- [player] = ProfileService profile
 
 local changedEvent = Instance.new("BindableEvent")
 PlayerData.Changed = changedEvent.Event -- fires (player, data) whenever something changes
@@ -56,6 +62,9 @@ local function reconcile(data, template)
 		end
 	end
 end
+
+-- every new profile starts as a copy of this; Reconcile() adds new fields to old saves
+local profileStore = ProfileService.GetProfileStore(STORE_NAME, defaultData())
 
 local function retry(fn)
 	for attempt = 1, 3 do
@@ -136,41 +145,71 @@ end
 ---------------------------------------------------------------------
 local function load(player)
 	local key = "Player_" .. player.UserId
-	local ok, saved = retry(function()
-		return store:GetAsync(key)
-	end)
-	if not ok then
-		-- Never start with empty data if loading failed, or we'd overwrite their real save
+	-- "ForceLoad": if another server still holds this save (e.g. the player just hopped
+	-- servers), ProfileService asks it to let go and waits, instead of loading stale data
+	local profile = profileStore:LoadProfileAsync(key, "ForceLoad")
+	if not profile then
+		-- Never play on empty data if loading failed, or we'd overwrite their real save
 		player:Kick("Couldn't load your museum data. Please rejoin!")
 		return
 	end
-	if not player.Parent then return end -- left while loading
-
-	local data = saved or defaultData()
-	if saved then
-		migrate(saved)
+	profile:AddUserId(player.UserId) -- GDPR: lets Roblox erase it on request
+	profile:Reconcile()
+	profile:ListenToRelease(function()
+		profiles[player] = nil
+		sessions[player] = nil
+		-- the save was taken by another server: this session must stop using it
+		if player.Parent then
+			player:Kick("Your museum was opened on another server. Please rejoin!")
+		end
+	end)
+	if not player.Parent then
+		profile:Release() -- left while loading
+		return
 	end
-	reconcile(data, defaultData())
+
+	local data = profile.Data
+	-- First time on ProfileService: bring over the save from the old DataStore
+	local returning = profile.MetaData.SessionLoadCount > 1
+	if not data.ImportedOldSave then
+		local ok, old = retry(function()
+			return oldStore:GetAsync(key)
+		end)
+		if not ok then
+			profile:Release()
+			player:Kick("Couldn't load your museum data. Please rejoin!")
+			return
+		end
+		if type(old) == "table" then
+			for field, value in pairs(old) do
+				data[field] = value
+			end
+			migrate(data)
+			reconcile(data, defaultData())
+			returning = true
+			print("[LOAD] Imported " .. player.Name .. "'s old save into ProfileService")
+		end
+		data.ImportedOldSave = true
+	end
+	migrate(data)
 
 	-- Offline earnings
-	if not saved then
-		print("[LOAD] No save found for " .. player.Name .. ", starting fresh")
-	end
-	if saved then
+	if returning then
 		local away = math.max(0, os.time() - (data.LastOnline or os.time()))
 		local counted = math.min(away, GameConfig.OfflineCapHours * 3600)
 		local earned = math.floor(computeIncome(data) * counted * GameConfig.OfflineMultiplier)
-		print("[LOAD] " .. player.Name .. " was away " .. away .. " seconds, income on display: "
-			.. ArtifactData.FormatMoney(computeIncome(data)) .. "/s")
 		if earned > 0 then
 			data.Money += earned
 			data.Stats.TotalEarned += earned
 			player:SetAttribute("OfflineEarnings", earned)
 			print(player.Name .. " earned " .. ArtifactData.FormatMoney(earned) .. " while offline")
 		end
+	else
+		print("[LOAD] New player " .. player.Name .. ", starting fresh")
 	end
 	data.LastOnline = os.time()
 
+	profiles[player] = profile
 	sessions[player] = data
 	makeLeaderstats(player)
 	refresh(player)
@@ -178,21 +217,14 @@ local function load(player)
 	print(player.Name .. "'s data loaded. Money: " .. ArtifactData.FormatMoney(data.Money))
 end
 
-local function save(player)
-	local data = sessions[player]
-	if not data then return end
-	data.LastOnline = os.time()
-	local key = "Player_" .. player.UserId
-	local ok = retry(function()
-		store:UpdateAsync(key, function()
-			return data
-		end)
-	end)
-	if ok then
-		print("[SAVE] " .. player.Name .. "'s data saved. Money: " .. ArtifactData.FormatMoney(data.Money))
-	else
-		warn("Failed to save data for " .. player.Name)
-	end
+-- ProfileService saves on its own every ~30 seconds; releasing does the final save
+local function release(player)
+	local profile = profiles[player]
+	if not profile then return end
+	profile.Data.LastOnline = os.time()
+	profiles[player] = nil
+	sessions[player] = nil
+	profile:Release()
 end
 
 ---------------------------------------------------------------------
@@ -298,10 +330,7 @@ for _, player in ipairs(Players:GetPlayers()) do
 	task.spawn(load, player)
 end
 
-Players.PlayerRemoving:Connect(function(player)
-	save(player)
-	sessions[player] = nil
-end)
+Players.PlayerRemoving:Connect(release)
 
 -- Pay income every second
 task.spawn(function()
@@ -318,30 +347,7 @@ task.spawn(function()
 	end
 end)
 
--- Autosave
-task.spawn(function()
-	while true do
-		task.wait(AUTOSAVE_SECONDS)
-		for player in pairs(sessions) do
-			task.spawn(save, player)
-		end
-	end
-end)
-
--- Save everyone when the server shuts down
-game:BindToClose(function()
-	local running = 0
-	for player in pairs(sessions) do
-		running += 1
-		task.spawn(function()
-			save(player)
-			running -= 1
-		end)
-	end
-	local start = os.clock()
-	while running > 0 and os.clock() - start < 25 do
-		task.wait(0.1)
-	end
-end)
+-- Autosaving and saving on shutdown are handled by ProfileService (it releases every
+-- profile when the server closes).
 
 return PlayerData

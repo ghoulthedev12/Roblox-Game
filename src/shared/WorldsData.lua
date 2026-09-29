@@ -7,7 +7,12 @@
 --   Top / Wall      terrain material of the island surface and of the pit walls
 --   Zones           terrain material + color of the 4 depth zones (Shallow, Mid, Deep, Abyss)
 --   Look            colors for the island decorations and the world's shovels
---   Sky             lighting players see while they're in the world
+--   Sky             lighting players see while they're in the world (WorldClient applies it):
+--                   ClockTime, Latitude (sun angle), Brightness, Exposure (ExposureCompensation),
+--                   Ambient/OutdoorAmbient, Fog/Decay/Density/Offset/Haze/Glare (Atmosphere),
+--                   Tint/Saturation/Contrast (color grade), Bloom {Intensity, Size, Threshold},
+--                   SunRays {Intensity, Spread}, Clouds (cover). Lighting.Technology is set to
+--                   Future by the installer for realistic lights and reflections.
 --   Shovels         {name, description, blade shape, grip}; stats come from SHOVEL_TIERS
 
 local rgb = Color3.fromRGB
@@ -17,13 +22,13 @@ local WorldsData = {}
 -- Every world's 7 shovels follow the same progression; price = PriceFactor x the world's price.
 -- MaxZone: 1 = Shallow, 2 = Mid, 3 = Deep, 4 = Abyss
 WorldsData.ShovelTiers = {
-	{MaxZone = 1, DigRadius = 4.5, FindChance = 0.012, Luck = 1,   Cooldown = 0.5,  PriceFactor = 0},
-	{MaxZone = 2, DigRadius = 5,   FindChance = 0.014, Luck = 1.2, Cooldown = 0.46, PriceFactor = 0.05},
-	{MaxZone = 2, DigRadius = 5.5, FindChance = 0.016, Luck = 1.4, Cooldown = 0.43, PriceFactor = 0.15},
-	{MaxZone = 3, DigRadius = 6,   FindChance = 0.018, Luck = 1.7, Cooldown = 0.4,  PriceFactor = 0.4},
-	{MaxZone = 3, DigRadius = 6.5, FindChance = 0.02,  Luck = 2,   Cooldown = 0.37, PriceFactor = 1},
-	{MaxZone = 4, DigRadius = 7.5, FindChance = 0.024, Luck = 2.5, Cooldown = 0.34, PriceFactor = 2.5},
-	{MaxZone = 4, DigRadius = 8,   FindChance = 0.027, Luck = 3,   Cooldown = 0.31, PriceFactor = 6},
+	{MaxZone = 1, Power = 2, FindChance = 0.012, Luck = 1,   Cooldown = 0.5,  PriceFactor = 0},
+	{MaxZone = 2, Power = 3,   FindChance = 0.014, Luck = 1.2, Cooldown = 0.46, PriceFactor = 0.05},
+	{MaxZone = 2, Power = 4, FindChance = 0.016, Luck = 1.4, Cooldown = 0.43, PriceFactor = 0.15},
+	{MaxZone = 3, Power = 5,   FindChance = 0.018, Luck = 1.7, Cooldown = 0.4,  PriceFactor = 0.4},
+	{MaxZone = 3, Power = 6, FindChance = 0.02,  Luck = 2,   Cooldown = 0.37, PriceFactor = 1},
+	{MaxZone = 4, Power = 8, FindChance = 0.024, Luck = 2.5, Cooldown = 0.34, PriceFactor = 2.5},
+	{MaxZone = 4, Power = 9,   FindChance = 0.027, Luck = 3,   Cooldown = 0.31, PriceFactor = 6},
 }
 
 -- Terrain colors are shared by the whole map (Roblox paints each material one color
@@ -50,7 +55,8 @@ WorldsData.Worlds = {
 		Zones = {"Mud", "Brick", "WoodPlanks", "Salt"},
 		Look = {Main = rgb(255, 170, 205), Second = rgb(255, 238, 244), Dark = rgb(128, 62, 80), Glow = rgb(255, 120, 180), Accent = rgb(255, 214, 120)},
 		Sky = {ClockTime = 17.3, Ambient = rgb(120, 96, 120), OutdoorAmbient = rgb(160, 130, 160), Tint = rgb(255, 232, 242),
-			Fog = rgb(255, 200, 225), Decay = rgb(200, 130, 170), Density = 0.32, Clouds = 0.55},
+			Fog = rgb(255, 200, 225), Decay = rgb(200, 130, 170), Density = 0.32, Clouds = 0.55,
+			Brightness = 2.6, Exposure = 0.15, Latitude = 30, Offset = 0.25, Haze = 1.6, Glare = 0.6, Saturation = 0.12, Contrast = 0.08, Bloom = {0.35, 24, 1.9}, SunRays = {0.12, 0.25}},
 		Shovels = {
 			{"Blossom Trowel", "A little pink trowel. Leaves petals everywhere it digs.", "Spade", "D"},
 			{"Bamboo Spade", "Light, strong and grown in a week.", "Spade", "T"},
@@ -69,7 +75,8 @@ WorldsData.Worlds = {
 		Zones = {"Pavement", "Limestone", "Basalt", "Ice"},
 		Look = {Main = rgb(130, 96, 255), Second = rgb(40, 36, 96), Dark = rgb(22, 20, 52), Glow = rgb(110, 220, 255), Accent = rgb(255, 214, 110)},
 		Sky = {ClockTime = 0, Ambient = rgb(118, 110, 170), OutdoorAmbient = rgb(140, 130, 200), Tint = rgb(226, 222, 255),
-			Fog = rgb(80, 60, 160), Decay = rgb(40, 30, 100), Density = 0.32, Clouds = 0},
+			Fog = rgb(80, 60, 160), Decay = rgb(40, 30, 100), Density = 0.32, Clouds = 0,
+			Brightness = 1.2, Exposure = 0.35, Latitude = 20, Offset = 0.3, Haze = 0.3, Glare = 0, Saturation = 0.15, Contrast = 0.12, Bloom = {0.5, 28, 1.4}, SunRays = {0, 0.1}},
 		Shovels = {
 			{"Meteor Scoop", "Made from a meteor that landed on a meme.", "Scoop", "T"},
 			{"Rocket Spade", "Has tiny thrusters. Mostly for style.", "Spade", "T"},
@@ -88,7 +95,8 @@ WorldsData.Worlds = {
 		Zones = {"Ice", "Concrete", "Glacier", "Cobblestone"},
 		Look = {Main = rgb(150, 226, 255), Second = rgb(246, 250, 255), Dark = rgb(56, 88, 140), Glow = rgb(130, 255, 220), Accent = rgb(190, 170, 255)},
 		Sky = {ClockTime = 9.5, Ambient = rgb(110, 120, 150), OutdoorAmbient = rgb(150, 165, 195), Tint = rgb(236, 246, 255),
-			Fog = rgb(215, 235, 255), Decay = rgb(140, 170, 220), Density = 0.3, Clouds = 0.7},
+			Fog = rgb(215, 235, 255), Decay = rgb(140, 170, 220), Density = 0.3, Clouds = 0.7,
+			Brightness = 3.2, Exposure = 0.05, Latitude = 65, Offset = 0.2, Haze = 2.2, Glare = 0.3, Saturation = -0.05, Contrast = 0.1, Bloom = {0.3, 20, 2.2}, SunRays = {0.06, 0.2}},
 		Shovels = {
 			{"Snowball Scoop", "Packs perfect snowballs. Also digs.", "Scoop", "T"},
 			{"Icicle Spade", "Sharp, shiny and a bit drippy.", "Spade", "D"},
@@ -107,7 +115,8 @@ WorldsData.Worlds = {
 		Zones = {"Sandstone", "Ground", "Brick", "Salt"},
 		Look = {Main = rgb(255, 196, 90), Second = rgb(226, 232, 244), Dark = rgb(120, 76, 50), Glow = rgb(255, 150, 70), Accent = rgb(80, 210, 220)},
 		Sky = {ClockTime = 13, Ambient = rgb(128, 112, 96), OutdoorAmbient = rgb(170, 150, 128), Tint = rgb(255, 244, 226),
-			Fog = rgb(255, 222, 170), Decay = rgb(220, 160, 110), Density = 0.3, Clouds = 0.2},
+			Fog = rgb(255, 222, 170), Decay = rgb(220, 160, 110), Density = 0.3, Clouds = 0.2,
+			Brightness = 3.6, Exposure = 0.1, Latitude = 15, Offset = 0.2, Haze = 2.6, Glare = 0.9, Saturation = 0.08, Contrast = 0.14, Bloom = {0.3, 24, 2.1}, SunRays = {0.1, 0.3}},
 		Shovels = {
 			{"Sandy Scoop", "Full of sand. Always. Forever.", "Scoop", "T"},
 			{"Cactus Spade", "Hug it at your own risk.", "Spade", "D"},
@@ -126,7 +135,8 @@ WorldsData.Worlds = {
 		Zones = {"Brick", "Limestone", "Ice", "Pavement"},
 		Look = {Main = rgb(255, 128, 150), Second = rgb(90, 220, 220), Dark = rgb(30, 80, 120), Glow = rgb(120, 240, 255), Accent = rgb(255, 230, 160)},
 		Sky = {ClockTime = 15, Ambient = rgb(90, 120, 140), OutdoorAmbient = rgb(120, 160, 180), Tint = rgb(226, 250, 255),
-			Fog = rgb(120, 210, 230), Decay = rgb(60, 140, 180), Density = 0.35, Clouds = 0.4},
+			Fog = rgb(120, 210, 230), Decay = rgb(60, 140, 180), Density = 0.35, Clouds = 0.4,
+			Brightness = 2.8, Exposure = 0.1, Latitude = 25, Offset = 0.3, Haze = 1.8, Glare = 0.2, Saturation = 0.18, Contrast = 0.06, Bloom = {0.35, 24, 1.9}, SunRays = {0.15, 0.35}},
 		Shovels = {
 			{"Seashell Scoop", "Hold it to your ear: you hear dirt.", "Scoop", "D"},
 			{"Anchor Spade", "Heavy. Very heavy. Digs straight down.", "Spade", "T"},
@@ -145,7 +155,8 @@ WorldsData.Worlds = {
 		Zones = {"LeafyGrass", "Sand", "Mud", "Ice"},
 		Look = {Main = rgb(255, 120, 190), Second = rgb(130, 236, 200), Dark = rgb(120, 70, 60), Glow = rgb(255, 170, 230), Accent = rgb(255, 226, 110)},
 		Sky = {ClockTime = 14, Ambient = rgb(130, 110, 130), OutdoorAmbient = rgb(175, 150, 175), Tint = rgb(255, 238, 248),
-			Fog = rgb(255, 214, 240), Decay = rgb(220, 160, 210), Density = 0.32, Clouds = 0.6},
+			Fog = rgb(255, 214, 240), Decay = rgb(220, 160, 210), Density = 0.32, Clouds = 0.6,
+			Brightness = 3, Exposure = 0.05, Latitude = 35, Offset = 0.25, Haze = 1.2, Glare = 0.3, Saturation = 0.2, Contrast = 0.05, Bloom = {0.3, 24, 2}, SunRays = {0.08, 0.25}},
 		Shovels = {
 			{"Lollipop Scoop", "Swirly, sticky and surprisingly strong.", "Scoop", "T"},
 			{"Candy Cane Spade", "Minty fresh digging.", "Spade", "D"},
@@ -164,7 +175,8 @@ WorldsData.Worlds = {
 		Zones = {"Ground", "Brick", "Asphalt", "CrackedLava"},
 		Look = {Main = rgb(255, 120, 50), Second = rgb(60, 52, 70), Dark = rgb(34, 28, 40), Glow = rgb(255, 150, 60), Accent = rgb(255, 214, 90)},
 		Sky = {ClockTime = 18.6, Ambient = rgb(120, 86, 80), OutdoorAmbient = rgb(150, 105, 95), Tint = rgb(255, 232, 220),
-			Fog = rgb(200, 110, 80), Decay = rgb(120, 60, 50), Density = 0.35, Clouds = 0.5},
+			Fog = rgb(200, 110, 80), Decay = rgb(120, 60, 50), Density = 0.35, Clouds = 0.5,
+			Brightness = 2.2, Exposure = 0.2, Latitude = 40, Offset = 0.2, Haze = 2.4, Glare = 1.2, Saturation = 0.1, Contrast = 0.18, Bloom = {0.5, 28, 1.6}, SunRays = {0.2, 0.3}},
 		Shovels = {
 			{"Ember Spade", "Always a little bit warm.", "Spade", "D"},
 			{"Anvil Shovel", "Forged on an anvil. Kind of shaped like one too.", "Spade", "T"},
@@ -183,7 +195,8 @@ WorldsData.Worlds = {
 		Zones = {"Cobblestone", "Asphalt", "Limestone", "Snow"},
 		Look = {Main = rgb(90, 255, 150), Second = rgb(255, 80, 220), Dark = rgb(20, 18, 30), Glow = rgb(90, 255, 170), Accent = rgb(90, 200, 255)},
 		Sky = {ClockTime = 21.5, Ambient = rgb(100, 120, 120), OutdoorAmbient = rgb(125, 150, 150), Tint = rgb(236, 255, 244),
-			Fog = rgb(40, 60, 70), Decay = rgb(90, 40, 110), Density = 0.32, Clouds = 0},
+			Fog = rgb(40, 60, 70), Decay = rgb(90, 40, 110), Density = 0.32, Clouds = 0,
+			Brightness = 1.4, Exposure = 0.3, Latitude = 0, Offset = 0.25, Haze = 0.8, Glare = 0, Saturation = 0.25, Contrast = 0.2, Bloom = {0.6, 30, 1.3}, SunRays = {0, 0.1}},
 		Shovels = {
 			{"Placeholder Spade", "TODO: add a description.", "Spade", "D"},
 			{"Pixel Shovel", "Rendered at 8 pixels. Works anyway.", "Spade", "T"},

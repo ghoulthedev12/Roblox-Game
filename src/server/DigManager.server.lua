@@ -366,7 +366,8 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	-- bit below the clicked cell and up enough to walk into, but never below the bottom of
 	-- the shovel's deepest zone.
 	local floorY = origin.Y + world.Zones[def.MaxZone].Bottom
-	local radius = (def.DigRadius + 2) / 2 + 0.75
+	-- the crater's radius scales straight with the shovel's Power (see GameConfig.DigRadiusForPower)
+	local radius = (GameConfig.DigRadiusForPower(def.Power) + 2) / 2 + 0.75
 	local centerY = math.max(carveAt.Y + radius * 0.35, floorY + radius)
 	terrain:FillBall(Vector3.new(carveAt.X, centerY, carveAt.Z), radius, Enum.Material.Air)
 	burst(target, zone.Color, 28, 14)

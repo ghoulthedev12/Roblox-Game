@@ -47,6 +47,8 @@ out = [
     "\tcount += 1",
     "end",
 ]
+# Future lighting: realistic lights, shadows and reflections (only settable from Studio)
+out.append('pcall(function() game:GetService("Lighting").Technology = Enum.Technology.Future end)')
 for parent, name in DELETE:
     out.append(f'do local old = {parent}:FindFirstChild("{name}") if old then old:Destroy() print("Removed {name}") end end')
 for folder, parent in TARGETS:
