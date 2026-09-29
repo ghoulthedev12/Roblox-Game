@@ -9,6 +9,9 @@ local RunService = game:GetService("RunService")
 local template = ServerStorage:WaitForChild("MuseumTemplate")
 -- Give the template the 2050 look once, before any museum is copied from it
 require(script.Parent:WaitForChild("MuseumStyle"))(template)
+-- no elevators: players change floors with the up/down arrows on screen (MuseumClient)
+local elevators = template:FindFirstChild("Elevators")
+if elevators then elevators:Destroy() end
 local plotsFolder = workspace:WaitForChild("Plots")
 
 local museumsFolder = workspace:FindFirstChild("Museums") or Instance.new("Folder")

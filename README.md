@@ -28,7 +28,8 @@ All game scripts live in `src/` and sync into Roblox Studio with [Rojo](https://
 Each player gets a museum with 24 display slots over 3 floors (`MuseumManager` + `MuseumClient`).
 - Press E at a pedestal: unlock it, put a meme from your bag on it, swap it or take it back.
   Memes on display earn money every second.
-- Elevators take you between floors and sell the next floor (`GameConfig.FloorPrices`).
+- Inside a museum, the up/down arrows on the left change floors; the up arrow also buys
+  the next floor in your own museum (`GameConfig.FloorPrices`).
 - The Alien Art Dealer buys memes from your bag (`ArtifactData.SellMultiplier`).
 Slot prices are `GameConfig.SlotPrices`.
 

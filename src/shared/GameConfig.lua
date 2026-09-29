@@ -31,6 +31,20 @@ function GameConfig.GetFloorOfSlot(slotIndex)
 	return math.ceil(slotIndex / GameConfig.SlotsPerFloor)
 end
 
+-- Which floor of a museum a position is on (nil if it's not inside that museum).
+-- Uses the museum's Floor1Arrival spot (in the middle of the back of the hall) as reference.
+function GameConfig.GetMuseumFloor(museum, position)
+	local arrivals = museum:FindFirstChild("Arrivals")
+	local first = arrivals and arrivals:FindFirstChild("Floor1Arrival")
+	if not first or not first:IsA("BasePart") then return nil end
+	local p = first.CFrame:PointToObjectSpace(position)
+	-- the hall is 96 studs wide and runs from the entrance (-107) to the back wall (+28)
+	if math.abs(p.X) > 48 or p.Z < -108 or p.Z > 29 or p.Y < -6 or p.Y > 96 then
+		return nil
+	end
+	return math.clamp(math.floor((p.Y + 6) / 32) + 1, 1, #GameConfig.FloorPrices)
+end
+
 ---------------------------------------------------------------------
 -- DIGGING
 ---------------------------------------------------------------------

@@ -5,7 +5,7 @@
 --       empty slot    -> pick a meme from your inventory to put on it
 --       occupied slot -> swap it for another meme, or take it back
 --     Memes on display earn money every second (PlayerData pays it).
---   * The elevators: ride between floors, or buy the next floor.
+--   * Floors: the up/down arrows (MuseumClient) move you between floors or buy the next one.
 --   * The Alien Art Dealer: sell memes from your inventory for cash.
 -- The pedestals' signs, fact screens and info tags show what's on display; MuseumClient draws
 -- the spinning meme card on top of each pedestal.
@@ -29,6 +29,7 @@ local placeRemote = getRemote("PlaceInSlot")          -- client -> server: (slot
 local takeRemote = getRemote("TakeFromSlot")          -- client -> server: (slotIndex)
 local openDealerRemote = getRemote("OpenDealer")      -- server -> client
 local sellRemote = getRemote("SellArtifacts")         -- client -> server: (artifactId, sellAll)
+local floorRemote = getRemote("ChangeFloor")          -- client -> server: (+1 up / -1 down)
 local messageRemote = getRemote("ShopMessage")        -- server -> client: (text, success) toast
 local inventoryChangedRemote = getRemote("InventoryChanged")
 
@@ -187,7 +188,7 @@ local function refreshAllSlots(player)
 end
 
 ---------------------------------------------------------------------
--- ELEVATORS
+-- FLOORS (the up/down arrows in MuseumClient)
 ---------------------------------------------------------------------
 local function arrivalFor(museum, floor)
 	local arrivals = museum:FindFirstChild("Arrivals")
@@ -195,31 +196,15 @@ local function arrivalFor(museum, floor)
 	return part and part.CFrame * CFrame.new(0, 3, 0)
 end
 
-local function refreshElevators(player, museum)
+-- the museum shows which floors its owner has opened, so the arrows know what to show
+local function publishFloors(player, museum)
 	local data = PlayerData.Get(player)
-	local elevators = museum:FindFirstChild("Elevators")
-	if not data or not elevators then return end
-	for _, elevator in ipairs(elevators:GetChildren()) do
-		local target = tonumber(elevator.Name:match("_to_F(%d+)"))
-		local door = elevator:FindFirstChild("DoorBack") or elevator:FindFirstChild("DoorField")
-		if target and door then
-			local open = data.UnlockedFloors[tostring(target)] == true
-			local price = GameConfig.FloorPrices[target] or 0
-			local p = prompt(door, "ElevatorPrompt", "Elevator", 14)
-			p.ActionText = open and ("Go to floor " .. target) or ("Unlock floor " .. target .. "  " .. ArtifactData.FormatMoney(price))
-			local labels = labelsIn(elevator:FindFirstChild("ElevatorSign"))
-			setText(labels[1], "FLOOR " .. target)
-			setText(labels[2], open and "PRESS E TO RIDE" or ("LOCKED  •  " .. ArtifactData.FormatMoney(price)))
-		end
+	if not data then return end
+	local list = {}
+	for floor = 1, #GameConfig.FloorPrices do
+		if data.UnlockedFloors[tostring(floor)] then table.insert(list, tostring(floor)) end
 	end
-end
-
-local function ride(player, museum, target)
-	local character = player.Character
-	local destination = arrivalFor(museum, target)
-	if character and destination then
-		character:PivotTo(destination)
-	end
+	museum:SetAttribute("UnlockedFloors", table.concat(list, ","))
 end
 
 ---------------------------------------------------------------------
@@ -251,7 +236,7 @@ local function setupMuseum(player, museum)
 					-- buying a locked slot
 					local floor = GameConfig.GetFloorOfSlot(i)
 					if not data.UnlockedFloors[tostring(floor)] then
-						messageRemote:FireClient(who, "Unlock floor " .. floor .. " first (use the elevator)!", false)
+						messageRemote:FireClient(who, "Unlock floor " .. floor .. " first (use the arrows on the left)!", false)
 					elseif PlayerData.SpendMoney(who, GameConfig.SlotPrices[i]) then
 						PlayerData.UnlockSlot(who, i)
 						refreshSlot(who, museum, i)
@@ -264,34 +249,7 @@ local function setupMuseum(player, museum)
 		end
 	end
 
-	-- elevators (visitors can ride the floors the owner has opened)
-	refreshElevators(player, museum)
-	local elevators = museum:FindFirstChild("Elevators")
-	for _, elevator in ipairs(elevators and elevators:GetChildren() or {}) do
-		local target = tonumber(elevator.Name:match("_to_F(%d+)"))
-		local p = elevator:FindFirstChild("ElevatorPrompt", true)
-		if target and p then
-			p.Triggered:Connect(function(who)
-				local data = PlayerData.Get(player)
-				if not data then return end
-				if data.UnlockedFloors[tostring(target)] then
-					ride(who, museum, target)
-				elseif who ~= player then
-					messageRemote:FireClient(who, player.DisplayName .. " hasn't opened floor " .. target .. " yet.", false)
-				elseif not data.UnlockedFloors[tostring(target - 1)] then
-					messageRemote:FireClient(who, "Unlock floor " .. (target - 1) .. " first!", false)
-				elseif PlayerData.SpendMoney(player, GameConfig.FloorPrices[target]) then
-					PlayerData.UnlockFloor(player, target)
-					refreshElevators(player, museum)
-					refreshAllSlots(player)
-					messageRemote:FireClient(player, "Floor " .. target .. " unlocked!", true)
-					ride(player, museum, target)
-				else
-					messageRemote:FireClient(who, "You need " .. ArtifactData.FormatMoney(GameConfig.FloorPrices[target]) .. " to open floor " .. target .. ".", false)
-				end
-			end)
-		end
-	end
+	publishFloors(player, museum)
 
 	-- the alien art dealer
 	local dealer = museum:FindFirstChild("AlienDealer")
@@ -380,4 +338,39 @@ sellRemote.OnServerEvent:Connect(function(player, artifactId, sellAll)
 	messageRemote:FireClient(player, "Sold " .. sold .. "x " .. artifact.Name .. " for " .. ArtifactData.FormatMoney(total) .. "!", true)
 end)
 
-print("MuseumManager ready: " .. SLOT_COUNT .. " display slots, elevators and the art dealer")
+local lastFloorChange = {}
+floorRemote.OnServerEvent:Connect(function(player, direction)
+	if direction ~= 1 and direction ~= -1 then return end
+	if lastFloorChange[player] and os.clock() - lastFloorChange[player] < 0.5 then return end
+	lastFloorChange[player] = os.clock()
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	-- which museum (and floor) is the player standing in?
+	for owner, museum in pairs(museums) do
+		local floor = museum.Parent and GameConfig.GetMuseumFloor(museum, root.Position)
+		if floor then
+			local target = floor + direction
+			local data = PlayerData.Get(owner)
+			if not data or target < 1 or target > #GameConfig.FloorPrices then return end
+			if data.UnlockedFloors[tostring(target)] then
+				player.Character:PivotTo(arrivalFor(museum, target))
+			elseif player ~= owner then
+				messageRemote:FireClient(player, owner.DisplayName .. " hasn't opened floor " .. target .. " yet.", false)
+			elseif PlayerData.SpendMoney(owner, GameConfig.FloorPrices[target]) then
+				PlayerData.UnlockFloor(owner, target)
+				publishFloors(owner, museum)
+				refreshAllSlots(owner)
+				messageRemote:FireClient(owner, "Floor " .. target .. " unlocked!", true)
+				player.Character:PivotTo(arrivalFor(museum, target))
+			else
+				messageRemote:FireClient(player, "You need " .. ArtifactData.FormatMoney(GameConfig.FloorPrices[target]) .. " to open floor " .. target .. ".", false)
+			end
+			return
+		end
+	end
+end)
+Players.PlayerRemoving:Connect(function(player)
+	lastFloorChange[player] = nil
+end)
+
+print("MuseumManager ready: " .. SLOT_COUNT .. " display slots, floor arrows and the art dealer")

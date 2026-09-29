@@ -4,6 +4,8 @@
 --     player's museum, so visitors can see your collection too)
 --   * the Display window: pick a meme from your inventory to put on a slot, or take it back
 --   * the Alien Art Dealer window: sell memes for cash
+--   * up/down arrows on the left while you're inside a museum, to change floors
+--     (the up arrow also buys the next floor in your own museum)
 -- Slot prompts only show up in your own museum.
 
 local Players = game:GetService("Players")
@@ -11,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
 local C = UIKit.Colors
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -21,6 +24,7 @@ local placeRemote = remotes:WaitForChild("PlaceInSlot")
 local takeRemote = remotes:WaitForChild("TakeFromSlot")
 local openDealerRemote = remotes:WaitForChild("OpenDealer")
 local sellRemote = remotes:WaitForChild("SellArtifacts")
+local floorRemote = remotes:WaitForChild("ChangeFloor")
 
 local player = Players.LocalPlayer
 local museumsFolder = workspace:WaitForChild("Museums")
@@ -311,4 +315,55 @@ end)
 inventoryChangedRemote.OnClientEvent:Connect(function()
 	if dealerWindow.Visible then refreshDealer() end
 	if displayWindow.Visible then refreshDisplay() end
+end)
+
+---------------------------------------------------------------------
+-- FLOOR ARROWS (only while you're inside a museum)
+---------------------------------------------------------------------
+local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(96, 196), Position = UDim2.fromOffset(16, 270), Color = C.Panel, Radius = 20})
+floorPanel.Visible = false
+local upButton = UIKit.button(floorPanel, "▲", {Size = UDim2.fromOffset(72, 60), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sky, Radius = 16})
+local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -10, 0, 22), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0})
+local upPrice = UIKit.label(floorPanel, "", {Size = UDim2.new(1, -8, 0, 16), Position = UDim2.new(0.5, 0, 0, 72), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Stroke = 0})
+local downButton = UIKit.button(floorPanel, "▼", {Size = UDim2.fromOffset(72, 60), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), Color = C.Violet, Radius = 16})
+for _, b in ipairs({upButton, downButton}) do
+	local arrow = b:FindFirstChild("Label")
+	if arrow then arrow.Font = Enum.Font.GothamBlack end
+end
+
+local function currentMuseumFloor()
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then return nil end
+	for _, museum in ipairs(museumsFolder:GetChildren()) do
+		local floor = GameConfig.GetMuseumFloor(museum, root.Position)
+		if floor then return museum, floor end
+	end
+	return nil
+end
+
+upButton.MouseButton1Click:Connect(function() floorRemote:FireServer(1) end)
+downButton.MouseButton1Click:Connect(function() floorRemote:FireServer(-1) end)
+
+task.spawn(function()
+	local topFloor = #GameConfig.FloorPrices
+	while true do
+		local museum, floor = currentMuseumFloor()
+		floorPanel.Visible = museum ~= nil
+		if museum then
+			local opened = string.split(museum:GetAttribute("UnlockedFloors") or "1", ",")
+			local owned = museum:GetAttribute("OwnerUserId") == player.UserId
+			local nextOpen = table.find(opened, tostring(floor + 1)) ~= nil
+			floorLabel.Text = "FLOOR " .. floor
+			upButton.Visible = floor < topFloor and (nextOpen or owned)
+			downButton.Visible = floor > 1
+			if upButton.Visible and not nextOpen then
+				upPrice.Text = "🔒 " .. ArtifactData.FormatMoney(GameConfig.FloorPrices[floor + 1])
+				upButton.BackgroundColor3 = C.Coral
+			else
+				upPrice.Text = ""
+				upButton.BackgroundColor3 = C.Sky
+			end
+		end
+		task.wait(0.25)
+	end
 end)
