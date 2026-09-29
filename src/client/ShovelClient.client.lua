@@ -208,28 +208,27 @@ end)
 ---------------------------------------------------------------------
 -- SHOVEL POSE + DIG ANIMATION (for every player's character on this screen)
 -- The real tool is hidden on this screen. A copy of the shovel is placed exactly where the
--- pose wants it every frame, both arms reach for its shaft with IK (so it's held with two
--- hands), and the torso leans and twists with the swing. Other players' swings arrive
--- through ShovelSwingFx, so everyone sees everyone dig.
+-- pose wants it every frame, the right hand holds its grip with IK (one-handed), and the
+-- torso leans and twists with the swing. The blade is never allowed to sink into the ground.
+-- Other players' swings arrive through ShovelSwingFx, so everyone sees everyone dig.
 ---------------------------------------------------------------------
 local Debris = game:GetService("Debris")
 local ShovelModels = require(ReplicatedStorage:WaitForChild("ShovelModels"))
 local swingFxRemote = remotes:WaitForChild("ShovelSwingFx")
 
 -- Pose values, all relative to the HumanoidRootPart (+X right, +Y up, -Z forward):
--- Hand  = where the LEFT hand holds the top of the grip (studs). The right hand holds the
---         shaft a little lower down, so the shovel sits on the right side of the body.
+-- Hand  = where the right hand holds the grip (studs); the left arm stays free
 -- Tilt  = shaft angle from straight down, degrees (+ = blade pushed forward, 90 = level)
 -- Turn  = shovel yaw, degrees (+ = swings to the left, - = to the right)
 -- Lean  = torso pitch (+ = bend forward), Twist = torso yaw (+ = turn left)
-local IDLE = {Hand = Vector3.new(0.15, 0.85, -1.05), Tilt = 22, Turn = -12, Lean = 4, Twist = 6}
+local IDLE = {Hand = Vector3.new(1.05, 0, -0.55), Tilt = 55, Turn = -10, Lean = 0, Twist = 0}
 local SWING = {
-	{0.00, IDLE.Hand, 22, -12, 4, 6},
-	{0.26, Vector3.new(0.15, 1.85, -0.65), -6, -8, -10, 12},   -- wind up: lift it high, lean back
-	{0.44, Vector3.new(0.25, 0.3, -1.3), 32, -6, 24, 0},       -- strike: drive the blade into the dirt
-	{0.60, Vector3.new(0.3, 0.45, -1.05), 66, -12, 14, -6},    -- lever: pry the dirt up
-	{0.78, Vector3.new(0.6, 1.3, -0.85), 82, -60, 4, -30},     -- toss it over the right shoulder
-	{1.00, IDLE.Hand, 22, -12, 4, 6},
+	{0.00, IDLE.Hand, 55, -10, 0, 0},                          -- carried at the side, blade forward
+	{0.26, Vector3.new(1.0, 0.9, 0.05), 25, -8, -8, 12},       -- wind up: pull it back and up
+	{0.44, Vector3.new(0.9, 0.15, -1.2), 40, -4, 22, -4},      -- strike: blade meets the dirt in front
+	{0.60, Vector3.new(0.95, -0.1, -1.0), 78, -10, 14, -8},    -- lever: pry the dirt up
+	{0.78, Vector3.new(1.3, 1.1, -0.6), 95, -65, 2, -30},      -- toss it off to the right
+	{1.00, IDLE.Hand, 55, -10, 0, 0},
 }
 local STRIKE_TIME = 0.44
 local TOSS_TIME = 0.78
@@ -262,9 +261,9 @@ end
 local function idlePose(clock)
 	local breathe = math.sin(clock * 2.2)
 	return {
-		Hand = IDLE.Hand + Vector3.new(0, breathe * 0.05, 0),
-		Tilt = IDLE.Tilt + breathe * 1.5, Turn = IDLE.Turn,
-		Lean = IDLE.Lean + breathe * 0.8, Twist = IDLE.Twist,
+		Hand = IDLE.Hand + Vector3.new(0, breathe * 0.04, 0),
+		Tilt = IDLE.Tilt + breathe * 2, Turn = IDLE.Turn,
+		Lean = IDLE.Lean + breathe * 0.6, Twist = IDLE.Twist,
 	}
 end
 
@@ -317,8 +316,8 @@ local function createRig(character, tool)
 		RU = character:FindFirstChild("RightUpperArm"), RH = character:FindFirstChild("RightHand"),
 		LU = character:FindFirstChild("LeftUpperArm"), LH = character:FindFirstChild("LeftHand"),
 	}
-	-- the two-handed pose needs an R15 body; R6 characters keep Roblox's default hold
-	if not (humanoid and root and upperTorso and parts.RU and parts.RH and parts.LU and parts.LH) then return nil end
+	-- the pose needs an R15 body; R6 characters keep Roblox's default hold
+	if not (humanoid and root and upperTorso and parts.RU and parts.RH) then return nil end
 	local def = GameConfig.GetShovel(tool:GetAttribute("ShovelId"))
 	if not def then return nil end
 
@@ -327,6 +326,7 @@ local function createRig(character, tool)
 	local handle = model:FindFirstChild("Handle")
 	local puppet = {}
 	local bladePart
+	local tipZ = 0
 	for _, piece in ipairs(model:GetChildren()) do
 		if piece:IsA("BasePart") and piece ~= handle then
 			for _, c in ipairs(piece:GetChildren()) do
@@ -338,6 +338,13 @@ local function createRig(character, tool)
 			piece.CanTouch = false
 			table.insert(puppet, {Part = piece, Rel = handle.CFrame:ToObjectSpace(piece.CFrame)})
 			if piece.Name == "Blade" or piece.Name == "DrillTip" then bladePart = piece end
+			-- lowest point of the shovel along its shaft (used to keep the blade out of the ground)
+			local rel = handle.CFrame:ToObjectSpace(piece.CFrame)
+			local h = piece.Size / 2
+			for _, corner in ipairs({Vector3.new(h.X, h.Y, h.Z), Vector3.new(-h.X, h.Y, h.Z), Vector3.new(h.X, -h.Y, h.Z), Vector3.new(-h.X, -h.Y, h.Z),
+				Vector3.new(h.X, h.Y, -h.Z), Vector3.new(-h.X, h.Y, -h.Z), Vector3.new(h.X, -h.Y, -h.Z), Vector3.new(-h.X, -h.Y, -h.Z)}) do
+				tipZ = math.min(tipZ, (rel * corner).Z)
+			end
 		end
 	end
 	local holder = Instance.new("Model")
@@ -352,25 +359,31 @@ local function createRig(character, tool)
 	end
 
 	local rightTarget = newAttachment(root, "ShovelRightHand")
-	local leftTarget = newAttachment(root, "ShovelLeftHand")
-	-- poles keep the elbows bending down and out, like a real person holding a shovel
+	-- pole keeps the elbow bending down and out, like a relaxed arm
 	local rightPole = newAttachment(root, "ShovelRightElbow")
-	rightPole.Position = Vector3.new(2.2, -1.2, 0.6)
-	local leftPole = newAttachment(root, "ShovelLeftElbow")
-	leftPole.Position = Vector3.new(-2.2, -1.2, 0.6)
+	rightPole.Position = Vector3.new(2.4, -1.4, 0.8)
 	local rightIK = newArmIK(humanoid, "ShovelRightArm", parts.RU, parts.RH, rightTarget, rightPole)
-	local leftIK = newArmIK(humanoid, "ShovelLeftArm", parts.LU, parts.LH, leftTarget, leftPole)
+
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	rayParams.IgnoreWater = true
+	local ignore = {puppetFolder}
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr.Character then table.insert(ignore, plr.Character) end
+	end
+	rayParams.FilterDescendantsInstances = ignore
 
 	local waist = upperTorso:FindFirstChild("Waist")
 	local rig = {
 		Tool = tool, Root = root, Puppet = puppet, Blade = bladePart or (puppet[#puppet] and puppet[#puppet].Part),
-		TopZ = tool:GetAttribute("TopHoldZ") or 1.3,
-		LowZ = tool:GetAttribute("LowHoldZ") or 0.5,
-		RightTarget = rightTarget, LeftTarget = leftTarget,
+		HoldZ = (tool:GetAttribute("TopHoldZ") or 1.3) - 0.12, -- just under the grip
+		TipZ = tipZ,
+		RightTarget = rightTarget,
 		Waist = waist and waist:IsA("Motor6D") and waist or nil,
 		WaistC0 = waist and waist:IsA("Motor6D") and waist.C0 or nil,
 		SwingStart = nil, SwingLength = 0.6, Tossed = true,
-		Cleanup = {holder, rightTarget, leftTarget, rightPole, leftPole, rightIK, leftIK},
+		RayParams = rayParams,
+		Cleanup = {holder, rightTarget, rightPole, rightIK},
 	}
 	rigs[character] = rig
 	return rig
@@ -430,11 +443,29 @@ local function poseRig(character, rig, clock)
 	end
 
 	-- where the shovel goes (in root space): rotate the upright shovel by tilt and turn,
-	-- then slide it along its shaft so the top of the grip sits exactly on pose.Hand
+	-- then slide it along its shaft so the grip sits exactly in the hand
 	local rotation = CFrame.Angles(0, math.rad(pose.Turn), 0) * CFrame.Angles(math.rad(pose.Tilt), 0, 0) * UPRIGHT
 	local up = rotation.ZVector
-	local origin = pose.Hand - up * rig.TopZ
+	local hand = pose.Hand
+	local origin = hand - up * rig.HoldZ
 	local shovelCF = rig.Root.CFrame * CFrame.new(origin) * rotation
+
+	-- keep the blade out of the ground: if its lowest point is below the surface under it,
+	-- lift the shovel (and the hand holding it) just enough
+	-- (the ray starts at hand height above the tip, which is always in open air, even in tunnels)
+	local tip = (shovelCF * CFrame.new(0, 0, rig.TipZ)).Position
+	local handY = (rig.Root.CFrame * hand).Y
+	local startY = math.max(handY, tip.Y + 0.5)
+	local hit = workspace:Raycast(Vector3.new(tip.X, startY, tip.Z), Vector3.new(0, -(startY - tip.Y) - 3, 0), rig.RayParams)
+	if hit then
+		local lift = (hit.Position.Y + 0.08) - tip.Y
+		if lift > 0 then
+			local liftLocal = rig.Root.CFrame:VectorToObjectSpace(Vector3.new(0, lift, 0))
+			hand += liftLocal
+			origin += liftLocal
+			shovelCF = rig.Root.CFrame * CFrame.new(origin) * rotation
+		end
+	end
 
 	local parts, cframes = {}, {}
 	for i, p in ipairs(rig.Puppet) do
@@ -443,8 +474,7 @@ local function poseRig(character, rig, clock)
 	end
 	workspace:BulkMoveTo(parts, cframes, Enum.BulkMoveMode.FireCFrameChanged)
 
-	rig.LeftTarget.Position = pose.Hand -- left hand on top of the grip
-	rig.RightTarget.Position = origin + up * rig.LowZ -- right hand lower on the shaft
+	rig.RightTarget.Position = hand
 	if rig.Waist then
 		rig.Waist.C0 = rig.WaistC0 * CFrame.Angles(math.rad(-pose.Lean), math.rad(pose.Twist), 0)
 	end
