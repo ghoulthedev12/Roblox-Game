@@ -13,6 +13,7 @@ local function install(parent, name, className, source)
 	count += 1
 end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("DataManager") if old then old:Destroy() print("Removed DataManager") end end
+do local old = game:GetService("ServerScriptService"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
 install(game:GetService("ReplicatedStorage"), "ArtifactData", "ModuleScript", [=[
 -- ArtifactData (ModuleScript in ReplicatedStorage)
 -- The ONE list the whole game reads from: rarities, the 20 dig areas, and every artifact.
@@ -509,6 +510,9 @@ local GameConfig = {}
 -- Money you start with
 GameConfig.StartingMoney = 0
 
+-- How fast players walk (Roblox default is 16, so 32 = 2x speed, 24 = 1.5x)
+GameConfig.WalkSpeed = 32
+
 -- Price of every slot, in order (slot 1 to 24). 0 = free from the start.
 GameConfig.SlotPrices = {
 	-- Floor 1 (slots 1-8)
@@ -741,6 +745,1018 @@ function GameConfig.FillDigTerrain(terrain, world)
 end
 
 return GameConfig
+]=])
+install(game:GetService("ReplicatedStorage"), "ShovelModels", "ModuleScript", [=[
+-- ShovelModels (ModuleScript in ReplicatedStorage)
+-- Builds a detailed, individually styled model for every shovel.
+-- World 1's shovels each have a hand-made cartoon design (see CUSTOM below); any other
+-- shovel is built from its STYLES entry. The server uses it for the tools and the shop
+-- displays, the client uses it to draw 3D shovel icons in the UI.
+
+local SCALE = 0.68 -- overall size of the shovels
+local ALONG_Z = CFrame.Angles(0, math.rad(90), 0) -- points a cylinder along the shaft
+
+local function rgb(r, g, b)
+	return Color3.fromRGB(r, g, b)
+end
+
+---------------------------------------------------------------------
+-- LOOK OF EACH SHOVEL
+-- Blade shapes: "Spade" (classic), "Scoop" (round toy), "Spoon", "Trowel"
+-- Grip: "D" (D-shaped handle) or "T" (T-bar handle)
+---------------------------------------------------------------------
+local STYLES = {
+	RustyShovel = {
+		Shape = "Spade", Grip = "D",
+		Shaft = rgb(92, 64, 42), ShaftMat = "Wood",
+		Blade = rgb(150, 82, 45), BladeMat = "CorrodedMetal",
+		Metal = rgb(105, 68, 45), MetalMat = "CorrodedMetal",
+		GripColor = rgb(75, 75, 78), GripMat = "Fabric",
+		Tape = true, Rust = true,
+	},
+	PlasticShovel = {
+		Shape = "Scoop", Grip = "T",
+		Shaft = rgb(40, 120, 255), ShaftMat = "SmoothPlastic",
+		Blade = rgb(255, 205, 40), BladeMat = "SmoothPlastic", Shine = 0.12,
+		Metal = rgb(255, 75, 75), MetalMat = "SmoothPlastic",
+		GripColor = rgb(255, 75, 75), GripMat = "SmoothPlastic",
+	},
+	GardenSpade = {
+		Shape = "Spade", Grip = "D",
+		Shaft = rgb(70, 130, 60), ShaftMat = "SmoothPlastic",
+		Blade = rgb(165, 170, 178), BladeMat = "Metal", Shine = 0.15,
+		Metal = rgb(55, 110, 50), MetalMat = "SmoothPlastic",
+		GripColor = rgb(45, 90, 40), GripMat = "SmoothPlastic",
+		Rivets = true,
+	},
+	IronShovel = {
+		Shape = "Spade", Grip = "D",
+		Shaft = rgb(170, 125, 82), ShaftMat = "Wood",
+		Blade = rgb(118, 122, 132), BladeMat = "Metal", Shine = 0.2,
+		Metal = rgb(58, 60, 66), MetalMat = "Metal",
+		GripColor = rgb(30, 30, 32), GripMat = "Fabric",
+		Rivets = true,
+	},
+	SteelSpade = {
+		Shape = "Spade", Grip = "T",
+		Shaft = rgb(45, 50, 60), ShaftMat = "Metal",
+		Blade = rgb(190, 200, 215), BladeMat = "Metal", Shine = 0.35,
+		Metal = rgb(120, 140, 170), MetalMat = "Metal",
+		GripColor = rgb(20, 20, 24), GripMat = "Fabric",
+		Rivets = true,
+	},
+	GoldenShovel = {
+		Shape = "Spade", Grip = "D",
+		Shaft = rgb(35, 32, 30), ShaftMat = "Wood",
+		Blade = rgb(255, 196, 55), BladeMat = "Metal", Shine = 0.4,
+		Metal = rgb(255, 205, 80), MetalMat = "Metal",
+		GripColor = rgb(130, 25, 35), GripMat = "Fabric",
+		Rivets = true, Sparkles = rgb(255, 220, 120),
+	},
+	GamerShovel = {
+		Shape = "Spade", Grip = "T",
+		Shaft = rgb(24, 24, 30), ShaftMat = "Metal",
+		Blade = rgb(30, 30, 40), BladeMat = "Metal", Shine = 0.25,
+		Metal = rgb(40, 40, 50), MetalMat = "Metal",
+		GripColor = rgb(15, 15, 18), GripMat = "Fabric",
+		Edge = rgb(255, 60, 200), Glow = rgb(255, 60, 200),
+		Strips = {rgb(255, 60, 200), rgb(0, 225, 255), rgb(90, 255, 120)},
+	},
+	PixelSpade = {
+		Shape = "Spade", Grip = "T",
+		Shaft = rgb(60, 60, 200), ShaftMat = "SmoothPlastic",
+		Blade = rgb(80, 200, 255), BladeMat = "SmoothPlastic",
+		Metal = rgb(255, 255, 255), MetalMat = "SmoothPlastic",
+		GripColor = rgb(255, 80, 80), GripMat = "SmoothPlastic",
+		Pixels = true,
+	},
+	RainbowShovel = {
+		Shape = "Spade", Grip = "D",
+		Shaft = rgb(245, 245, 250), ShaftMat = "SmoothPlastic",
+		Blade = rgb(255, 120, 220), BladeMat = "Glass", Shine = 0.3,
+		Metal = rgb(255, 255, 255), MetalMat = "Metal",
+		GripColor = rgb(120, 90, 255), GripMat = "SmoothPlastic",
+		Strips = {rgb(255, 60, 60), rgb(255, 200, 40), rgb(80, 220, 120), rgb(60, 140, 255)},
+		Glow = rgb(255, 150, 230), Sparkles = rgb(255, 200, 255),
+	},
+	DiamondShovel = {
+		Shape = "Spade", Grip = "D",
+		Shaft = rgb(235, 238, 245), ShaftMat = "Metal",
+		Blade = rgb(150, 240, 255), BladeMat = "Glass", Shine = 0.45, BladeTransparency = 0.2,
+		Metal = rgb(205, 210, 225), MetalMat = "Metal",
+		GripColor = rgb(60, 110, 160), GripMat = "Fabric",
+		Core = rgb(120, 240, 255), Glow = rgb(120, 240, 255), Sparkles = rgb(200, 250, 255),
+	},
+	FidgetDrill = {
+		Shape = "Trowel", Grip = "T",
+		Shaft = rgb(40, 40, 45), ShaftMat = "Metal",
+		Blade = rgb(255, 140, 40), BladeMat = "Metal", Shine = 0.3,
+		Metal = rgb(255, 140, 40), MetalMat = "Metal",
+		GripColor = rgb(20, 20, 20), GripMat = "Fabric",
+		Rings = rgb(255, 140, 40),
+	},
+	LaserExcavator = {
+		Shape = "Spade", Grip = "T",
+		Shaft = rgb(240, 242, 248), ShaftMat = "SmoothPlastic",
+		Blade = rgb(255, 50, 50), BladeMat = "Neon", BladeTransparency = 0.15,
+		Metal = rgb(55, 58, 68), MetalMat = "Metal",
+		GripColor = rgb(40, 40, 48), GripMat = "SmoothPlastic",
+		Edge = rgb(255, 180, 180), Glow = rgb(255, 60, 60), Field = rgb(255, 60, 60),
+	},
+	PlasmaSpade = {
+		Shape = "Spade", Grip = "T",
+		Shaft = rgb(30, 34, 50), ShaftMat = "Metal",
+		Blade = rgb(80, 140, 255), BladeMat = "Neon", BladeTransparency = 0.2,
+		Metal = rgb(120, 180, 255), MetalMat = "Metal",
+		GripColor = rgb(20, 22, 30), GripMat = "Fabric",
+		Glow = rgb(80, 140, 255), Field = rgb(120, 180, 255), Sparkles = rgb(160, 200, 255),
+	},
+	HoverScoop = {
+		Shape = "Scoop", Grip = "T",
+		Shaft = rgb(235, 240, 245), ShaftMat = "SmoothPlastic",
+		Blade = rgb(60, 255, 200), BladeMat = "Glass", Shine = 0.3, BladeTransparency = 0.15,
+		Metal = rgb(60, 255, 200), MetalMat = "Neon",
+		GripColor = rgb(40, 45, 55), GripMat = "SmoothPlastic",
+		Glow = rgb(60, 255, 200), Rings = rgb(60, 255, 200),
+	},
+	QuantumSpoon = {
+		Shape = "Spoon", Grip = "T",
+		Shaft = rgb(30, 22, 50), ShaftMat = "Metal",
+		Blade = rgb(170, 90, 255), BladeMat = "ForceField",
+		Metal = rgb(200, 150, 255), MetalMat = "Neon",
+		GripColor = rgb(25, 18, 40), GripMat = "Fabric",
+		Core = rgb(200, 140, 255), Glow = rgb(170, 90, 255), Rings = rgb(200, 150, 255), Sparkles = rgb(220, 180, 255),
+	},
+	DialUpDigger = {
+		Shape = "Spade", Grip = "D",
+		Shaft = rgb(215, 205, 175), ShaftMat = "SmoothPlastic",
+		Blade = rgb(200, 190, 160), BladeMat = "SmoothPlastic",
+		Metal = rgb(120, 115, 100), MetalMat = "SmoothPlastic",
+		GripColor = rgb(90, 85, 75), GripMat = "SmoothPlastic",
+		Edge = rgb(90, 255, 120), Pixels = true,
+	},
+	BlackHoleShovel = {
+		Shape = "Spoon", Grip = "D",
+		Shaft = rgb(15, 12, 20), ShaftMat = "Metal",
+		Blade = rgb(10, 5, 20), BladeMat = "Glass", Shine = 0.5,
+		Metal = rgb(140, 60, 255), MetalMat = "Neon",
+		GripColor = rgb(10, 10, 12), GripMat = "Fabric",
+		Core = rgb(140, 60, 255), Glow = rgb(140, 60, 255), Rings = rgb(255, 150, 60),
+	},
+	CosmicTrowel = {
+		Shape = "Trowel", Grip = "T",
+		Shaft = rgb(20, 24, 50), ShaftMat = "Metal",
+		Blade = rgb(120, 200, 255), BladeMat = "Glass", Shine = 0.35, BladeTransparency = 0.1,
+		Metal = rgb(255, 220, 140), MetalMat = "Metal",
+		GripColor = rgb(20, 24, 50), GripMat = "Fabric",
+		Core = rgb(255, 255, 255), Glow = rgb(120, 200, 255), Sparkles = rgb(255, 255, 255),
+	},
+	VoidExcavator = {
+		Shape = "Spade", Grip = "T",
+		Shaft = rgb(20, 10, 30), ShaftMat = "Metal",
+		Blade = rgb(110, 40, 160), BladeMat = "ForceField",
+		Metal = rgb(110, 40, 160), MetalMat = "Neon",
+		GripColor = rgb(15, 8, 22), GripMat = "Fabric",
+		Core = rgb(60, 0, 90), Edge = rgb(200, 120, 255), Glow = rgb(150, 60, 220), Sparkles = rgb(180, 100, 255),
+	},
+	AlgorithmTrowel = {
+		Shape = "Trowel", Grip = "D",
+		Shaft = rgb(30, 26, 20), ShaftMat = "Metal",
+		Blade = rgb(255, 205, 70), BladeMat = "Metal", Shine = 0.4,
+		Metal = rgb(255, 225, 120), MetalMat = "Metal",
+		GripColor = rgb(40, 30, 15), GripMat = "Fabric",
+		Edge = rgb(255, 240, 150), Strips = {rgb(255, 230, 120), rgb(255, 230, 120)},
+		Glow = rgb(255, 210, 80), Sparkles = rgb(255, 240, 170), Rivets = true,
+	},
+	-- World 1 Abyss shovels: industrial, desaturated, built for bedrock
+	TectonicAuger = {
+		Shape = "Trowel", Grip = "T",
+		Shaft = rgb(58, 60, 64), ShaftMat = "CorrodedMetal",
+		Blade = rgb(150, 154, 160), BladeMat = "Foil", Shine = 0.25,
+		Metal = rgb(92, 95, 100), MetalMat = "Metal",
+		GripColor = rgb(28, 28, 30), GripMat = "Fabric",
+		Rings = rgb(170, 160, 140), Rivets = true,
+	},
+	SingularitySpade = {
+		Shape = "Spade", Grip = "D",
+		Shaft = rgb(30, 31, 34), ShaftMat = "Metal",
+		Blade = rgb(52, 54, 60), BladeMat = "Foil", Shine = 0.45,
+		Metal = rgb(140, 144, 150), MetalMat = "Foil",
+		GripColor = rgb(18, 18, 20), GripMat = "Fabric",
+		Edge = rgb(200, 205, 212), Core = rgb(150, 196, 214), Glow = rgb(150, 196, 214),
+		Sparkles = rgb(190, 215, 225),
+	},
+}
+
+-- A decent look for any shovel that has no style above (e.g. new shovels you add later)
+local function defaultStyle(def)
+	local fancy = def.Material == "Neon" or def.Material == "ForceField" or def.Material == "Glass"
+	return {
+		Shape = "Spade", Grip = "D",
+		Shaft = fancy and rgb(28, 30, 42) or rgb(150, 108, 70), ShaftMat = fancy and "Metal" or "Wood",
+		Blade = def.Color, BladeMat = def.Material or "Metal", Shine = 0.2,
+		Metal = fancy and def.Color or rgb(80, 82, 90), MetalMat = fancy and "Neon" or "Metal",
+		GripColor = rgb(30, 30, 34), GripMat = "Fabric",
+		Glow = fancy and def.Color or nil, Rivets = not fancy,
+	}
+end
+
+---------------------------------------------------------------------
+-- BUILDING HELPERS
+---------------------------------------------------------------------
+local function mat(name)
+	return Enum.Material[name] or Enum.Material.SmoothPlastic
+end
+
+local function newPart(tool, name, size, cframe, color, material, shape)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Size = size
+	p.CFrame = cframe
+	p.Color = color
+	p.Material = mat(material)
+	if shape then p.Shape = shape end
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Massless = true
+	p.CastShadow = p.Material ~= Enum.Material.Neon and p.Material ~= Enum.Material.ForceField
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.Parent = tool
+	return p
+end
+
+local function ellipsoid(tool, name, size, cframe, color, material)
+	local p = newPart(tool, name, size, cframe, color, material)
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Sphere
+	mesh.Parent = p
+	return p
+end
+
+local function cylinderZ(tool, name, length, diameter, z, color, material)
+	return newPart(tool, name, Vector3.new(length, diameter, diameter), CFrame.new(0, 0, z) * ALONG_Z, color, material, Enum.PartType.Cylinder)
+end
+
+-- a round bar from point a to point b
+local function bar(tool, name, a, b, thickness, color, material)
+	local length = (b - a).Magnitude
+	return newPart(tool, name, Vector3.new(thickness, thickness, length), CFrame.lookAt((a + b) / 2, b), color, material)
+end
+
+---------------------------------------------------------------------
+-- BLADES (built in "blade space": 0 = top of the blade, -Z = toward the tip)
+---------------------------------------------------------------------
+local function buildSpade(tool, s, b)
+	local plate = newPart(tool, "Blade", Vector3.new(1.3, 0.08, 1.25), b * CFrame.new(0, 0, -0.62), s.Blade, s.BladeMat)
+	newPart(tool, "BladeTip", Vector3.new(0.92, 0.08, 0.92), b * CFrame.new(0, 0, -1.25) * CFrame.Angles(0, math.rad(45), 0), s.Blade, s.BladeMat)
+	newPart(tool, "LipL", Vector3.new(0.26, 0.08, 1.25), b * CFrame.new(-0.72, 0.06, -0.62) * CFrame.Angles(0, 0, math.rad(-22)), s.Blade, s.BladeMat)
+	newPart(tool, "LipR", Vector3.new(0.26, 0.08, 1.25), b * CFrame.new(0.72, 0.06, -0.62) * CFrame.Angles(0, 0, math.rad(22)), s.Blade, s.BladeMat)
+	-- raised spine down the back of the blade
+	newPart(tool, "Spine", Vector3.new(0.16, 0.07, 1.0), b * CFrame.new(0, 0.07, -0.5), s.Metal, s.MetalMat)
+	-- rolled foot step on top
+	newPart(tool, "FootStep", Vector3.new(1.45, 0.13, 0.13), b, s.Metal, s.MetalMat, Enum.PartType.Cylinder)
+	if s.Edge then
+		newPart(tool, "EdgeL", Vector3.new(0.05, 0.1, 1.2), b * CFrame.new(-0.86, 0.12, -0.62) * CFrame.Angles(0, 0, math.rad(-22)), s.Edge, "Neon")
+		newPart(tool, "EdgeR", Vector3.new(0.05, 0.1, 1.2), b * CFrame.new(0.86, 0.12, -0.62) * CFrame.Angles(0, 0, math.rad(22)), s.Edge, "Neon")
+		newPart(tool, "EdgeTip", Vector3.new(0.7, 0.1, 0.05), b * CFrame.new(0, 0, -1.85), s.Edge, "Neon")
+	end
+	return plate
+end
+
+local function buildScoop(tool, s, b)
+	local bowl = ellipsoid(tool, "Blade", Vector3.new(1.6, 0.14, 1.75), b * CFrame.new(0, 0, -0.85), s.Blade, s.BladeMat)
+	ellipsoid(tool, "BowlRim", Vector3.new(1.7, 0.2, 1.85), b * CFrame.new(0, 0.05, -0.85), s.Blade, s.BladeMat).Transparency = 0.6
+	newPart(tool, "Spine", Vector3.new(0.18, 0.08, 1.1), b * CFrame.new(0, 0.08, -0.55), s.Metal, s.MetalMat)
+	return bowl
+end
+
+local function buildSpoon(tool, s, b)
+	local bowl = ellipsoid(tool, "Blade", Vector3.new(1.35, 0.4, 1.8), b * CFrame.new(0, 0.05, -0.95), s.Blade, s.BladeMat)
+	ellipsoid(tool, "BowlShell", Vector3.new(1.45, 0.3, 1.9), b * CFrame.new(0, 0, -0.95), s.Metal, s.MetalMat).Transparency = 0.5
+	return bowl
+end
+
+local function buildTrowel(tool, s, b)
+	local plate = newPart(tool, "Blade", Vector3.new(1.0, 0.07, 0.7), b * CFrame.new(0, 0, -0.35), s.Blade, s.BladeMat)
+	newPart(tool, "BladeTip", Vector3.new(1.05, 0.07, 1.05), b * CFrame.new(0, 0, -0.95) * CFrame.Angles(0, math.rad(45), 0), s.Blade, s.BladeMat)
+	newPart(tool, "Spine", Vector3.new(0.14, 0.08, 1.4), b * CFrame.new(0, 0.07, -0.75), s.Metal, s.MetalMat)
+	newPart(tool, "Guard", Vector3.new(1.1, 0.14, 0.14), b, s.Metal, s.MetalMat, Enum.PartType.Cylinder)
+	if s.Edge then
+		newPart(tool, "EdgeL", Vector3.new(0.05, 0.1, 1.1), b * CFrame.new(-0.4, 0.06, -1.0) * CFrame.Angles(0, math.rad(-45), 0), s.Edge, "Neon")
+		newPart(tool, "EdgeR", Vector3.new(0.05, 0.1, 1.1), b * CFrame.new(0.4, 0.06, -1.0) * CFrame.Angles(0, math.rad(45), 0), s.Edge, "Neon")
+	end
+	return plate
+end
+
+local BLADES = {Spade = buildSpade, Scoop = buildScoop, Spoon = buildSpoon, Trowel = buildTrowel}
+
+
+---------------------------------------------------------------------
+-- HAND-MADE CARTOON SHOVELS FOR WORLD 1
+-- Tool space: the shaft runs along Z, the grip is at +Z, the blade at -Z.
+-- `k.blade` is "blade space": 0 = top of the blade, -Z = toward the tip, +Y = the front face.
+---------------------------------------------------------------------
+local function kit(tool)
+	local k = {}
+	function k.part(name, size, cf, color, material, shape)
+		return newPart(tool, name, size, cf, color, material or "SmoothPlastic", shape)
+	end
+	function k.ball(name, d, cf, color, material)
+		return newPart(tool, name, Vector3.new(d, d, d), cf, color, material or "SmoothPlastic", Enum.PartType.Ball)
+	end
+	function k.blob(name, size, cf, color, material)
+		return ellipsoid(tool, name, size, cf, color, material or "SmoothPlastic")
+	end
+	function k.rodZ(name, length, diameter, z, color, material) -- round bar on the shaft line
+		return cylinderZ(tool, name, length, diameter, z, color, material or "SmoothPlastic")
+	end
+	function k.rodX(name, length, diameter, cf, color, material) -- round bar across (along X of cf)
+		return newPart(tool, name, Vector3.new(length, diameter, diameter), cf, color, material or "SmoothPlastic", Enum.PartType.Cylinder)
+	end
+	function k.bar(name, a, b, thickness, color, material)
+		return bar(tool, name, a, b, thickness, color, material or "SmoothPlastic")
+	end
+	k.blade = CFrame.new(0, -0.05, -2.7) * CFrame.Angles(math.rad(-14), 0, 0)
+	return k
+end
+
+-- shared pieces ------------------------------------------------------
+local function shaft(k, color, material, diameter)
+	k.rodZ("Shaft", 5, diameter or 0.3, 0.2, color, material)
+end
+
+local function socket(k, color, material)
+	k.rodZ("Socket", 0.9, 0.44, -2.35, color, material)
+	k.rodZ("SocketLip", 0.14, 0.5, -1.95, color, material)
+end
+
+local function dGrip(k, frameColor, frameMat, barColor, barMat)
+	k.bar("GripSideL", Vector3.new(0, 0, 2.55), Vector3.new(-0.5, 0, 3.2), 0.2, frameColor, frameMat)
+	k.bar("GripSideR", Vector3.new(0, 0, 2.55), Vector3.new(0.5, 0, 3.2), 0.2, frameColor, frameMat)
+	k.rodX("GripBar", 1.15, 0.28, CFrame.new(0, 0, 3.22), barColor, barMat)
+end
+
+local function tGrip(k, barColor, barMat, capColor, capMat)
+	k.rodX("TBar", 1.2, 0.3, CFrame.new(0, 0, 2.7), barColor, barMat)
+	k.ball("TCapL", 0.4, CFrame.new(-0.62, 0, 2.7), capColor, capMat)
+	k.ball("TCapR", 0.4, CFrame.new(0.62, 0, 2.7), capColor, capMat)
+end
+
+-- a chunky cartoon spade blade: wide plate, pointed tip, curled-up sides, a foot step
+local function spade(k, color, material, width, stepColor)
+	width = width or 1.7
+	local b = k.blade
+	local plate = k.part("Blade", Vector3.new(width, 0.12, 1.5), b * CFrame.new(0, 0, -0.75), color, material)
+	k.part("BladeTip", Vector3.new(width * 0.72, 0.12, width * 0.72), b * CFrame.new(0, 0, -1.5) * CFrame.Angles(0, math.rad(45), 0), color, material)
+	k.part("LipL", Vector3.new(0.32, 0.12, 1.5), b * CFrame.new(-width / 2 - 0.1, 0.08, -0.75) * CFrame.Angles(0, 0, math.rad(-25)), color, material)
+	k.part("LipR", Vector3.new(0.32, 0.12, 1.5), b * CFrame.new(width / 2 + 0.1, 0.08, -0.75) * CFrame.Angles(0, 0, math.rad(25)), color, material)
+	k.rodX("FootStep", width + 0.3, 0.2, b, stepColor or color, material)
+	return plate
+end
+
+local function light(part, color, range)
+	local l = Instance.new("PointLight")
+	l.Color = color
+	l.Range = range or 6
+	l.Brightness = 0.6
+	l.Parent = part
+end
+
+local CUSTOM = {}
+
+-- Rusty Shovel: taped-up wooden shaft, chipped rusty blade with a bolted-on patch
+CUSTOM.RustyShovel = function(k)
+	local wood, tape, rust = rgb(128, 88, 58), rgb(170, 170, 176), rgb(168, 92, 52)
+	shaft(k, wood, "Wood")
+	dGrip(k, wood, "Wood", rgb(80, 80, 86), "Fabric")
+	k.rodZ("Tape", 0.5, 0.35, 0.4, tape, "Fabric")
+	k.rodZ("Tape", 0.35, 0.35, -1.2, tape, "Fabric")
+	socket(k, rgb(112, 72, 48), "CorrodedMetal")
+	local b = k.blade
+	spade(k, rust, "CorrodedMetal")
+	for i, pos in ipairs({Vector3.new(-0.4, 0.07, -0.5), Vector3.new(0.45, 0.07, -1.05), Vector3.new(-0.15, 0.07, -1.45)}) do
+		k.blob("RustSpot", Vector3.new(0.34 + i * 0.05, 0.03, 0.26), b * CFrame.new(pos), rgb(110, 58, 34))
+	end
+	k.part("Patch", Vector3.new(0.62, 0.05, 0.5), b * CFrame.new(0.35, 0.08, -0.55), rgb(150, 152, 158), "Metal")
+	for _, o in ipairs({Vector3.new(-0.22, 0, -0.18), Vector3.new(0.22, 0, -0.18), Vector3.new(-0.22, 0, 0.18), Vector3.new(0.22, 0, 0.18)}) do
+		k.ball("PatchBolt", 0.1, b * CFrame.new(Vector3.new(0.35, 0.12, -0.55) + o), rgb(200, 200, 205), "Metal")
+	end
+	k.part("Chip", Vector3.new(0.34, 0.14, 0.34), b * CFrame.new(-0.72, 0, -1.28) * CFrame.Angles(0, math.rad(45), 0), rgb(46, 36, 30))
+end
+
+-- Plastic Beach Shovel: chunky toy with a scoop, ball-ended T grip and a bucket charm
+CUSTOM.PlasticShovel = function(k)
+	local blue, red, yellow = rgb(70, 150, 255), rgb(255, 96, 96), rgb(255, 212, 70)
+	shaft(k, blue, "SmoothPlastic", 0.38)
+	tGrip(k, red, "SmoothPlastic", yellow, "SmoothPlastic")
+	socket(k, red, "SmoothPlastic")
+	local b = k.blade
+	local bowl = k.blob("Blade", Vector3.new(2.1, 0.3, 2.3), b * CFrame.new(0, 0, -1.05), yellow)
+	bowl.Reflectance = 0.1
+	k.blob("ScoopRim", Vector3.new(2.25, 0.16, 2.45), b * CFrame.new(0, -0.06, -1.05), red)
+	k.ball("Star", 0.3, b * CFrame.new(0.45, 0.16, -0.7), rgb(255, 255, 255))
+	-- little bucket charm hanging off the shaft
+	k.part("CharmString", Vector3.new(0.04, 0.56, 0.04), CFrame.new(0, -0.47, 1.6), rgb(255, 255, 255))
+	k.part("Bucket", Vector3.new(0.4, 0.5, 0.5), CFrame.new(0, -0.95, 1.6) * CFrame.Angles(0, 0, math.rad(90)), rgb(96, 226, 190), "SmoothPlastic", Enum.PartType.Cylinder)
+end
+
+-- Garden Spade: green painted shaft, shiny pointed blade with little painted flowers
+CUSTOM.GardenSpade = function(k)
+	local green, dark = rgb(90, 176, 96), rgb(58, 128, 66)
+	shaft(k, green, "SmoothPlastic")
+	for z = -1.4, 1.6, 0.75 do
+		k.rodZ("Stripe", 0.12, 0.32, z, rgb(246, 247, 252))
+	end
+	dGrip(k, dark, "SmoothPlastic", dark, "SmoothPlastic")
+	socket(k, dark, "SmoothPlastic")
+	local b = k.blade
+	spade(k, rgb(200, 206, 216), "Metal", 1.55, dark).Reflectance = 0.15
+	for _, spot in ipairs({Vector3.new(-0.35, 0.09, -0.55), Vector3.new(0.35, 0.09, -1.05)}) do
+		k.ball("FlowerCore", 0.22, b * CFrame.new(spot), rgb(255, 212, 70))
+		for i = 0, 4 do
+			local a = math.rad(i * 72)
+			k.ball("Petal", 0.2, b * CFrame.new(spot + Vector3.new(math.cos(a) * 0.19, -0.02, math.sin(a) * 0.19)), rgb(255, 140, 190))
+		end
+	end
+	k.blob("Leaf", Vector3.new(0.55, 0.07, 0.28), CFrame.new(0.2, 0.12, -1.6) * CFrame.Angles(0, math.rad(30), math.rad(20)), rgb(110, 200, 110))
+end
+
+-- Iron Shovel: sturdy dark wood, leather wrap, iron bands, riveted heavy blade
+CUSTOM.IronShovel = function(k)
+	local wood, iron = rgb(98, 68, 46), rgb(76, 78, 86)
+	shaft(k, wood, "Wood", 0.33)
+	k.rodZ("LeatherWrap", 1.1, 0.38, 1.75, rgb(128, 84, 52), "Fabric")
+	for _, z in ipairs({0.6, -0.9}) do
+		k.rodZ("IronBand", 0.16, 0.4, z, iron, "Metal")
+	end
+	dGrip(k, iron, "Metal", wood, "Wood")
+	socket(k, iron, "Metal")
+	local b = k.blade
+	k.part("BladeBacking", Vector3.new(1.95, 0.08, 1.7), b * CFrame.new(0, -0.05, -0.8), iron, "Metal")
+	spade(k, rgb(128, 132, 142), "Metal", 1.75, iron).Reflectance = 0.1
+	for i = -2, 2 do
+		k.ball("Rivet", 0.14, b * CFrame.new(i * 0.34, 0.08, -0.18), rgb(190, 192, 198), "Metal")
+	end
+end
+
+-- Steel Spade: sleek dark shaft, polished pointed blade with a sky-blue racing stripe
+CUSTOM.SteelSpade = function(k)
+	local dark, steel, sky = rgb(52, 58, 72), rgb(206, 214, 228), rgb(92, 186, 255)
+	shaft(k, dark, "Metal", 0.28)
+	k.rodZ("Grip", 1, 0.34, 1.9, rgb(30, 32, 40), "Fabric")
+	tGrip(k, rgb(30, 32, 40), "Fabric", steel, "Metal")
+	socket(k, steel, "Metal")
+	local b = k.blade
+	local plate = spade(k, steel, "Metal", 1.5)
+	plate.Reflectance = 0.3
+	k.part("RacingStripe", Vector3.new(0.2, 0.13, 1.7), b * CFrame.new(0, 0.02, -0.9), sky)
+	k.part("TipGuard", Vector3.new(0.5, 0.14, 0.5), b * CFrame.new(0, 0.01, -1.72) * CFrame.Angles(0, math.rad(45), 0), sky)
+	k.ball("StatusLight", 0.16, CFrame.new(0, 0.22, -2.1), sky, "Neon")
+end
+
+-- Golden Shovel: gold everything, a jeweled socket, a little crown on the foot step
+CUSTOM.GoldenShovel = function(k)
+	local gold, deep = rgb(255, 202, 72), rgb(214, 156, 40)
+	shaft(k, gold, "Metal", 0.3)
+	for _, z in ipairs({1.9, 1.5}) do
+		k.rodZ("Wrap", 0.2, 0.34, z, rgb(150, 30, 50), "Fabric")
+	end
+	dGrip(k, gold, "Metal", rgb(150, 30, 50), "Fabric")
+	socket(k, deep, "Metal")
+	local gems = {rgb(230, 50, 80), rgb(70, 130, 255), rgb(60, 205, 130)}
+	for i, color in ipairs(gems) do
+		local a = math.rad(i * 120)
+		k.ball("Gem", 0.2, CFrame.new(math.cos(a) * 0.22, math.sin(a) * 0.22, -2.3), color, "Glass")
+	end
+	local b = k.blade
+	spade(k, gold, "Metal", 1.7, deep).Reflectance = 0.35
+	for i = -1, 1 do
+		k.part("CrownSpike", Vector3.new(0.18, 0.12, 0.3), b * CFrame.new(i * 0.45, 0.05, 0.22) * CFrame.Angles(0, math.rad(45), 0), deep, "Metal")
+		k.ball("CrownJewel", 0.12, b * CFrame.new(i * 0.45, 0.1, 0.35), gems[i + 2], "Glass")
+	end
+	local sparkles = Instance.new("ParticleEmitter")
+	sparkles.Rate = 4
+	sparkles.Lifetime = NumberRange.new(0.6, 1.2)
+	sparkles.Speed = NumberRange.new(0.3, 0.8)
+	sparkles.SpreadAngle = Vector2.new(180, 180)
+	sparkles.LightEmission = 0.6
+	sparkles.Color = ColorSequence.new(rgb(255, 230, 150))
+	sparkles.Parent = k.ball("SparkleSource", 0.05, b * CFrame.new(0, 0.1, -0.8), gold)
+end
+
+-- RGB Gamer Shovel: black with RGB strips, a controller grip and WASD keycaps on the blade
+CUSTOM.GamerShovel = function(k)
+	local black = rgb(30, 30, 38)
+	shaft(k, black, "Metal", 0.3)
+	local strips = {rgb(230, 90, 200), rgb(80, 200, 230), rgb(110, 225, 130)}
+	for i, color in ipairs(strips) do
+		local a = math.rad(i * 120)
+		k.part("RGBStrip", Vector3.new(0.05, 0.05, 3), CFrame.new(math.cos(a) * 0.15, math.sin(a) * 0.15, 0.1), color, "Neon")
+	end
+	-- controller-shaped grip with thumbsticks and buttons
+	k.blob("Controller", Vector3.new(1.5, 0.4, 0.7), CFrame.new(0, 0, 2.8), rgb(44, 44, 54))
+	k.ball("StickL", 0.2, CFrame.new(-0.35, 0.2, 2.8), rgb(120, 122, 132))
+	for i, color in ipairs({rgb(110, 225, 130), rgb(230, 90, 110), rgb(80, 160, 240), rgb(240, 200, 80)}) do
+		local a = math.rad(i * 90)
+		k.ball("Button", 0.11, CFrame.new(0.38 + math.cos(a) * 0.12, 0.2, 2.8 + math.sin(a) * 0.12), color)
+	end
+	socket(k, black, "Metal")
+	local b = k.blade
+	spade(k, rgb(40, 40, 52), "Metal", 1.7)
+	k.part("EdgeL", Vector3.new(0.06, 0.14, 1.4), b * CFrame.new(-0.95, 0.14, -0.75) * CFrame.Angles(0, 0, math.rad(-25)), strips[1], "Neon")
+	k.part("EdgeR", Vector3.new(0.06, 0.14, 1.4), b * CFrame.new(0.95, 0.14, -0.75) * CFrame.Angles(0, 0, math.rad(25)), strips[2], "Neon")
+	for _, key in ipairs({Vector3.new(0, 0, -0.55), Vector3.new(-0.34, 0, -0.9), Vector3.new(0, 0, -0.9), Vector3.new(0.34, 0, -0.9)}) do
+		k.part("Keycap", Vector3.new(0.28, 0.14, 0.28), b * CFrame.new(key + Vector3.new(0, 0.1, 0)), rgb(236, 236, 244))
+	end
+end
+
+-- Tectonic Auger: industrial drill with hazard bands, a motor and a spiral auger bit
+CUSTOM.TectonicAuger = function(k)
+	local steel, hazard, ink = rgb(172, 176, 186), rgb(240, 196, 60), rgb(44, 44, 54)
+	shaft(k, rgb(78, 80, 88), "Metal", 0.34)
+	for i = 0, 5 do
+		k.rodZ("Hazard", 0.18, 0.38, 1.1 - i * 0.18, i % 2 == 0 and hazard or ink)
+	end
+	tGrip(k, rgb(36, 36, 42), "Fabric", hazard, "SmoothPlastic")
+	local motor = k.part("Motor", Vector3.new(0.75, 0.65, 1), CFrame.new(0, 0, -1.35), hazard)
+	k.part("MotorVent", Vector3.new(0.5, 0.04, 0.6), CFrame.new(0, 0.34, -1.35), rgb(230, 130, 70), "Neon")
+	light(motor, rgb(230, 150, 90), 5)
+	k.rodZ("Core", 2.6, 0.26, -2.95, steel, "Metal")
+	-- spiral flights: shrinking discs, each turned a bit more
+	for i = 0, 7 do
+		local d = 1.4 - i * 0.14
+		k.part("Flight", Vector3.new(0.1, d, d), CFrame.new(0, 0, -2.1 - i * 0.3) * CFrame.Angles(0, math.rad(90), 0) * CFrame.Angles(math.rad(i * 25), 0, math.rad(12)), steel, "Metal", Enum.PartType.Cylinder)
+	end
+	k.ball("DrillTip", 0.3, CFrame.new(0, 0, -4.35), hazard)
+end
+
+-- Singularity Spade: dark foil blade holding a tiny black hole with a glowing disk
+CUSTOM.SingularitySpade = function(k)
+	local dark, lilac, chrome = rgb(34, 35, 42), rgb(178, 158, 255), rgb(150, 154, 162)
+	shaft(k, dark, "Metal", 0.3)
+	for _, z in ipairs({1, 0, -1}) do
+		k.rodZ("Ring", 0.12, 0.38, z, lilac)
+	end
+	dGrip(k, chrome, "Foil", dark, "Fabric")
+	socket(k, chrome, "Foil")
+	local b = k.blade
+	spade(k, rgb(56, 58, 66), "Foil", 1.75, chrome).Reflectance = 0.3
+	local hole = b * CFrame.new(0, 0.22, -0.85)
+	k.ball("BlackHole", 0.7, hole, rgb(6, 6, 10))
+	k.part("AccretionDisk", Vector3.new(0.04, 1.5, 1.5), hole * CFrame.Angles(math.rad(18), 0, math.rad(90)), rgb(220, 140, 100), "Neon", Enum.PartType.Cylinder)
+	k.part("InnerDisk", Vector3.new(0.05, 1.05, 1.05), hole * CFrame.Angles(math.rad(18), 0, math.rad(90)), lilac, "Neon", Enum.PartType.Cylinder)
+	for i = 0, 2 do
+		local a = math.rad(i * 120 + 30)
+		k.ball("Orbiter", 0.12, hole * CFrame.new(math.cos(a) * 0.95, 0.1, math.sin(a) * 0.95), lilac, "Neon")
+	end
+	light(k.ball("HoleGlow", 0.05, hole, dark), rgb(200, 170, 255), 6)
+end
+
+---------------------------------------------------------------------
+-- BUILD A SHOVEL TOOL
+---------------------------------------------------------------------
+return function(def)
+	local s = STYLES[def.Id] or defaultStyle(def)
+
+	local tool = Instance.new("Tool")
+	tool.Name = def.Name
+	tool.ToolTip = def.Name
+	tool.CanBeDropped = false
+	tool.RequiresHandle = true
+	tool:SetAttribute("ShovelId", def.Id)
+
+	-- invisible handle the hand holds; everything else is welded to it
+	local handle = newPart(tool, "Handle", Vector3.new(0.3, 0.3, 4.4), CFrame.new(), s.Shaft, s.ShaftMat)
+	handle.Transparency = 1
+
+	local custom = CUSTOM[def.Id]
+	if custom then
+		custom(kit(tool), def)
+	else
+		-- SHAFT with metal collars
+		cylinderZ(tool, "Shaft", 4.4, 0.22, 0, s.Shaft, s.ShaftMat)
+		cylinderZ(tool, "CollarTop", 0.14, 0.27, 0.95, s.Metal, s.MetalMat)
+		cylinderZ(tool, "CollarMid", 0.14, 0.27, -1.0, s.Metal, s.MetalMat)
+		cylinderZ(tool, "GripWrap", 0.9, 0.27, 1.45, s.GripColor, s.GripMat)
+		if s.Tape then
+			cylinderZ(tool, "DuctTape", 0.45, 0.25, -0.2, rgb(150, 150, 155), "Fabric")
+		end
+
+		-- accent strips along the shaft (RGB lights, rainbow, circuits...)
+		if s.Strips then
+			local offsets = {Vector3.new(0, 0.115, 0), Vector3.new(0.115, 0, 0), Vector3.new(0, -0.115, 0), Vector3.new(-0.115, 0, 0)}
+			for i, color in ipairs(s.Strips) do
+				local o = offsets[(i - 1) % 4 + 1]
+				newPart(tool, "Strip", Vector3.new(0.04, 0.04, 2.6), CFrame.new(o + Vector3.new(0, 0, -0.45)), color, "Neon")
+			end
+		end
+
+		-- HANDLE GRIP at the top
+		if s.Grip == "T" then
+			newPart(tool, "TBar", Vector3.new(0.95, 0.2, 0.2), CFrame.new(0, 0, 2.3), s.GripColor, s.GripMat, Enum.PartType.Cylinder)
+			newPart(tool, "TCapL", Vector3.new(0.08, 0.24, 0.24), CFrame.new(-0.5, 0, 2.3), s.Metal, s.MetalMat, Enum.PartType.Cylinder)
+			newPart(tool, "TCapR", Vector3.new(0.08, 0.24, 0.24), CFrame.new(0.5, 0, 2.3), s.Metal, s.MetalMat, Enum.PartType.Cylinder)
+		else
+			bar(tool, "GripSideL", Vector3.new(0, 0, 2.15), Vector3.new(-0.42, 0, 2.8), 0.15, s.Shaft, s.ShaftMat)
+			bar(tool, "GripSideR", Vector3.new(0, 0, 2.15), Vector3.new(0.42, 0, 2.8), 0.15, s.Shaft, s.ShaftMat)
+			newPart(tool, "GripBar", Vector3.new(0.95, 0.19, 0.19), CFrame.new(0, 0, 2.82), s.GripColor, s.GripMat, Enum.PartType.Cylinder)
+		end
+
+		-- SOCKET where the blade meets the shaft
+		cylinderZ(tool, "Socket", 0.8, 0.3, -2.35, s.Metal, s.MetalMat)
+		if s.Rivets then
+			newPart(tool, "RivetL", Vector3.new(0.09, 0.09, 0.09), CFrame.new(-0.15, 0, -2.35), rgb(200, 200, 205), "Metal", Enum.PartType.Ball)
+			newPart(tool, "RivetR", Vector3.new(0.09, 0.09, 0.09), CFrame.new(0.15, 0, -2.35), rgb(200, 200, 205), "Metal", Enum.PartType.Ball)
+		end
+
+		-- BLADE (slightly angled like a real spade)
+		local bladeCF = CFrame.new(0, -0.05, -2.7) * CFrame.Angles(math.rad(-14), 0, 0)
+		local blade = (BLADES[s.Shape] or buildSpade)(tool, s, bladeCF)
+		for _, part in ipairs(tool:GetChildren()) do
+			if part:IsA("BasePart") and (part.Name:find("Blade") or part.Name:find("Lip")) then
+				part.Reflectance = s.Shine or 0
+				part.Transparency = math.max(part.Transparency, s.BladeTransparency or 0)
+			end
+		end
+
+		-- EXTRAS
+		if s.Rust then
+			local spots = {Vector3.new(-0.3, 0.05, -0.4), Vector3.new(0.35, 0.05, -0.85), Vector3.new(-0.1, 0.05, -1.1), Vector3.new(0.2, 0.05, -0.25)}
+			for i, pos in ipairs(spots) do
+				newPart(tool, "RustSpot", Vector3.new(0.18 + i * 0.03, 0.02, 0.16), bladeCF * CFrame.new(pos) * CFrame.Angles(0, i, 0), rgb(95, 52, 30), "CorrodedMetal")
+			end
+		end
+		if s.Pixels then
+			for i = 0, 3 do
+				newPart(tool, "Pixel", Vector3.new(0.22, 0.1, 0.22), bladeCF * CFrame.new(-0.35 + (i % 2) * 0.7, 0.06, -0.35 - math.floor(i / 2) * 0.5), s.Edge or rgb(255, 255, 255), "SmoothPlastic")
+			end
+		end
+		if s.Core then
+			ellipsoid(tool, "Core", Vector3.new(0.5, 0.12, 0.7), bladeCF * CFrame.new(0, 0.05, -0.8), s.Core, "Neon")
+		end
+		if s.Field then
+			local field = newPart(tool, "EnergyField", Vector3.new(1.5, 0.3, 2.1), bladeCF * CFrame.new(0, 0, -0.9), s.Field, "ForceField")
+			field.Transparency = 0.2
+		end
+		if s.Rings then
+			for i, z in ipairs({-1.4, -1.8}) do
+				newPart(tool, "Ring", Vector3.new(0.05, 0.42 + i * 0.05, 0.42 + i * 0.05), CFrame.new(0, 0, z) * ALONG_Z, s.Rings, "Neon", Enum.PartType.Cylinder).Transparency = 0.3
+			end
+		end
+		if s.Glow then
+			local light = Instance.new("PointLight")
+			light.Color = s.Glow
+			light.Range = 8
+			light.Brightness = 1.3
+			light.Parent = blade
+		end
+		if s.Sparkles then
+			local sparkles = Instance.new("ParticleEmitter")
+			sparkles.Rate = 5
+			sparkles.Lifetime = NumberRange.new(0.6, 1.2)
+			sparkles.Speed = NumberRange.new(0.3, 0.8)
+			sparkles.SpreadAngle = Vector2.new(180, 180)
+			sparkles.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.12), NumberSequenceKeypoint.new(1, 0)})
+			sparkles.LightEmission = 1
+			sparkles.Color = ColorSequence.new(s.Sparkles)
+			sparkles.Parent = blade
+		end
+
+	end
+
+	-- SIZE: shrink the whole shovel evenly
+	for _, part in ipairs(tool:GetChildren()) do
+		if part:IsA("BasePart") then
+			local rotation = part.CFrame.Rotation
+			part.Size = part.Size * SCALE
+			part.CFrame = CFrame.new(part.Position * SCALE) * rotation
+		end
+	end
+	for _, emitter in ipairs(tool:GetDescendants()) do
+		if emitter:IsA("ParticleEmitter") then
+			emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.12 * SCALE), NumberSequenceKeypoint.new(1, 0)})
+		end
+	end
+
+	-- how it sits in the hand (points forward and down)
+	tool.Grip = CFrame.new(0, 0, 1.4 * SCALE) * CFrame.Angles(math.rad(50), 0, 0)
+
+	-- weld everything to the handle
+	for _, part in ipairs(tool:GetChildren()) do
+		if part:IsA("BasePart") and part ~= handle then
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = handle
+			weld.Part1 = part
+			weld.Parent = handle
+		end
+	end
+
+	return tool
+end
+]=])
+install(game:GetService("ReplicatedStorage"), "UIKit", "ModuleScript", [=[
+-- UIKit (ModuleScript in ReplicatedStorage)
+-- One cartoony 2050 look for every screen in the game: chunky rounded panels with thick
+-- outlines, bubbly FredokaOne text with an outline, bouncy buttons, pop-in windows and
+-- live 3D shovel icons (ViewportFrames that render the real shovel model).
+
+local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local UIKit = {}
+
+local rgb = Color3.fromRGB
+UIKit.Colors = {
+	Ink = rgb(38, 34, 84),        -- outlines and dark text
+	Panel = rgb(250, 248, 255),   -- window background
+	PanelTint = rgb(232, 226, 255),
+	Row = rgb(238, 234, 252),
+	Violet = rgb(122, 92, 232),
+	Lilac = rgb(178, 158, 255),
+	Sky = rgb(92, 176, 255),
+	Mint = rgb(80, 214, 150),
+	Sun = rgb(255, 200, 70),
+	Coral = rgb(255, 110, 124),
+	Grey = rgb(160, 160, 184),
+	White = rgb(255, 255, 255),
+	Money = rgb(90, 210, 110),
+}
+local C = UIKit.Colors
+UIKit.Font = Enum.Font.FredokaOne
+
+---------------------------------------------------------------------
+-- BASICS
+---------------------------------------------------------------------
+function UIKit.screen(player, name, order)
+	local gui = Instance.new("ScreenGui")
+	gui.Name = name
+	gui.ResetOnSpawn = false
+	gui.IgnoreGuiInset = false
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	gui.DisplayOrder = order or 0
+	gui.Parent = player:WaitForChild("PlayerGui")
+	return gui
+end
+
+function UIKit.corner(parent, radius)
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, radius or 14)
+	c.Parent = parent
+	return c
+end
+
+function UIKit.outline(parent, thickness, color)
+	local s = Instance.new("UIStroke")
+	s.Color = color or C.Ink
+	s.Thickness = thickness or 3
+	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	s.LineJoinMode = Enum.LineJoinMode.Round
+	s.Parent = parent
+	return s
+end
+
+-- soft top-to-bottom shading so flat panels look chunky
+function UIKit.shade(parent, amount)
+	local g = Instance.new("UIGradient")
+	g.Rotation = 90
+	g.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(1 - (amount or 0.12), 1 - (amount or 0.12), 1 - (amount or 0.1)))
+	g.Parent = parent
+	return g
+end
+
+-- A plain rounded, outlined box. props: Size, Position, AnchorPoint, Color, Radius, Stroke
+function UIKit.panel(parent, props)
+	local f = Instance.new("Frame")
+	f.Size = props.Size or UDim2.fromOffset(200, 100)
+	f.Position = props.Position or UDim2.new()
+	f.AnchorPoint = props.AnchorPoint or Vector2.zero
+	f.BackgroundColor3 = props.Color or C.Panel
+	f.BackgroundTransparency = props.Transparency or 0
+	f.BorderSizePixel = 0
+	f.Parent = parent
+	UIKit.corner(f, props.Radius or 16)
+	if props.Stroke ~= false then
+		UIKit.outline(f, props.Stroke or 3)
+	end
+	if props.Shade ~= false then
+		UIKit.shade(f, props.ShadeAmount)
+	end
+	return f
+end
+
+-- Bubbly outlined text. props: Size, Position, AnchorPoint, Color, Align ("Left"/"Center"/"Right"),
+-- Stroke (outline thickness, 0 for none), TextSize (fixed size instead of scaled)
+function UIKit.label(parent, text, props)
+	props = props or {}
+	local l = Instance.new("TextLabel")
+	l.Size = props.Size or UDim2.fromScale(1, 1)
+	l.Position = props.Position or UDim2.new()
+	l.AnchorPoint = props.AnchorPoint or Vector2.zero
+	l.BackgroundTransparency = 1
+	l.Text = text
+	l.TextColor3 = props.Color or C.White
+	l.Font = props.Font or UIKit.Font
+	if props.TextSize then
+		l.TextSize = props.TextSize
+		l.TextWrapped = true
+	else
+		l.TextScaled = true
+	end
+	l.TextXAlignment = Enum.TextXAlignment[props.Align or "Center"]
+	l.TextYAlignment = Enum.TextYAlignment[props.VAlign or "Center"]
+	l.RichText = props.RichText or false
+	l.Parent = parent
+	local strokeSize = props.Stroke == nil and 2 or props.Stroke
+	if strokeSize > 0 then
+		local s = Instance.new("UIStroke")
+		s.Color = props.StrokeColor or C.Ink
+		s.Thickness = strokeSize
+		s.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+		s.Parent = l
+	end
+	return l
+end
+
+-- Chunky button that squishes when pressed and grows a bit on hover.
+-- props: Size, Position, AnchorPoint, Color, TextColor
+function UIKit.button(parent, text, props)
+	props = props or {}
+	local b = Instance.new("TextButton")
+	b.Size = props.Size or UDim2.fromOffset(140, 44)
+	b.Position = props.Position or UDim2.new()
+	b.AnchorPoint = props.AnchorPoint or Vector2.zero
+	b.BackgroundColor3 = props.Color or C.Mint
+	b.AutoButtonColor = false
+	b.Text = ""
+	b.Parent = parent
+	UIKit.corner(b, props.Radius or 12)
+	UIKit.outline(b, 3)
+	UIKit.shade(b, 0.18)
+	local label = UIKit.label(b, text, {
+		Size = UDim2.new(1, -14, 1, -12), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+		Color = props.TextColor or C.White,
+	})
+	label.Name = "Label"
+	local scale = Instance.new("UIScale")
+	scale.Parent = b
+	local function to(v, t)
+		TweenService:Create(scale, TweenInfo.new(t or 0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = v}):Play()
+	end
+	b.MouseEnter:Connect(function() to(1.05) end)
+	b.MouseLeave:Connect(function() to(1) end)
+	b.MouseButton1Down:Connect(function() to(0.92, 0.06) end)
+	b.MouseButton1Up:Connect(function() to(1.05) end)
+	return b, label
+end
+
+function UIKit.setButton(button, text, color)
+	button.BackgroundColor3 = color
+	local label = button:FindFirstChild("Label")
+	if label then label.Text = text end
+end
+
+-- Pops a frame in with a bouncy scale
+function UIKit.pop(frame, from)
+	local scale = frame:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
+	scale.Parent = frame
+	scale.Scale = from or 0.6
+	TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+end
+
+---------------------------------------------------------------------
+-- WINDOW: a big panel with a colored title tab and a round close button
+-- returns window, content (frame to put things in), closeButton
+---------------------------------------------------------------------
+function UIKit.window(gui, title, size, accent)
+	local window = UIKit.panel(gui, {
+		Size = size, Position = UDim2.fromScale(0.5, 0.52), AnchorPoint = Vector2.new(0.5, 0.5),
+		Color = C.Panel, Radius = 22, Stroke = 4,
+	})
+	window.Visible = false
+	local sizeLimit = Instance.new("UISizeConstraint")
+	sizeLimit.MaxSize = Vector2.new(size.X.Offset, size.Y.Offset)
+	sizeLimit.Parent = window
+	local aspect = Instance.new("UIAspectRatioConstraint")
+	aspect.AspectRatio = size.X.Offset / size.Y.Offset
+	aspect.Parent = window
+	window.Size = UDim2.fromScale(0.92, 0.85)
+
+	local tab = UIKit.panel(window, {
+		Size = UDim2.new(0.5, 0, 0, 52), Position = UDim2.new(0.5, 0, 0, -20), AnchorPoint = Vector2.new(0.5, 0),
+		Color = accent or C.Violet, Radius = 16, Stroke = 4,
+	})
+	UIKit.label(tab, title, {Size = UDim2.new(1, -20, 1, -12), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
+
+	local close = UIKit.button(window, "X", {
+		Size = UDim2.fromOffset(46, 46), Position = UDim2.new(1, 14, 0, -14), AnchorPoint = Vector2.new(1, 0), Color = C.Coral, Radius = 23,
+	})
+	close.MouseButton1Click:Connect(function()
+		window.Visible = false
+	end)
+
+	local content = Instance.new("Frame")
+	content.Name = "Content"
+	content.BackgroundTransparency = 1
+	content.Size = UDim2.new(1, -36, 1, -64)
+	content.Position = UDim2.new(0, 18, 0, 46)
+	content.Parent = window
+	return window, content, close
+end
+
+function UIKit.open(window)
+	window.Visible = true
+	UIKit.pop(window)
+end
+
+-- Scrolling list with padding. returns the scrolling frame
+function UIKit.list(parent, padding)
+	local list = Instance.new("ScrollingFrame")
+	list.Size = UDim2.fromScale(1, 1)
+	list.BackgroundTransparency = 1
+	list.BorderSizePixel = 0
+	list.ScrollBarThickness = 8
+	list.ScrollBarImageColor3 = C.Lilac
+	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	list.CanvasSize = UDim2.new()
+	list.Parent = parent
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, padding or 10)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout.Parent = list
+	local pad = Instance.new("UIPadding")
+	pad.PaddingTop = UDim.new(0, 6)
+	pad.PaddingBottom = UDim.new(0, 6)
+	pad.PaddingRight = UDim.new(0, 10)
+	pad.Parent = list
+	return list
+end
+
+-- A small stat bar: label on the left, filled bar, value on the right
+function UIKit.statBar(parent, name, fraction, valueText, color, props)
+	local row = Instance.new("Frame")
+	row.BackgroundTransparency = 1
+	row.Size = props and props.Size or UDim2.new(1, 0, 0, 18)
+	row.Position = props and props.Position or UDim2.new()
+	row.Parent = parent
+	UIKit.label(row, name, {Size = UDim2.new(0.26, 0, 1, 0), Align = "Left", Color = C.Ink, Stroke = 0})
+	local track = UIKit.panel(row, {Size = UDim2.new(0.46, 0, 0.7, 0), Position = UDim2.new(0.27, 0, 0.15, 0), Color = rgb(222, 218, 240), Radius = 8, Stroke = 2, Shade = false})
+	local fill = UIKit.panel(track, {Size = UDim2.new(math.clamp(fraction, 0.04, 1), 0, 1, 0), Color = color, Radius = 8, Stroke = false})
+	fill.Name = "Fill"
+	UIKit.label(row, valueText, {Size = UDim2.new(0.25, 0, 1, 0), Position = UDim2.new(0.75, 0, 0, 0), Align = "Right", Color = C.Ink, Stroke = 0})
+	return row
+end
+
+---------------------------------------------------------------------
+-- 3D SHOVEL ICON: renders the real shovel model inside a ViewportFrame
+---------------------------------------------------------------------
+local ShovelModels -- loaded on first use (only needed where icons are drawn)
+function UIKit.shovelIcon(parent, def, props)
+	props = props or {}
+	ShovelModels = ShovelModels or require(ReplicatedStorage:WaitForChild("ShovelModels"))
+	local vp = Instance.new("ViewportFrame")
+	vp.Size = props.Size or UDim2.fromOffset(80, 80)
+	vp.Position = props.Position or UDim2.new()
+	vp.AnchorPoint = props.AnchorPoint or Vector2.zero
+	vp.BackgroundTransparency = 1
+	vp.Ambient = rgb(200, 198, 215)
+	vp.LightColor = rgb(255, 250, 240)
+	vp.LightDirection = Vector3.new(-1, -1.5, -1)
+	vp.Parent = parent
+
+	-- lay the shovel diagonally: blade at the bottom-left, grip at the top-right
+	local tool = ShovelModels(def)
+	local model = Instance.new("Model")
+	local pose = CFrame.Angles(0, math.rad(20), 0) * CFrame.Angles(0, 0, math.rad(135)) * CFrame.Angles(math.rad(90), 0, 0)
+	local minV, maxV = Vector3.new(math.huge, math.huge, math.huge), -Vector3.new(math.huge, math.huge, math.huge)
+	for _, piece in ipairs(tool:GetChildren()) do
+		if piece:IsA("BasePart") and piece.Name ~= "Handle" then
+			for _, c in ipairs(piece:GetChildren()) do
+				if c:IsA("WeldConstraint") or c:IsA("ParticleEmitter") or c:IsA("Light") then c:Destroy() end
+			end
+			piece.CFrame = pose * piece.CFrame
+			local half = piece.Size / 2
+			minV = minV:Min(piece.CFrame.Position - Vector3.new(half.Magnitude, half.Magnitude, half.Magnitude) * 0.6)
+			maxV = maxV:Max(piece.CFrame.Position + Vector3.new(half.Magnitude, half.Magnitude, half.Magnitude) * 0.6)
+			piece.Parent = model
+		end
+	end
+	tool:Destroy()
+	model.Parent = vp
+
+	local center = (minV + maxV) / 2
+	local extent = (maxV - minV).Magnitude
+	local camera = Instance.new("Camera")
+	camera.FieldOfView = 30
+	camera.CFrame = CFrame.new(center + Vector3.new(0, 0, extent * 1.75), center)
+	camera.Parent = vp
+	vp.CurrentCamera = camera
+	return vp
+end
+
+return UIKit
 ]=])
 install(game:GetService("ReplicatedStorage"), "VehicleModels", "ModuleScript", [=[
 -- VehicleModels (ModuleScript in ReplicatedStorage)
@@ -1454,7 +2470,7 @@ local Debris = game:GetService("Debris")
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
-local ShovelModels = require(script.Parent:WaitForChild("ShovelModels"))
+local ShovelModels = require(ReplicatedStorage:WaitForChild("ShovelModels"))
 local ShopBuilder = require(script.Parent:WaitForChild("ShopBuilder"))
 local WorldGate = require(script.Parent:WaitForChild("WorldGate"))
 
@@ -1955,6 +2971,23 @@ end
 ---------------------------------------------------------------------
 -- PLAYERS
 ---------------------------------------------------------------------
+-- Everyone walks faster than Roblox's default (see GameConfig.WalkSpeed)
+game:GetService("StarterPlayer").CharacterWalkSpeed = GameConfig.WalkSpeed
+local function setSpeed(character)
+	local humanoid = character:WaitForChild("Humanoid", 10)
+	if humanoid then
+		humanoid.WalkSpeed = GameConfig.WalkSpeed
+	end
+end
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(setSpeed)
+	if player.Character then task.spawn(setSpeed, player.Character) end
+end)
+for _, player in ipairs(Players:GetPlayers()) do
+	player.CharacterAdded:Connect(setSpeed)
+	if player.Character then task.spawn(setSpeed, player.Character) end
+end
+
 local function onPlayerAdded(player)
 	PlayerData.WaitForData(player)
 	if not player.Parent then return end
@@ -2908,7 +3941,7 @@ install(game:GetService("ServerScriptService"), "ShopBuilder", "ModuleScript", [
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
-local ShovelModels = require(script.Parent:WaitForChild("ShovelModels"))
+local ShovelModels = require(ReplicatedStorage:WaitForChild("ShovelModels"))
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
 
 -- Places a copy of a shovel model at `target` (blade down), scaled up
@@ -3110,446 +4143,6 @@ return function(parent, world, base)
 	return shop, prompt
 end
 ]=])
-install(game:GetService("ServerScriptService"), "ShovelModels", "ModuleScript", [=[
--- ShovelModels (ModuleScript in ServerScriptService)
--- Builds a detailed, individually styled model for every shovel.
--- DigManager uses this instead of its old simple shovel builder.
-
-local SCALE = 0.65 -- overall size of the shovels
-local ALONG_Z = CFrame.Angles(0, math.rad(90), 0) -- points a cylinder along the shaft
-
-local function rgb(r, g, b)
-	return Color3.fromRGB(r, g, b)
-end
-
----------------------------------------------------------------------
--- LOOK OF EACH SHOVEL
--- Blade shapes: "Spade" (classic), "Scoop" (round toy), "Spoon", "Trowel"
--- Grip: "D" (D-shaped handle) or "T" (T-bar handle)
----------------------------------------------------------------------
-local STYLES = {
-	RustyShovel = {
-		Shape = "Spade", Grip = "D",
-		Shaft = rgb(92, 64, 42), ShaftMat = "Wood",
-		Blade = rgb(150, 82, 45), BladeMat = "CorrodedMetal",
-		Metal = rgb(105, 68, 45), MetalMat = "CorrodedMetal",
-		GripColor = rgb(75, 75, 78), GripMat = "Fabric",
-		Tape = true, Rust = true,
-	},
-	PlasticShovel = {
-		Shape = "Scoop", Grip = "T",
-		Shaft = rgb(40, 120, 255), ShaftMat = "SmoothPlastic",
-		Blade = rgb(255, 205, 40), BladeMat = "SmoothPlastic", Shine = 0.12,
-		Metal = rgb(255, 75, 75), MetalMat = "SmoothPlastic",
-		GripColor = rgb(255, 75, 75), GripMat = "SmoothPlastic",
-	},
-	GardenSpade = {
-		Shape = "Spade", Grip = "D",
-		Shaft = rgb(70, 130, 60), ShaftMat = "SmoothPlastic",
-		Blade = rgb(165, 170, 178), BladeMat = "Metal", Shine = 0.15,
-		Metal = rgb(55, 110, 50), MetalMat = "SmoothPlastic",
-		GripColor = rgb(45, 90, 40), GripMat = "SmoothPlastic",
-		Rivets = true,
-	},
-	IronShovel = {
-		Shape = "Spade", Grip = "D",
-		Shaft = rgb(170, 125, 82), ShaftMat = "Wood",
-		Blade = rgb(118, 122, 132), BladeMat = "Metal", Shine = 0.2,
-		Metal = rgb(58, 60, 66), MetalMat = "Metal",
-		GripColor = rgb(30, 30, 32), GripMat = "Fabric",
-		Rivets = true,
-	},
-	SteelSpade = {
-		Shape = "Spade", Grip = "T",
-		Shaft = rgb(45, 50, 60), ShaftMat = "Metal",
-		Blade = rgb(190, 200, 215), BladeMat = "Metal", Shine = 0.35,
-		Metal = rgb(120, 140, 170), MetalMat = "Metal",
-		GripColor = rgb(20, 20, 24), GripMat = "Fabric",
-		Rivets = true,
-	},
-	GoldenShovel = {
-		Shape = "Spade", Grip = "D",
-		Shaft = rgb(35, 32, 30), ShaftMat = "Wood",
-		Blade = rgb(255, 196, 55), BladeMat = "Metal", Shine = 0.4,
-		Metal = rgb(255, 205, 80), MetalMat = "Metal",
-		GripColor = rgb(130, 25, 35), GripMat = "Fabric",
-		Rivets = true, Sparkles = rgb(255, 220, 120),
-	},
-	GamerShovel = {
-		Shape = "Spade", Grip = "T",
-		Shaft = rgb(24, 24, 30), ShaftMat = "Metal",
-		Blade = rgb(30, 30, 40), BladeMat = "Metal", Shine = 0.25,
-		Metal = rgb(40, 40, 50), MetalMat = "Metal",
-		GripColor = rgb(15, 15, 18), GripMat = "Fabric",
-		Edge = rgb(255, 60, 200), Glow = rgb(255, 60, 200),
-		Strips = {rgb(255, 60, 200), rgb(0, 225, 255), rgb(90, 255, 120)},
-	},
-	PixelSpade = {
-		Shape = "Spade", Grip = "T",
-		Shaft = rgb(60, 60, 200), ShaftMat = "SmoothPlastic",
-		Blade = rgb(80, 200, 255), BladeMat = "SmoothPlastic",
-		Metal = rgb(255, 255, 255), MetalMat = "SmoothPlastic",
-		GripColor = rgb(255, 80, 80), GripMat = "SmoothPlastic",
-		Pixels = true,
-	},
-	RainbowShovel = {
-		Shape = "Spade", Grip = "D",
-		Shaft = rgb(245, 245, 250), ShaftMat = "SmoothPlastic",
-		Blade = rgb(255, 120, 220), BladeMat = "Glass", Shine = 0.3,
-		Metal = rgb(255, 255, 255), MetalMat = "Metal",
-		GripColor = rgb(120, 90, 255), GripMat = "SmoothPlastic",
-		Strips = {rgb(255, 60, 60), rgb(255, 200, 40), rgb(80, 220, 120), rgb(60, 140, 255)},
-		Glow = rgb(255, 150, 230), Sparkles = rgb(255, 200, 255),
-	},
-	DiamondShovel = {
-		Shape = "Spade", Grip = "D",
-		Shaft = rgb(235, 238, 245), ShaftMat = "Metal",
-		Blade = rgb(150, 240, 255), BladeMat = "Glass", Shine = 0.45, BladeTransparency = 0.2,
-		Metal = rgb(205, 210, 225), MetalMat = "Metal",
-		GripColor = rgb(60, 110, 160), GripMat = "Fabric",
-		Core = rgb(120, 240, 255), Glow = rgb(120, 240, 255), Sparkles = rgb(200, 250, 255),
-	},
-	FidgetDrill = {
-		Shape = "Trowel", Grip = "T",
-		Shaft = rgb(40, 40, 45), ShaftMat = "Metal",
-		Blade = rgb(255, 140, 40), BladeMat = "Metal", Shine = 0.3,
-		Metal = rgb(255, 140, 40), MetalMat = "Metal",
-		GripColor = rgb(20, 20, 20), GripMat = "Fabric",
-		Rings = rgb(255, 140, 40),
-	},
-	LaserExcavator = {
-		Shape = "Spade", Grip = "T",
-		Shaft = rgb(240, 242, 248), ShaftMat = "SmoothPlastic",
-		Blade = rgb(255, 50, 50), BladeMat = "Neon", BladeTransparency = 0.15,
-		Metal = rgb(55, 58, 68), MetalMat = "Metal",
-		GripColor = rgb(40, 40, 48), GripMat = "SmoothPlastic",
-		Edge = rgb(255, 180, 180), Glow = rgb(255, 60, 60), Field = rgb(255, 60, 60),
-	},
-	PlasmaSpade = {
-		Shape = "Spade", Grip = "T",
-		Shaft = rgb(30, 34, 50), ShaftMat = "Metal",
-		Blade = rgb(80, 140, 255), BladeMat = "Neon", BladeTransparency = 0.2,
-		Metal = rgb(120, 180, 255), MetalMat = "Metal",
-		GripColor = rgb(20, 22, 30), GripMat = "Fabric",
-		Glow = rgb(80, 140, 255), Field = rgb(120, 180, 255), Sparkles = rgb(160, 200, 255),
-	},
-	HoverScoop = {
-		Shape = "Scoop", Grip = "T",
-		Shaft = rgb(235, 240, 245), ShaftMat = "SmoothPlastic",
-		Blade = rgb(60, 255, 200), BladeMat = "Glass", Shine = 0.3, BladeTransparency = 0.15,
-		Metal = rgb(60, 255, 200), MetalMat = "Neon",
-		GripColor = rgb(40, 45, 55), GripMat = "SmoothPlastic",
-		Glow = rgb(60, 255, 200), Rings = rgb(60, 255, 200),
-	},
-	QuantumSpoon = {
-		Shape = "Spoon", Grip = "T",
-		Shaft = rgb(30, 22, 50), ShaftMat = "Metal",
-		Blade = rgb(170, 90, 255), BladeMat = "ForceField",
-		Metal = rgb(200, 150, 255), MetalMat = "Neon",
-		GripColor = rgb(25, 18, 40), GripMat = "Fabric",
-		Core = rgb(200, 140, 255), Glow = rgb(170, 90, 255), Rings = rgb(200, 150, 255), Sparkles = rgb(220, 180, 255),
-	},
-	DialUpDigger = {
-		Shape = "Spade", Grip = "D",
-		Shaft = rgb(215, 205, 175), ShaftMat = "SmoothPlastic",
-		Blade = rgb(200, 190, 160), BladeMat = "SmoothPlastic",
-		Metal = rgb(120, 115, 100), MetalMat = "SmoothPlastic",
-		GripColor = rgb(90, 85, 75), GripMat = "SmoothPlastic",
-		Edge = rgb(90, 255, 120), Pixels = true,
-	},
-	BlackHoleShovel = {
-		Shape = "Spoon", Grip = "D",
-		Shaft = rgb(15, 12, 20), ShaftMat = "Metal",
-		Blade = rgb(10, 5, 20), BladeMat = "Glass", Shine = 0.5,
-		Metal = rgb(140, 60, 255), MetalMat = "Neon",
-		GripColor = rgb(10, 10, 12), GripMat = "Fabric",
-		Core = rgb(140, 60, 255), Glow = rgb(140, 60, 255), Rings = rgb(255, 150, 60),
-	},
-	CosmicTrowel = {
-		Shape = "Trowel", Grip = "T",
-		Shaft = rgb(20, 24, 50), ShaftMat = "Metal",
-		Blade = rgb(120, 200, 255), BladeMat = "Glass", Shine = 0.35, BladeTransparency = 0.1,
-		Metal = rgb(255, 220, 140), MetalMat = "Metal",
-		GripColor = rgb(20, 24, 50), GripMat = "Fabric",
-		Core = rgb(255, 255, 255), Glow = rgb(120, 200, 255), Sparkles = rgb(255, 255, 255),
-	},
-	VoidExcavator = {
-		Shape = "Spade", Grip = "T",
-		Shaft = rgb(20, 10, 30), ShaftMat = "Metal",
-		Blade = rgb(110, 40, 160), BladeMat = "ForceField",
-		Metal = rgb(110, 40, 160), MetalMat = "Neon",
-		GripColor = rgb(15, 8, 22), GripMat = "Fabric",
-		Core = rgb(60, 0, 90), Edge = rgb(200, 120, 255), Glow = rgb(150, 60, 220), Sparkles = rgb(180, 100, 255),
-	},
-	AlgorithmTrowel = {
-		Shape = "Trowel", Grip = "D",
-		Shaft = rgb(30, 26, 20), ShaftMat = "Metal",
-		Blade = rgb(255, 205, 70), BladeMat = "Metal", Shine = 0.4,
-		Metal = rgb(255, 225, 120), MetalMat = "Metal",
-		GripColor = rgb(40, 30, 15), GripMat = "Fabric",
-		Edge = rgb(255, 240, 150), Strips = {rgb(255, 230, 120), rgb(255, 230, 120)},
-		Glow = rgb(255, 210, 80), Sparkles = rgb(255, 240, 170), Rivets = true,
-	},
-	-- World 1 Abyss shovels: industrial, desaturated, built for bedrock
-	TectonicAuger = {
-		Shape = "Trowel", Grip = "T",
-		Shaft = rgb(58, 60, 64), ShaftMat = "CorrodedMetal",
-		Blade = rgb(150, 154, 160), BladeMat = "Foil", Shine = 0.25,
-		Metal = rgb(92, 95, 100), MetalMat = "Metal",
-		GripColor = rgb(28, 28, 30), GripMat = "Fabric",
-		Rings = rgb(170, 160, 140), Rivets = true,
-	},
-	SingularitySpade = {
-		Shape = "Spade", Grip = "D",
-		Shaft = rgb(30, 31, 34), ShaftMat = "Metal",
-		Blade = rgb(52, 54, 60), BladeMat = "Foil", Shine = 0.45,
-		Metal = rgb(140, 144, 150), MetalMat = "Foil",
-		GripColor = rgb(18, 18, 20), GripMat = "Fabric",
-		Edge = rgb(200, 205, 212), Core = rgb(150, 196, 214), Glow = rgb(150, 196, 214),
-		Sparkles = rgb(190, 215, 225),
-	},
-}
-
--- A decent look for any shovel that has no style above (e.g. new shovels you add later)
-local function defaultStyle(def)
-	local fancy = def.Material == "Neon" or def.Material == "ForceField" or def.Material == "Glass"
-	return {
-		Shape = "Spade", Grip = "D",
-		Shaft = fancy and rgb(28, 30, 42) or rgb(150, 108, 70), ShaftMat = fancy and "Metal" or "Wood",
-		Blade = def.Color, BladeMat = def.Material or "Metal", Shine = 0.2,
-		Metal = fancy and def.Color or rgb(80, 82, 90), MetalMat = fancy and "Neon" or "Metal",
-		GripColor = rgb(30, 30, 34), GripMat = "Fabric",
-		Glow = fancy and def.Color or nil, Rivets = not fancy,
-	}
-end
-
----------------------------------------------------------------------
--- BUILDING HELPERS
----------------------------------------------------------------------
-local function mat(name)
-	return Enum.Material[name] or Enum.Material.SmoothPlastic
-end
-
-local function newPart(tool, name, size, cframe, color, material, shape)
-	local p = Instance.new("Part")
-	p.Name = name
-	p.Size = size
-	p.CFrame = cframe
-	p.Color = color
-	p.Material = mat(material)
-	if shape then p.Shape = shape end
-	p.CanCollide = false
-	p.CanQuery = false
-	p.CanTouch = false
-	p.Massless = true
-	p.CastShadow = p.Material ~= Enum.Material.Neon and p.Material ~= Enum.Material.ForceField
-	p.TopSurface = Enum.SurfaceType.Smooth
-	p.BottomSurface = Enum.SurfaceType.Smooth
-	p.Parent = tool
-	return p
-end
-
-local function ellipsoid(tool, name, size, cframe, color, material)
-	local p = newPart(tool, name, size, cframe, color, material)
-	local mesh = Instance.new("SpecialMesh")
-	mesh.MeshType = Enum.MeshType.Sphere
-	mesh.Parent = p
-	return p
-end
-
-local function cylinderZ(tool, name, length, diameter, z, color, material)
-	return newPart(tool, name, Vector3.new(length, diameter, diameter), CFrame.new(0, 0, z) * ALONG_Z, color, material, Enum.PartType.Cylinder)
-end
-
--- a round bar from point a to point b
-local function bar(tool, name, a, b, thickness, color, material)
-	local length = (b - a).Magnitude
-	return newPart(tool, name, Vector3.new(thickness, thickness, length), CFrame.lookAt((a + b) / 2, b), color, material)
-end
-
----------------------------------------------------------------------
--- BLADES (built in "blade space": 0 = top of the blade, -Z = toward the tip)
----------------------------------------------------------------------
-local function buildSpade(tool, s, b)
-	local plate = newPart(tool, "Blade", Vector3.new(1.3, 0.08, 1.25), b * CFrame.new(0, 0, -0.62), s.Blade, s.BladeMat)
-	newPart(tool, "BladeTip", Vector3.new(0.92, 0.08, 0.92), b * CFrame.new(0, 0, -1.25) * CFrame.Angles(0, math.rad(45), 0), s.Blade, s.BladeMat)
-	newPart(tool, "LipL", Vector3.new(0.26, 0.08, 1.25), b * CFrame.new(-0.72, 0.06, -0.62) * CFrame.Angles(0, 0, math.rad(-22)), s.Blade, s.BladeMat)
-	newPart(tool, "LipR", Vector3.new(0.26, 0.08, 1.25), b * CFrame.new(0.72, 0.06, -0.62) * CFrame.Angles(0, 0, math.rad(22)), s.Blade, s.BladeMat)
-	-- raised spine down the back of the blade
-	newPart(tool, "Spine", Vector3.new(0.16, 0.07, 1.0), b * CFrame.new(0, 0.07, -0.5), s.Metal, s.MetalMat)
-	-- rolled foot step on top
-	newPart(tool, "FootStep", Vector3.new(1.45, 0.13, 0.13), b, s.Metal, s.MetalMat, Enum.PartType.Cylinder)
-	if s.Edge then
-		newPart(tool, "EdgeL", Vector3.new(0.05, 0.1, 1.2), b * CFrame.new(-0.86, 0.12, -0.62) * CFrame.Angles(0, 0, math.rad(-22)), s.Edge, "Neon")
-		newPart(tool, "EdgeR", Vector3.new(0.05, 0.1, 1.2), b * CFrame.new(0.86, 0.12, -0.62) * CFrame.Angles(0, 0, math.rad(22)), s.Edge, "Neon")
-		newPart(tool, "EdgeTip", Vector3.new(0.7, 0.1, 0.05), b * CFrame.new(0, 0, -1.85), s.Edge, "Neon")
-	end
-	return plate
-end
-
-local function buildScoop(tool, s, b)
-	local bowl = ellipsoid(tool, "Blade", Vector3.new(1.6, 0.14, 1.75), b * CFrame.new(0, 0, -0.85), s.Blade, s.BladeMat)
-	ellipsoid(tool, "BowlRim", Vector3.new(1.7, 0.2, 1.85), b * CFrame.new(0, 0.05, -0.85), s.Blade, s.BladeMat).Transparency = 0.6
-	newPart(tool, "Spine", Vector3.new(0.18, 0.08, 1.1), b * CFrame.new(0, 0.08, -0.55), s.Metal, s.MetalMat)
-	return bowl
-end
-
-local function buildSpoon(tool, s, b)
-	local bowl = ellipsoid(tool, "Blade", Vector3.new(1.35, 0.4, 1.8), b * CFrame.new(0, 0.05, -0.95), s.Blade, s.BladeMat)
-	ellipsoid(tool, "BowlShell", Vector3.new(1.45, 0.3, 1.9), b * CFrame.new(0, 0, -0.95), s.Metal, s.MetalMat).Transparency = 0.5
-	return bowl
-end
-
-local function buildTrowel(tool, s, b)
-	local plate = newPart(tool, "Blade", Vector3.new(1.0, 0.07, 0.7), b * CFrame.new(0, 0, -0.35), s.Blade, s.BladeMat)
-	newPart(tool, "BladeTip", Vector3.new(1.05, 0.07, 1.05), b * CFrame.new(0, 0, -0.95) * CFrame.Angles(0, math.rad(45), 0), s.Blade, s.BladeMat)
-	newPart(tool, "Spine", Vector3.new(0.14, 0.08, 1.4), b * CFrame.new(0, 0.07, -0.75), s.Metal, s.MetalMat)
-	newPart(tool, "Guard", Vector3.new(1.1, 0.14, 0.14), b, s.Metal, s.MetalMat, Enum.PartType.Cylinder)
-	if s.Edge then
-		newPart(tool, "EdgeL", Vector3.new(0.05, 0.1, 1.1), b * CFrame.new(-0.4, 0.06, -1.0) * CFrame.Angles(0, math.rad(-45), 0), s.Edge, "Neon")
-		newPart(tool, "EdgeR", Vector3.new(0.05, 0.1, 1.1), b * CFrame.new(0.4, 0.06, -1.0) * CFrame.Angles(0, math.rad(45), 0), s.Edge, "Neon")
-	end
-	return plate
-end
-
-local BLADES = {Spade = buildSpade, Scoop = buildScoop, Spoon = buildSpoon, Trowel = buildTrowel}
-
----------------------------------------------------------------------
--- BUILD A SHOVEL TOOL
----------------------------------------------------------------------
-return function(def)
-	local s = STYLES[def.Id] or defaultStyle(def)
-
-	local tool = Instance.new("Tool")
-	tool.Name = def.Name
-	tool.ToolTip = def.Name
-	tool.CanBeDropped = false
-	tool.RequiresHandle = true
-	tool:SetAttribute("ShovelId", def.Id)
-
-	-- invisible handle the hand holds; everything else is welded to it
-	local handle = newPart(tool, "Handle", Vector3.new(0.3, 0.3, 4.4), CFrame.new(), s.Shaft, s.ShaftMat)
-	handle.Transparency = 1
-
-	-- SHAFT with metal collars
-	cylinderZ(tool, "Shaft", 4.4, 0.22, 0, s.Shaft, s.ShaftMat)
-	cylinderZ(tool, "CollarTop", 0.14, 0.27, 0.95, s.Metal, s.MetalMat)
-	cylinderZ(tool, "CollarMid", 0.14, 0.27, -1.0, s.Metal, s.MetalMat)
-	cylinderZ(tool, "GripWrap", 0.9, 0.27, 1.45, s.GripColor, s.GripMat)
-	if s.Tape then
-		cylinderZ(tool, "DuctTape", 0.45, 0.25, -0.2, rgb(150, 150, 155), "Fabric")
-	end
-
-	-- accent strips along the shaft (RGB lights, rainbow, circuits...)
-	if s.Strips then
-		local offsets = {Vector3.new(0, 0.115, 0), Vector3.new(0.115, 0, 0), Vector3.new(0, -0.115, 0), Vector3.new(-0.115, 0, 0)}
-		for i, color in ipairs(s.Strips) do
-			local o = offsets[(i - 1) % 4 + 1]
-			newPart(tool, "Strip", Vector3.new(0.04, 0.04, 2.6), CFrame.new(o + Vector3.new(0, 0, -0.45)), color, "Neon")
-		end
-	end
-
-	-- HANDLE GRIP at the top
-	if s.Grip == "T" then
-		newPart(tool, "TBar", Vector3.new(0.95, 0.2, 0.2), CFrame.new(0, 0, 2.3), s.GripColor, s.GripMat, Enum.PartType.Cylinder)
-		newPart(tool, "TCapL", Vector3.new(0.08, 0.24, 0.24), CFrame.new(-0.5, 0, 2.3), s.Metal, s.MetalMat, Enum.PartType.Cylinder)
-		newPart(tool, "TCapR", Vector3.new(0.08, 0.24, 0.24), CFrame.new(0.5, 0, 2.3), s.Metal, s.MetalMat, Enum.PartType.Cylinder)
-	else
-		bar(tool, "GripSideL", Vector3.new(0, 0, 2.15), Vector3.new(-0.42, 0, 2.8), 0.15, s.Shaft, s.ShaftMat)
-		bar(tool, "GripSideR", Vector3.new(0, 0, 2.15), Vector3.new(0.42, 0, 2.8), 0.15, s.Shaft, s.ShaftMat)
-		newPart(tool, "GripBar", Vector3.new(0.95, 0.19, 0.19), CFrame.new(0, 0, 2.82), s.GripColor, s.GripMat, Enum.PartType.Cylinder)
-	end
-
-	-- SOCKET where the blade meets the shaft
-	cylinderZ(tool, "Socket", 0.8, 0.3, -2.35, s.Metal, s.MetalMat)
-	if s.Rivets then
-		newPart(tool, "RivetL", Vector3.new(0.09, 0.09, 0.09), CFrame.new(-0.15, 0, -2.35), rgb(200, 200, 205), "Metal", Enum.PartType.Ball)
-		newPart(tool, "RivetR", Vector3.new(0.09, 0.09, 0.09), CFrame.new(0.15, 0, -2.35), rgb(200, 200, 205), "Metal", Enum.PartType.Ball)
-	end
-
-	-- BLADE (slightly angled like a real spade)
-	local bladeCF = CFrame.new(0, -0.05, -2.7) * CFrame.Angles(math.rad(-14), 0, 0)
-	local blade = (BLADES[s.Shape] or buildSpade)(tool, s, bladeCF)
-	for _, part in ipairs(tool:GetChildren()) do
-		if part:IsA("BasePart") and (part.Name:find("Blade") or part.Name:find("Lip")) then
-			part.Reflectance = s.Shine or 0
-			part.Transparency = math.max(part.Transparency, s.BladeTransparency or 0)
-		end
-	end
-
-	-- EXTRAS
-	if s.Rust then
-		local spots = {Vector3.new(-0.3, 0.05, -0.4), Vector3.new(0.35, 0.05, -0.85), Vector3.new(-0.1, 0.05, -1.1), Vector3.new(0.2, 0.05, -0.25)}
-		for i, pos in ipairs(spots) do
-			newPart(tool, "RustSpot", Vector3.new(0.18 + i * 0.03, 0.02, 0.16), bladeCF * CFrame.new(pos) * CFrame.Angles(0, i, 0), rgb(95, 52, 30), "CorrodedMetal")
-		end
-	end
-	if s.Pixels then
-		for i = 0, 3 do
-			newPart(tool, "Pixel", Vector3.new(0.22, 0.1, 0.22), bladeCF * CFrame.new(-0.35 + (i % 2) * 0.7, 0.06, -0.35 - math.floor(i / 2) * 0.5), s.Edge or rgb(255, 255, 255), "SmoothPlastic")
-		end
-	end
-	if s.Core then
-		ellipsoid(tool, "Core", Vector3.new(0.5, 0.12, 0.7), bladeCF * CFrame.new(0, 0.05, -0.8), s.Core, "Neon")
-	end
-	if s.Field then
-		local field = newPart(tool, "EnergyField", Vector3.new(1.5, 0.3, 2.1), bladeCF * CFrame.new(0, 0, -0.9), s.Field, "ForceField")
-		field.Transparency = 0.2
-	end
-	if s.Rings then
-		for i, z in ipairs({-1.4, -1.8}) do
-			newPart(tool, "Ring", Vector3.new(0.05, 0.42 + i * 0.05, 0.42 + i * 0.05), CFrame.new(0, 0, z) * ALONG_Z, s.Rings, "Neon", Enum.PartType.Cylinder).Transparency = 0.3
-		end
-	end
-	if s.Glow then
-		local light = Instance.new("PointLight")
-		light.Color = s.Glow
-		light.Range = 8
-		light.Brightness = 1.3
-		light.Parent = blade
-	end
-	if s.Sparkles then
-		local sparkles = Instance.new("ParticleEmitter")
-		sparkles.Rate = 5
-		sparkles.Lifetime = NumberRange.new(0.6, 1.2)
-		sparkles.Speed = NumberRange.new(0.3, 0.8)
-		sparkles.SpreadAngle = Vector2.new(180, 180)
-		sparkles.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.12), NumberSequenceKeypoint.new(1, 0)})
-		sparkles.LightEmission = 1
-		sparkles.Color = ColorSequence.new(s.Sparkles)
-		sparkles.Parent = blade
-	end
-
-	-- SIZE: shrink the whole shovel evenly
-	for _, part in ipairs(tool:GetChildren()) do
-		if part:IsA("BasePart") then
-			local rotation = part.CFrame.Rotation
-			part.Size = part.Size * SCALE
-			part.CFrame = CFrame.new(part.Position * SCALE) * rotation
-		end
-	end
-	for _, emitter in ipairs(tool:GetDescendants()) do
-		if emitter:IsA("ParticleEmitter") then
-			emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.12 * SCALE), NumberSequenceKeypoint.new(1, 0)})
-		end
-	end
-
-	-- how it sits in the hand (points forward and down)
-	tool.Grip = CFrame.new(0, 0, 1.4 * SCALE) * CFrame.Angles(math.rad(50), 0, 0)
-
-	-- weld everything to the handle
-	for _, part in ipairs(tool:GetChildren()) do
-		if part:IsA("BasePart") and part ~= handle then
-			local weld = Instance.new("WeldConstraint")
-			weld.Part0 = handle
-			weld.Part1 = part
-			weld.Parent = handle
-		end
-	end
-
-	return tool
-end
-]=])
 install(game:GetService("ServerScriptService"), "WorldGate", "ModuleScript", [=[
 -- WorldGate (ModuleScript in ServerScriptService)
 -- Builds the portal players use to travel between worlds: a big chunky portal ring
@@ -3653,107 +4246,40 @@ local announceRemote = remotes:WaitForChild("Announcement")
 local player = Players.LocalPlayer
 
 ---------------------------------------------------------------------
--- UI HELPERS
+-- UI
 ---------------------------------------------------------------------
-local DARK = Color3.fromRGB(18, 20, 32)
-local CYAN = Color3.fromRGB(0, 225, 255)
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local C = UIKit.Colors
 local GRADE_COLORS = {
-	Perfect = Color3.fromRGB(90, 255, 120),
-	Good = Color3.fromRGB(255, 210, 60),
-	Miss = Color3.fromRGB(255, 80, 80),
+	Perfect = C.Mint,
+	Good = C.Sun,
+	Miss = C.Coral,
 }
 
-local gui = Instance.new("ScreenGui")
-gui.Name = "DigGui"
-gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-gui.Parent = player:WaitForChild("PlayerGui")
-
-local function corner(parent, radius)
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, radius or 12)
-	c.Parent = parent
-end
-
-local function stroke(parent, color, thickness)
-	local s = Instance.new("UIStroke")
-	s.Color = color
-	s.Thickness = thickness or 2
-	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	s.Parent = parent
-	return s
-end
-
-local function frame(parent, size, position, color, transparency)
-	local f = Instance.new("Frame")
-	f.Size = size
-	f.Position = position
-	f.AnchorPoint = Vector2.new(0.5, 0.5)
-	f.BackgroundColor3 = color
-	f.BackgroundTransparency = transparency or 0
-	f.BorderSizePixel = 0
-	f.Parent = parent
-	return f
-end
-
-local function label(parent, text, size, position, color, font)
-	local l = Instance.new("TextLabel")
-	l.Size = size
-	l.Position = position
-	l.AnchorPoint = Vector2.new(0.5, 0.5)
-	l.BackgroundTransparency = 1
-	l.Text = text
-	l.TextColor3 = color
-	l.Font = font or Enum.Font.GothamBold
-	l.TextScaled = true
-	l.TextWrapped = true
-	l.Parent = parent
-	return l
-end
+local gui = UIKit.screen(player, "DigGui", 5)
 
 ---------------------------------------------------------------------
 -- MINIGAME
 ---------------------------------------------------------------------
-local mini = frame(gui, UDim2.new(0, 440, 0, 120), UDim2.new(0.5, 0, 0.74, 0), DARK, 0.15)
+local mini = UIKit.panel(gui, {Size = UDim2.fromOffset(460, 130), Position = UDim2.fromScale(0.5, 0.7), AnchorPoint = Vector2.new(0.5, 0.5), Radius = 22, Stroke = 4})
 mini.Visible = false
-corner(mini, 14)
-stroke(mini, CYAN, 2)
-local miniTitle = label(mini, "HIT THE GLOWING ZONE FOR BONUS LUCK!", UDim2.new(0.9, 0, 0, 22), UDim2.new(0.5, 0, 0, 20), Color3.new(1, 1, 1), Enum.Font.GothamBlack)
+local miniTab = UIKit.panel(mini, {Size = UDim2.new(0.7, 0, 0, 40), Position = UDim2.new(0.5, 0, 0, -18), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sun, Radius = 14})
+UIKit.label(miniTab, "LUCKY DIG!", {Size = UDim2.new(1, -16, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
+UIKit.label(mini, "Stop in the green for bonus luck!", {Size = UDim2.new(0.9, 0, 0, 22), Position = UDim2.new(0.5, 0, 0, 30), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0})
 
-local bar = frame(mini, UDim2.new(0.9, 0, 0, 28), UDim2.new(0.5, 0, 0, 58), Color3.fromRGB(45, 48, 62))
-corner(bar, 8)
+local bar = UIKit.panel(mini, {Size = UDim2.new(0.9, 0, 0, 32), Position = UDim2.new(0.5, 0, 0, 60), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 16, Stroke = 3, Shade = false})
 bar.ClipsDescendants = false
 
-local goodZone = Instance.new("Frame")
-goodZone.BackgroundColor3 = GRADE_COLORS.Good
-goodZone.BorderSizePixel = 0
-goodZone.Size = UDim2.new(0.22, 0, 1, 0)
-goodZone.Parent = bar
-corner(goodZone, 6)
+local goodZone = UIKit.panel(bar, {Size = UDim2.new(0.22, 0, 1, 0), Color = GRADE_COLORS.Good, Radius = 12, Stroke = false, Shade = false})
 
-local perfectZone = Instance.new("Frame")
-perfectZone.BackgroundColor3 = GRADE_COLORS.Perfect
-perfectZone.BorderSizePixel = 0
-perfectZone.AnchorPoint = Vector2.new(0.5, 0)
-perfectZone.Position = UDim2.new(0.5, 0, 0, 0)
-perfectZone.Size = UDim2.new(0.3, 0, 1, 0) -- 30% of the good zone
-perfectZone.Parent = goodZone
+local perfectZone = UIKit.panel(goodZone, {Size = UDim2.new(0.3, 0, 1, 0), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0), Color = GRADE_COLORS.Perfect, Radius = 8, Stroke = false, Shade = false})
 
-local marker = Instance.new("Frame")
-marker.BackgroundColor3 = Color3.new(1, 1, 1)
-marker.BorderSizePixel = 0
-marker.AnchorPoint = Vector2.new(0.5, 0.5)
-marker.Size = UDim2.new(0, 6, 1.5, 0)
-marker.Position = UDim2.new(0, 0, 0.5, 0)
+local marker = UIKit.panel(bar, {Size = UDim2.new(0, 12, 1.6, 0), Position = UDim2.new(0, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Radius = 6, Stroke = 3, Shade = false})
 marker.ZIndex = 3
-marker.Parent = bar
-corner(marker, 3)
 
-local hint = label(mini, "Click, tap, or press Space", UDim2.new(0.9, 0, 0, 18), UDim2.new(0.5, 0, 0, 98), Color3.fromRGB(180, 185, 200), Enum.Font.GothamMedium)
-local gradeText = label(gui, "", UDim2.new(0, 400, 0, 70), UDim2.new(0.5, 0, 0.6, 0), Color3.new(1, 1, 1), Enum.Font.GothamBlack)
+UIKit.label(mini, "Click, tap, or press Space", {Size = UDim2.new(0.9, 0, 0, 18), Position = UDim2.new(0.5, 0, 1, -24), AnchorPoint = Vector2.new(0.5, 0), Color = C.Grey, Stroke = 0})
+local gradeText = UIKit.label(gui, "", {Size = UDim2.fromOffset(420, 72), Position = UDim2.fromScale(0.5, 0.58), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 4})
 gradeText.Visible = false
-stroke(gradeText, Color3.new(0, 0, 0), 3).ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
 
 local playing = false
 local SPEED = 1.3 -- how fast the marker moves (bar widths per second)
@@ -3762,6 +4288,7 @@ local function showGrade(grade)
 	gradeText.Text = string.upper(grade) .. (grade == "Miss" and "" or "!")
 	gradeText.TextColor3 = GRADE_COLORS[grade]
 	gradeText.Visible = true
+	UIKit.pop(gradeText, 0.4)
 	task.delay(0.8, function()
 		gradeText.Visible = false
 	end)
@@ -3779,6 +4306,7 @@ local function startMinigame()
 	local zoneCenter = zoneStart + zoneWidth / 2
 
 	mini.Visible = true
+	UIKit.pop(mini)
 	local t = 0
 	local position = 0
 	local renderConn, inputConn
@@ -3830,21 +4358,20 @@ minigameRemote.OnClientEvent:Connect(startMinigame)
 ---------------------------------------------------------------------
 -- "YOU FOUND" POPUP
 ---------------------------------------------------------------------
-local popup = frame(gui, UDim2.new(0, 380, 0, 230), UDim2.new(0.5, 0, 0.42, 0), DARK, 0.05)
+local popup = UIKit.panel(gui, {Size = UDim2.fromOffset(400, 250), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), Radius = 24, Stroke = 5})
 popup.Visible = false
-corner(popup, 16)
-local popupStroke = stroke(popup, Color3.new(1, 1, 1), 4)
+local popupStroke = popup:FindFirstChildOfClass("UIStroke")
 local popupScale = Instance.new("UIScale")
 popupScale.Parent = popup
 
-local foundLabel = label(popup, "YOU FOUND", UDim2.new(0.9, 0, 0, 20), UDim2.new(0.5, 0, 0, 22), Color3.fromRGB(180, 185, 200), Enum.Font.GothamBold)
-local nameLabel = label(popup, "", UDim2.new(0.9, 0, 0, 36), UDim2.new(0.5, 0, 0, 56), Color3.new(1, 1, 1), Enum.Font.GothamBlack)
-local rarityLabel = label(popup, "", UDim2.new(0.9, 0, 0, 26), UDim2.new(0.5, 0, 0, 90), Color3.new(1, 1, 1), Enum.Font.GothamBlack)
-local incomeLabel = label(popup, "", UDim2.new(0.9, 0, 0, 22), UDim2.new(0.5, 0, 0, 120), Color3.fromRGB(90, 255, 120), Enum.Font.GothamBold)
-local descLabel = label(popup, "", UDim2.new(0.88, 0, 0, 46), UDim2.new(0.5, 0, 0, 164), Color3.fromRGB(200, 205, 215), Enum.Font.GothamMedium)
-descLabel.TextScaled = false
-descLabel.TextSize = 15
-local footerLabel = label(popup, "Added to your inventory", UDim2.new(0.9, 0, 0, 16), UDim2.new(0.5, 0, 0, 208), Color3.fromRGB(140, 145, 160), Enum.Font.GothamMedium)
+local foundTab = UIKit.panel(popup, {Size = UDim2.new(0.62, 0, 0, 42), Position = UDim2.new(0.5, 0, 0, -20), AnchorPoint = Vector2.new(0.5, 0), Color = C.Violet, Radius = 14})
+local foundLabel = UIKit.label(foundTab, "YOU FOUND", {Size = UDim2.new(1, -16, 0.78, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
+local nameLabel = UIKit.label(popup, "", {Size = UDim2.new(0.9, 0, 0, 38), Position = UDim2.new(0.5, 0, 0, 34), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0})
+local rarityTag = UIKit.panel(popup, {Size = UDim2.fromOffset(190, 34), Position = UDim2.new(0.5, 0, 0, 78), AnchorPoint = Vector2.new(0.5, 0), Color = C.Lilac, Radius = 17})
+local rarityLabel = UIKit.label(rarityTag, "", {Size = UDim2.new(1, -16, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
+local incomeLabel = UIKit.label(popup, "", {Size = UDim2.new(0.9, 0, 0, 26), Position = UDim2.new(0.5, 0, 0, 120), AnchorPoint = Vector2.new(0.5, 0), Color = C.Money, Stroke = 2})
+local descLabel = UIKit.label(popup, "", {Size = UDim2.new(0.86, 0, 0, 48), Position = UDim2.new(0.5, 0, 0, 152), AnchorPoint = Vector2.new(0.5, 0), Color = C.Grey, Stroke = 0, Font = Enum.Font.GothamMedium, TextSize = 15})
+UIKit.label(popup, "Added to your inventory", {Size = UDim2.new(0.9, 0, 0, 18), Position = UDim2.new(0.5, 0, 1, -28), AnchorPoint = Vector2.new(0.5, 0), Color = C.Violet, Stroke = 0})
 
 local flash = Instance.new("Frame")
 flash.Size = UDim2.fromScale(1, 1)
@@ -3860,11 +4387,11 @@ resultRemote.OnClientEvent:Connect(function(info)
 
 	nameLabel.Text = info.Name
 	rarityLabel.Text = string.upper(info.Rarity)
-	rarityLabel.TextColor3 = info.Color
-	popupStroke.Color = info.Color
+	rarityTag.BackgroundColor3 = info.Color
+	popupStroke.Color = info.Color:Lerp(C.Ink, 0.35)
 	incomeLabel.Text = ArtifactData.FormatMoney(info.Income) .. " / sec"
 	descLabel.Text = info.Description
-	foundLabel.Text = (info.Grade == "Perfect" and "PERFECT DIG! YOU FOUND") or "YOU FOUND"
+	foundLabel.Text = (info.Grade == "Perfect" and "PERFECT DIG!") or "YOU FOUND"
 
 	-- pop-in animation
 	popup.Visible = true
@@ -3875,7 +4402,7 @@ resultRemote.OnClientEvent:Connect(function(info)
 	local big = info.RarityIndex >= ArtifactData.GetRarityIndex("Legendary")
 	if big then
 		flash.BackgroundColor3 = info.Color
-		flash.BackgroundTransparency = 0.35
+		flash.BackgroundTransparency = 0.55
 		TweenService:Create(flash, TweenInfo.new(1.2), {BackgroundTransparency = 1}):Play()
 	end
 
@@ -3889,20 +4416,22 @@ end)
 ---------------------------------------------------------------------
 -- RARE FIND ANNOUNCEMENTS (whole server)
 ---------------------------------------------------------------------
-local banner = frame(gui, UDim2.new(0, 640, 0, 52), UDim2.new(0.5, 0, 0, 90), DARK, 0.1)
+local banner = UIKit.panel(gui, {Size = UDim2.fromOffset(660, 56), Position = UDim2.new(0.5, 0, 0, 70), AnchorPoint = Vector2.new(0.5, 0), Radius = 28, Stroke = 4})
 banner.Visible = false
-corner(banner, 12)
-local bannerStroke = stroke(banner, Color3.new(1, 1, 1), 3)
-local bannerText = label(banner, "", UDim2.new(0.94, 0, 0.7, 0), UDim2.new(0.5, 0, 0.5, 0), Color3.new(1, 1, 1), Enum.Font.GothamBlack)
+local bannerStroke = banner:FindFirstChildOfClass("UIStroke")
+local bannerStar = UIKit.panel(banner, {Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0, 6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Sun, Radius = 23})
+UIKit.label(bannerStar, "!", {Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
+local bannerText = UIKit.label(banner, "", {Size = UDim2.new(1, -80, 0.62, 0), Position = UDim2.new(0, 62, 0.19, 0), Align = "Left", Color = C.Ink, Stroke = 0})
 
 local bannerToken = 0
 announceRemote.OnClientEvent:Connect(function(message, color)
 	bannerToken += 1
 	local myToken = bannerToken
-	bannerText.Text = "🌟 " .. message
-	bannerText.TextColor3 = color
-	bannerStroke.Color = color
+	bannerText.Text = message
+	bannerStar.BackgroundColor3 = typeof(color) == "Color3" and color or C.Sun
+	bannerStroke.Color = C.Ink
 	banner.Visible = true
+	UIKit.pop(banner, 0.7)
 	task.delay(6, function()
 		if bannerToken == myToken then
 			banner.Visible = false
@@ -3981,18 +4510,224 @@ RunService.Heartbeat:Connect(function(dt)
 	end
 end)
 ]=])
-install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "ShovelClient", "LocalScript", [=[
--- ShovelClient (LocalScript in StarterPlayer > StarterPlayerScripts)
--- Shovel swing + dig animation, depth + zone display, underground light,
--- Return to Surface button, and the Shovel Shop menu (each world's shovels + their depth rating).
+install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "HUD", "LocalScript", [=[
+-- HUD (LocalScript in StarterPlayer > StarterPlayerScripts)
+-- The always-on screen: money and income counters, which world you're in, and a
+-- custom hotbar that shows your shovel as a 3D icon (replaces Roblox's default backpack bar).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local C = UIKit.Colors
+
+local player = Players.LocalPlayer
+local gui = UIKit.screen(player, "HUD", 1)
+
+-- our own hotbar replaces the default one
+task.spawn(function()
+	for _ = 1, 20 do
+		if pcall(function() StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false) end) then break end
+		task.wait(0.5)
+	end
+end)
+
+---------------------------------------------------------------------
+-- MONEY / INCOME / WORLD (top left)
+---------------------------------------------------------------------
+local stats = Instance.new("Frame")
+stats.BackgroundTransparency = 1
+stats.Size = UDim2.fromOffset(260, 150)
+stats.Position = UDim2.fromOffset(16, 16)
+stats.Parent = gui
+local statsLayout = Instance.new("UIListLayout")
+statsLayout.Padding = UDim.new(0, 8)
+statsLayout.Parent = stats
+
+local function pill(color, iconText, iconColor, order)
+	local p = UIKit.panel(stats, {Size = UDim2.fromOffset(230, 44), Color = C.Panel, Radius = 22})
+	p.LayoutOrder = order
+	local icon = UIKit.panel(p, {Size = UDim2.fromOffset(52, 52), Position = UDim2.new(0, -8, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = color, Radius = 26})
+	UIKit.label(icon, iconText, {Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = iconColor or C.White, Stroke = 2})
+	local text = UIKit.label(p, "", {Size = UDim2.new(1, -62, 0.7, 0), Position = UDim2.new(0, 54, 0.15, 0), Align = "Left", Color = C.Ink, Stroke = 0})
+	return p, text
+end
+
+local moneyPill, moneyText = pill(C.Money, "$", C.White, 1)
+local _, incomeText = pill(C.Sun, "+", C.White, 2)
+local _, worldText = pill(C.Lilac, "W", C.White, 3)
+
+local shownMoney = 0
+local moneyScale = Instance.new("UIScale")
+moneyScale.Parent = moneyPill
+local function refreshMoney()
+	local money = player:GetAttribute("Money") or 0
+	if money > shownMoney + 0.5 then
+		-- little bounce when money goes up
+		moneyScale.Scale = 1.08
+		TweenService:Create(moneyScale, TweenInfo.new(0.25, Enum.EasingStyle.Back), {Scale = 1}):Play()
+	end
+	shownMoney = money
+	moneyText.Text = ArtifactData.FormatMoney(money)
+end
+local function refreshIncome()
+	incomeText.Text = ArtifactData.FormatMoney(player:GetAttribute("Income") or 0) .. " / sec"
+end
+local function refreshWorld()
+	local world = GameConfig.GetWorld(player:GetAttribute("CurrentWorld") or 1)
+	worldText.Text = world and world.Name or ""
+end
+player:GetAttributeChangedSignal("Money"):Connect(refreshMoney)
+player:GetAttributeChangedSignal("Income"):Connect(refreshIncome)
+player:GetAttributeChangedSignal("CurrentWorld"):Connect(refreshWorld)
+refreshMoney()
+refreshIncome()
+refreshWorld()
+
+---------------------------------------------------------------------
+-- HOTBAR (bottom center): one slot per tool, 3D icon for shovels
+---------------------------------------------------------------------
+local hotbar = Instance.new("Frame")
+hotbar.BackgroundTransparency = 1
+hotbar.Size = UDim2.fromOffset(400, 86)
+hotbar.Position = UDim2.new(0.5, 0, 1, -12)
+hotbar.AnchorPoint = Vector2.new(0.5, 1)
+hotbar.Parent = gui
+local hotbarLayout = Instance.new("UIListLayout")
+hotbarLayout.FillDirection = Enum.FillDirection.Horizontal
+hotbarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+hotbarLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+hotbarLayout.Padding = UDim.new(0, 10)
+hotbarLayout.SortOrder = Enum.SortOrder.LayoutOrder
+hotbarLayout.Parent = hotbar
+
+local KEYS = {Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four, Enum.KeyCode.Five}
+local slots = {} -- {Tool, Button}
+
+local function toggle(tool)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then return end
+	if tool.Parent == character then
+		humanoid:UnequipTools()
+	else
+		humanoid:EquipTool(tool)
+	end
+end
+
+local function styleSlot(slot)
+	local equipped = slot.Tool.Parent == player.Character
+	slot.Button.BackgroundColor3 = equipped and C.Sun or C.Panel
+	slot.Hint.Visible = not equipped
+end
+
+local function rebuild()
+	local tools = {}
+	for _, container in ipairs({player:FindFirstChild("Backpack"), player.Character}) do
+		if container then
+			for _, item in ipairs(container:GetChildren()) do
+				if item:IsA("Tool") then table.insert(tools, item) end
+			end
+		end
+	end
+	table.sort(tools, function(a, b) return a.Name < b.Name end)
+	-- same tools as before (e.g. one just got equipped)? only restyle, don't redraw icons
+	local same = #tools == #slots
+	for i, tool in ipairs(tools) do
+		if not slots[i] or slots[i].Tool ~= tool then same = false end
+	end
+	if same then
+		for _, slot in ipairs(slots) do styleSlot(slot) end
+		return
+	end
+	for _, slot in ipairs(slots) do
+		slot.Button:Destroy()
+	end
+	slots = {}
+	for i, tool in ipairs(tools) do
+		if i > #KEYS then break end
+		local button = UIKit.button(hotbar, "", {Size = UDim2.fromOffset(78, 78), Color = C.Panel, Radius = 18})
+		button.LayoutOrder = i
+		local def = GameConfig.GetShovel(tool:GetAttribute("ShovelId"))
+		if def then
+			UIKit.shovelIcon(button, def, {Size = UDim2.fromScale(0.92, 0.92), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5)})
+		else
+			UIKit.label(button, tool.Name, {Size = UDim2.fromScale(0.9, 0.5), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0})
+		end
+		local key = UIKit.panel(button, {Size = UDim2.fromOffset(26, 26), Position = UDim2.fromOffset(-6, -6), Color = C.Violet, Radius = 13, Stroke = 2})
+		UIKit.label(key, tostring(i), {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 0})
+		local hint = UIKit.label(button, "Equip!", {Size = UDim2.new(1.4, 0, 0, 22), Position = UDim2.new(0.5, 0, 0, -30), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sun, Stroke = 2})
+		local slot = {Tool = tool, Button = button, Hint = hint}
+		button.MouseButton1Click:Connect(function() toggle(tool) end)
+		table.insert(slots, slot)
+		styleSlot(slot)
+	end
+end
+
+local pending = false
+local function queueRebuild()
+	if pending then return end
+	pending = true
+	task.defer(function()
+		pending = false
+		rebuild()
+	end)
+end
+
+local function watch(container)
+	local function onChange(child)
+		if child:IsA("Tool") then queueRebuild() end
+	end
+	container.ChildAdded:Connect(onChange)
+	container.ChildRemoved:Connect(onChange)
+end
+
+local function onCharacter(character)
+	watch(character)
+	watch(player:WaitForChild("Backpack"))
+	queueRebuild()
+end
+player.CharacterAdded:Connect(onCharacter)
+if player.Character then onCharacter(player.Character) end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	for i, key in ipairs(KEYS) do
+		if input.KeyCode == key and slots[i] then
+			toggle(slots[i].Tool)
+		end
+	end
+end)
+
+-- keep the equipped highlight in sync (equipping moves the tool between Backpack and Character)
+task.spawn(function()
+	while true do
+		task.wait(0.25)
+		for _, slot in ipairs(slots) do
+			if slot.Button.Parent then styleSlot(slot) end
+		end
+	end
+end)
+]=])
+install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "ShovelClient", "LocalScript", [=[
+-- ShovelClient (LocalScript in StarterPlayer > StarterPlayerScripts)
+-- Shovel swing + dig animation, depth + zone meter, underground light,
+-- Return to Surface button, and the Shovel Shop window (each world's shovels as cards
+-- with 3D icons, stat bars and their depth rating).
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local C = UIKit.Colors
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local swingRemote = remotes:WaitForChild("DigSwing")
 local digMessageRemote = remotes:WaitForChild("DigProgress")
@@ -4006,88 +4741,26 @@ local player = Players.LocalPlayer
 local mouse = player:GetMouse()
 local camera = workspace.CurrentCamera
 
-local DARK = Color3.fromRGB(18, 20, 32)
-local ROW = Color3.fromRGB(32, 35, 50)
-local CYAN = Color3.fromRGB(0, 225, 255)
-local GOLD = Color3.fromRGB(255, 200, 60)
-local GREEN = Color3.fromRGB(70, 200, 110)
-local RED = Color3.fromRGB(200, 70, 70)
-local GREY = Color3.fromRGB(90, 95, 110)
-
-local gui = Instance.new("ScreenGui")
-gui.Name = "ShovelGui"
-gui.ResetOnSpawn = false
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-gui.Parent = player:WaitForChild("PlayerGui")
-
-local function corner(parent, radius)
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, radius or 10)
-	c.Parent = parent
-end
-
-local function stroke(parent, color, thickness)
-	local s = Instance.new("UIStroke")
-	s.Color = color
-	s.Thickness = thickness or 2
-	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	s.Parent = parent
-	return s
-end
-
-local function label(parent, text, size, position, color, font, anchor)
-	local l = Instance.new("TextLabel")
-	l.Size = size
-	l.Position = position
-	l.AnchorPoint = anchor or Vector2.new(0, 0)
-	l.BackgroundTransparency = 1
-	l.Text = text
-	l.TextColor3 = color
-	l.Font = font or Enum.Font.GothamBold
-	l.TextScaled = true
-	l.TextXAlignment = Enum.TextXAlignment.Left
-	l.Parent = parent
-	return l
-end
-
-local function button(parent, text, size, position, color)
-	local b = Instance.new("TextButton")
-	b.Size = size
-	b.Position = position
-	b.BackgroundColor3 = color
-	b.Text = text
-	b.TextColor3 = Color3.new(1, 1, 1)
-	b.Font = Enum.Font.GothamBlack
-	b.TextScaled = true
-	b.Parent = parent
-	corner(b, 8)
-	local pad = Instance.new("UIPadding")
-	pad.PaddingLeft = UDim.new(0, 8)
-	pad.PaddingRight = UDim.new(0, 8)
-	pad.PaddingTop = UDim.new(0, 7)
-	pad.PaddingBottom = UDim.new(0, 7)
-	pad.Parent = b
-	return b
-end
+local gui = UIKit.screen(player, "ShovelGui", 2)
 
 ---------------------------------------------------------------------
--- HINT MESSAGES
+-- HINT MESSAGES (bubbly text above the hotbar)
 ---------------------------------------------------------------------
-local hint = label(gui, "", UDim2.new(0, 560, 0, 28), UDim2.new(0.5, 0, 1, -255), Color3.fromRGB(255, 220, 120), Enum.Font.GothamBlack, Vector2.new(0.5, 0))
-hint.TextXAlignment = Enum.TextXAlignment.Center
+local hint = UIKit.label(gui, "", {
+	Size = UDim2.fromOffset(620, 34), Position = UDim2.new(0.5, 0, 1, -250), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Sun, Stroke = 3,
+})
 hint.Visible = false
-local hintStroke = Instance.new("UIStroke")
-hintStroke.Thickness = 2
-hintStroke.Parent = hint
 
 local hintToken = 0
 local function showHint(text, color)
 	hintToken += 1
 	local myToken = hintToken
 	hint.Text = text
-	hint.TextColor3 = color or Color3.fromRGB(255, 220, 120)
+	hint.TextColor3 = color or C.Sun
 	hint.Visible = true
-	task.delay(2.5, function()
+	UIKit.pop(hint, 0.7)
+	task.delay(2.8, function()
 		if hintToken == myToken then hint.Visible = false end
 	end)
 end
@@ -4099,23 +4772,21 @@ digMessageRemote.OnClientEvent:Connect(function(message, color)
 end)
 
 ---------------------------------------------------------------------
--- DEPTH PANEL + RETURN TO SURFACE + UNDERGROUND LIGHT
+-- DEPTH METER + RETURN TO SURFACE + UNDERGROUND LIGHT
 ---------------------------------------------------------------------
-local depthPanel = Instance.new("Frame")
-depthPanel.Size = UDim2.new(0, 330, 0, 60)
-depthPanel.Position = UDim2.new(0.5, 0, 1, -100)
-depthPanel.AnchorPoint = Vector2.new(0.5, 1)
-depthPanel.BackgroundColor3 = DARK
-depthPanel.BackgroundTransparency = 0.15
+local depthPanel = UIKit.panel(gui, {
+	Size = UDim2.fromOffset(360, 64), Position = UDim2.new(0.5, 0, 1, -112), AnchorPoint = Vector2.new(0.5, 1),
+	Color = C.Panel, Radius = 20,
+})
 depthPanel.Visible = false
-depthPanel.Parent = gui
-corner(depthPanel, 12)
-local depthStroke = stroke(depthPanel, CYAN, 2)
+local depthStroke = depthPanel:FindFirstChildOfClass("UIStroke")
+local zoneDot = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(40, 40), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Sun, Radius = 20})
+local shovelLabel = UIKit.label(depthPanel, "", {Size = UDim2.new(1, -72, 0, 22), Position = UDim2.fromOffset(62, 8), Align = "Left", Color = C.Ink, Stroke = 0})
+local depthLabel = UIKit.label(depthPanel, "", {Size = UDim2.new(1, -72, 0, 22), Position = UDim2.fromOffset(62, 34), Align = "Left", Color = C.Violet, Stroke = 0})
 
-local shovelLabel = label(depthPanel, "", UDim2.new(1, -20, 0, 18), UDim2.new(0, 10, 0, 7), Color3.new(1, 1, 1), Enum.Font.GothamBlack)
-local depthLabel = label(depthPanel, "", UDim2.new(1, -20, 0, 20), UDim2.new(0, 10, 0, 32), CYAN, Enum.Font.GothamBold)
-
-local surfaceButton = button(gui, "RETURN TO SURFACE", UDim2.new(0, 220, 0, 40), UDim2.new(0.5, -110, 1, -215), Color3.fromRGB(0, 140, 180))
+local surfaceButton = UIKit.button(gui, "RETURN TO SURFACE", {
+	Size = UDim2.fromOffset(250, 48), Position = UDim2.new(0.5, 0, 1, -186), AnchorPoint = Vector2.new(0.5, 1), Color = C.Sky,
+})
 surfaceButton.Visible = false
 surfaceButton.MouseButton1Click:Connect(function()
 	surfaceRemote:FireServer()
@@ -4151,8 +4822,8 @@ task.spawn(function()
 				end
 			end
 			depthLabel.Text = text
-			depthLabel.TextColor3 = zone.Color
-			depthStroke.Color = zone.Color
+			zoneDot.BackgroundColor3 = zone.Color
+			depthStroke.Color = zoneIndex and equippedDef and zoneIndex >= equippedDef.MaxZone and C.Coral or C.Ink
 
 			surfaceButton.Visible = inPit and depth > 4
 
@@ -4310,7 +4981,7 @@ local function onToolEquipped(tool)
 	local baseGrip = tool.Grip
 	local world = GameConfig.GetWorld(def.World) or GameConfig.Worlds[1]
 	equippedDef = def
-	shovelLabel.Text = string.upper(def.Name) .. "  •  " .. math.floor(def.FindChance * 100 + 0.5) .. "% find  •  digs to " .. -world.Zones[def.MaxZone].Bottom .. "m"
+	shovelLabel.Text = def.Name .. "  •  digs to " .. -world.Zones[def.MaxZone].Bottom .. "m"
 	depthPanel.Visible = true
 
 	local activatedConn = tool.Activated:Connect(function()
@@ -4352,89 +5023,64 @@ if player.Character then
 end
 
 ---------------------------------------------------------------------
--- SHOP MENU (the world's shovels + its depth zones)
+-- SHOVEL SHOP WINDOW
 ---------------------------------------------------------------------
-local shop = Instance.new("Frame")
-shop.Size = UDim2.new(0, 600, 0, 480)
-shop.Position = UDim2.new(0.5, 0, 0.5, 0)
-shop.AnchorPoint = Vector2.new(0.5, 0.5)
-shop.BackgroundColor3 = DARK
-shop.BackgroundTransparency = 0.05
-shop.Visible = false
-shop.Parent = gui
-corner(shop, 16)
-stroke(shop, GOLD, 3)
+local window, content = UIKit.window(gui, "SHOVEL SHOP", UDim2.fromOffset(760, 560), C.Violet)
 
-label(shop, "SHOVEL SHOP", UDim2.new(0, 300, 0, 34), UDim2.new(0, 20, 0, 14), GOLD, Enum.Font.GothamBlack)
-local moneyLabel = label(shop, "", UDim2.new(0, 220, 0, 22), UDim2.new(1, -290, 0, 22), Color3.fromRGB(90, 255, 120), Enum.Font.GothamBold)
-moneyLabel.TextXAlignment = Enum.TextXAlignment.Right
-local closeButton = button(shop, "X", UDim2.new(0, 36, 0, 36), UDim2.new(1, -50, 0, 14), RED)
+local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(190, 36), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 18})
+local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -20, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+local worldLabel = UIKit.label(content, "", {Size = UDim2.new(1, -210, 0, 30), Position = UDim2.fromOffset(4, 3), Align = "Left", Color = C.Violet, Stroke = 0})
 
-local list = Instance.new("ScrollingFrame")
-list.Size = UDim2.new(1, -30, 1, -80)
-list.Position = UDim2.new(0, 15, 0, 64)
-list.BackgroundTransparency = 1
-list.BorderSizePixel = 0
-list.ScrollBarThickness = 6
-list.AutomaticCanvasSize = Enum.AutomaticSize.Y
-list.CanvasSize = UDim2.new(0, 0, 0, 0)
-list.Parent = shop
-local layout = Instance.new("UIListLayout")
-layout.Padding = UDim.new(0, 8)
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Parent = list
+local listHolder = Instance.new("Frame")
+listHolder.BackgroundTransparency = 1
+listHolder.Size = UDim2.new(1, 0, 1, -48)
+listHolder.Position = UDim2.fromOffset(0, 46)
+listHolder.Parent = content
+local list = UIKit.list(listHolder, 10)
 
-local order = 0
-local function header(text)
-	order += 1
-	local h = label(list, text, UDim2.new(1, -10, 0, 26), UDim2.new(), CYAN, Enum.Font.GothamBlack)
-	h.LayoutOrder = order
-end
-
-local function makeRow(color, title, stats, description)
-	order += 1
-	local row = Instance.new("Frame")
-	row.Size = UDim2.new(1, -10, 0, 78)
-	row.BackgroundColor3 = ROW
-	row.LayoutOrder = order
-	row.Parent = list
-	corner(row, 10)
-	local swatch = Instance.new("Frame")
-	swatch.Size = UDim2.new(0, 54, 0, 54)
-	swatch.Position = UDim2.new(0, 12, 0.5, 0)
-	swatch.AnchorPoint = Vector2.new(0, 0.5)
-	swatch.BackgroundColor3 = color
-	swatch.Parent = row
-	corner(swatch, 10)
-	label(row, title, UDim2.new(0, 320, 0, 22), UDim2.new(0, 80, 0, 8), Color3.new(1, 1, 1), Enum.Font.GothamBlack)
-	label(row, stats, UDim2.new(0, 320, 0, 17), UDim2.new(0, 80, 0, 32), CYAN, Enum.Font.GothamBold)
-	label(row, description, UDim2.new(0, 320, 0, 15), UDim2.new(0, 80, 0, 53), Color3.fromRGB(170, 175, 190), Enum.Font.GothamMedium)
-	local b = button(row, "", UDim2.new(0, 130, 0, 42), UDim2.new(1, -142, 0.5, -21), GREEN)
-	return b
-end
-
-local shovelButtons = {}
 local shopWorld = GameConfig.Worlds[1] -- which world's shop is open
+local cards = {} -- [shovelId] = button
 
-local function zoneLabel(world, def)
-	local zone = world.Zones[def.MaxZone]
-	return "Digs to " .. -zone.Bottom .. "m (" .. zone.Name .. ")"
+-- the best value of each stat in this world, so the bars fill relative to the top shovel
+local function maxStat(world, key)
+	local m = 0
+	for _, def in ipairs(world.Shovels) do m = math.max(m, def[key]) end
+	return m
 end
 
--- Fills the list with one world's shovels
-local function buildRows(world)
+local function buildCards(world)
 	for _, child in ipairs(list:GetChildren()) do
-		if not child:IsA("UIListLayout") then
-			child:Destroy()
-		end
+		if child:IsA("GuiObject") then child:Destroy() end
 	end
-	shovelButtons = {}
-	order = 0
-	header(string.upper(world.Name) .. "  •  SHOVELS")
-	for _, def in ipairs(world.Shovels) do
-		local stats = zoneLabel(world, def) .. "  •  " .. math.floor(def.FindChance * 100 + 0.5) .. "% find  •  Luck x" .. def.Luck
-		local b = makeRow(def.Color, def.Name, stats, def.Description)
-		shovelButtons[def.Id] = b
+	cards = {}
+	worldLabel.Text = world.Name
+	local maxFind, maxLuck = maxStat(world, "FindChance"), maxStat(world, "Luck")
+	local minCooldown = math.huge
+	for _, def in ipairs(world.Shovels) do minCooldown = math.min(minCooldown, def.Cooldown) end
+
+	for i, def in ipairs(world.Shovels) do
+		local zone = world.Zones[def.MaxZone]
+		local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 128), Color = C.Row, Radius = 18})
+		card.LayoutOrder = i
+		-- icon on a colored plate (plate color = the deepest zone it reaches)
+		local plate = UIKit.panel(card, {Size = UDim2.fromOffset(104, 104), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = zone.Color, Radius = 16})
+		UIKit.shovelIcon(plate, def, {Size = UDim2.fromScale(1, 1)})
+		UIKit.label(card, def.Name, {Size = UDim2.new(0.52, -136, 0, 26), Position = UDim2.fromOffset(128, 10), Align = "Left", Color = C.Ink, Stroke = 0})
+		UIKit.label(card, def.Description, {Size = UDim2.new(0.52, -136, 0, 46), Position = UDim2.fromOffset(128, 36), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = Enum.Font.GothamMedium, TextSize = 12})
+		local zoneTag = UIKit.panel(card, {Size = UDim2.fromOffset(190, 26), Position = UDim2.fromOffset(128, 90), Color = zone.Color, Radius = 13, Stroke = 2})
+		UIKit.label(zoneTag, "DIGS TO " .. -zone.Bottom .. "m  •  " .. string.upper(zone.Name), {Size = UDim2.new(1, -12, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+
+		local statsBox = Instance.new("Frame")
+		statsBox.BackgroundTransparency = 1
+		statsBox.Size = UDim2.new(0.3, 0, 0, 80)
+		statsBox.Position = UDim2.new(0.52, 0, 0, 14)
+		statsBox.Parent = card
+		UIKit.statBar(statsBox, "Find", def.FindChance / maxFind, math.floor(def.FindChance * 1000 + 0.5) / 10 .. "%", C.Mint, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 0)})
+		UIKit.statBar(statsBox, "Luck", def.Luck / maxLuck, "x" .. def.Luck, C.Sun, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 26)})
+		UIKit.statBar(statsBox, "Speed", minCooldown / def.Cooldown, string.format("%.2fs", def.Cooldown), C.Sky, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 52)})
+
+		local b = UIKit.button(card, "", {Size = UDim2.new(0.15, 0, 0, 52), Position = UDim2.new(1, -12, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5)})
+		cards[def.Id] = b
 		b.MouseButton1Click:Connect(function()
 			local owned = string.split(player:GetAttribute("OwnedShovels") or "", ",")
 			if table.find(owned, def.Id) then
@@ -4444,15 +5090,6 @@ local function buildRows(world)
 			end
 		end)
 	end
-	header("DEPTH ZONES")
-	for i, zone in ipairs(world.Zones) do
-		local first = GameConfig.GetFirstShovelForZone(world, i)
-		order += 1
-		local line = label(list, string.upper(zone.Name) .. "   " .. -zone.Top .. "-" .. -zone.Bottom .. "m   •   "
-			.. table.concat(zone.Rarities, ", ") .. "   •   needs " .. (first and first.Name or "?"),
-			UDim2.new(1, -10, 0, 18), UDim2.new(), zone.Color, Enum.Font.GothamBold)
-		line.LayoutOrder = order
-	end
 end
 
 local function refreshShop()
@@ -4460,179 +5097,89 @@ local function refreshShop()
 	local owned = string.split(player:GetAttribute("OwnedShovels") or "", ",")
 	local equipped = player:GetAttribute("EquippedShovel")
 	moneyLabel.Text = ArtifactData.FormatMoney(money)
-
 	for _, def in ipairs(shopWorld.Shovels) do
-		local b = shovelButtons[def.Id]
-		if not b then continue end
-		if def.Id == equipped then
-			b.Text = "EQUIPPED"
-			b.BackgroundColor3 = GREY
-		elseif table.find(owned, def.Id) then
-			b.Text = "EQUIP"
-			b.BackgroundColor3 = Color3.fromRGB(0, 150, 190)
-		else
-			b.Text = "BUY " .. ArtifactData.FormatMoney(def.Price)
-			b.BackgroundColor3 = (money >= def.Price) and GREEN or RED
+		local b = cards[def.Id]
+		if b then
+			if def.Id == equipped then
+				UIKit.setButton(b, "EQUIPPED", C.Grey)
+			elseif table.find(owned, def.Id) then
+				UIKit.setButton(b, "EQUIP", C.Sky)
+			else
+				UIKit.setButton(b, ArtifactData.FormatMoney(def.Price), money >= def.Price and C.Mint or C.Coral)
+			end
 		end
 	end
 end
 
-player:GetAttributeChangedSignal("Money"):Connect(function()
-	if shop.Visible then refreshShop() end
-end)
-player:GetAttributeChangedSignal("OwnedShovels"):Connect(refreshShop)
-player:GetAttributeChangedSignal("EquippedShovel"):Connect(refreshShop)
-
-local shopScale = Instance.new("UIScale")
-shopScale.Parent = shop
+for _, attribute in ipairs({"Money", "OwnedShovels", "EquippedShovel"}) do
+	player:GetAttributeChangedSignal(attribute):Connect(function()
+		if window.Visible then refreshShop() end
+	end)
+end
 
 openShopRemote.OnClientEvent:Connect(function(worldId)
-	shopWorld = GameConfig.GetWorld(worldId) or GameConfig.Worlds[1]
-	buildRows(shopWorld)
+	local world = GameConfig.GetWorld(worldId) or GameConfig.Worlds[1]
+	if world ~= shopWorld or next(cards) == nil then
+		shopWorld = world
+		buildCards(world)
+	end
 	refreshShop()
-	shop.Visible = true
-	shopScale.Scale = 0.6
-	TweenService:Create(shopScale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
-end)
-
-closeButton.MouseButton1Click:Connect(function()
-	shop.Visible = false
+	UIKit.open(window)
 end)
 
 shopMessageRemote.OnClientEvent:Connect(function(message, success)
-	showHint(message, success and Color3.fromRGB(90, 255, 120) or Color3.fromRGB(255, 90, 90))
+	showHint(message, success and C.Mint or C.Coral)
 end)
 ]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "WorldClient", "LocalScript", [=[
 -- WorldClient (LocalScript in StarterPlayer > StarterPlayerScripts)
--- The World Map opened at any World Gate: shows every world, whether it's unlocked,
--- its price, and lets you unlock it or travel there.
+-- The World Map opened at any World Gate: a card per world showing whether it's unlocked,
+-- its price, and a button to unlock it or travel there.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local C = UIKit.Colors
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local openWorldMapRemote = remotes:WaitForChild("OpenWorldMap")
 local buyWorldRemote = remotes:WaitForChild("BuyWorld")
 local travelRemote = remotes:WaitForChild("TravelToWorld")
 
 local player = Players.LocalPlayer
+local gui = UIKit.screen(player, "WorldMapGui", 3)
 
--- desaturated 2050 panel colors
-local PANEL = Color3.fromRGB(30, 31, 34)
-local ROW = Color3.fromRGB(46, 48, 52)
-local STEEL = Color3.fromRGB(150, 154, 160)
-local TEXT = Color3.fromRGB(222, 218, 210)
-local SUBTEXT = Color3.fromRGB(150, 156, 164)
-local GO = Color3.fromRGB(86, 120, 98)
-local BUY = Color3.fromRGB(150, 122, 70)
-local LOCKED = Color3.fromRGB(110, 60, 58)
-local IDLE = Color3.fromRGB(70, 72, 78)
+local window, content = UIKit.window(gui, "WORLD MAP", UDim2.fromOffset(640, 540), C.Sky)
 
-local gui = Instance.new("ScreenGui")
-gui.Name = "WorldMapGui"
-gui.ResetOnSpawn = false
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-gui.Parent = player:WaitForChild("PlayerGui")
+local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(190, 36), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 18})
+local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -20, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+UIKit.label(content, "Unlock new dig sites with cash!", {Size = UDim2.new(1, -210, 0, 28), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0})
 
-local function corner(parent, radius)
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, radius or 6)
-	c.Parent = parent
-end
+local listHolder = Instance.new("Frame")
+listHolder.BackgroundTransparency = 1
+listHolder.Size = UDim2.new(1, 0, 1, -48)
+listHolder.Position = UDim2.fromOffset(0, 46)
+listHolder.Parent = content
+local list = UIKit.list(listHolder, 10)
 
-local function label(parent, text, size, position, color, font)
-	local l = Instance.new("TextLabel")
-	l.Size = size
-	l.Position = position
-	l.BackgroundTransparency = 1
-	l.Text = text
-	l.TextColor3 = color
-	l.Font = font or Enum.Font.GothamMedium
-	l.TextScaled = true
-	l.TextXAlignment = Enum.TextXAlignment.Left
-	l.Parent = parent
-	return l
-end
-
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 560, 0, 470)
-frame.Position = UDim2.fromScale(0.5, 0.5)
-frame.AnchorPoint = Vector2.new(0.5, 0.5)
-frame.BackgroundColor3 = PANEL
-frame.Visible = false
-frame.Parent = gui
-corner(frame, 8)
-local frameStroke = Instance.new("UIStroke")
-frameStroke.Color = STEEL
-frameStroke.Thickness = 1.5
-frameStroke.Parent = frame
-
-label(frame, "WORLD MAP", UDim2.new(0, 300, 0, 30), UDim2.new(0, 20, 0, 14), TEXT, Enum.Font.GothamBold)
-local moneyLabel = label(frame, "", UDim2.new(0, 200, 0, 20), UDim2.new(1, -270, 0, 20), SUBTEXT)
-moneyLabel.TextXAlignment = Enum.TextXAlignment.Right
-
-local close = Instance.new("TextButton")
-close.Size = UDim2.new(0, 34, 0, 34)
-close.Position = UDim2.new(1, -48, 0, 12)
-close.BackgroundColor3 = IDLE
-close.Text = "X"
-close.TextColor3 = TEXT
-close.Font = Enum.Font.GothamBold
-close.TextScaled = true
-close.Parent = frame
-corner(close, 6)
-close.MouseButton1Click:Connect(function()
-	frame.Visible = false
-end)
-
-local list = Instance.new("ScrollingFrame")
-list.Size = UDim2.new(1, -30, 1, -70)
-list.Position = UDim2.new(0, 15, 0, 58)
-list.BackgroundTransparency = 1
-list.BorderSizePixel = 0
-list.ScrollBarThickness = 5
-list.AutomaticCanvasSize = Enum.AutomaticSize.Y
-list.CanvasSize = UDim2.new()
-list.Parent = frame
-local layout = Instance.new("UIListLayout")
-layout.Padding = UDim.new(0, 6)
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Parent = list
-
+local PLANET_COLORS = {C.Mint, C.Sun, C.Coral, C.Sky, C.Lilac, C.Violet, C.Money, C.Coral, C.Sky}
 local buttons = {} -- [worldId] = button
 
 for _, world in ipairs(GameConfig.Worlds) do
-	local row = Instance.new("Frame")
-	row.Size = UDim2.new(1, -8, 0, 58)
-	row.BackgroundColor3 = ROW
-	row.LayoutOrder = world.Id
-	row.Parent = list
-	corner(row, 6)
-	label(row, world.Id .. ".  " .. string.upper(world.Name), UDim2.new(0, 330, 0, 22), UDim2.new(0, 14, 0, 7), TEXT, Enum.Font.GothamBold)
-	local sub = world.Enabled and (#world.Shovels .. " shovels  •  4 depth zones down to " .. -world.Zones[#world.Zones].Bottom .. "m")
-		or "Still being excavated. Coming soon."
-	label(row, sub, UDim2.new(0, 330, 0, 16), UDim2.new(0, 14, 0, 33), SUBTEXT, Enum.Font.Gotham)
+	local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 84), Color = world.Enabled and C.Row or C.PanelTint, Radius = 18})
+	card.LayoutOrder = world.Id
+	-- little planet badge with the world number
+	local planet = UIKit.panel(card, {Size = UDim2.fromOffset(60, 60), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = PLANET_COLORS[world.Id] or C.Lilac, Radius = 30})
+	UIKit.label(planet, tostring(world.Id), {Size = UDim2.fromScale(0.6, 0.6), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
+	UIKit.label(card, world.Name, {Size = UDim2.new(0.6, -90, 0, 28), Position = UDim2.fromOffset(86, 12), Align = "Left", Color = C.Ink, Stroke = 0})
+	local sub = world.Enabled and (#world.Shovels .. " shovels  •  digs down to " .. -world.Zones[#world.Zones].Bottom .. "m")
+		or "Still being excavated... coming soon!"
+	UIKit.label(card, sub, {Size = UDim2.new(0.6, -90, 0, 20), Position = UDim2.fromOffset(86, 46), Align = "Left", Color = C.Grey, Stroke = 0})
 
-	local b = Instance.new("TextButton")
-	b.Size = UDim2.new(0, 150, 0, 38)
-	b.Position = UDim2.new(1, -162, 0.5, -19)
-	b.TextColor3 = TEXT
-	b.Font = Enum.Font.GothamBold
-	b.TextScaled = true
-	b.Parent = row
-	corner(b, 6)
-	local pad = Instance.new("UIPadding")
-	pad.PaddingTop = UDim.new(0, 8)
-	pad.PaddingBottom = UDim.new(0, 8)
-	pad.PaddingLeft = UDim.new(0, 8)
-	pad.PaddingRight = UDim.new(0, 8)
-	pad.Parent = b
+	local b = UIKit.button(card, "", {Size = UDim2.new(0.3, 0, 0, 52), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5)})
 	buttons[world.Id] = b
-
 	b.MouseButton1Click:Connect(function()
 		local unlocked = table.find(string.split(player:GetAttribute("UnlockedWorlds") or "1", ","), tostring(world.Id))
 		if not world.Enabled then
@@ -4640,7 +5187,7 @@ for _, world in ipairs(GameConfig.Worlds) do
 		elseif unlocked then
 			if player:GetAttribute("CurrentWorld") ~= world.Id then
 				travelRemote:FireServer(world.Id)
-				frame.Visible = false
+				window.Visible = false
 			end
 		else
 			buyWorldRemote:FireServer(world.Id)
@@ -4656,34 +5203,26 @@ local function refresh()
 	for _, world in ipairs(GameConfig.Worlds) do
 		local b = buttons[world.Id]
 		if not world.Enabled then
-			b.Text = "SOON  ·  " .. ArtifactData.FormatMoney(world.Price)
-			b.BackgroundColor3 = IDLE
+			UIKit.setButton(b, "SOON • " .. ArtifactData.FormatMoney(world.Price), C.Grey)
 		elseif world.Id == current then
-			b.Text = "YOU ARE HERE"
-			b.BackgroundColor3 = IDLE
+			UIKit.setButton(b, "YOU ARE HERE", C.Lilac)
 		elseif table.find(unlocked, tostring(world.Id)) then
-			b.Text = "TRAVEL"
-			b.BackgroundColor3 = GO
+			UIKit.setButton(b, "TRAVEL", C.Sky)
 		else
-			b.Text = "UNLOCK " .. ArtifactData.FormatMoney(world.Price)
-			b.BackgroundColor3 = (money >= world.Price) and BUY or LOCKED
+			UIKit.setButton(b, "UNLOCK " .. ArtifactData.FormatMoney(world.Price), money >= world.Price and C.Mint or C.Coral)
 		end
 	end
 end
 
 for _, attribute in ipairs({"Money", "UnlockedWorlds", "CurrentWorld"}) do
 	player:GetAttributeChangedSignal(attribute):Connect(function()
-		if frame.Visible then refresh() end
+		if window.Visible then refresh() end
 	end)
 end
 
-local scale = Instance.new("UIScale")
-scale.Parent = frame
 openWorldMapRemote.OnClientEvent:Connect(function()
 	refresh()
-	frame.Visible = true
-	scale.Scale = 0.85
-	TweenService:Create(scale, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1}):Play()
+	UIKit.open(window)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end

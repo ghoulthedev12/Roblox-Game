@@ -10,7 +10,7 @@ local Debris = game:GetService("Debris")
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
-local ShovelModels = require(script.Parent:WaitForChild("ShovelModels"))
+local ShovelModels = require(ReplicatedStorage:WaitForChild("ShovelModels"))
 local ShopBuilder = require(script.Parent:WaitForChild("ShopBuilder"))
 local WorldGate = require(script.Parent:WaitForChild("WorldGate"))
 
@@ -511,6 +511,23 @@ end
 ---------------------------------------------------------------------
 -- PLAYERS
 ---------------------------------------------------------------------
+-- Everyone walks faster than Roblox's default (see GameConfig.WalkSpeed)
+game:GetService("StarterPlayer").CharacterWalkSpeed = GameConfig.WalkSpeed
+local function setSpeed(character)
+	local humanoid = character:WaitForChild("Humanoid", 10)
+	if humanoid then
+		humanoid.WalkSpeed = GameConfig.WalkSpeed
+	end
+end
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(setSpeed)
+	if player.Character then task.spawn(setSpeed, player.Character) end
+end)
+for _, player in ipairs(Players:GetPlayers()) do
+	player.CharacterAdded:Connect(setSpeed)
+	if player.Character then task.spawn(setSpeed, player.Character) end
+end
+
 local function onPlayerAdded(player)
 	PlayerData.WaitForData(player)
 	if not player.Parent then return end

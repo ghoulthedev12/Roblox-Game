@@ -16,107 +16,40 @@ local announceRemote = remotes:WaitForChild("Announcement")
 local player = Players.LocalPlayer
 
 ---------------------------------------------------------------------
--- UI HELPERS
+-- UI
 ---------------------------------------------------------------------
-local DARK = Color3.fromRGB(18, 20, 32)
-local CYAN = Color3.fromRGB(0, 225, 255)
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local C = UIKit.Colors
 local GRADE_COLORS = {
-	Perfect = Color3.fromRGB(90, 255, 120),
-	Good = Color3.fromRGB(255, 210, 60),
-	Miss = Color3.fromRGB(255, 80, 80),
+	Perfect = C.Mint,
+	Good = C.Sun,
+	Miss = C.Coral,
 }
 
-local gui = Instance.new("ScreenGui")
-gui.Name = "DigGui"
-gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-gui.Parent = player:WaitForChild("PlayerGui")
-
-local function corner(parent, radius)
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, radius or 12)
-	c.Parent = parent
-end
-
-local function stroke(parent, color, thickness)
-	local s = Instance.new("UIStroke")
-	s.Color = color
-	s.Thickness = thickness or 2
-	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	s.Parent = parent
-	return s
-end
-
-local function frame(parent, size, position, color, transparency)
-	local f = Instance.new("Frame")
-	f.Size = size
-	f.Position = position
-	f.AnchorPoint = Vector2.new(0.5, 0.5)
-	f.BackgroundColor3 = color
-	f.BackgroundTransparency = transparency or 0
-	f.BorderSizePixel = 0
-	f.Parent = parent
-	return f
-end
-
-local function label(parent, text, size, position, color, font)
-	local l = Instance.new("TextLabel")
-	l.Size = size
-	l.Position = position
-	l.AnchorPoint = Vector2.new(0.5, 0.5)
-	l.BackgroundTransparency = 1
-	l.Text = text
-	l.TextColor3 = color
-	l.Font = font or Enum.Font.GothamBold
-	l.TextScaled = true
-	l.TextWrapped = true
-	l.Parent = parent
-	return l
-end
+local gui = UIKit.screen(player, "DigGui", 5)
 
 ---------------------------------------------------------------------
 -- MINIGAME
 ---------------------------------------------------------------------
-local mini = frame(gui, UDim2.new(0, 440, 0, 120), UDim2.new(0.5, 0, 0.74, 0), DARK, 0.15)
+local mini = UIKit.panel(gui, {Size = UDim2.fromOffset(460, 130), Position = UDim2.fromScale(0.5, 0.7), AnchorPoint = Vector2.new(0.5, 0.5), Radius = 22, Stroke = 4})
 mini.Visible = false
-corner(mini, 14)
-stroke(mini, CYAN, 2)
-local miniTitle = label(mini, "HIT THE GLOWING ZONE FOR BONUS LUCK!", UDim2.new(0.9, 0, 0, 22), UDim2.new(0.5, 0, 0, 20), Color3.new(1, 1, 1), Enum.Font.GothamBlack)
+local miniTab = UIKit.panel(mini, {Size = UDim2.new(0.7, 0, 0, 40), Position = UDim2.new(0.5, 0, 0, -18), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sun, Radius = 14})
+UIKit.label(miniTab, "LUCKY DIG!", {Size = UDim2.new(1, -16, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
+UIKit.label(mini, "Stop in the green for bonus luck!", {Size = UDim2.new(0.9, 0, 0, 22), Position = UDim2.new(0.5, 0, 0, 30), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0})
 
-local bar = frame(mini, UDim2.new(0.9, 0, 0, 28), UDim2.new(0.5, 0, 0, 58), Color3.fromRGB(45, 48, 62))
-corner(bar, 8)
+local bar = UIKit.panel(mini, {Size = UDim2.new(0.9, 0, 0, 32), Position = UDim2.new(0.5, 0, 0, 60), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 16, Stroke = 3, Shade = false})
 bar.ClipsDescendants = false
 
-local goodZone = Instance.new("Frame")
-goodZone.BackgroundColor3 = GRADE_COLORS.Good
-goodZone.BorderSizePixel = 0
-goodZone.Size = UDim2.new(0.22, 0, 1, 0)
-goodZone.Parent = bar
-corner(goodZone, 6)
+local goodZone = UIKit.panel(bar, {Size = UDim2.new(0.22, 0, 1, 0), Color = GRADE_COLORS.Good, Radius = 12, Stroke = false, Shade = false})
 
-local perfectZone = Instance.new("Frame")
-perfectZone.BackgroundColor3 = GRADE_COLORS.Perfect
-perfectZone.BorderSizePixel = 0
-perfectZone.AnchorPoint = Vector2.new(0.5, 0)
-perfectZone.Position = UDim2.new(0.5, 0, 0, 0)
-perfectZone.Size = UDim2.new(0.3, 0, 1, 0) -- 30% of the good zone
-perfectZone.Parent = goodZone
+local perfectZone = UIKit.panel(goodZone, {Size = UDim2.new(0.3, 0, 1, 0), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0), Color = GRADE_COLORS.Perfect, Radius = 8, Stroke = false, Shade = false})
 
-local marker = Instance.new("Frame")
-marker.BackgroundColor3 = Color3.new(1, 1, 1)
-marker.BorderSizePixel = 0
-marker.AnchorPoint = Vector2.new(0.5, 0.5)
-marker.Size = UDim2.new(0, 6, 1.5, 0)
-marker.Position = UDim2.new(0, 0, 0.5, 0)
+local marker = UIKit.panel(bar, {Size = UDim2.new(0, 12, 1.6, 0), Position = UDim2.new(0, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Radius = 6, Stroke = 3, Shade = false})
 marker.ZIndex = 3
-marker.Parent = bar
-corner(marker, 3)
 
-local hint = label(mini, "Click, tap, or press Space", UDim2.new(0.9, 0, 0, 18), UDim2.new(0.5, 0, 0, 98), Color3.fromRGB(180, 185, 200), Enum.Font.GothamMedium)
-local gradeText = label(gui, "", UDim2.new(0, 400, 0, 70), UDim2.new(0.5, 0, 0.6, 0), Color3.new(1, 1, 1), Enum.Font.GothamBlack)
+UIKit.label(mini, "Click, tap, or press Space", {Size = UDim2.new(0.9, 0, 0, 18), Position = UDim2.new(0.5, 0, 1, -24), AnchorPoint = Vector2.new(0.5, 0), Color = C.Grey, Stroke = 0})
+local gradeText = UIKit.label(gui, "", {Size = UDim2.fromOffset(420, 72), Position = UDim2.fromScale(0.5, 0.58), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 4})
 gradeText.Visible = false
-stroke(gradeText, Color3.new(0, 0, 0), 3).ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
 
 local playing = false
 local SPEED = 1.3 -- how fast the marker moves (bar widths per second)
@@ -125,6 +58,7 @@ local function showGrade(grade)
 	gradeText.Text = string.upper(grade) .. (grade == "Miss" and "" or "!")
 	gradeText.TextColor3 = GRADE_COLORS[grade]
 	gradeText.Visible = true
+	UIKit.pop(gradeText, 0.4)
 	task.delay(0.8, function()
 		gradeText.Visible = false
 	end)
@@ -142,6 +76,7 @@ local function startMinigame()
 	local zoneCenter = zoneStart + zoneWidth / 2
 
 	mini.Visible = true
+	UIKit.pop(mini)
 	local t = 0
 	local position = 0
 	local renderConn, inputConn
@@ -193,21 +128,20 @@ minigameRemote.OnClientEvent:Connect(startMinigame)
 ---------------------------------------------------------------------
 -- "YOU FOUND" POPUP
 ---------------------------------------------------------------------
-local popup = frame(gui, UDim2.new(0, 380, 0, 230), UDim2.new(0.5, 0, 0.42, 0), DARK, 0.05)
+local popup = UIKit.panel(gui, {Size = UDim2.fromOffset(400, 250), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), Radius = 24, Stroke = 5})
 popup.Visible = false
-corner(popup, 16)
-local popupStroke = stroke(popup, Color3.new(1, 1, 1), 4)
+local popupStroke = popup:FindFirstChildOfClass("UIStroke")
 local popupScale = Instance.new("UIScale")
 popupScale.Parent = popup
 
-local foundLabel = label(popup, "YOU FOUND", UDim2.new(0.9, 0, 0, 20), UDim2.new(0.5, 0, 0, 22), Color3.fromRGB(180, 185, 200), Enum.Font.GothamBold)
-local nameLabel = label(popup, "", UDim2.new(0.9, 0, 0, 36), UDim2.new(0.5, 0, 0, 56), Color3.new(1, 1, 1), Enum.Font.GothamBlack)
-local rarityLabel = label(popup, "", UDim2.new(0.9, 0, 0, 26), UDim2.new(0.5, 0, 0, 90), Color3.new(1, 1, 1), Enum.Font.GothamBlack)
-local incomeLabel = label(popup, "", UDim2.new(0.9, 0, 0, 22), UDim2.new(0.5, 0, 0, 120), Color3.fromRGB(90, 255, 120), Enum.Font.GothamBold)
-local descLabel = label(popup, "", UDim2.new(0.88, 0, 0, 46), UDim2.new(0.5, 0, 0, 164), Color3.fromRGB(200, 205, 215), Enum.Font.GothamMedium)
-descLabel.TextScaled = false
-descLabel.TextSize = 15
-local footerLabel = label(popup, "Added to your inventory", UDim2.new(0.9, 0, 0, 16), UDim2.new(0.5, 0, 0, 208), Color3.fromRGB(140, 145, 160), Enum.Font.GothamMedium)
+local foundTab = UIKit.panel(popup, {Size = UDim2.new(0.62, 0, 0, 42), Position = UDim2.new(0.5, 0, 0, -20), AnchorPoint = Vector2.new(0.5, 0), Color = C.Violet, Radius = 14})
+local foundLabel = UIKit.label(foundTab, "YOU FOUND", {Size = UDim2.new(1, -16, 0.78, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
+local nameLabel = UIKit.label(popup, "", {Size = UDim2.new(0.9, 0, 0, 38), Position = UDim2.new(0.5, 0, 0, 34), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0})
+local rarityTag = UIKit.panel(popup, {Size = UDim2.fromOffset(190, 34), Position = UDim2.new(0.5, 0, 0, 78), AnchorPoint = Vector2.new(0.5, 0), Color = C.Lilac, Radius = 17})
+local rarityLabel = UIKit.label(rarityTag, "", {Size = UDim2.new(1, -16, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
+local incomeLabel = UIKit.label(popup, "", {Size = UDim2.new(0.9, 0, 0, 26), Position = UDim2.new(0.5, 0, 0, 120), AnchorPoint = Vector2.new(0.5, 0), Color = C.Money, Stroke = 2})
+local descLabel = UIKit.label(popup, "", {Size = UDim2.new(0.86, 0, 0, 48), Position = UDim2.new(0.5, 0, 0, 152), AnchorPoint = Vector2.new(0.5, 0), Color = C.Grey, Stroke = 0, Font = Enum.Font.GothamMedium, TextSize = 15})
+UIKit.label(popup, "Added to your inventory", {Size = UDim2.new(0.9, 0, 0, 18), Position = UDim2.new(0.5, 0, 1, -28), AnchorPoint = Vector2.new(0.5, 0), Color = C.Violet, Stroke = 0})
 
 local flash = Instance.new("Frame")
 flash.Size = UDim2.fromScale(1, 1)
@@ -223,11 +157,11 @@ resultRemote.OnClientEvent:Connect(function(info)
 
 	nameLabel.Text = info.Name
 	rarityLabel.Text = string.upper(info.Rarity)
-	rarityLabel.TextColor3 = info.Color
-	popupStroke.Color = info.Color
+	rarityTag.BackgroundColor3 = info.Color
+	popupStroke.Color = info.Color:Lerp(C.Ink, 0.35)
 	incomeLabel.Text = ArtifactData.FormatMoney(info.Income) .. " / sec"
 	descLabel.Text = info.Description
-	foundLabel.Text = (info.Grade == "Perfect" and "PERFECT DIG! YOU FOUND") or "YOU FOUND"
+	foundLabel.Text = (info.Grade == "Perfect" and "PERFECT DIG!") or "YOU FOUND"
 
 	-- pop-in animation
 	popup.Visible = true
@@ -238,7 +172,7 @@ resultRemote.OnClientEvent:Connect(function(info)
 	local big = info.RarityIndex >= ArtifactData.GetRarityIndex("Legendary")
 	if big then
 		flash.BackgroundColor3 = info.Color
-		flash.BackgroundTransparency = 0.35
+		flash.BackgroundTransparency = 0.55
 		TweenService:Create(flash, TweenInfo.new(1.2), {BackgroundTransparency = 1}):Play()
 	end
 
@@ -252,20 +186,22 @@ end)
 ---------------------------------------------------------------------
 -- RARE FIND ANNOUNCEMENTS (whole server)
 ---------------------------------------------------------------------
-local banner = frame(gui, UDim2.new(0, 640, 0, 52), UDim2.new(0.5, 0, 0, 90), DARK, 0.1)
+local banner = UIKit.panel(gui, {Size = UDim2.fromOffset(660, 56), Position = UDim2.new(0.5, 0, 0, 70), AnchorPoint = Vector2.new(0.5, 0), Radius = 28, Stroke = 4})
 banner.Visible = false
-corner(banner, 12)
-local bannerStroke = stroke(banner, Color3.new(1, 1, 1), 3)
-local bannerText = label(banner, "", UDim2.new(0.94, 0, 0.7, 0), UDim2.new(0.5, 0, 0.5, 0), Color3.new(1, 1, 1), Enum.Font.GothamBlack)
+local bannerStroke = banner:FindFirstChildOfClass("UIStroke")
+local bannerStar = UIKit.panel(banner, {Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0, 6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Sun, Radius = 23})
+UIKit.label(bannerStar, "!", {Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
+local bannerText = UIKit.label(banner, "", {Size = UDim2.new(1, -80, 0.62, 0), Position = UDim2.new(0, 62, 0.19, 0), Align = "Left", Color = C.Ink, Stroke = 0})
 
 local bannerToken = 0
 announceRemote.OnClientEvent:Connect(function(message, color)
 	bannerToken += 1
 	local myToken = bannerToken
-	bannerText.Text = "🌟 " .. message
-	bannerText.TextColor3 = color
-	bannerStroke.Color = color
+	bannerText.Text = message
+	bannerStar.BackgroundColor3 = typeof(color) == "Color3" and color or C.Sun
+	bannerStroke.Color = C.Ink
 	banner.Visible = true
+	UIKit.pop(banner, 0.7)
 	task.delay(6, function()
 		if bannerToken == myToken then
 			banner.Visible = false

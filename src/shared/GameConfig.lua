@@ -6,6 +6,9 @@ local GameConfig = {}
 -- Money you start with
 GameConfig.StartingMoney = 0
 
+-- How fast players walk (Roblox default is 16, so 32 = 2x speed, 24 = 1.5x)
+GameConfig.WalkSpeed = 32
+
 -- Price of every slot, in order (slot 1 to 24). 0 = free from the start.
 GameConfig.SlotPrices = {
 	-- Floor 1 (slots 1-8)

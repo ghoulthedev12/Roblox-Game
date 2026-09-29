@@ -7,7 +7,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
-local ShovelModels = require(script.Parent:WaitForChild("ShovelModels"))
+local ShovelModels = require(ReplicatedStorage:WaitForChild("ShovelModels"))
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
 
 -- Places a copy of a shovel model at `target` (blade down), scaled up

@@ -9,7 +9,10 @@ TARGETS = [  # (folder, Studio location as Luau expression)
     ("src/server", 'game:GetService("ServerScriptService")'),
     ("src/client", 'game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts")'),
 ]
-DELETE = [('game:GetService("ServerScriptService")', "DataManager")]
+DELETE = [
+    ('game:GetService("ServerScriptService")', "DataManager"),
+    ('game:GetService("ServerScriptService")', "ShovelModels"),  # moved to ReplicatedStorage
+]
 
 
 def kind(filename):

@@ -1,14 +1,16 @@
 -- ShovelClient (LocalScript in StarterPlayer > StarterPlayerScripts)
--- Shovel swing + dig animation, depth + zone display, underground light,
--- Return to Surface button, and the Shovel Shop menu (each world's shovels + their depth rating).
+-- Shovel swing + dig animation, depth + zone meter, underground light,
+-- Return to Surface button, and the Shovel Shop window (each world's shovels as cards
+-- with 3D icons, stat bars and their depth rating).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local C = UIKit.Colors
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local swingRemote = remotes:WaitForChild("DigSwing")
 local digMessageRemote = remotes:WaitForChild("DigProgress")
@@ -22,88 +24,26 @@ local player = Players.LocalPlayer
 local mouse = player:GetMouse()
 local camera = workspace.CurrentCamera
 
-local DARK = Color3.fromRGB(18, 20, 32)
-local ROW = Color3.fromRGB(32, 35, 50)
-local CYAN = Color3.fromRGB(0, 225, 255)
-local GOLD = Color3.fromRGB(255, 200, 60)
-local GREEN = Color3.fromRGB(70, 200, 110)
-local RED = Color3.fromRGB(200, 70, 70)
-local GREY = Color3.fromRGB(90, 95, 110)
-
-local gui = Instance.new("ScreenGui")
-gui.Name = "ShovelGui"
-gui.ResetOnSpawn = false
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-gui.Parent = player:WaitForChild("PlayerGui")
-
-local function corner(parent, radius)
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, radius or 10)
-	c.Parent = parent
-end
-
-local function stroke(parent, color, thickness)
-	local s = Instance.new("UIStroke")
-	s.Color = color
-	s.Thickness = thickness or 2
-	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	s.Parent = parent
-	return s
-end
-
-local function label(parent, text, size, position, color, font, anchor)
-	local l = Instance.new("TextLabel")
-	l.Size = size
-	l.Position = position
-	l.AnchorPoint = anchor or Vector2.new(0, 0)
-	l.BackgroundTransparency = 1
-	l.Text = text
-	l.TextColor3 = color
-	l.Font = font or Enum.Font.GothamBold
-	l.TextScaled = true
-	l.TextXAlignment = Enum.TextXAlignment.Left
-	l.Parent = parent
-	return l
-end
-
-local function button(parent, text, size, position, color)
-	local b = Instance.new("TextButton")
-	b.Size = size
-	b.Position = position
-	b.BackgroundColor3 = color
-	b.Text = text
-	b.TextColor3 = Color3.new(1, 1, 1)
-	b.Font = Enum.Font.GothamBlack
-	b.TextScaled = true
-	b.Parent = parent
-	corner(b, 8)
-	local pad = Instance.new("UIPadding")
-	pad.PaddingLeft = UDim.new(0, 8)
-	pad.PaddingRight = UDim.new(0, 8)
-	pad.PaddingTop = UDim.new(0, 7)
-	pad.PaddingBottom = UDim.new(0, 7)
-	pad.Parent = b
-	return b
-end
+local gui = UIKit.screen(player, "ShovelGui", 2)
 
 ---------------------------------------------------------------------
--- HINT MESSAGES
+-- HINT MESSAGES (bubbly text above the hotbar)
 ---------------------------------------------------------------------
-local hint = label(gui, "", UDim2.new(0, 560, 0, 28), UDim2.new(0.5, 0, 1, -255), Color3.fromRGB(255, 220, 120), Enum.Font.GothamBlack, Vector2.new(0.5, 0))
-hint.TextXAlignment = Enum.TextXAlignment.Center
+local hint = UIKit.label(gui, "", {
+	Size = UDim2.fromOffset(620, 34), Position = UDim2.new(0.5, 0, 1, -250), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Sun, Stroke = 3,
+})
 hint.Visible = false
-local hintStroke = Instance.new("UIStroke")
-hintStroke.Thickness = 2
-hintStroke.Parent = hint
 
 local hintToken = 0
 local function showHint(text, color)
 	hintToken += 1
 	local myToken = hintToken
 	hint.Text = text
-	hint.TextColor3 = color or Color3.fromRGB(255, 220, 120)
+	hint.TextColor3 = color or C.Sun
 	hint.Visible = true
-	task.delay(2.5, function()
+	UIKit.pop(hint, 0.7)
+	task.delay(2.8, function()
 		if hintToken == myToken then hint.Visible = false end
 	end)
 end
@@ -115,23 +55,21 @@ digMessageRemote.OnClientEvent:Connect(function(message, color)
 end)
 
 ---------------------------------------------------------------------
--- DEPTH PANEL + RETURN TO SURFACE + UNDERGROUND LIGHT
+-- DEPTH METER + RETURN TO SURFACE + UNDERGROUND LIGHT
 ---------------------------------------------------------------------
-local depthPanel = Instance.new("Frame")
-depthPanel.Size = UDim2.new(0, 330, 0, 60)
-depthPanel.Position = UDim2.new(0.5, 0, 1, -100)
-depthPanel.AnchorPoint = Vector2.new(0.5, 1)
-depthPanel.BackgroundColor3 = DARK
-depthPanel.BackgroundTransparency = 0.15
+local depthPanel = UIKit.panel(gui, {
+	Size = UDim2.fromOffset(360, 64), Position = UDim2.new(0.5, 0, 1, -112), AnchorPoint = Vector2.new(0.5, 1),
+	Color = C.Panel, Radius = 20,
+})
 depthPanel.Visible = false
-depthPanel.Parent = gui
-corner(depthPanel, 12)
-local depthStroke = stroke(depthPanel, CYAN, 2)
+local depthStroke = depthPanel:FindFirstChildOfClass("UIStroke")
+local zoneDot = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(40, 40), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Sun, Radius = 20})
+local shovelLabel = UIKit.label(depthPanel, "", {Size = UDim2.new(1, -72, 0, 22), Position = UDim2.fromOffset(62, 8), Align = "Left", Color = C.Ink, Stroke = 0})
+local depthLabel = UIKit.label(depthPanel, "", {Size = UDim2.new(1, -72, 0, 22), Position = UDim2.fromOffset(62, 34), Align = "Left", Color = C.Violet, Stroke = 0})
 
-local shovelLabel = label(depthPanel, "", UDim2.new(1, -20, 0, 18), UDim2.new(0, 10, 0, 7), Color3.new(1, 1, 1), Enum.Font.GothamBlack)
-local depthLabel = label(depthPanel, "", UDim2.new(1, -20, 0, 20), UDim2.new(0, 10, 0, 32), CYAN, Enum.Font.GothamBold)
-
-local surfaceButton = button(gui, "RETURN TO SURFACE", UDim2.new(0, 220, 0, 40), UDim2.new(0.5, -110, 1, -215), Color3.fromRGB(0, 140, 180))
+local surfaceButton = UIKit.button(gui, "RETURN TO SURFACE", {
+	Size = UDim2.fromOffset(250, 48), Position = UDim2.new(0.5, 0, 1, -186), AnchorPoint = Vector2.new(0.5, 1), Color = C.Sky,
+})
 surfaceButton.Visible = false
 surfaceButton.MouseButton1Click:Connect(function()
 	surfaceRemote:FireServer()
@@ -167,8 +105,8 @@ task.spawn(function()
 				end
 			end
 			depthLabel.Text = text
-			depthLabel.TextColor3 = zone.Color
-			depthStroke.Color = zone.Color
+			zoneDot.BackgroundColor3 = zone.Color
+			depthStroke.Color = zoneIndex and equippedDef and zoneIndex >= equippedDef.MaxZone and C.Coral or C.Ink
 
 			surfaceButton.Visible = inPit and depth > 4
 
@@ -326,7 +264,7 @@ local function onToolEquipped(tool)
 	local baseGrip = tool.Grip
 	local world = GameConfig.GetWorld(def.World) or GameConfig.Worlds[1]
 	equippedDef = def
-	shovelLabel.Text = string.upper(def.Name) .. "  •  " .. math.floor(def.FindChance * 100 + 0.5) .. "% find  •  digs to " .. -world.Zones[def.MaxZone].Bottom .. "m"
+	shovelLabel.Text = def.Name .. "  •  digs to " .. -world.Zones[def.MaxZone].Bottom .. "m"
 	depthPanel.Visible = true
 
 	local activatedConn = tool.Activated:Connect(function()
@@ -368,89 +306,64 @@ if player.Character then
 end
 
 ---------------------------------------------------------------------
--- SHOP MENU (the world's shovels + its depth zones)
+-- SHOVEL SHOP WINDOW
 ---------------------------------------------------------------------
-local shop = Instance.new("Frame")
-shop.Size = UDim2.new(0, 600, 0, 480)
-shop.Position = UDim2.new(0.5, 0, 0.5, 0)
-shop.AnchorPoint = Vector2.new(0.5, 0.5)
-shop.BackgroundColor3 = DARK
-shop.BackgroundTransparency = 0.05
-shop.Visible = false
-shop.Parent = gui
-corner(shop, 16)
-stroke(shop, GOLD, 3)
+local window, content = UIKit.window(gui, "SHOVEL SHOP", UDim2.fromOffset(760, 560), C.Violet)
 
-label(shop, "SHOVEL SHOP", UDim2.new(0, 300, 0, 34), UDim2.new(0, 20, 0, 14), GOLD, Enum.Font.GothamBlack)
-local moneyLabel = label(shop, "", UDim2.new(0, 220, 0, 22), UDim2.new(1, -290, 0, 22), Color3.fromRGB(90, 255, 120), Enum.Font.GothamBold)
-moneyLabel.TextXAlignment = Enum.TextXAlignment.Right
-local closeButton = button(shop, "X", UDim2.new(0, 36, 0, 36), UDim2.new(1, -50, 0, 14), RED)
+local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(190, 36), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 18})
+local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -20, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+local worldLabel = UIKit.label(content, "", {Size = UDim2.new(1, -210, 0, 30), Position = UDim2.fromOffset(4, 3), Align = "Left", Color = C.Violet, Stroke = 0})
 
-local list = Instance.new("ScrollingFrame")
-list.Size = UDim2.new(1, -30, 1, -80)
-list.Position = UDim2.new(0, 15, 0, 64)
-list.BackgroundTransparency = 1
-list.BorderSizePixel = 0
-list.ScrollBarThickness = 6
-list.AutomaticCanvasSize = Enum.AutomaticSize.Y
-list.CanvasSize = UDim2.new(0, 0, 0, 0)
-list.Parent = shop
-local layout = Instance.new("UIListLayout")
-layout.Padding = UDim.new(0, 8)
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Parent = list
+local listHolder = Instance.new("Frame")
+listHolder.BackgroundTransparency = 1
+listHolder.Size = UDim2.new(1, 0, 1, -48)
+listHolder.Position = UDim2.fromOffset(0, 46)
+listHolder.Parent = content
+local list = UIKit.list(listHolder, 10)
 
-local order = 0
-local function header(text)
-	order += 1
-	local h = label(list, text, UDim2.new(1, -10, 0, 26), UDim2.new(), CYAN, Enum.Font.GothamBlack)
-	h.LayoutOrder = order
-end
-
-local function makeRow(color, title, stats, description)
-	order += 1
-	local row = Instance.new("Frame")
-	row.Size = UDim2.new(1, -10, 0, 78)
-	row.BackgroundColor3 = ROW
-	row.LayoutOrder = order
-	row.Parent = list
-	corner(row, 10)
-	local swatch = Instance.new("Frame")
-	swatch.Size = UDim2.new(0, 54, 0, 54)
-	swatch.Position = UDim2.new(0, 12, 0.5, 0)
-	swatch.AnchorPoint = Vector2.new(0, 0.5)
-	swatch.BackgroundColor3 = color
-	swatch.Parent = row
-	corner(swatch, 10)
-	label(row, title, UDim2.new(0, 320, 0, 22), UDim2.new(0, 80, 0, 8), Color3.new(1, 1, 1), Enum.Font.GothamBlack)
-	label(row, stats, UDim2.new(0, 320, 0, 17), UDim2.new(0, 80, 0, 32), CYAN, Enum.Font.GothamBold)
-	label(row, description, UDim2.new(0, 320, 0, 15), UDim2.new(0, 80, 0, 53), Color3.fromRGB(170, 175, 190), Enum.Font.GothamMedium)
-	local b = button(row, "", UDim2.new(0, 130, 0, 42), UDim2.new(1, -142, 0.5, -21), GREEN)
-	return b
-end
-
-local shovelButtons = {}
 local shopWorld = GameConfig.Worlds[1] -- which world's shop is open
+local cards = {} -- [shovelId] = button
 
-local function zoneLabel(world, def)
-	local zone = world.Zones[def.MaxZone]
-	return "Digs to " .. -zone.Bottom .. "m (" .. zone.Name .. ")"
+-- the best value of each stat in this world, so the bars fill relative to the top shovel
+local function maxStat(world, key)
+	local m = 0
+	for _, def in ipairs(world.Shovels) do m = math.max(m, def[key]) end
+	return m
 end
 
--- Fills the list with one world's shovels
-local function buildRows(world)
+local function buildCards(world)
 	for _, child in ipairs(list:GetChildren()) do
-		if not child:IsA("UIListLayout") then
-			child:Destroy()
-		end
+		if child:IsA("GuiObject") then child:Destroy() end
 	end
-	shovelButtons = {}
-	order = 0
-	header(string.upper(world.Name) .. "  •  SHOVELS")
-	for _, def in ipairs(world.Shovels) do
-		local stats = zoneLabel(world, def) .. "  •  " .. math.floor(def.FindChance * 100 + 0.5) .. "% find  •  Luck x" .. def.Luck
-		local b = makeRow(def.Color, def.Name, stats, def.Description)
-		shovelButtons[def.Id] = b
+	cards = {}
+	worldLabel.Text = world.Name
+	local maxFind, maxLuck = maxStat(world, "FindChance"), maxStat(world, "Luck")
+	local minCooldown = math.huge
+	for _, def in ipairs(world.Shovels) do minCooldown = math.min(minCooldown, def.Cooldown) end
+
+	for i, def in ipairs(world.Shovels) do
+		local zone = world.Zones[def.MaxZone]
+		local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 128), Color = C.Row, Radius = 18})
+		card.LayoutOrder = i
+		-- icon on a colored plate (plate color = the deepest zone it reaches)
+		local plate = UIKit.panel(card, {Size = UDim2.fromOffset(104, 104), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = zone.Color, Radius = 16})
+		UIKit.shovelIcon(plate, def, {Size = UDim2.fromScale(1, 1)})
+		UIKit.label(card, def.Name, {Size = UDim2.new(0.52, -136, 0, 26), Position = UDim2.fromOffset(128, 10), Align = "Left", Color = C.Ink, Stroke = 0})
+		UIKit.label(card, def.Description, {Size = UDim2.new(0.52, -136, 0, 46), Position = UDim2.fromOffset(128, 36), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = Enum.Font.GothamMedium, TextSize = 12})
+		local zoneTag = UIKit.panel(card, {Size = UDim2.fromOffset(190, 26), Position = UDim2.fromOffset(128, 90), Color = zone.Color, Radius = 13, Stroke = 2})
+		UIKit.label(zoneTag, "DIGS TO " .. -zone.Bottom .. "m  •  " .. string.upper(zone.Name), {Size = UDim2.new(1, -12, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+
+		local statsBox = Instance.new("Frame")
+		statsBox.BackgroundTransparency = 1
+		statsBox.Size = UDim2.new(0.3, 0, 0, 80)
+		statsBox.Position = UDim2.new(0.52, 0, 0, 14)
+		statsBox.Parent = card
+		UIKit.statBar(statsBox, "Find", def.FindChance / maxFind, math.floor(def.FindChance * 1000 + 0.5) / 10 .. "%", C.Mint, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 0)})
+		UIKit.statBar(statsBox, "Luck", def.Luck / maxLuck, "x" .. def.Luck, C.Sun, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 26)})
+		UIKit.statBar(statsBox, "Speed", minCooldown / def.Cooldown, string.format("%.2fs", def.Cooldown), C.Sky, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 52)})
+
+		local b = UIKit.button(card, "", {Size = UDim2.new(0.15, 0, 0, 52), Position = UDim2.new(1, -12, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5)})
+		cards[def.Id] = b
 		b.MouseButton1Click:Connect(function()
 			local owned = string.split(player:GetAttribute("OwnedShovels") or "", ",")
 			if table.find(owned, def.Id) then
@@ -460,15 +373,6 @@ local function buildRows(world)
 			end
 		end)
 	end
-	header("DEPTH ZONES")
-	for i, zone in ipairs(world.Zones) do
-		local first = GameConfig.GetFirstShovelForZone(world, i)
-		order += 1
-		local line = label(list, string.upper(zone.Name) .. "   " .. -zone.Top .. "-" .. -zone.Bottom .. "m   •   "
-			.. table.concat(zone.Rarities, ", ") .. "   •   needs " .. (first and first.Name or "?"),
-			UDim2.new(1, -10, 0, 18), UDim2.new(), zone.Color, Enum.Font.GothamBold)
-		line.LayoutOrder = order
-	end
 end
 
 local function refreshShop()
@@ -476,45 +380,36 @@ local function refreshShop()
 	local owned = string.split(player:GetAttribute("OwnedShovels") or "", ",")
 	local equipped = player:GetAttribute("EquippedShovel")
 	moneyLabel.Text = ArtifactData.FormatMoney(money)
-
 	for _, def in ipairs(shopWorld.Shovels) do
-		local b = shovelButtons[def.Id]
-		if not b then continue end
-		if def.Id == equipped then
-			b.Text = "EQUIPPED"
-			b.BackgroundColor3 = GREY
-		elseif table.find(owned, def.Id) then
-			b.Text = "EQUIP"
-			b.BackgroundColor3 = Color3.fromRGB(0, 150, 190)
-		else
-			b.Text = "BUY " .. ArtifactData.FormatMoney(def.Price)
-			b.BackgroundColor3 = (money >= def.Price) and GREEN or RED
+		local b = cards[def.Id]
+		if b then
+			if def.Id == equipped then
+				UIKit.setButton(b, "EQUIPPED", C.Grey)
+			elseif table.find(owned, def.Id) then
+				UIKit.setButton(b, "EQUIP", C.Sky)
+			else
+				UIKit.setButton(b, ArtifactData.FormatMoney(def.Price), money >= def.Price and C.Mint or C.Coral)
+			end
 		end
 	end
 end
 
-player:GetAttributeChangedSignal("Money"):Connect(function()
-	if shop.Visible then refreshShop() end
-end)
-player:GetAttributeChangedSignal("OwnedShovels"):Connect(refreshShop)
-player:GetAttributeChangedSignal("EquippedShovel"):Connect(refreshShop)
-
-local shopScale = Instance.new("UIScale")
-shopScale.Parent = shop
+for _, attribute in ipairs({"Money", "OwnedShovels", "EquippedShovel"}) do
+	player:GetAttributeChangedSignal(attribute):Connect(function()
+		if window.Visible then refreshShop() end
+	end)
+end
 
 openShopRemote.OnClientEvent:Connect(function(worldId)
-	shopWorld = GameConfig.GetWorld(worldId) or GameConfig.Worlds[1]
-	buildRows(shopWorld)
+	local world = GameConfig.GetWorld(worldId) or GameConfig.Worlds[1]
+	if world ~= shopWorld or next(cards) == nil then
+		shopWorld = world
+		buildCards(world)
+	end
 	refreshShop()
-	shop.Visible = true
-	shopScale.Scale = 0.6
-	TweenService:Create(shopScale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
-end)
-
-closeButton.MouseButton1Click:Connect(function()
-	shop.Visible = false
+	UIKit.open(window)
 end)
 
 shopMessageRemote.OnClientEvent:Connect(function(message, success)
-	showHint(message, success and Color3.fromRGB(90, 255, 120) or Color3.fromRGB(255, 90, 90))
+	showHint(message, success and C.Mint or C.Coral)
 end)
