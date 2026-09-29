@@ -753,7 +753,7 @@ install(game:GetService("ReplicatedStorage"), "ShovelModels", "ModuleScript", [=
 -- shovel is built from its STYLES entry. The server uses it for the tools and the shop
 -- displays, the client uses it to draw 3D shovel icons in the UI.
 
-local SCALE = 0.68 -- overall size of the shovels
+local SCALE = 0.62 -- overall size of the shovels
 local ALONG_Z = CFrame.Angles(0, math.rad(90), 0) -- points a cylinder along the shaft
 
 local function rgb(r, g, b)
@@ -1083,8 +1083,10 @@ local function kit(tool)
 end
 
 -- shared pieces ------------------------------------------------------
+-- World 1 shovels are short and chunky: the shaft runs from the socket (-2.3) to TOP
+local TOP = 1.6
 local function shaft(k, color, material, diameter)
-	k.rodZ("Shaft", 5, diameter or 0.3, 0.2, color, material)
+	k.rodZ("Shaft", TOP + 2.3, diameter or 0.3, (TOP - 2.3) / 2, color, material)
 end
 
 local function socket(k, color, material)
@@ -1093,15 +1095,17 @@ local function socket(k, color, material)
 end
 
 local function dGrip(k, frameColor, frameMat, barColor, barMat)
-	k.bar("GripSideL", Vector3.new(0, 0, 2.55), Vector3.new(-0.5, 0, 3.2), 0.2, frameColor, frameMat)
-	k.bar("GripSideR", Vector3.new(0, 0, 2.55), Vector3.new(0.5, 0, 3.2), 0.2, frameColor, frameMat)
-	k.rodX("GripBar", 1.15, 0.28, CFrame.new(0, 0, 3.22), barColor, barMat)
+	k.bar("GripSideL", Vector3.new(0, 0, TOP - 0.15), Vector3.new(-0.5, 0, TOP + 0.5), 0.2, frameColor, frameMat)
+	k.bar("GripSideR", Vector3.new(0, 0, TOP - 0.15), Vector3.new(0.5, 0, TOP + 0.5), 0.2, frameColor, frameMat)
+	k.rodX("GripBar", 1.15, 0.28, CFrame.new(0, 0, TOP + 0.52), barColor, barMat)
+	k.hold = TOP + 0.5 -- the right hand holds the D bar
 end
 
 local function tGrip(k, barColor, barMat, capColor, capMat)
-	k.rodX("TBar", 1.2, 0.3, CFrame.new(0, 0, 2.7), barColor, barMat)
-	k.ball("TCapL", 0.4, CFrame.new(-0.62, 0, 2.7), capColor, capMat)
-	k.ball("TCapR", 0.4, CFrame.new(0.62, 0, 2.7), capColor, capMat)
+	k.rodX("TBar", 1.2, 0.3, CFrame.new(0, 0, TOP), barColor, barMat)
+	k.ball("TCapL", 0.4, CFrame.new(-0.62, 0, TOP), capColor, capMat)
+	k.ball("TCapR", 0.4, CFrame.new(0.62, 0, TOP), capColor, capMat)
+	k.hold = TOP -- the right hand holds the T bar
 end
 
 -- a chunky cartoon spade blade: wide plate, pointed tip, curled-up sides, a foot step
@@ -1158,15 +1162,15 @@ CUSTOM.PlasticShovel = function(k)
 	k.blob("ScoopRim", Vector3.new(2.25, 0.16, 2.45), b * CFrame.new(0, -0.06, -1.05), red)
 	k.ball("Star", 0.3, b * CFrame.new(0.45, 0.16, -0.7), rgb(255, 255, 255))
 	-- little bucket charm hanging off the shaft
-	k.part("CharmString", Vector3.new(0.04, 0.56, 0.04), CFrame.new(0, -0.47, 1.6), rgb(255, 255, 255))
-	k.part("Bucket", Vector3.new(0.4, 0.5, 0.5), CFrame.new(0, -0.95, 1.6) * CFrame.Angles(0, 0, math.rad(90)), rgb(96, 226, 190), "SmoothPlastic", Enum.PartType.Cylinder)
+	k.part("CharmString", Vector3.new(0.04, 0.56, 0.04), CFrame.new(0, -0.47, 0.6), rgb(255, 255, 255))
+	k.part("Bucket", Vector3.new(0.4, 0.5, 0.5), CFrame.new(0, -0.95, 0.6) * CFrame.Angles(0, 0, math.rad(90)), rgb(96, 226, 190), "SmoothPlastic", Enum.PartType.Cylinder)
 end
 
 -- Garden Spade: green painted shaft, shiny pointed blade with little painted flowers
 CUSTOM.GardenSpade = function(k)
 	local green, dark = rgb(90, 176, 96), rgb(58, 128, 66)
 	shaft(k, green, "SmoothPlastic")
-	for z = -1.4, 1.6, 0.75 do
+	for z = -1.4, 0.9, 0.75 do
 		k.rodZ("Stripe", 0.12, 0.32, z, rgb(246, 247, 252))
 	end
 	dGrip(k, dark, "SmoothPlastic", dark, "SmoothPlastic")
@@ -1187,7 +1191,7 @@ end
 CUSTOM.IronShovel = function(k)
 	local wood, iron = rgb(98, 68, 46), rgb(76, 78, 86)
 	shaft(k, wood, "Wood", 0.33)
-	k.rodZ("LeatherWrap", 1.1, 0.38, 1.75, rgb(128, 84, 52), "Fabric")
+	k.rodZ("LeatherWrap", 1.1, 0.38, 0.8, rgb(128, 84, 52), "Fabric")
 	for _, z in ipairs({0.6, -0.9}) do
 		k.rodZ("IronBand", 0.16, 0.4, z, iron, "Metal")
 	end
@@ -1205,7 +1209,7 @@ end
 CUSTOM.SteelSpade = function(k)
 	local dark, steel, sky = rgb(52, 58, 72), rgb(206, 214, 228), rgb(92, 186, 255)
 	shaft(k, dark, "Metal", 0.28)
-	k.rodZ("Grip", 1, 0.34, 1.9, rgb(30, 32, 40), "Fabric")
+	k.rodZ("Grip", 1, 0.34, 0.95, rgb(30, 32, 40), "Fabric")
 	tGrip(k, rgb(30, 32, 40), "Fabric", steel, "Metal")
 	socket(k, steel, "Metal")
 	local b = k.blade
@@ -1220,7 +1224,7 @@ end
 CUSTOM.GoldenShovel = function(k)
 	local gold, deep = rgb(255, 202, 72), rgb(214, 156, 40)
 	shaft(k, gold, "Metal", 0.3)
-	for _, z in ipairs({1.9, 1.5}) do
+	for _, z in ipairs({1.0, 0.7}) do
 		k.rodZ("Wrap", 0.2, 0.34, z, rgb(150, 30, 50), "Fabric")
 	end
 	dGrip(k, gold, "Metal", rgb(150, 30, 50), "Fabric")
@@ -1253,14 +1257,15 @@ CUSTOM.GamerShovel = function(k)
 	local strips = {rgb(230, 90, 200), rgb(80, 200, 230), rgb(110, 225, 130)}
 	for i, color in ipairs(strips) do
 		local a = math.rad(i * 120)
-		k.part("RGBStrip", Vector3.new(0.05, 0.05, 3), CFrame.new(math.cos(a) * 0.15, math.sin(a) * 0.15, 0.1), color, "Neon")
+		k.part("RGBStrip", Vector3.new(0.05, 0.05, 2.8), CFrame.new(math.cos(a) * 0.15, math.sin(a) * 0.15, -0.4), color, "Neon")
 	end
 	-- controller-shaped grip with thumbsticks and buttons
-	k.blob("Controller", Vector3.new(1.5, 0.4, 0.7), CFrame.new(0, 0, 2.8), rgb(44, 44, 54))
-	k.ball("StickL", 0.2, CFrame.new(-0.35, 0.2, 2.8), rgb(120, 122, 132))
+	k.blob("Controller", Vector3.new(1.5, 0.4, 0.7), CFrame.new(0, 0, TOP + 0.15), rgb(44, 44, 54))
+	k.hold = TOP + 0.15
+	k.ball("StickL", 0.2, CFrame.new(-0.35, 0.2, TOP + 0.15), rgb(120, 122, 132))
 	for i, color in ipairs({rgb(110, 225, 130), rgb(230, 90, 110), rgb(80, 160, 240), rgb(240, 200, 80)}) do
 		local a = math.rad(i * 90)
-		k.ball("Button", 0.11, CFrame.new(0.38 + math.cos(a) * 0.12, 0.2, 2.8 + math.sin(a) * 0.12), color)
+		k.ball("Button", 0.11, CFrame.new(0.38 + math.cos(a) * 0.12, 0.2, TOP + 0.15 + math.sin(a) * 0.12), color)
 	end
 	socket(k, black, "Metal")
 	local b = k.blade
@@ -1332,9 +1337,16 @@ return function(def)
 	handle.Transparency = 1
 
 	local custom = CUSTOM[def.Id]
+	local rightZ, leftZ -- where the right and left hands hold the shaft (before scaling)
 	if custom then
-		custom(kit(tool), def)
+		local k = kit(tool)
+		custom(k, def)
+		rightZ = k.hold or TOP
 	else
+		rightZ = s.Grip == "T" and 2.3 or 2.8
+	end
+	leftZ = rightZ - 1.3 -- the other hand holds the shaft a little lower
+	if not custom then
 		-- SHAFT with metal collars
 		cylinderZ(tool, "Shaft", 4.4, 0.22, 0, s.Shaft, s.ShaftMat)
 		cylinderZ(tool, "CollarTop", 0.14, 0.27, 0.95, s.Metal, s.MetalMat)
@@ -1441,7 +1453,11 @@ return function(def)
 	end
 
 	-- how it sits in the hand (points forward and down)
-	tool.Grip = CFrame.new(0, 0, 1.4 * SCALE) * CFrame.Angles(math.rad(50), 0, 0)
+	tool.Grip = CFrame.new(0, 0, rightZ * SCALE) * CFrame.Angles(math.rad(50), 0, 0)
+	-- ShovelClient's two-handed pose reads these (distance along the shaft from the handle):
+	-- one hand on top of the grip, the other a bit lower on the shaft
+	tool:SetAttribute("TopHoldZ", rightZ * SCALE)
+	tool:SetAttribute("LowHoldZ", leftZ * SCALE)
 
 	-- weld everything to the handle
 	for _, part in ipairs(tool:GetChildren()) do
@@ -2505,6 +2521,7 @@ local minigameRemote = getRemote("DigMinigame")
 local resultRemote = getRemote("DigResult")
 local announceRemote = getRemote("Announcement")
 local swingRemote = getRemote("DigSwing")          -- client -> server: swing at a position
+local swingFxRemote = getRemote("ShovelSwingFx")   -- server -> other clients: play this player's swing
 local digMessageRemote = getRemote("DigProgress")  -- server -> client: short messages (text, color)
 local surfaceRemote = getRemote("ReturnToSurface")
 local openShopRemote = getRemote("OpenShovelShop") -- server -> client: (worldId)
@@ -2693,7 +2710,7 @@ local function bounceOff(player, world, def, zoneIndex, zone, position)
 	digMessageRemote:FireClient(player, text, Color3.fromRGB(255, 120, 100))
 end
 
-swingRemote.OnServerEvent:Connect(function(player, target)
+swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	if resetting or sessions[player] then return end
 	local data = PlayerData.Get(player)
 	if not data then return end
@@ -2709,6 +2726,13 @@ swingRemote.OnServerEvent:Connect(function(player, target)
 	local now = os.clock()
 	if now - (lastSwing[player] or 0) < def.Cooldown * 0.85 then return end
 	lastSwing[player] = now
+	-- let everyone else see this player's dig animation
+	local length = typeof(swingLength) == "number" and math.clamp(swingLength, 0.3, 1) or 0.6
+	for _, other in ipairs(Players:GetPlayers()) do
+		if other ~= player then
+			swingFxRemote:FireClient(other, player, length)
+		end
+	end
 
 	-- Where to dig: where the player clicked, or just in front of their feet
 	if typeof(target) ~= "Vector3" or (target - root.Position).Magnitude > MAX_REACH then
@@ -4923,139 +4947,301 @@ task.spawn(function()
 end)
 
 ---------------------------------------------------------------------
--- SWING + DIG ANIMATION
+-- SHOVEL POSE + DIG ANIMATION (for every player's character on this screen)
+-- The real tool is hidden on this screen. A copy of the shovel is placed exactly where the
+-- pose wants it every frame, both arms reach for its shaft with IK (so it's held with two
+-- hands), and the torso leans and twists with the swing. Other players' swings arrive
+-- through ShovelSwingFx, so everyone sees everyone dig.
 ---------------------------------------------------------------------
-local lastSwing = 0
+local Debris = game:GetService("Debris")
+local ShovelModels = require(ReplicatedStorage:WaitForChild("ShovelModels"))
+local swingFxRemote = remotes:WaitForChild("ShovelSwingFx")
 
--- One smooth dig motion, driven every frame.
--- Keyframes: {time 0-1, hand up/down, hand forward/back, blade tilt in degrees}
--- Hand offsets are in studs from where the hand normally rests (+up, -forward).
--- Blade: + tips the blade down into the ground.
-local DIG_KEYS = {
-	{0.00,  0.0,  0.0,   0},  -- resting
-	{0.32,  1.3,  0.3, -18},  -- raise the shovel up
-	{0.52, -1.3, -0.7,  26},  -- strike down into the dirt
-	{0.72, -0.3, -0.4, -16},  -- scoop the dirt up
-	{1.00,  0.0,  0.0,   0},  -- back to resting
+-- Pose values, all relative to the HumanoidRootPart (+X right, +Y up, -Z forward):
+-- Hand  = where the LEFT hand holds the top of the grip (studs). The right hand holds the
+--         shaft a little lower down, so the shovel sits on the right side of the body.
+-- Tilt  = shaft angle from straight down, degrees (+ = blade pushed forward, 90 = level)
+-- Turn  = shovel yaw, degrees (+ = swings to the left, - = to the right)
+-- Lean  = torso pitch (+ = bend forward), Twist = torso yaw (+ = turn left)
+local IDLE = {Hand = Vector3.new(0.15, 0.85, -1.05), Tilt = 22, Turn = -12, Lean = 4, Twist = 6}
+local SWING = {
+	{0.00, IDLE.Hand, 22, -12, 4, 6},
+	{0.26, Vector3.new(0.15, 1.85, -0.65), -6, -8, -10, 12},   -- wind up: lift it high, lean back
+	{0.44, Vector3.new(0.25, 0.3, -1.3), 32, -6, 24, 0},       -- strike: drive the blade into the dirt
+	{0.60, Vector3.new(0.3, 0.45, -1.05), 66, -12, 14, -6},    -- lever: pry the dirt up
+	{0.78, Vector3.new(0.6, 1.3, -0.85), 82, -60, 4, -30},     -- toss it over the right shoulder
+	{1.00, IDLE.Hand, 22, -12, 4, 6},
 }
-local STRIKE_TIME = 0.52
+local STRIKE_TIME = 0.44
+local TOSS_TIME = 0.78
 
--- Smooth curve through the keyframes (Catmull-Rom), so the motion never jerks
-local function sampleKeys(t, column)
+-- tool axes when upright: shaft (+Z) points up, blade face (+Y) points forward
+local UPRIGHT = CFrame.fromMatrix(Vector3.zero, Vector3.xAxis, -Vector3.zAxis, Vector3.yAxis)
+
+-- smooth Catmull-Rom curve through the swing keyframes (never jerky)
+local function catmull(p0, p1, p2, p3, u)
+	local u2, u3 = u * u, u * u * u
+	return (p1 * 2 + (p2 - p0) * u + (p0 * 2 - p1 * 5 + p2 * 4 - p3) * u2 + (p1 * 3 - p0 - p2 * 3 + p3) * u3) * 0.5
+end
+
+local function samplePose(t)
 	t = math.clamp(t, 0, 1)
 	local i = 1
-	while i < #DIG_KEYS - 1 and t > DIG_KEYS[i + 1][1] do
-		i += 1
-	end
-	local k1, k2 = DIG_KEYS[i], DIG_KEYS[i + 1]
-	local k0 = DIG_KEYS[math.max(i - 1, 1)]
-	local k3 = DIG_KEYS[math.min(i + 2, #DIG_KEYS)]
+	while i < #SWING - 1 and t > SWING[i + 1][1] do i += 1 end
+	local k0, k1, k2, k3 = SWING[math.max(i - 1, 1)], SWING[i], SWING[i + 1], SWING[math.min(i + 2, #SWING)]
 	local u = (t - k1[1]) / (k2[1] - k1[1])
-	local p0, p1, p2, p3 = k0[column], k1[column], k2[column], k3[column]
-	local u2, u3 = u * u, u * u * u
-	return 0.5 * ((2 * p1) + (-p0 + p2) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u2 + (-p0 + 3 * p1 - 3 * p2 + p3) * u3)
+	return {
+		Hand = catmull(k0[2], k1[2], k2[2], k3[2], u),
+		Tilt = catmull(k0[3], k1[3], k2[3], k3[3], u),
+		Turn = catmull(k0[4], k1[4], k2[4], k3[4], u),
+		Lean = catmull(k0[5], k1[5], k2[5], k3[5], u),
+		Twist = catmull(k0[6], k1[6], k2[6], k3[6], u),
+	}
 end
 
-local function smoothstep(x)
-	x = math.clamp(x, 0, 1)
-	return x * x * (3 - 2 * x)
+-- gentle breathing sway while holding the shovel
+local function idlePose(clock)
+	local breathe = math.sin(clock * 2.2)
+	return {
+		Hand = IDLE.Hand + Vector3.new(0, breathe * 0.05, 0),
+		Tilt = IDLE.Tilt + breathe * 1.5, Turn = IDLE.Turn,
+		Lean = IDLE.Lean + breathe * 0.8, Twist = IDLE.Twist,
+	}
 end
 
--- IKControl moves the hand to a target point and bends the arm naturally
-local function getArmIK(character)
+local rigs = {} -- [character] = rig
+local puppetFolder = Instance.new("Folder")
+puppetFolder.Name = "ShovelPuppets"
+puppetFolder.Parent = workspace
+
+local function newAttachment(parent, name)
+	local a = Instance.new("Attachment")
+	a.Name = name
+	a.Parent = parent
+	return a
+end
+
+local function newArmIK(humanoid, name, upper, hand, target, pole)
+	local ik = Instance.new("IKControl")
+	ik.Name = name
+	ik.Type = Enum.IKControlType.Position
+	ik.ChainRoot = upper
+	ik.EndEffector = hand
+	ik.Target = target
+	ik.Pole = pole
+	ik.Weight = 1
+	ik.SmoothTime = 0
+	ik.Parent = humanoid
+	return ik
+end
+
+local function destroyRig(character)
+	local rig = rigs[character]
+	if not rig then return end
+	rigs[character] = nil
+	for _, thing in ipairs(rig.Cleanup) do
+		thing:Destroy()
+	end
+	if rig.Waist and rig.Waist.Parent then rig.Waist.C0 = rig.WaistC0 end
+	if rig.Tool then
+		for _, d in ipairs(rig.Tool:GetDescendants()) do
+			if d:IsA("BasePart") then d.LocalTransparencyModifier = 0 end
+		end
+	end
+end
+
+local function createRig(character, tool)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	local root = character:FindFirstChild("HumanoidRootPart")
-	local upperArm = character:FindFirstChild("RightUpperArm") or character:FindFirstChild("Right Arm")
-	local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
-	if not (humanoid and root and upperArm and hand) then return nil end
-	local target = root:FindFirstChild("DigHandTarget")
-	if not target then
-		target = Instance.new("Attachment")
-		target.Name = "DigHandTarget"
-		target.Parent = root
-	end
-	local ik = humanoid:FindFirstChild("DigArmIK")
-	if not ik then
-		ik = Instance.new("IKControl")
-		ik.Name = "DigArmIK"
-		ik.Type = Enum.IKControlType.Position
-		ik.ChainRoot = upperArm
-		ik.EndEffector = hand
-		ik.Target = target
-		ik.Weight = 0
-		ik.SmoothTime = 0 -- follow the path exactly, no lag
-		ik.Parent = humanoid
-	end
-	return ik, target, root, hand
-end
+	local upperTorso = character:FindFirstChild("UpperTorso")
+	local parts = {
+		RU = character:FindFirstChild("RightUpperArm"), RH = character:FindFirstChild("RightHand"),
+		LU = character:FindFirstChild("LeftUpperArm"), LH = character:FindFirstChild("LeftHand"),
+	}
+	-- the two-handed pose needs an R15 body; R6 characters keep Roblox's default hold
+	if not (humanoid and root and upperTorso and parts.RU and parts.RH and parts.LU and parts.LH) then return nil end
+	local def = GameConfig.GetShovel(tool:GetAttribute("ShovelId"))
+	if not def then return nil end
 
-local digConn -- the animation currently playing
-local restore -- puts the arm and shovel back to rest
-
-local function stopDigAnimation()
-	if digConn then
-		digConn:Disconnect()
-		digConn = nil
-	end
-	if restore then
-		restore()
-		restore = nil
-	end
-end
-
-local function playDigAnimation(tool, baseGrip, duration)
-	local character = player.Character
-	if not character then return end
-	local ik, target, root, hand = getArmIK(character)
-	-- remember where the hand rests (only when no swing is running, so it never drifts)
-	local restPos
-	if ik and not digConn then
-		restPos = root.CFrame:PointToObjectSpace(hand.Position)
-		target:SetAttribute("RestPos", restPos)
-	elseif ik then
-		restPos = target:GetAttribute("RestPos") or root.CFrame:PointToObjectSpace(hand.Position)
-	end
-	stopDigAnimation() -- a new swing smoothly takes over from the old one
-	local start = os.clock()
-
-	restore = function()
-		tool.Grip = baseGrip
-		if ik then ik.Weight = 0 end
-	end
-
-	digConn = RunService.RenderStepped:Connect(function()
-		local t = (os.clock() - start) / duration
-		if t >= 1 or tool.Parent ~= character then
-			stopDigAnimation()
-			return
+	-- the copy of the shovel we pose every frame
+	local model = ShovelModels(def)
+	local handle = model:FindFirstChild("Handle")
+	local puppet = {}
+	local bladePart
+	for _, piece in ipairs(model:GetChildren()) do
+		if piece:IsA("BasePart") and piece ~= handle then
+			for _, c in ipairs(piece:GetChildren()) do
+				if c:IsA("WeldConstraint") then c:Destroy() end
+			end
+			piece.Anchored = true
+			piece.CanCollide = false
+			piece.CanQuery = false
+			piece.CanTouch = false
+			table.insert(puppet, {Part = piece, Rel = handle.CFrame:ToObjectSpace(piece.CFrame)})
+			if piece.Name == "Blade" or piece.Name == "DrillTip" then bladePart = piece end
 		end
-		if ik then
-			target.Position = restPos + Vector3.new(0, sampleKeys(t, 2), sampleKeys(t, 3))
-			-- fade the arm control in and out so it never pops
-			ik.Weight = math.min(smoothstep(t / 0.15), smoothstep((1 - t) / 0.2))
-		end
-		tool.Grip = baseGrip * CFrame.Angles(math.rad(sampleKeys(t, 4)), 0, 0)
-	end)
+	end
+	local holder = Instance.new("Model")
+	holder.Name = character.Name .. "_Shovel"
+	for _, p in ipairs(puppet) do p.Part.Parent = holder end
+	holder.Parent = puppetFolder
+	model:Destroy()
+
+	-- hide the real tool on this screen (it still does the digging)
+	for _, d in ipairs(tool:GetDescendants()) do
+		if d:IsA("BasePart") then d.LocalTransparencyModifier = 1 end
+	end
+
+	local rightTarget = newAttachment(root, "ShovelRightHand")
+	local leftTarget = newAttachment(root, "ShovelLeftHand")
+	-- poles keep the elbows bending down and out, like a real person holding a shovel
+	local rightPole = newAttachment(root, "ShovelRightElbow")
+	rightPole.Position = Vector3.new(2.2, -1.2, 0.6)
+	local leftPole = newAttachment(root, "ShovelLeftElbow")
+	leftPole.Position = Vector3.new(-2.2, -1.2, 0.6)
+	local rightIK = newArmIK(humanoid, "ShovelRightArm", parts.RU, parts.RH, rightTarget, rightPole)
+	local leftIK = newArmIK(humanoid, "ShovelLeftArm", parts.LU, parts.LH, leftTarget, leftPole)
+
+	local waist = upperTorso:FindFirstChild("Waist")
+	local rig = {
+		Tool = tool, Root = root, Puppet = puppet, Blade = bladePart or (puppet[#puppet] and puppet[#puppet].Part),
+		TopZ = tool:GetAttribute("TopHoldZ") or 1.3,
+		LowZ = tool:GetAttribute("LowHoldZ") or 0.5,
+		RightTarget = rightTarget, LeftTarget = leftTarget,
+		Waist = waist and waist:IsA("Motor6D") and waist or nil,
+		WaistC0 = waist and waist:IsA("Motor6D") and waist.C0 or nil,
+		SwingStart = nil, SwingLength = 0.6, Tossed = true,
+		Cleanup = {holder, rightTarget, leftTarget, rightPole, leftPole, rightIK, leftIK},
+	}
+	rigs[character] = rig
+	return rig
 end
+
+-- throws a few little dirt clumps off the blade
+local function tossDirt(position, color)
+	for i = 1, 5 do
+		local clump = Instance.new("Part")
+		clump.Shape = Enum.PartType.Ball
+		clump.Size = Vector3.one * (0.35 + math.random() * 0.3)
+		clump.Color = color
+		clump.Material = Enum.Material.SmoothPlastic
+		clump.CanCollide = false
+		clump.CanQuery = false
+		clump.CanTouch = false
+		clump.CastShadow = false
+		clump.CFrame = CFrame.new(position + Vector3.new(math.random() - 0.5, 0, math.random() - 0.5) * 0.6)
+		clump.AssemblyLinearVelocity = Vector3.new(math.random() * 8 - 4, 14 + math.random() * 8, math.random() * 8 - 4)
+		clump.Parent = puppetFolder
+		Debris:AddItem(clump, 1.1 + i * 0.05)
+	end
+end
+
+local function dirtColorAt(position)
+	local world = GameConfig.GetWorldAt(position)
+	local _, zone = GameConfig.GetZoneAt(world, position.Y - 3)
+	return zone and zone.Color or Color3.fromRGB(150, 110, 80)
+end
+
+local function startSwing(character, length)
+	local rig = character and rigs[character]
+	if not rig then return end
+	rig.SwingStart = os.clock()
+	rig.SwingLength = length
+	rig.Tossed = false
+end
+
+local function poseRig(character, rig, clock)
+	local pose
+	if rig.SwingStart then
+		local t = (clock - rig.SwingStart) / rig.SwingLength
+		if t >= 1 then
+			rig.SwingStart = nil
+			pose = idlePose(clock)
+		else
+			pose = samplePose(t)
+			if not rig.Tossed and t >= TOSS_TIME then
+				rig.Tossed = true
+				if rig.Blade then
+					tossDirt(rig.Blade.Position, dirtColorAt(rig.Root.Position))
+				end
+			end
+		end
+	else
+		pose = idlePose(clock)
+	end
+
+	-- where the shovel goes (in root space): rotate the upright shovel by tilt and turn,
+	-- then slide it along its shaft so the top of the grip sits exactly on pose.Hand
+	local rotation = CFrame.Angles(0, math.rad(pose.Turn), 0) * CFrame.Angles(math.rad(pose.Tilt), 0, 0) * UPRIGHT
+	local up = rotation.ZVector
+	local origin = pose.Hand - up * rig.TopZ
+	local shovelCF = rig.Root.CFrame * CFrame.new(origin) * rotation
+
+	local parts, cframes = {}, {}
+	for i, p in ipairs(rig.Puppet) do
+		parts[i] = p.Part
+		cframes[i] = shovelCF * p.Rel
+	end
+	workspace:BulkMoveTo(parts, cframes, Enum.BulkMoveMode.FireCFrameChanged)
+
+	rig.LeftTarget.Position = pose.Hand -- left hand on top of the grip
+	rig.RightTarget.Position = origin + up * rig.LowZ -- right hand lower on the shaft
+	if rig.Waist then
+		rig.Waist.C0 = rig.WaistC0 * CFrame.Angles(math.rad(-pose.Lean), math.rad(pose.Twist), 0)
+	end
+end
+
+RunService.RenderStepped:Connect(function()
+	local clock = os.clock()
+	-- find every character holding a shovel; build or tear down rigs to match
+	for _, plr in ipairs(Players:GetPlayers()) do
+		local character = plr.Character
+		if character then
+			local tool = character:FindFirstChildOfClass("Tool")
+			if tool and not tool:GetAttribute("ShovelId") then tool = nil end
+			local rig = rigs[character]
+			if rig and rig.Tool ~= tool then
+				destroyRig(character)
+				rig = nil
+			end
+			if tool and not rig then
+				rig = createRig(character, tool)
+			end
+		end
+	end
+	for character, rig in pairs(rigs) do
+		if not character.Parent or not rig.Root.Parent then
+			destroyRig(character)
+		else
+			poseRig(character, rig, clock)
+		end
+	end
+end)
+
+swingFxRemote.OnClientEvent:Connect(function(otherPlayer, length)
+	if typeof(otherPlayer) == "Instance" and otherPlayer:IsA("Player") and otherPlayer ~= player and typeof(length) == "number" then
+		startSwing((otherPlayer :: Player).Character, math.clamp(length, 0.3, 1))
+	end
+end)
 
 -- A small, smooth camera dip when the shovel hits the ground
 local function impactDip()
 	local start = os.clock()
 	local conn
 	conn = RunService.RenderStepped:Connect(function()
-		local t = (os.clock() - start) / 0.18
+		local t = (os.clock() - start) / 0.2
 		if t >= 1 then
 			conn:Disconnect()
 			return
 		end
-		local offset = math.sin(t * math.pi) * 0.12
+		local offset = math.sin(t * math.pi) * 0.16
 		camera.CFrame = camera.CFrame * CFrame.new(0, -offset, 0)
 	end)
 end
 
+local lastSwing = 0
 local function onToolEquipped(tool)
 	local def = GameConfig.GetShovel(tool:GetAttribute("ShovelId")) or GameConfig.Shovels[1]
-	local baseGrip = tool.Grip
 	equippedDef = def
 	depthPanel.Visible = true
 
@@ -5064,21 +5250,19 @@ local function onToolEquipped(tool)
 		if now - lastSwing < def.Cooldown then return end
 		lastSwing = now
 
-		local duration = math.clamp(def.Cooldown * 0.95, 0.35, 0.65)
-		playDigAnimation(tool, baseGrip, duration)
+		local length = math.clamp(def.Cooldown * 1.05, 0.45, 0.75)
+		startSwing(player.Character, length)
 
-		-- the dig happens exactly when the shovel hits the ground
+		-- the dig happens exactly when the blade hits the ground
 		local target = mouse.Hit and mouse.Hit.Position
-		task.delay(duration * STRIKE_TIME, function()
-			swingRemote:FireServer(target)
+		task.delay(length * STRIKE_TIME, function()
+			swingRemote:FireServer(target, length)
 			impactDip()
 		end)
 	end)
 
 	tool.Unequipped:Once(function()
 		activatedConn:Disconnect()
-		stopDigAnimation()
-		tool.Grip = baseGrip
 		if equippedDef == def then equippedDef = nil end
 	end)
 end

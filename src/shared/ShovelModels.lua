@@ -4,7 +4,7 @@
 -- shovel is built from its STYLES entry. The server uses it for the tools and the shop
 -- displays, the client uses it to draw 3D shovel icons in the UI.
 
-local SCALE = 0.68 -- overall size of the shovels
+local SCALE = 0.62 -- overall size of the shovels
 local ALONG_Z = CFrame.Angles(0, math.rad(90), 0) -- points a cylinder along the shaft
 
 local function rgb(r, g, b)
@@ -334,8 +334,10 @@ local function kit(tool)
 end
 
 -- shared pieces ------------------------------------------------------
+-- World 1 shovels are short and chunky: the shaft runs from the socket (-2.3) to TOP
+local TOP = 1.6
 local function shaft(k, color, material, diameter)
-	k.rodZ("Shaft", 5, diameter or 0.3, 0.2, color, material)
+	k.rodZ("Shaft", TOP + 2.3, diameter or 0.3, (TOP - 2.3) / 2, color, material)
 end
 
 local function socket(k, color, material)
@@ -344,15 +346,17 @@ local function socket(k, color, material)
 end
 
 local function dGrip(k, frameColor, frameMat, barColor, barMat)
-	k.bar("GripSideL", Vector3.new(0, 0, 2.55), Vector3.new(-0.5, 0, 3.2), 0.2, frameColor, frameMat)
-	k.bar("GripSideR", Vector3.new(0, 0, 2.55), Vector3.new(0.5, 0, 3.2), 0.2, frameColor, frameMat)
-	k.rodX("GripBar", 1.15, 0.28, CFrame.new(0, 0, 3.22), barColor, barMat)
+	k.bar("GripSideL", Vector3.new(0, 0, TOP - 0.15), Vector3.new(-0.5, 0, TOP + 0.5), 0.2, frameColor, frameMat)
+	k.bar("GripSideR", Vector3.new(0, 0, TOP - 0.15), Vector3.new(0.5, 0, TOP + 0.5), 0.2, frameColor, frameMat)
+	k.rodX("GripBar", 1.15, 0.28, CFrame.new(0, 0, TOP + 0.52), barColor, barMat)
+	k.hold = TOP + 0.5 -- the right hand holds the D bar
 end
 
 local function tGrip(k, barColor, barMat, capColor, capMat)
-	k.rodX("TBar", 1.2, 0.3, CFrame.new(0, 0, 2.7), barColor, barMat)
-	k.ball("TCapL", 0.4, CFrame.new(-0.62, 0, 2.7), capColor, capMat)
-	k.ball("TCapR", 0.4, CFrame.new(0.62, 0, 2.7), capColor, capMat)
+	k.rodX("TBar", 1.2, 0.3, CFrame.new(0, 0, TOP), barColor, barMat)
+	k.ball("TCapL", 0.4, CFrame.new(-0.62, 0, TOP), capColor, capMat)
+	k.ball("TCapR", 0.4, CFrame.new(0.62, 0, TOP), capColor, capMat)
+	k.hold = TOP -- the right hand holds the T bar
 end
 
 -- a chunky cartoon spade blade: wide plate, pointed tip, curled-up sides, a foot step
@@ -409,15 +413,15 @@ CUSTOM.PlasticShovel = function(k)
 	k.blob("ScoopRim", Vector3.new(2.25, 0.16, 2.45), b * CFrame.new(0, -0.06, -1.05), red)
 	k.ball("Star", 0.3, b * CFrame.new(0.45, 0.16, -0.7), rgb(255, 255, 255))
 	-- little bucket charm hanging off the shaft
-	k.part("CharmString", Vector3.new(0.04, 0.56, 0.04), CFrame.new(0, -0.47, 1.6), rgb(255, 255, 255))
-	k.part("Bucket", Vector3.new(0.4, 0.5, 0.5), CFrame.new(0, -0.95, 1.6) * CFrame.Angles(0, 0, math.rad(90)), rgb(96, 226, 190), "SmoothPlastic", Enum.PartType.Cylinder)
+	k.part("CharmString", Vector3.new(0.04, 0.56, 0.04), CFrame.new(0, -0.47, 0.6), rgb(255, 255, 255))
+	k.part("Bucket", Vector3.new(0.4, 0.5, 0.5), CFrame.new(0, -0.95, 0.6) * CFrame.Angles(0, 0, math.rad(90)), rgb(96, 226, 190), "SmoothPlastic", Enum.PartType.Cylinder)
 end
 
 -- Garden Spade: green painted shaft, shiny pointed blade with little painted flowers
 CUSTOM.GardenSpade = function(k)
 	local green, dark = rgb(90, 176, 96), rgb(58, 128, 66)
 	shaft(k, green, "SmoothPlastic")
-	for z = -1.4, 1.6, 0.75 do
+	for z = -1.4, 0.9, 0.75 do
 		k.rodZ("Stripe", 0.12, 0.32, z, rgb(246, 247, 252))
 	end
 	dGrip(k, dark, "SmoothPlastic", dark, "SmoothPlastic")
@@ -438,7 +442,7 @@ end
 CUSTOM.IronShovel = function(k)
 	local wood, iron = rgb(98, 68, 46), rgb(76, 78, 86)
 	shaft(k, wood, "Wood", 0.33)
-	k.rodZ("LeatherWrap", 1.1, 0.38, 1.75, rgb(128, 84, 52), "Fabric")
+	k.rodZ("LeatherWrap", 1.1, 0.38, 0.8, rgb(128, 84, 52), "Fabric")
 	for _, z in ipairs({0.6, -0.9}) do
 		k.rodZ("IronBand", 0.16, 0.4, z, iron, "Metal")
 	end
@@ -456,7 +460,7 @@ end
 CUSTOM.SteelSpade = function(k)
 	local dark, steel, sky = rgb(52, 58, 72), rgb(206, 214, 228), rgb(92, 186, 255)
 	shaft(k, dark, "Metal", 0.28)
-	k.rodZ("Grip", 1, 0.34, 1.9, rgb(30, 32, 40), "Fabric")
+	k.rodZ("Grip", 1, 0.34, 0.95, rgb(30, 32, 40), "Fabric")
 	tGrip(k, rgb(30, 32, 40), "Fabric", steel, "Metal")
 	socket(k, steel, "Metal")
 	local b = k.blade
@@ -471,7 +475,7 @@ end
 CUSTOM.GoldenShovel = function(k)
 	local gold, deep = rgb(255, 202, 72), rgb(214, 156, 40)
 	shaft(k, gold, "Metal", 0.3)
-	for _, z in ipairs({1.9, 1.5}) do
+	for _, z in ipairs({1.0, 0.7}) do
 		k.rodZ("Wrap", 0.2, 0.34, z, rgb(150, 30, 50), "Fabric")
 	end
 	dGrip(k, gold, "Metal", rgb(150, 30, 50), "Fabric")
@@ -504,14 +508,15 @@ CUSTOM.GamerShovel = function(k)
 	local strips = {rgb(230, 90, 200), rgb(80, 200, 230), rgb(110, 225, 130)}
 	for i, color in ipairs(strips) do
 		local a = math.rad(i * 120)
-		k.part("RGBStrip", Vector3.new(0.05, 0.05, 3), CFrame.new(math.cos(a) * 0.15, math.sin(a) * 0.15, 0.1), color, "Neon")
+		k.part("RGBStrip", Vector3.new(0.05, 0.05, 2.8), CFrame.new(math.cos(a) * 0.15, math.sin(a) * 0.15, -0.4), color, "Neon")
 	end
 	-- controller-shaped grip with thumbsticks and buttons
-	k.blob("Controller", Vector3.new(1.5, 0.4, 0.7), CFrame.new(0, 0, 2.8), rgb(44, 44, 54))
-	k.ball("StickL", 0.2, CFrame.new(-0.35, 0.2, 2.8), rgb(120, 122, 132))
+	k.blob("Controller", Vector3.new(1.5, 0.4, 0.7), CFrame.new(0, 0, TOP + 0.15), rgb(44, 44, 54))
+	k.hold = TOP + 0.15
+	k.ball("StickL", 0.2, CFrame.new(-0.35, 0.2, TOP + 0.15), rgb(120, 122, 132))
 	for i, color in ipairs({rgb(110, 225, 130), rgb(230, 90, 110), rgb(80, 160, 240), rgb(240, 200, 80)}) do
 		local a = math.rad(i * 90)
-		k.ball("Button", 0.11, CFrame.new(0.38 + math.cos(a) * 0.12, 0.2, 2.8 + math.sin(a) * 0.12), color)
+		k.ball("Button", 0.11, CFrame.new(0.38 + math.cos(a) * 0.12, 0.2, TOP + 0.15 + math.sin(a) * 0.12), color)
 	end
 	socket(k, black, "Metal")
 	local b = k.blade
@@ -583,9 +588,16 @@ return function(def)
 	handle.Transparency = 1
 
 	local custom = CUSTOM[def.Id]
+	local rightZ, leftZ -- where the right and left hands hold the shaft (before scaling)
 	if custom then
-		custom(kit(tool), def)
+		local k = kit(tool)
+		custom(k, def)
+		rightZ = k.hold or TOP
 	else
+		rightZ = s.Grip == "T" and 2.3 or 2.8
+	end
+	leftZ = rightZ - 1.3 -- the other hand holds the shaft a little lower
+	if not custom then
 		-- SHAFT with metal collars
 		cylinderZ(tool, "Shaft", 4.4, 0.22, 0, s.Shaft, s.ShaftMat)
 		cylinderZ(tool, "CollarTop", 0.14, 0.27, 0.95, s.Metal, s.MetalMat)
@@ -692,7 +704,11 @@ return function(def)
 	end
 
 	-- how it sits in the hand (points forward and down)
-	tool.Grip = CFrame.new(0, 0, 1.4 * SCALE) * CFrame.Angles(math.rad(50), 0, 0)
+	tool.Grip = CFrame.new(0, 0, rightZ * SCALE) * CFrame.Angles(math.rad(50), 0, 0)
+	-- ShovelClient's two-handed pose reads these (distance along the shaft from the handle):
+	-- one hand on top of the grip, the other a bit lower on the shaft
+	tool:SetAttribute("TopHoldZ", rightZ * SCALE)
+	tool:SetAttribute("LowHoldZ", leftZ * SCALE)
 
 	-- weld everything to the handle
 	for _, part in ipairs(tool:GetChildren()) do

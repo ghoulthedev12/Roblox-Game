@@ -45,6 +45,7 @@ local minigameRemote = getRemote("DigMinigame")
 local resultRemote = getRemote("DigResult")
 local announceRemote = getRemote("Announcement")
 local swingRemote = getRemote("DigSwing")          -- client -> server: swing at a position
+local swingFxRemote = getRemote("ShovelSwingFx")   -- server -> other clients: play this player's swing
 local digMessageRemote = getRemote("DigProgress")  -- server -> client: short messages (text, color)
 local surfaceRemote = getRemote("ReturnToSurface")
 local openShopRemote = getRemote("OpenShovelShop") -- server -> client: (worldId)
@@ -233,7 +234,7 @@ local function bounceOff(player, world, def, zoneIndex, zone, position)
 	digMessageRemote:FireClient(player, text, Color3.fromRGB(255, 120, 100))
 end
 
-swingRemote.OnServerEvent:Connect(function(player, target)
+swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	if resetting or sessions[player] then return end
 	local data = PlayerData.Get(player)
 	if not data then return end
@@ -249,6 +250,13 @@ swingRemote.OnServerEvent:Connect(function(player, target)
 	local now = os.clock()
 	if now - (lastSwing[player] or 0) < def.Cooldown * 0.85 then return end
 	lastSwing[player] = now
+	-- let everyone else see this player's dig animation
+	local length = typeof(swingLength) == "number" and math.clamp(swingLength, 0.3, 1) or 0.6
+	for _, other in ipairs(Players:GetPlayers()) do
+		if other ~= player then
+			swingFxRemote:FireClient(other, player, length)
+		end
+	end
 
 	-- Where to dig: where the player clicked, or just in front of their feet
 	if typeof(target) ~= "Vector3" or (target - root.Position).Magnitude > MAX_REACH then
