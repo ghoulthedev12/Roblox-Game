@@ -1010,7 +1010,7 @@ end
 ---------------------------------------------------------------------
 local function buildSpade(tool, s, b)
 	local plate = newPart(tool, "Blade", Vector3.new(1.3, 0.08, 1.25), b * CFrame.new(0, 0, -0.62), s.Blade, s.BladeMat)
-	newPart(tool, "BladeTip", Vector3.new(0.92, 0.08, 0.92), b * CFrame.new(0, 0, -1.25) * CFrame.Angles(0, math.rad(45), 0), s.Blade, s.BladeMat)
+	newPart(tool, "BladeTip", Vector3.new(0.08, 1.3, 1.3), b * CFrame.new(0, 0, -1.25) * CFrame.Angles(0, 0, math.rad(90)), s.Blade, s.BladeMat, Enum.PartType.Cylinder) -- rounded end
 	newPart(tool, "LipL", Vector3.new(0.26, 0.08, 1.25), b * CFrame.new(-0.72, 0.06, -0.62) * CFrame.Angles(0, 0, math.rad(-22)), s.Blade, s.BladeMat)
 	newPart(tool, "LipR", Vector3.new(0.26, 0.08, 1.25), b * CFrame.new(0.72, 0.06, -0.62) * CFrame.Angles(0, 0, math.rad(22)), s.Blade, s.BladeMat)
 	-- raised spine down the back of the blade
@@ -1020,7 +1020,7 @@ local function buildSpade(tool, s, b)
 	if s.Edge then
 		newPart(tool, "EdgeL", Vector3.new(0.05, 0.1, 1.2), b * CFrame.new(-0.86, 0.12, -0.62) * CFrame.Angles(0, 0, math.rad(-22)), s.Edge, "Neon")
 		newPart(tool, "EdgeR", Vector3.new(0.05, 0.1, 1.2), b * CFrame.new(0.86, 0.12, -0.62) * CFrame.Angles(0, 0, math.rad(22)), s.Edge, "Neon")
-		newPart(tool, "EdgeTip", Vector3.new(0.7, 0.1, 0.05), b * CFrame.new(0, 0, -1.85), s.Edge, "Neon")
+		newPart(tool, "EdgeTip", Vector3.new(0.7, 0.1, 0.05), b * CFrame.new(0, 0.02, -1.88), s.Edge, "Neon")
 	end
 	return plate
 end
@@ -1040,7 +1040,7 @@ end
 
 local function buildTrowel(tool, s, b)
 	local plate = newPart(tool, "Blade", Vector3.new(1.0, 0.07, 0.7), b * CFrame.new(0, 0, -0.35), s.Blade, s.BladeMat)
-	newPart(tool, "BladeTip", Vector3.new(1.05, 0.07, 1.05), b * CFrame.new(0, 0, -0.95) * CFrame.Angles(0, math.rad(45), 0), s.Blade, s.BladeMat)
+	newPart(tool, "BladeTip", Vector3.new(0.07, 1.0, 1.0), b * CFrame.new(0, 0, -0.7) * CFrame.Angles(0, 0, math.rad(90)), s.Blade, s.BladeMat, Enum.PartType.Cylinder) -- rounded end
 	newPart(tool, "Spine", Vector3.new(0.14, 0.08, 1.4), b * CFrame.new(0, 0.07, -0.75), s.Metal, s.MetalMat)
 	newPart(tool, "Guard", Vector3.new(1.1, 0.14, 0.14), b, s.Metal, s.MetalMat, Enum.PartType.Cylinder)
 	if s.Edge then
@@ -1108,12 +1108,12 @@ local function tGrip(k, barColor, barMat, capColor, capMat)
 	k.hold = TOP -- the right hand holds the T bar
 end
 
--- a chunky cartoon spade blade: wide plate, pointed tip, curled-up sides, a foot step
+-- a chunky cartoon spade blade: wide plate, rounded end, curled-up sides, a foot step
 local function spade(k, color, material, width, stepColor)
 	width = width or 1.7
 	local b = k.blade
 	local plate = k.part("Blade", Vector3.new(width, 0.12, 1.5), b * CFrame.new(0, 0, -0.75), color, material)
-	k.part("BladeTip", Vector3.new(width * 0.72, 0.12, width * 0.72), b * CFrame.new(0, 0, -1.5) * CFrame.Angles(0, math.rad(45), 0), color, material)
+	k.part("BladeTip", Vector3.new(0.12, width, width), b * CFrame.new(0, 0, -1.5) * CFrame.Angles(0, 0, math.rad(90)), color, material, Enum.PartType.Cylinder) -- rounded end
 	k.part("LipL", Vector3.new(0.32, 0.12, 1.5), b * CFrame.new(-width / 2 - 0.1, 0.08, -0.75) * CFrame.Angles(0, 0, math.rad(-25)), color, material)
 	k.part("LipR", Vector3.new(0.32, 0.12, 1.5), b * CFrame.new(width / 2 + 0.1, 0.08, -0.75) * CFrame.Angles(0, 0, math.rad(25)), color, material)
 	k.rodX("FootStep", width + 0.3, 0.2, b, stepColor or color, material)
@@ -1216,7 +1216,7 @@ CUSTOM.SteelSpade = function(k)
 	local plate = spade(k, steel, "Metal", 1.5)
 	plate.Reflectance = 0.3
 	k.part("RacingStripe", Vector3.new(0.2, 0.13, 1.7), b * CFrame.new(0, 0.02, -0.9), sky)
-	k.part("TipGuard", Vector3.new(0.5, 0.14, 0.5), b * CFrame.new(0, 0.01, -1.72) * CFrame.Angles(0, math.rad(45), 0), sky)
+	k.part("TipGuard", Vector3.new(0.14, 0.6, 0.6), b * CFrame.new(0, 0.01, -1.95) * CFrame.Angles(0, 0, math.rad(90)), sky, "SmoothPlastic", Enum.PartType.Cylinder)
 	k.ball("StatusLight", 0.16, CFrame.new(0, 0.22, -2.1), sky, "Neon")
 end
 
