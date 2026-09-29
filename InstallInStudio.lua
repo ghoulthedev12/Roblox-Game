@@ -755,7 +755,7 @@ local BODY_COLORS = {
 	rgb(255, 122, 138), rgb(92, 186, 255), rgb(255, 206, 84), rgb(96, 226, 190),
 	rgb(178, 158, 255), rgb(255, 160, 90), rgb(246, 247, 252),
 }
-local GLOW_COLORS = {rgb(120, 236, 255), rgb(255, 140, 222), rgb(255, 222, 120), rgb(120, 255, 205)}
+local GLOW_COLORS = {rgb(96, 196, 222), rgb(214, 118, 188), rgb(222, 186, 96), rgb(96, 206, 168)}
 local WHITE = rgb(246, 247, 252)
 local INK = rgb(34, 36, 74)
 local GLASS = rgb(168, 228, 255)
@@ -816,7 +816,7 @@ function VehicleModels.car(rng)
 	for _, side in ipairs({-1, 1}) do
 		part(model, "Pod", Vector3.new(4.6, 1.5, 1.5), CFrame.new(side * 2.9, -0.2, 1.4) * ALONG_Z, WHITE, nil, Enum.PartType.Cylinder)
 		part(model, "PodGlow", Vector3.new(0.3, 1.2, 1.2), CFrame.new(side * 2.9, -0.2, 3.75) * ALONG_Z, glow, Enum.Material.Neon, Enum.PartType.Cylinder)
-		ball(model, "Headlight", 0.8, CFrame.new(side * 1.3, 0, -4.3), rgb(255, 250, 220), Enum.Material.Neon)
+		ball(model, "Headlight", 0.8, CFrame.new(side * 1.3, 0, -4.3), rgb(214, 208, 180), Enum.Material.Neon)
 	end
 	part(model, "TailFin", Vector3.new(0.4, 1.6, 1.8), CFrame.new(0, 1.3, 3.6), color)
 	ball(model, "FinTip", 0.6, CFrame.new(0, 2.1, 3.6), glow, Enum.Material.Neon)
@@ -903,7 +903,7 @@ function VehicleModels.blimp(rng)
 		label.Font = Enum.Font.FredokaOne
 		label.TextScaled = true
 		label.Parent = gui
-		part(model, "BannerGlow", Vector3.new(0.3, 5.6, 22.6), CFrame.new(side * 7.9, 0, 0), pick(rng, GLOW_COLORS), Enum.Material.Neon)
+		part(model, "BannerFrame", Vector3.new(0.3, 5.6, 22.6), CFrame.new(side * 7.9, 0, 0), pick(rng, GLOW_COLORS))
 		part(model, "Propeller", Vector3.new(0.3, 4, 4), CFrame.new(side * 5, -8, 8) * ALONG_Z, WHITE, nil, Enum.PartType.Cylinder)
 	end
 	model.PrimaryPart = body
@@ -939,10 +939,10 @@ Architecture.Palette = {
 	Ink      = {Color = rgb(34, 36, 74),    Material = PLASTIC},
 	Chrome   = {Color = rgb(214, 220, 232), Material = Enum.Material.Metal, Reflectance = 0.2},
 	Glass    = {Color = rgb(168, 228, 255), Material = Enum.Material.Glass, Transparency = 0.45, Reflectance = 0.15},
-	GlowCyan = {Color = rgb(120, 236, 255), Material = Enum.Material.Neon},
-	GlowPink = {Color = rgb(255, 140, 222), Material = Enum.Material.Neon},
-	GlowSun  = {Color = rgb(255, 222, 120), Material = Enum.Material.Neon},
-	GlowMint = {Color = rgb(120, 255, 205), Material = Enum.Material.Neon},
+	GlowCyan = {Color = rgb(96, 196, 222),  Material = Enum.Material.Neon},
+	GlowPink = {Color = rgb(214, 118, 188), Material = Enum.Material.Neon},
+	GlowSun  = {Color = rgb(222, 186, 96),  Material = Enum.Material.Neon},
+	GlowMint = {Color = rgb(96, 206, 168),  Material = Enum.Material.Neon},
 	Portal   = {Color = rgb(170, 130, 255), Material = Enum.Material.ForceField},
 }
 Architecture.TextColor = rgb(255, 255, 255)
@@ -1092,6 +1092,40 @@ function Builder:bulb(name, diameter, offset, finish, range)
 	light.Brightness = 0.8
 	light.Parent = p
 	return p
+end
+
+-- Tones down glow under `root` so the game isn't overwhelming. Safe to run more than once:
+--   * big glowing panels (Neon wider than a strip) become plain colored plastic
+--   * small Neon accents are capped in brightness
+--   * lights are capped in brightness and range
+Architecture.MAX_NEON = 0.78    -- brightest channel a Neon part may have (0-1)
+Architecture.MAX_LIGHT = 0.8     -- brightest a PointLight/SpotLight/SurfaceLight may be
+Architecture.MAX_LIGHT_RANGE = 16
+function Architecture.calm(root)
+	local list = root:GetDescendants()
+	table.insert(list, root)
+	for _, d in ipairs(list) do
+		if d:IsA("BasePart") and d.Material == Enum.Material.Neon then
+			local s = d.Size
+			local dims = {s.X, s.Y, s.Z}
+			table.sort(dims)
+			if dims[2] > 2.5 then
+				d.Material = Enum.Material.SmoothPlastic
+			else
+				local c = d.Color
+				local m = math.max(c.R, c.G, c.B)
+				if m > Architecture.MAX_NEON then
+					local k = Architecture.MAX_NEON / m
+					d.Color = Color3.new(c.R * k, c.G * k, c.B * k)
+				end
+			end
+		elseif d:IsA("Light") then
+			d.Brightness = math.min(d.Brightness, Architecture.MAX_LIGHT)
+			if d:IsA("PointLight") or d:IsA("SpotLight") or d:IsA("SurfaceLight") then
+				d.Range = math.min(d.Range, Architecture.MAX_LIGHT_RANGE)
+			end
+		end
+	end
 end
 
 -- Big friendly sign text on a part's face.
@@ -2091,7 +2125,8 @@ end
 install(game:GetService("ServerScriptService"), "MapStyle", "Script", [=[
 -- MapStyle (Script in ServerScriptService)
 -- Gives the whole map the cartoony 2050 look when the server starts:
--- rebuilds the skyline, restyles the dig site, brightens the ground and the sky.
+-- rebuilds the skyline, restyles the dig site, brightens the ground and the sky, and sets
+-- calm, clean lighting (soft shadows, very little bloom, glow only on small accents).
 
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -2099,8 +2134,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local CityBuilder = require(script.Parent:WaitForChild("CityBuilder"))
 local DigSiteStyle = require(script.Parent:WaitForChild("DigSiteStyle"))
+local Architecture = require(script.Parent:WaitForChild("Architecture"))
 
--- Set to false to keep the place's own Lighting settings (sky, time of day, effects)
+-- Set to false to keep the place's own sky and time of day (the calm lighting still applies)
 local SUNNY_SKY = true
 
 ---------------------------------------------------------------------
@@ -2140,52 +2176,85 @@ if digSite then
 end
 
 ---------------------------------------------------------------------
--- SKY: bright afternoon, soft haze, fluffy clouds
+-- SKY: clear afternoon with soft shadows and fluffy clouds
 ---------------------------------------------------------------------
 if SUNNY_SKY then
 	Lighting.ClockTime = 14.5
-	Lighting.Brightness = 2.6
-	Lighting.Ambient = Color3.fromRGB(120, 118, 140)
-	Lighting.OutdoorAmbient = Color3.fromRGB(165, 165, 190)
-	Lighting.EnvironmentDiffuseScale = 0.6
-	Lighting.EnvironmentSpecularScale = 0.4
-	Lighting.GlobalShadows = true
+	Lighting.GeographicLatitude = 35
 
 	-- the place's night skybox doesn't fit a sunny day; Roblox's default sky does
 	local sky = Lighting:FindFirstChildOfClass("Sky")
 	if sky then sky:Destroy() end
 
-	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere")
-	atmosphere.Density = 0.3
-	atmosphere.Offset = 0.2
-	atmosphere.Color = Color3.fromRGB(205, 214, 255)
-	atmosphere.Decay = Color3.fromRGB(150, 160, 230)
-	atmosphere.Glare = 0.2
-	atmosphere.Haze = 1.2
-	atmosphere.Parent = Lighting
-
-	for _, effect in ipairs(Lighting:GetChildren()) do
-		if effect:IsA("BloomEffect") then
-			effect.Intensity = 0.5
-			effect.Size = 24
-			effect.Threshold = 1.4
-		elseif effect:IsA("DepthOfFieldEffect") then
-			effect.Enabled = false -- keeps the cartoon look crisp
-		end
-	end
-	local grade = Lighting:FindFirstChild("Cartoon2050Grade") or Instance.new("ColorCorrectionEffect")
-	grade.Name = "Cartoon2050Grade"
-	grade.Saturation = 0.15
-	grade.Contrast = 0.05
-	grade.Brightness = 0.02
-	grade.Parent = Lighting
-
 	local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds") or Instance.new("Clouds")
-	clouds.Cover = 0.55
-	clouds.Density = 0.7
-	clouds.Color = Color3.fromRGB(255, 250, 255)
+	clouds.Cover = 0.5
+	clouds.Density = 0.6
+	clouds.Color = Color3.fromRGB(250, 250, 255)
 	clouds.Parent = workspace.Terrain
 end
+
+---------------------------------------------------------------------
+-- CALM LIGHTING: clean daylight, real shadows, almost no bloom or haze
+---------------------------------------------------------------------
+Lighting.Brightness = 2
+Lighting.ExposureCompensation = -0.1
+Lighting.Ambient = Color3.fromRGB(92, 92, 108)          -- shade indoors / under roofs
+Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 144) -- shade outdoors: keeps shadows readable
+Lighting.ColorShift_Top = Color3.fromRGB(0, 0, 0)
+Lighting.ColorShift_Bottom = Color3.fromRGB(0, 0, 0)
+Lighting.EnvironmentDiffuseScale = 0.4
+Lighting.EnvironmentSpecularScale = 0.15 -- less mirror-like shine on everything
+Lighting.GlobalShadows = true
+Lighting.ShadowSoftness = 0.3
+
+local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere")
+atmosphere.Density = 0.22
+atmosphere.Offset = 0.1
+atmosphere.Color = Color3.fromRGB(200, 210, 235)
+atmosphere.Decay = Color3.fromRGB(120, 132, 170)
+atmosphere.Glare = 0
+atmosphere.Haze = 0.4
+atmosphere.Parent = Lighting
+
+-- one gentle bloom only (the place had two stacked on top of each other)
+local keptBloom = false
+for _, effect in ipairs(Lighting:GetChildren()) do
+	if effect:IsA("BloomEffect") then
+		if keptBloom then
+			effect:Destroy()
+		else
+			keptBloom = true
+			effect.Enabled = true
+			effect.Intensity = 0.12
+			effect.Size = 16
+			effect.Threshold = 2.4 -- only the brightest pixels bloom
+		end
+	elseif effect:IsA("SunRaysEffect") then
+		effect.Intensity = 0.02
+		effect.Spread = 0.3
+	elseif effect:IsA("DepthOfFieldEffect") then
+		effect.Enabled = false -- keeps the cartoon look crisp
+	end
+end
+local grade = Lighting:FindFirstChild("Cartoon2050Grade") or Instance.new("ColorCorrectionEffect")
+grade.Name = "Cartoon2050Grade"
+grade.Saturation = 0.05
+grade.Contrast = 0.06
+grade.Brightness = 0
+grade.TintColor = Color3.fromRGB(255, 255, 255)
+grade.Parent = Lighting
+
+-- Tone down glowing parts and lights everywhere. Runs again after a few seconds so it
+-- also catches the Shovel Shops and World Gates that DigManager builds on start.
+local function calmWorld()
+	for _, child in ipairs(workspace:GetChildren()) do
+		if not (child:IsA("Model") and game:GetService("Players"):GetPlayerFromCharacter(child)) then
+			Architecture.calm(child)
+		end
+	end
+end
+calmWorld()
+task.delay(5, calmWorld)
 
 print("MapStyle: cartoony 2050 skyline, dig site and sky ready")
 ]=])
@@ -2227,7 +2296,7 @@ local function restylePart(part)
 
 	if m == Enum.Material.Neon then
 		-- keep the hue, make it a soft pastel glow instead of a blinding one
-		part.Color = c:Lerp(Color3.new(1, 1, 1), 0.22)
+		part.Color = c:Lerp(Color3.new(0.8, 0.8, 0.85), 0.2)
 	elseif m == Enum.Material.Glass then
 		local name = part.Name
 		if name == "Bush" or name == "TreeCrown" or name == "Leaves" then
@@ -2355,6 +2424,7 @@ return function(template)
 		restyleDescendant(d)
 	end
 	addArchitecture(template)
+	Architecture.calm(template)
 	template:SetAttribute("StyledCartoon2050", true)
 end
 ]=])

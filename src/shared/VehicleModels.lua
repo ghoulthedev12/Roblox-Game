@@ -10,7 +10,7 @@ local BODY_COLORS = {
 	rgb(255, 122, 138), rgb(92, 186, 255), rgb(255, 206, 84), rgb(96, 226, 190),
 	rgb(178, 158, 255), rgb(255, 160, 90), rgb(246, 247, 252),
 }
-local GLOW_COLORS = {rgb(120, 236, 255), rgb(255, 140, 222), rgb(255, 222, 120), rgb(120, 255, 205)}
+local GLOW_COLORS = {rgb(96, 196, 222), rgb(214, 118, 188), rgb(222, 186, 96), rgb(96, 206, 168)}
 local WHITE = rgb(246, 247, 252)
 local INK = rgb(34, 36, 74)
 local GLASS = rgb(168, 228, 255)
@@ -71,7 +71,7 @@ function VehicleModels.car(rng)
 	for _, side in ipairs({-1, 1}) do
 		part(model, "Pod", Vector3.new(4.6, 1.5, 1.5), CFrame.new(side * 2.9, -0.2, 1.4) * ALONG_Z, WHITE, nil, Enum.PartType.Cylinder)
 		part(model, "PodGlow", Vector3.new(0.3, 1.2, 1.2), CFrame.new(side * 2.9, -0.2, 3.75) * ALONG_Z, glow, Enum.Material.Neon, Enum.PartType.Cylinder)
-		ball(model, "Headlight", 0.8, CFrame.new(side * 1.3, 0, -4.3), rgb(255, 250, 220), Enum.Material.Neon)
+		ball(model, "Headlight", 0.8, CFrame.new(side * 1.3, 0, -4.3), rgb(214, 208, 180), Enum.Material.Neon)
 	end
 	part(model, "TailFin", Vector3.new(0.4, 1.6, 1.8), CFrame.new(0, 1.3, 3.6), color)
 	ball(model, "FinTip", 0.6, CFrame.new(0, 2.1, 3.6), glow, Enum.Material.Neon)
@@ -158,7 +158,7 @@ function VehicleModels.blimp(rng)
 		label.Font = Enum.Font.FredokaOne
 		label.TextScaled = true
 		label.Parent = gui
-		part(model, "BannerGlow", Vector3.new(0.3, 5.6, 22.6), CFrame.new(side * 7.9, 0, 0), pick(rng, GLOW_COLORS), Enum.Material.Neon)
+		part(model, "BannerFrame", Vector3.new(0.3, 5.6, 22.6), CFrame.new(side * 7.9, 0, 0), pick(rng, GLOW_COLORS))
 		part(model, "Propeller", Vector3.new(0.3, 4, 4), CFrame.new(side * 5, -8, 8) * ALONG_Z, WHITE, nil, Enum.PartType.Cylinder)
 	end
 	model.PrimaryPart = body

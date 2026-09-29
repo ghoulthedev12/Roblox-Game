@@ -35,7 +35,7 @@ local function restylePart(part)
 
 	if m == Enum.Material.Neon then
 		-- keep the hue, make it a soft pastel glow instead of a blinding one
-		part.Color = c:Lerp(Color3.new(1, 1, 1), 0.22)
+		part.Color = c:Lerp(Color3.new(0.8, 0.8, 0.85), 0.2)
 	elseif m == Enum.Material.Glass then
 		local name = part.Name
 		if name == "Bush" or name == "TreeCrown" or name == "Leaves" then
@@ -163,5 +163,6 @@ return function(template)
 		restyleDescendant(d)
 	end
 	addArchitecture(template)
+	Architecture.calm(template)
 	template:SetAttribute("StyledCartoon2050", true)
 end

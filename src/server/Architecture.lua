@@ -24,10 +24,10 @@ Architecture.Palette = {
 	Ink      = {Color = rgb(34, 36, 74),    Material = PLASTIC},
 	Chrome   = {Color = rgb(214, 220, 232), Material = Enum.Material.Metal, Reflectance = 0.2},
 	Glass    = {Color = rgb(168, 228, 255), Material = Enum.Material.Glass, Transparency = 0.45, Reflectance = 0.15},
-	GlowCyan = {Color = rgb(120, 236, 255), Material = Enum.Material.Neon},
-	GlowPink = {Color = rgb(255, 140, 222), Material = Enum.Material.Neon},
-	GlowSun  = {Color = rgb(255, 222, 120), Material = Enum.Material.Neon},
-	GlowMint = {Color = rgb(120, 255, 205), Material = Enum.Material.Neon},
+	GlowCyan = {Color = rgb(96, 196, 222),  Material = Enum.Material.Neon},
+	GlowPink = {Color = rgb(214, 118, 188), Material = Enum.Material.Neon},
+	GlowSun  = {Color = rgb(222, 186, 96),  Material = Enum.Material.Neon},
+	GlowMint = {Color = rgb(96, 206, 168),  Material = Enum.Material.Neon},
 	Portal   = {Color = rgb(170, 130, 255), Material = Enum.Material.ForceField},
 }
 Architecture.TextColor = rgb(255, 255, 255)
@@ -177,6 +177,40 @@ function Builder:bulb(name, diameter, offset, finish, range)
 	light.Brightness = 0.8
 	light.Parent = p
 	return p
+end
+
+-- Tones down glow under `root` so the game isn't overwhelming. Safe to run more than once:
+--   * big glowing panels (Neon wider than a strip) become plain colored plastic
+--   * small Neon accents are capped in brightness
+--   * lights are capped in brightness and range
+Architecture.MAX_NEON = 0.78    -- brightest channel a Neon part may have (0-1)
+Architecture.MAX_LIGHT = 0.8     -- brightest a PointLight/SpotLight/SurfaceLight may be
+Architecture.MAX_LIGHT_RANGE = 16
+function Architecture.calm(root)
+	local list = root:GetDescendants()
+	table.insert(list, root)
+	for _, d in ipairs(list) do
+		if d:IsA("BasePart") and d.Material == Enum.Material.Neon then
+			local s = d.Size
+			local dims = {s.X, s.Y, s.Z}
+			table.sort(dims)
+			if dims[2] > 2.5 then
+				d.Material = Enum.Material.SmoothPlastic
+			else
+				local c = d.Color
+				local m = math.max(c.R, c.G, c.B)
+				if m > Architecture.MAX_NEON then
+					local k = Architecture.MAX_NEON / m
+					d.Color = Color3.new(c.R * k, c.G * k, c.B * k)
+				end
+			end
+		elseif d:IsA("Light") then
+			d.Brightness = math.min(d.Brightness, Architecture.MAX_LIGHT)
+			if d:IsA("PointLight") or d:IsA("SpotLight") or d:IsA("SurfaceLight") then
+				d.Range = math.min(d.Range, Architecture.MAX_LIGHT_RANGE)
+			end
+		end
+	end
 end
 
 -- Big friendly sign text on a part's face.
