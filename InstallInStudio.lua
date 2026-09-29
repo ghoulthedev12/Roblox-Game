@@ -718,8 +718,9 @@ function GameConfig.FillDigTerrain(terrain, world)
 	local depth = top - bottom
 	-- clear anything above ground level (terrain works in 4-stud blocks)
 	terrain:FillBlock(CFrame.new(origin + Vector3.new(0, 8, 0)), Vector3.new(200, 16, 200), Enum.Material.Air)
-	-- stone ground around the pit (and under it)
+	-- stone ground around the pit (and under it), with a grassy top layer
 	terrain:FillBlock(CFrame.new(origin + Vector3.new(0, -depth / 2, 0)), Vector3.new(200, depth, 200), Enum.Material.Slate)
+	terrain:FillBlock(CFrame.new(origin + Vector3.new(0, -2, 0)), Vector3.new(200, 4, 200), Enum.Material.Grass)
 	if world.HubPaths then
 		-- keep the walkways clear (otherwise the stone pokes through them)
 		for k = 0, 5 do
@@ -740,6 +741,176 @@ function GameConfig.FillDigTerrain(terrain, world)
 end
 
 return GameConfig
+]=])
+install(game:GetService("ReplicatedStorage"), "VehicleModels", "ModuleScript", [=[
+-- VehicleModels (ModuleScript in ReplicatedStorage)
+-- Cartoony 2050 flying vehicles: bubble cars, hover buses, delivery drones and ad blimps.
+-- FlyingTraffic (client) builds them and moves them around the city.
+-- Every builder returns a Model whose front is -Z and whose PrimaryPart is at its center.
+
+local VehicleModels = {}
+
+local rgb = Color3.fromRGB
+local BODY_COLORS = {
+	rgb(255, 122, 138), rgb(92, 186, 255), rgb(255, 206, 84), rgb(96, 226, 190),
+	rgb(178, 158, 255), rgb(255, 160, 90), rgb(246, 247, 252),
+}
+local GLOW_COLORS = {rgb(120, 236, 255), rgb(255, 140, 222), rgb(255, 222, 120), rgb(120, 255, 205)}
+local WHITE = rgb(246, 247, 252)
+local INK = rgb(34, 36, 74)
+local GLASS = rgb(168, 228, 255)
+local ALONG_Z = CFrame.Angles(0, math.rad(90), 0) -- points a cylinder along Z
+local UPRIGHT = CFrame.Angles(0, 0, math.rad(90)) -- stands a cylinder up
+
+local function part(model, name, size, cframe, color, material, shape)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Size = size
+	p.CFrame = cframe
+	p.Color = color
+	p.Material = material or Enum.Material.SmoothPlastic
+	if shape then p.Shape = shape end
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.Parent = model
+	return p
+end
+
+local function blob(model, name, size, cframe, color, material)
+	local p = part(model, name, size, cframe, color, material)
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Sphere
+	mesh.Parent = p
+	return p
+end
+
+local function ball(model, name, d, cframe, color, material)
+	return part(model, name, Vector3.new(d, d, d), cframe, color, material, Enum.PartType.Ball)
+end
+
+local function pick(rng, list)
+	return list[rng:NextInteger(1, #list)]
+end
+
+local function glass(p)
+	p.Transparency = 0.3
+	p.Reflectance = 0.15
+	return p
+end
+
+-- Little bubble car: round body, big glass dome, side pods with glowing thrusters
+function VehicleModels.car(rng)
+	local model = Instance.new("Model")
+	model.Name = "BubbleCar"
+	local color = pick(rng, BODY_COLORS)
+	local glow = pick(rng, GLOW_COLORS)
+	local body = blob(model, "Body", Vector3.new(5.4, 2.6, 9), CFrame.new(), color)
+	blob(model, "Belly", Vector3.new(5, 1.4, 8.2), CFrame.new(0, -0.7, 0), WHITE)
+	glass(blob(model, "Dome", Vector3.new(3.8, 3, 4.4), CFrame.new(0, 1.2, -0.3), GLASS, Enum.Material.Glass))
+	part(model, "Seat", Vector3.new(2.6, 0.6, 1.4), CFrame.new(0, 0.6, 0.5), INK)
+	for _, side in ipairs({-1, 1}) do
+		part(model, "Pod", Vector3.new(4.6, 1.5, 1.5), CFrame.new(side * 2.9, -0.2, 1.4) * ALONG_Z, WHITE, nil, Enum.PartType.Cylinder)
+		part(model, "PodGlow", Vector3.new(0.3, 1.2, 1.2), CFrame.new(side * 2.9, -0.2, 3.75) * ALONG_Z, glow, Enum.Material.Neon, Enum.PartType.Cylinder)
+		ball(model, "Headlight", 0.8, CFrame.new(side * 1.3, 0, -4.3), rgb(255, 250, 220), Enum.Material.Neon)
+	end
+	part(model, "TailFin", Vector3.new(0.4, 1.6, 1.8), CFrame.new(0, 1.3, 3.6), color)
+	ball(model, "FinTip", 0.6, CFrame.new(0, 2.1, 3.6), glow, Enum.Material.Neon)
+	part(model, "Underglow", Vector3.new(3.6, 0.15, 6), CFrame.new(0, -1.35, 0), glow, Enum.Material.Neon)
+	model.PrimaryPart = body
+	return model
+end
+
+-- Hover bus: long capsule with porthole windows and a color stripe
+function VehicleModels.bus(rng)
+	local model = Instance.new("Model")
+	model.Name = "HoverBus"
+	local color = pick(rng, BODY_COLORS)
+	local glow = pick(rng, GLOW_COLORS)
+	local body = part(model, "Body", Vector3.new(16, 5, 5), CFrame.new() * ALONG_Z, WHITE, nil, Enum.PartType.Cylinder)
+	ball(model, "Nose", 5, CFrame.new(0, 0, -8), WHITE)
+	ball(model, "Tail", 5, CFrame.new(0, 0, 8), color)
+	glass(blob(model, "Windshield", Vector3.new(3.8, 2.4, 2), CFrame.new(0, 0.6, -9.6), GLASS, Enum.Material.Glass))
+	part(model, "Stripe", Vector3.new(16.2, 1.1, 5.15), CFrame.new(0, -1, 0) * ALONG_Z, color, nil, Enum.PartType.Cylinder)
+	for _, side in ipairs({-1, 1}) do
+		for k = -2, 2 do
+			part(model, "Window", Vector3.new(0.3, 1.5, 1.5), CFrame.new(side * 2.45, 0.8, k * 3), GLASS, Enum.Material.Glass, Enum.PartType.Cylinder)
+		end
+		part(model, "Thruster", Vector3.new(3, 1.6, 1.6), CFrame.new(side * 2.2, -2.2, 6) * ALONG_Z, color, nil, Enum.PartType.Cylinder)
+		part(model, "ThrusterGlow", Vector3.new(0.3, 1.3, 1.3), CFrame.new(side * 2.2, -2.2, 7.6) * ALONG_Z, glow, Enum.Material.Neon, Enum.PartType.Cylinder)
+	end
+	part(model, "RoofSign", Vector3.new(0.6, 1.2, 6), CFrame.new(0, 2.9, 0), color)
+	model.PrimaryPart = body
+	return model
+end
+
+-- Delivery drone: round body, four rotor rings, a dangling package
+function VehicleModels.drone(rng)
+	local model = Instance.new("Model")
+	model.Name = "DeliveryDrone"
+	local color = pick(rng, BODY_COLORS)
+	local glow = pick(rng, GLOW_COLORS)
+	local body = ball(model, "Body", 2.6, CFrame.new(), WHITE)
+	ball(model, "Eye", 1, CFrame.new(0, 0.2, -1.05), INK)
+	ball(model, "EyeGlint", 0.35, CFrame.new(0.15, 0.4, -1.5), glow, Enum.Material.Neon)
+	for _, x in ipairs({-1, 1}) do
+		for _, z in ipairs({-1, 1}) do
+			local arm = CFrame.new(x * 2, 0.5, z * 2)
+			part(model, "Arm", Vector3.new(0.3, 0.3, 2.4), CFrame.lookAt(Vector3.new(0, 0.5, 0), arm.Position) * CFrame.new(0, 0, -1.4), color)
+			part(model, "Rotor", Vector3.new(0.2, 2.2, 2.2), arm * UPRIGHT, color, nil, Enum.PartType.Cylinder)
+			part(model, "RotorGlow", Vector3.new(0.1, 2.4, 2.4), arm * CFrame.new(0, -0.1, 0) * UPRIGHT, glow, Enum.Material.Neon, Enum.PartType.Cylinder).Transparency = 0.5
+		end
+	end
+	part(model, "Rope", Vector3.new(0.15, 1.6, 0.15), CFrame.new(0, -2, 0), INK)
+	part(model, "Package", Vector3.new(1.8, 1.5, 1.8), CFrame.new(0, -3.4, 0), rgb(214, 160, 100))
+	part(model, "PackageTape", Vector3.new(1.85, 0.3, 1.85), CFrame.new(0, -3.1, 0), pick(rng, BODY_COLORS))
+	model.PrimaryPart = body
+	return model
+end
+
+-- Advertising blimp: huge soft balloon with fins, a gondola and a glowing banner
+local SLOGANS = {"DIG DEEPER!", "MEMES 4 SALE", "VISIT THE ABYSS", "RATE MY MUSEUM", "SHOVEL SALE 50% OFF", "NO BRAINROT ZONE"}
+function VehicleModels.blimp(rng)
+	local model = Instance.new("Model")
+	model.Name = "AdBlimp"
+	local color = pick(rng, BODY_COLORS)
+	local body = blob(model, "Balloon", Vector3.new(16, 15, 42), CFrame.new(), color)
+	blob(model, "BalloonShine", Vector3.new(7, 3, 20), CFrame.new(-3, 5.5, -3), WHITE).Transparency = 0.4
+	for i, angle in ipairs({0, 90, 180, 270}) do
+		local cf = CFrame.new(0, 0, 18) * CFrame.Angles(0, 0, math.rad(angle))
+		part(model, "Fin", Vector3.new(0.8, 9, 7), cf * CFrame.new(0, 5.5, 0), i % 2 == 0 and WHITE or color)
+	end
+	part(model, "Gondola", Vector3.new(8, 3, 3.6), CFrame.new(0, -9, -2) * ALONG_Z, WHITE, nil, Enum.PartType.Cylinder)
+	ball(model, "GondolaFront", 3.6, CFrame.new(0, -9, -6), WHITE)
+	glass(blob(model, "GondolaWindows", Vector3.new(3.8, 1.4, 7), CFrame.new(0, -8.6, -2), GLASS, Enum.Material.Glass))
+	for _, side in ipairs({-1, 1}) do
+		local banner = part(model, "Banner", Vector3.new(0.4, 5, 22), CFrame.new(side * 8.1, 0, 0), INK)
+		local gui = Instance.new("SurfaceGui")
+		gui.Face = side == 1 and Enum.NormalId.Right or Enum.NormalId.Left
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 20
+		gui.LightInfluence = 0
+		gui.Parent = banner
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.fromScale(1, 1)
+		label.BackgroundTransparency = 1
+		label.Text = pick(rng, SLOGANS)
+		label.TextColor3 = rgb(255, 222, 110)
+		label.Font = Enum.Font.FredokaOne
+		label.TextScaled = true
+		label.Parent = gui
+		part(model, "BannerGlow", Vector3.new(0.3, 5.6, 22.6), CFrame.new(side * 7.9, 0, 0), pick(rng, GLOW_COLORS), Enum.Material.Neon)
+		part(model, "Propeller", Vector3.new(0.3, 4, 4), CFrame.new(side * 5, -8, 8) * ALONG_Z, WHITE, nil, Enum.PartType.Cylinder)
+	end
+	model.PrimaryPart = body
+	return model
+end
+
+return VehicleModels
 ]=])
 install(game:GetService("ServerScriptService"), "Architecture", "ModuleScript", [=[
 -- Architecture (ModuleScript in ServerScriptService)
@@ -955,6 +1126,286 @@ function Architecture.sign(part, title, subtitle, face, titleColor)
 end
 
 return Architecture
+]=])
+install(game:GetService("ServerScriptService"), "CityBuilder", "ModuleScript", [=[
+-- CityBuilder (ModuleScript in ServerScriptService)
+-- Rebuilds the city skyline in the cartoony 2050 style. It reads where every old tower
+-- stood (its podium) and how tall it was, removes it, and builds a new rounded tower in
+-- the same spot. It also recolors the streets, the edge wall and the ground, and swaps the
+-- old sky bridges for glass tube bridges. MapStyle calls this once on server start.
+
+local Architecture = require(script.Parent:WaitForChild("Architecture"))
+local P = Architecture.Palette
+
+local CityBuilder = {}
+
+local BODIES = {"White", "Cloud", "White"}
+local ACCENTS = {"Lilac", "Sky", "Mint", "Sun", "Coral", "Violet"}
+local GLOWS = {"GlowCyan", "GlowPink", "GlowSun", "GlowMint"}
+
+---------------------------------------------------------------------
+-- COLOR HELPERS
+---------------------------------------------------------------------
+local function apply(part, finish)
+	local f = P[finish]
+	part.Color = f.Color
+	part.Material = f.Material
+	part.Transparency = f.Transparency or 0
+	part.Reflectance = f.Reflectance or 0
+end
+
+-- Turns any gritty part into a smooth, soft-colored cartoon part
+function CityBuilder.cartoonify(part)
+	local c = part.Color
+	local lum = 0.299 * c.R + 0.587 * c.G + 0.114 * c.B
+	local sat = math.max(c.R, c.G, c.B) - math.min(c.R, c.G, c.B)
+	if part.Material == Enum.Material.Neon then
+		part.Color = c:Lerp(Color3.new(1, 1, 1), 0.25)
+		return
+	elseif part.Material == Enum.Material.Glass or part.Material == Enum.Material.ForceField or part.Transparency >= 0.99 then
+		return
+	end
+	part.Material = Enum.Material.SmoothPlastic
+	part.Reflectance = 0
+	if sat > 0.25 then
+		part.Color = c:Lerp(Color3.new(1, 1, 1), 0.15) -- keep real colors, just softer
+	elseif lum < 0.22 then
+		part.Color = P.Navy.Color
+	elseif lum < 0.55 then
+		part.Color = P.Lilac.Color:Lerp(P.Cloud.Color, 0.45)
+	else
+		part.Color = P.White.Color
+	end
+end
+
+---------------------------------------------------------------------
+-- TOWER STYLES. `b` is a builder at the tower's footprint (ground = y 0),
+-- w = tower width, h = total height, rng = this tower's random generator.
+---------------------------------------------------------------------
+local function pick(rng, list)
+	return list[rng:NextInteger(1, #list)]
+end
+
+local function antenna(b, y, rng, glow)
+	local length = rng:NextNumber(6, 12)
+	b:pill("Antenna", Vector3.new(0, y, 0), Vector3.new(0, y + length, 0), 0.8, "Chrome")
+	b:bulb("AntennaTip", 1.8, CFrame.new(0, y + length + 1, 0), glow, 30)
+end
+
+-- A: stacked rounded tiers that step in as they rise, with window bands and a dome
+local function stackTower(b, w, h, rng, body, accent, glow)
+	local tiers = math.clamp(math.floor(h / 45) + 2, 2, 6)
+	local y = 10
+	local tierH = (h - 10 - w * 0.25) / tiers
+	for i = 1, tiers do
+		local size = w * (1 - (i - 1) * 0.12)
+		b:roundedBlock("Tier", Vector3.new(size, tierH, size), CFrame.new(0, y + tierH / 2, 0), size * 0.28, i % 2 == 1 and body or accent)
+		-- two glowing window bands per tier
+		for _, f in ipairs({0.35, 0.72}) do
+			b:roundedBlock("WindowBand", Vector3.new(size + 0.5, 1.6, size + 0.5), CFrame.new(0, y + tierH * f, 0), size * 0.3, "Glass")
+		end
+		b:roundedBlock("TierLip", Vector3.new(size + 1.6, 1.2, size + 1.6), CFrame.new(0, y + tierH, 0), size * 0.32, accent)
+		y += tierH
+	end
+	local top = w * (1 - tiers * 0.12)
+	b:ellipsoid("Dome", Vector3.new(top, w * 0.5, top), CFrame.new(0, y, 0), accent)
+	antenna(b, y + w * 0.22, rng, glow)
+end
+
+-- B: a round tube with glass rings, a flying-saucer crown and a beacon
+local function tubeTower(b, w, h, rng, body, accent, glow)
+	local shaftH = h - 10 - 6
+	b:disc("Shaft", w * 0.85, shaftH, CFrame.new(0, 10 + shaftH / 2, 0), body)
+	local bands = math.floor(shaftH / 16)
+	for i = 1, bands do
+		local y = 10 + i * (shaftH / (bands + 1))
+		b:disc("GlassRing", w * 0.85 + 0.6, 3, CFrame.new(0, y, 0), "Glass")
+		if i % 2 == 0 then
+			b:disc("ColorRing", w * 0.85 + 1.2, 1, CFrame.new(0, y + 2.4, 0), accent)
+		end
+	end
+	local crown = 10 + shaftH
+	b:ellipsoid("SaucerUnder", Vector3.new(w * 1.5, 4, w * 1.5), CFrame.new(0, crown, 0), accent)
+	b:disc("SaucerRim", w * 1.55, 1.2, CFrame.new(0, crown + 0.6, 0), glow)
+	b:ellipsoid("SaucerTop", Vector3.new(w * 1.4, 5, w * 1.4), CFrame.new(0, crown + 1.4, 0), body)
+	b:ellipsoid("Bubble", Vector3.new(w * 0.6, w * 0.45, w * 0.6), CFrame.new(0, crown + 3, 0), "Glass")
+	antenna(b, crown + 3 + w * 0.2, rng, glow)
+end
+
+-- C: twisting stack of rounded slabs (each floor turned a bit more)
+local function twistTower(b, w, h, rng, body, accent, glow)
+	local slabH = 14
+	local count = math.floor((h - 12) / slabH)
+	local twist = rng:NextNumber(5, 9) * (rng:NextNumber() < 0.5 and -1 or 1)
+	for i = 0, count - 1 do
+		local y = 10 + i * slabH
+		local cf = CFrame.new(0, y + slabH / 2, 0) * CFrame.Angles(0, math.rad(twist * i), 0)
+		b:box("Slab", Vector3.new(w * 0.8, slabH - 2.2, w * 0.8), cf, i % 3 == 0 and accent or body)
+		b:box("SlabGlass", Vector3.new(w * 0.8 + 0.4, slabH - 6, w * 0.8 + 0.4), cf, "Glass")
+		b:box("SlabLip", Vector3.new(w * 0.92, 2.2, w * 0.92), cf * CFrame.new(0, slabH / 2 - 1.1, 0), accent)
+	end
+	local topY = 10 + count * slabH
+	b:ball("TopOrb", w * 0.55, CFrame.new(0, topY + w * 0.2, 0), accent)
+	b:disc("TopOrbRing", w * 0.8, 0.8, CFrame.new(0, topY + w * 0.2, 0), glow)
+	antenna(b, topY + w * 0.45, rng, glow)
+end
+
+-- D: slim core with big bubble pods sticking out at different heights
+local function podTower(b, w, h, rng, body, accent, glow)
+	local coreH = h - 10
+	b:disc("Core", w * 0.55, coreH, CFrame.new(0, 10 + coreH / 2, 0), body)
+	for i = 1, math.floor(coreH / 12) do
+		b:disc("CoreGlass", w * 0.55 + 0.5, 1.6, CFrame.new(0, 10 + i * 12, 0), "Glass")
+	end
+	local pods = math.clamp(math.floor(coreH / 30), 2, 7)
+	for i = 1, pods do
+		local y = 10 + coreH * (i / (pods + 1))
+		local a = math.rad(i * 137.5 + rng:NextNumber(0, 40))
+		local out = w * 0.5
+		local pos = Vector3.new(math.cos(a) * out, y, math.sin(a) * out)
+		local size = w * rng:NextNumber(0.45, 0.6)
+		b:ball("Pod", size, CFrame.new(pos), i % 2 == 0 and accent or body)
+		b:ellipsoid("PodWindow", Vector3.new(size * 0.7, size * 0.35, size * 0.7), CFrame.new(pos + Vector3.new(0, size * 0.12, 0)), "Glass")
+		b:disc("PodRing", size * 1.15, 0.7, CFrame.new(pos), glow)
+	end
+	b:ellipsoid("CoreCap", Vector3.new(w * 0.7, w * 0.4, w * 0.7), CFrame.new(0, 10 + coreH, 0), accent)
+	antenna(b, 10 + coreH + w * 0.15, rng, glow)
+end
+
+local STYLES = {stackTower, tubeTower, twistTower, podTower}
+
+-- Podium + little park around every tower
+local function base(b, w, rng, accent)
+	b:disc("Park", w * 1.9, 0.4, CFrame.new(0, 0.2, 0), "Mint")
+	b:disc("ParkEdge", w * 1.9 + 1.2, 0.3, CFrame.new(0, 0.15, 0), "White")
+	b:roundedBlock("Podium", Vector3.new(w + 4, 10, w + 4), CFrame.new(0, 5, 0), (w + 4) * 0.3, "Cloud")
+	b:roundedBlock("PodiumBand", Vector3.new(w + 4.6, 1.4, w + 4.6), CFrame.new(0, 8.4, 0), (w + 4.6) * 0.3, accent)
+	b:roundedBlock("Lobby", Vector3.new(w * 0.6, 6, w + 4.3), CFrame.new(0, 3.2, 0), 1, "Glass")
+	-- lollipop trees
+	for i = 1, 3 do
+		local a = math.rad(i * 120 + rng:NextNumber(-20, 20))
+		local r = w * 0.8
+		local pos = Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
+		b:rod("TreeTrunk", 5, 0.8, CFrame.new(pos + Vector3.new(0, 2.5, 0)) * CFrame.Angles(0, 0, math.rad(90)), "White")
+		b:ball("TreeTop", rng:NextNumber(4, 5.5), CFrame.new(pos + Vector3.new(0, 6.5, 0)), pick(rng, {"Mint", "Sun", "Coral", "Lilac"}))
+	end
+end
+
+---------------------------------------------------------------------
+-- REBUILD THE SKYLINE
+---------------------------------------------------------------------
+local function findTowers(towersFolder)
+	local podiums = {}
+	local parts = {}
+	for _, d in ipairs(towersFolder:GetDescendants()) do
+		if d:IsA("BasePart") then
+			table.insert(parts, d)
+			if d.Name == "Podium" then
+				table.insert(podiums, {CFrame = d.CFrame, Size = d.Size, Top = 0})
+			end
+		end
+	end
+	-- each part belongs to the nearest podium; the tallest part sets the tower height
+	for _, part in ipairs(parts) do
+		local pos = part.CFrame.Position
+		local best, bestD = nil, math.huge
+		for _, pod in ipairs(podiums) do
+			local pp = pod.CFrame.Position
+			local d = (pp.X - pos.X) ^ 2 + (pp.Z - pos.Z) ^ 2
+			if d < bestD then best, bestD = pod, d end
+		end
+		if best then
+			best.Top = math.max(best.Top, pos.Y + part.Size.Y / 2)
+		end
+	end
+	return podiums
+end
+
+function CityBuilder.rebuildTowers(city)
+	local towers = city:FindFirstChild("Towers")
+	if not towers or towers:GetAttribute("Cartoon2050") then return end
+	local list = findTowers(towers)
+	towers:ClearAllChildren()
+	for i, tower in ipairs(list) do
+		local pos = tower.CFrame.Position
+		local rng = Random.new(i * 7919)
+		local model = Instance.new("Model")
+		model.Name = "Tower"
+		local b = Architecture.builder(model, CFrame.new(pos.X, 0, pos.Z) * tower.CFrame.Rotation)
+		local w = math.clamp(math.min(tower.Size.X, tower.Size.Z) - 6, 16, 30)
+		local h = math.max(tower.Top, 50)
+		local body = pick(rng, BODIES)
+		local accent = pick(rng, ACCENTS)
+		local glow = pick(rng, GLOWS)
+		base(b, w, rng, accent)
+		STYLES[(i - 1) % #STYLES + 1](b, w, h, rng, body, accent, glow)
+		model.Parent = towers
+	end
+	towers:SetAttribute("Cartoon2050", true)
+end
+
+-- Old sky bridges pointed at towers that no longer exist, so replace them with glass tubes
+function CityBuilder.rebuildBridges(city)
+	local bridges = city:FindFirstChild("SkyBridges")
+	if not bridges or bridges:GetAttribute("Cartoon2050") then return end
+	local spans = {}
+	for _, d in ipairs(bridges:GetDescendants()) do
+		if d:IsA("BasePart") and d.Name == "SkyBridge" then
+			table.insert(spans, {CFrame = d.CFrame, Size = d.Size})
+		end
+	end
+	bridges:ClearAllChildren()
+	local b = Architecture.builder(bridges, CFrame.new())
+	for _, span in ipairs(spans) do
+		-- the long side of the old bridge is the direction the tube runs
+		local s = span.Size
+		local axis = s.X >= s.Z and span.CFrame.RightVector or span.CFrame.LookVector
+		local length = math.max(s.X, s.Z)
+		local mid = span.CFrame.Position
+		b:rod("Tube", length, 6, Architecture.alongX(mid, axis), "Glass")
+		b:rod("TubeFloor", length, 4.6, Architecture.alongX(mid - Vector3.new(0, 1.6, 0), axis), "White")
+		for k = -1, 1 do
+			b:rod("TubeRing", 1, 7, Architecture.alongX(mid + axis * (length * 0.33 * k), axis), "Lilac")
+		end
+	end
+	bridges:SetAttribute("Cartoon2050", true)
+end
+
+-- Streets, edge wall and anything else: recolor in place
+function CityBuilder.restyleRest(city)
+	for _, name in ipairs({"Streets", "EdgeWall"}) do
+		local folder = city:FindFirstChild(name)
+		if folder then
+			for _, d in ipairs(folder:GetDescendants()) do
+				if d:IsA("BasePart") then
+					if d.Name == "Road" then
+						d.Material = Enum.Material.SmoothPlastic
+						d.Color = Color3.fromRGB(88, 92, 140)
+					elseif d.Name == "LaneLine" then
+						apply(d, "Sun")
+					elseif d.Name == "Curb" then
+						apply(d, "White")
+					elseif d.Name == "Megastructure" then
+						d.Material = Enum.Material.SmoothPlastic
+						d.Color = Color3.fromRGB(176, 186, 236)
+					elseif d.Name == "WallFrame" then
+						apply(d, "White")
+					else
+						CityBuilder.cartoonify(d)
+					end
+				end
+			end
+		end
+	end
+end
+
+function CityBuilder.build(city)
+	CityBuilder.rebuildTowers(city)
+	CityBuilder.rebuildBridges(city)
+	CityBuilder.restyleRest(city)
+end
+
+return CityBuilder
 ]=])
 install(game:GetService("ServerScriptService"), "DigManager", "Script", [=[
 -- DigManager (Script in ServerScriptService)
@@ -1499,6 +1950,244 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 print("DigManager ready: " .. #enabledWorlds() .. " world(s), 250-stud pits, shovel depth zones active")
+]=])
+install(game:GetService("ServerScriptService"), "DigSiteStyle", "ModuleScript", [=[
+-- DigSiteStyle (ModuleScript in ServerScriptService)
+-- Makes a world's dig site match the cartoony 2050 look:
+--   * recolors the rim, walkways, racks, gates, lamps and props into the soft palette
+--   * adds a chunky candy-striped rim ring with bulbs around the pit
+--   * strings party lights between the lamp posts
+--   * puts a glowing halo over the giant hard drive
+--   * hides glowing zone rings inside the pit walls at every zone boundary, so players
+--     see a colored ring appear in the dirt when they dig past 50, 130 and 200 studs
+-- The Shovel Shop and World Gate are skipped (they're already built in this style).
+
+local Architecture = require(script.Parent:WaitForChild("Architecture"))
+local CityBuilder = require(script.Parent:WaitForChild("CityBuilder"))
+local P = Architecture.Palette
+
+local SKIP = {ShovelShop = true, WorldGate = true, Cartoon2050 = true}
+
+-- specific parts that deserve a specific color
+local NAMED = {
+	RimWall = "Lilac", RimCap = "White", Curb = "Lilac", RampPost = "Lilac",
+	Walkway = "White", Ramp = "White", TileJoint = "Cloud",
+	GatePost = "Violet", GateBeam = "Violet", GateSign = "Navy",
+	ServerRack = "Navy", LampBase = "Violet", LampPole = "White", FloodPole = "White",
+	FloodBase = "Violet", FloodHousing = "Sky", Cable = "Violet", BarrelBand = "Violet",
+}
+
+local function recolor(root)
+	for _, d in ipairs(root:GetDescendants()) do
+		local skip = false
+		local a = d.Parent
+		while a and a ~= root do
+			if SKIP[a.Name] then
+				skip = true
+				break
+			end
+			a = a.Parent
+		end
+		if not skip and d:IsA("BasePart") then
+			local finish = NAMED[d.Name]
+			if finish then
+				local f = P[finish]
+				d.Color = f.Color
+				d.Material = f.Material
+				d.Reflectance = 0
+			else
+				CityBuilder.cartoonify(d)
+			end
+		end
+	end
+end
+
+return function(digSite, world)
+	if digSite:GetAttribute("Cartoon2050") then return end
+	recolor(digSite)
+
+	local folder = Instance.new("Model")
+	folder.Name = "Cartoon2050"
+	local origin = world.Origin
+	local b = Architecture.builder(folder, CFrame.new(origin))
+	local rimRadius = world.PitRadius + 4.5
+
+	-- candy-striped rim ring, broken where the six walkways come in (world 1)
+	local segments = 72
+	for i = 0, segments - 1 do
+		local deg = (i + 0.5) * 360 / segments
+		local onPath = false
+		if world.HubPaths then
+			local fromPath = math.abs(((deg + 30) % 60) - 30)
+			onPath = fromPath < 9
+		end
+		if not onPath then
+			local a = math.rad(deg)
+			local pos = Vector3.new(math.cos(a) * rimRadius, 4.3, math.sin(a) * rimRadius)
+			local tangent = Vector3.new(-math.sin(a), 0, math.cos(a))
+			local length = 2 * math.pi * rimRadius / segments + 0.6
+			b:rod("RimStripe", length, 2.2, Architecture.alongX(pos, tangent), (i // 2) % 2 == 0 and "Sun" or "White")
+			if i % 6 == 0 then
+				b:bulb("RimBulb", 1, CFrame.new(pos + Vector3.new(0, 1.5, 0)), (i // 6) % 2 == 0 and "GlowPink" or "GlowCyan", 8)
+			end
+		end
+	end
+
+	-- party lights strung between the lamp posts (world 1 has 6 lamps on a ring)
+	local lamps = {}
+	for _, d in ipairs(digSite:GetDescendants()) do
+		if d:IsA("BasePart") and d.Name == "LampGlow" then
+			table.insert(lamps, d.CFrame.Position)
+		end
+	end
+	table.sort(lamps, function(p, q)
+		return math.atan2(p.Z - origin.Z, p.X - origin.X) < math.atan2(q.Z - origin.Z, q.X - origin.X)
+	end)
+	local bulbColors = {"GlowSun", "GlowPink", "GlowCyan", "GlowMint"}
+	for i, from in ipairs(lamps) do
+		local to = lamps[i % #lamps + 1]
+		if #lamps > 1 and (to - from).Magnitude < 80 then
+			for k = 1, 9 do
+				local t = k / 10
+				local sag = math.sin(t * math.pi) * 3.5
+				local pos = from:Lerp(to, t) - Vector3.new(0, sag + 0.6, 0)
+				b:bulb("PartyBulb", 0.7, CFrame.new(pos - origin), bulbColors[(k % #bulbColors) + 1], 0)
+			end
+		end
+	end
+
+	-- halo over the giant hard drive in the middle
+	if world.Id == 1 then
+		b:ring("DriveHalo", CFrame.new(0, 13, 0) * CFrame.Angles(math.rad(90), 0, 0), 10, 0.8, "GlowCyan", 24)
+		b:ring("DriveHaloOuter", CFrame.new(0, 15.5, 0) * CFrame.Angles(math.rad(90), 0, 0), 12.5, 0.6, "Lilac", 28)
+	end
+
+	-- zone rings hidden in the pit wall (you uncover them while digging)
+	for i = 2, #world.Zones do
+		local zone = world.Zones[i]
+		local ringCF = CFrame.new(0, zone.Top, 0) * CFrame.Angles(math.rad(90), 0, 0)
+		local marker = Instance.new("Model")
+		marker.Name = "ZoneRing_" .. zone.Name
+		marker.Parent = folder
+		local mb = Architecture.builder(marker, CFrame.new(origin))
+		mb:ring("ZoneRing", ringCF, world.PitRadius + 1.5, 0.9, "GlowCyan", 40)
+		for _, part in ipairs(marker:GetChildren()) do
+			part.Color = zone.Color:Lerp(Color3.new(1, 1, 1), 0.2)
+			part.CanCollide = false
+		end
+	end
+
+	for _, d in ipairs(folder:GetDescendants()) do
+		if d:IsA("BasePart") and d.Name == "PartyBulb" then
+			d.CanCollide = false
+			local light = d:FindFirstChildOfClass("PointLight")
+			if light then light:Destroy() end -- lots of bulbs; keep it cheap
+		end
+	end
+	folder.Parent = digSite
+	digSite:SetAttribute("Cartoon2050", true)
+end
+]=])
+install(game:GetService("ServerScriptService"), "MapStyle", "Script", [=[
+-- MapStyle (Script in ServerScriptService)
+-- Gives the whole map the cartoony 2050 look when the server starts:
+-- rebuilds the skyline, restyles the dig site, brightens the ground and the sky.
+
+local Lighting = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local CityBuilder = require(script.Parent:WaitForChild("CityBuilder"))
+local DigSiteStyle = require(script.Parent:WaitForChild("DigSiteStyle"))
+
+-- Set to false to keep the place's own Lighting settings (sky, time of day, effects)
+local SUNNY_SKY = true
+
+---------------------------------------------------------------------
+-- GROUND
+---------------------------------------------------------------------
+for _, part in ipairs(workspace:GetChildren()) do
+	if part:IsA("BasePart") and part.Name:find("^Baseplate") then
+		part.Material = Enum.Material.SmoothPlastic
+		part.Color = Color3.fromRGB(196, 202, 228)
+	end
+end
+local spawnLocation = workspace:FindFirstChildOfClass("SpawnLocation")
+if spawnLocation then
+	spawnLocation.Material = Enum.Material.SmoothPlastic
+	spawnLocation.Color = Color3.fromRGB(178, 158, 255)
+end
+
+-- Terrain colors: bright cartoon grass on top, soft stone walls, warm dig layers
+local terrain = workspace.Terrain
+terrain:SetMaterialColor(Enum.Material.Grass, Color3.fromRGB(112, 204, 108))
+terrain:SetMaterialColor(Enum.Material.Slate, Color3.fromRGB(150, 146, 172))
+terrain:SetMaterialColor(Enum.Material.Ground, Color3.fromRGB(176, 124, 84))
+terrain:SetMaterialColor(Enum.Material.Sandstone, Color3.fromRGB(222, 180, 120))
+terrain:SetMaterialColor(Enum.Material.Glacier, Color3.fromRGB(150, 210, 240))
+terrain:SetMaterialColor(Enum.Material.Basalt, Color3.fromRGB(70, 64, 96))
+
+---------------------------------------------------------------------
+-- CITY + DIG SITE
+---------------------------------------------------------------------
+local city = workspace:FindFirstChild("City")
+if city then
+	CityBuilder.build(city)
+end
+local digSite = workspace:FindFirstChild("DigSite")
+if digSite then
+	DigSiteStyle(digSite, GameConfig.Worlds[1])
+end
+
+---------------------------------------------------------------------
+-- SKY: bright afternoon, soft haze, fluffy clouds
+---------------------------------------------------------------------
+if SUNNY_SKY then
+	Lighting.ClockTime = 14.5
+	Lighting.Brightness = 2.6
+	Lighting.Ambient = Color3.fromRGB(120, 118, 140)
+	Lighting.OutdoorAmbient = Color3.fromRGB(165, 165, 190)
+	Lighting.EnvironmentDiffuseScale = 0.6
+	Lighting.EnvironmentSpecularScale = 0.4
+	Lighting.GlobalShadows = true
+
+	-- the place's night skybox doesn't fit a sunny day; Roblox's default sky does
+	local sky = Lighting:FindFirstChildOfClass("Sky")
+	if sky then sky:Destroy() end
+
+	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere")
+	atmosphere.Density = 0.3
+	atmosphere.Offset = 0.2
+	atmosphere.Color = Color3.fromRGB(205, 214, 255)
+	atmosphere.Decay = Color3.fromRGB(150, 160, 230)
+	atmosphere.Glare = 0.2
+	atmosphere.Haze = 1.2
+	atmosphere.Parent = Lighting
+
+	for _, effect in ipairs(Lighting:GetChildren()) do
+		if effect:IsA("BloomEffect") then
+			effect.Intensity = 0.5
+			effect.Size = 24
+			effect.Threshold = 1.4
+		elseif effect:IsA("DepthOfFieldEffect") then
+			effect.Enabled = false -- keeps the cartoon look crisp
+		end
+	end
+	local grade = Lighting:FindFirstChild("Cartoon2050Grade") or Instance.new("ColorCorrectionEffect")
+	grade.Name = "Cartoon2050Grade"
+	grade.Saturation = 0.15
+	grade.Contrast = 0.05
+	grade.Brightness = 0.02
+	grade.Parent = Lighting
+
+	local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds") or Instance.new("Clouds")
+	clouds.Cover = 0.55
+	clouds.Density = 0.7
+	clouds.Color = Color3.fromRGB(255, 250, 255)
+	clouds.Parent = workspace.Terrain
+end
+
+print("MapStyle: cartoony 2050 skyline, dig site and sky ready")
 ]=])
 install(game:GetService("ServerScriptService"), "MuseumStyle", "ModuleScript", [=[
 -- MuseumStyle (ModuleScript in ServerScriptService)
@@ -3153,7 +3842,8 @@ end)
 ]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "FlyingTraffic", "LocalScript", [=[
 -- FlyingTraffic (LocalScript in StarterPlayer > StarterPlayerScripts)
--- Hover cars and cargo ships flying around the city in traffic lanes.
+-- Cartoony bubble cars, hover buses, delivery drones and ad blimps flying around the
+-- city in traffic lanes (the vehicle designs live in ReplicatedStorage.VehicleModels).
 -- Runs only on each player's screen, so it's smooth and doesn't load the server.
 
 local RunService = game:GetService("RunService")
@@ -3162,105 +3852,25 @@ local folder = Instance.new("Folder")
 folder.Name = "FlyingTraffic"
 folder.Parent = workspace
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VehicleModels = require(ReplicatedStorage:WaitForChild("VehicleModels"))
+
 local rng = Random.new()
 
 -- Traffic lanes: circles around the map, placed between the rings of towers
--- Dir 1 = counter-clockwise, -1 = clockwise
+-- Dir 1 = counter-clockwise, -1 = clockwise. Kind = which vehicle flies there.
 local LANES = {
-	{Radius = 305, Height = 48,  Speed = 70,  Count = 6, Dir = 1},   -- above the ring road
-	{Radius = 305, Height = 62,  Speed = 60,  Count = 5, Dir = -1},
-	{Radius = 410, Height = 90,  Speed = 85,  Count = 7, Dir = 1},   -- between tower rings 1 and 2
-	{Radius = 410, Height = 110, Speed = 80,  Count = 5, Dir = -1},
-	{Radius = 518, Height = 140, Speed = 95,  Count = 7, Dir = -1},  -- between tower rings 2 and 3
-	{Radius = 518, Height = 165, Speed = 90,  Count = 5, Dir = 1},
-	{Radius = 628, Height = 200, Speed = 100, Count = 6, Dir = 1},   -- in front of the edge wall
-	{Radius = 450, Height = 400, Speed = 40,  Count = 3, Dir = -1, Ships = true},
-	{Radius = 600, Height = 430, Speed = 35,  Count = 2, Dir = 1, Ships = true},
+	{Radius = 305, Height = 30,  Speed = 40,  Count = 6, Dir = 1,  Kind = "drone"},  -- low over the ring road
+	{Radius = 305, Height = 48,  Speed = 70,  Count = 6, Dir = -1, Kind = "car"},
+	{Radius = 305, Height = 64,  Speed = 55,  Count = 3, Dir = 1,  Kind = "bus"},
+	{Radius = 410, Height = 90,  Speed = 85,  Count = 7, Dir = 1,  Kind = "car"},    -- between tower rings 1 and 2
+	{Radius = 410, Height = 110, Speed = 65,  Count = 3, Dir = -1, Kind = "bus"},
+	{Radius = 518, Height = 140, Speed = 95,  Count = 7, Dir = -1, Kind = "car"},    -- between tower rings 2 and 3
+	{Radius = 518, Height = 165, Speed = 45,  Count = 5, Dir = 1,  Kind = "drone"},
+	{Radius = 628, Height = 200, Speed = 100, Count = 6, Dir = 1,  Kind = "car"},    -- in front of the edge wall
+	{Radius = 450, Height = 400, Speed = 25,  Count = 3, Dir = -1, Kind = "blimp"},
+	{Radius = 600, Height = 430, Speed = 22,  Count = 2, Dir = 1,  Kind = "blimp"},
 }
-
-local CAR_COLORS = {
-	Color3.fromRGB(240, 240, 245), Color3.fromRGB(30, 32, 40), Color3.fromRGB(255, 60, 90),
-	Color3.fromRGB(0, 170, 255), Color3.fromRGB(255, 200, 60), Color3.fromRGB(150, 90, 255),
-}
-local GLOW_COLORS = {
-	Color3.fromRGB(0, 225, 255), Color3.fromRGB(255, 60, 200), Color3.fromRGB(60, 255, 200), Color3.fromRGB(255, 160, 40),
-}
-
----------------------------------------------------------------------
--- BUILDING VEHICLES (front of every vehicle = -Z)
----------------------------------------------------------------------
-local function newPart(model, name, size, cframe, color, material, shape)
-	local p = Instance.new("Part")
-	p.Name = name
-	p.Size = size
-	p.CFrame = cframe
-	p.Color = color
-	p.Material = material or Enum.Material.SmoothPlastic
-	if shape then p.Shape = shape end
-	p.Anchored = true
-	p.CanCollide = false
-	p.CanQuery = false
-	p.CanTouch = false
-	p.CastShadow = false
-	p.TopSurface = Enum.SurfaceType.Smooth
-	p.BottomSurface = Enum.SurfaceType.Smooth
-	p.Parent = model
-	return p
-end
-
-local function oval(model, name, size, cframe, color, material)
-	local p = newPart(model, name, size, cframe, color, material)
-	local mesh = Instance.new("SpecialMesh")
-	mesh.MeshType = Enum.MeshType.Sphere
-	mesh.Parent = p
-	return p
-end
-
-local ALONG_Z = CFrame.Angles(0, math.rad(90), 0)
-
-local function buildCar()
-	local model = Instance.new("Model")
-	model.Name = "HoverCar"
-	local color = CAR_COLORS[rng:NextInteger(1, #CAR_COLORS)]
-	local glow = GLOW_COLORS[rng:NextInteger(1, #GLOW_COLORS)]
-
-	local body = oval(model, "Body", Vector3.new(4.6, 1.7, 10), CFrame.new(), color)
-	body.Reflectance = 0.2
-	local cockpit = oval(model, "Cockpit", Vector3.new(3.2, 1.6, 4.6), CFrame.new(0, 0.8, -0.4), Color3.fromRGB(120, 200, 255), Enum.Material.Glass)
-	cockpit.Transparency = 0.25
-	newPart(model, "Underglow", Vector3.new(3.4, 0.2, 7.2), CFrame.new(0, -0.8, 0), glow, Enum.Material.Neon)
-	newPart(model, "Headlights", Vector3.new(2.8, 0.3, 0.3), CFrame.new(0, 0.1, -4.8), Color3.fromRGB(230, 245, 255), Enum.Material.Neon)
-	newPart(model, "TailLights", Vector3.new(3.4, 0.3, 0.3), CFrame.new(0, 0.2, 4.85), Color3.fromRGB(255, 40, 60), Enum.Material.Neon)
-	for _, side in ipairs({-1, 1}) do
-		newPart(model, "Thruster", Vector3.new(1.6, 1, 1), CFrame.new(side * 2.3, -0.1, 3.6) * ALONG_Z, Color3.fromRGB(60, 62, 72), Enum.Material.Metal, Enum.PartType.Cylinder)
-		newPart(model, "ThrusterGlow", Vector3.new(0.2, 0.8, 0.8), CFrame.new(side * 2.3, -0.1, 4.45) * ALONG_Z, glow, Enum.Material.Neon, Enum.PartType.Cylinder)
-	end
-	model.PrimaryPart = body
-	return model
-end
-
-local function buildShip()
-	local model = Instance.new("Model")
-	model.Name = "CargoShip"
-	local hull = oval(model, "Hull", Vector3.new(14, 7, 38), CFrame.new(), Color3.fromRGB(220, 225, 235))
-	hull.Reflectance = 0.15
-	oval(model, "Bridge", Vector3.new(7, 3.5, 9), CFrame.new(0, 3.2, -10), Color3.fromRGB(110, 190, 255), Enum.Material.Glass).Transparency = 0.2
-	newPart(model, "Wings", Vector3.new(40, 0.8, 10), CFrame.new(0, -0.5, 4), Color3.fromRGB(60, 64, 78), Enum.Material.Metal)
-	newPart(model, "Stripe", Vector3.new(14.2, 0.6, 30), CFrame.new(0, 0, 0), Color3.fromRGB(255, 200, 60), Enum.Material.Neon)
-	newPart(model, "Container", Vector3.new(9, 6, 14), CFrame.new(0, -5, 4), Color3.fromRGB(255, 120, 40), Enum.Material.DiamondPlate)
-	for _, side in ipairs({-1, 1}) do
-		newPart(model, "Engine", Vector3.new(8, 4, 4), CFrame.new(side * 16, -0.5, 8) * ALONG_Z, Color3.fromRGB(50, 52, 62), Enum.Material.Metal, Enum.PartType.Cylinder)
-		local flame = newPart(model, "EngineGlow", Vector3.new(0.4, 3.4, 3.4), CFrame.new(side * 16, -0.5, 12.2) * ALONG_Z, Color3.fromRGB(0, 225, 255), Enum.Material.Neon, Enum.PartType.Cylinder)
-		local light = Instance.new("PointLight")
-		light.Color = Color3.fromRGB(0, 225, 255)
-		light.Range = 20
-		light.Brightness = 1.5
-		light.Parent = flame
-		newPart(model, "WingLight", Vector3.new(0.8, 0.8, 0.8), CFrame.new(side * 20, -0.5, 4), side == 1 and Color3.fromRGB(60, 255, 90) or Color3.fromRGB(255, 50, 50), Enum.Material.Neon, Enum.PartType.Ball)
-	end
-	model.PrimaryPart = hull
-	return model
-end
 
 ---------------------------------------------------------------------
 -- SPAWN VEHICLES ON THEIR LANES
@@ -3268,7 +3878,7 @@ end
 local vehicles = {}
 for _, lane in ipairs(LANES) do
 	for i = 1, lane.Count do
-		local model = lane.Ships and buildShip() or buildCar()
+		local model = VehicleModels[lane.Kind](rng)
 		model.Parent = folder
 		table.insert(vehicles, {
 			Model = model,
@@ -3290,11 +3900,13 @@ RunService.Heartbeat:Connect(function(dt)
 		local lane = v.Lane
 		v.Angle += lane.Dir * (v.Speed / lane.Radius) * dt
 		local a = v.Angle
-		local bob = math.sin(t * 0.9 + v.Phase) * (lane.Ships and 3 or 1.2)
+		local big = lane.Kind == "blimp"
+		local bob = math.sin(t * (big and 0.5 or 1.4) + v.Phase) * (big and 3 or 1.2)
 		local position = Vector3.new(math.cos(a) * lane.Radius, lane.Height + v.HeightOffset + bob, math.sin(a) * lane.Radius)
 		local forward = Vector3.new(-math.sin(a), 0, math.cos(a)) * lane.Dir
-		-- lean slightly into the curve, like a real turning vehicle
-		local lean = CFrame.Angles(0, 0, lane.Dir * (lane.Ships and 0.05 or 0.14))
+		-- lean into the curve and wobble a little, like a bouncy cartoon vehicle
+		local wobble = math.sin(t * 2.1 + v.Phase) * (big and 0.01 or 0.06)
+		local lean = CFrame.Angles(wobble, 0, lane.Dir * (big and 0.04 or 0.16) + wobble)
 		v.Model:PivotTo(CFrame.lookAt(position, position + forward) * lean)
 	end
 end)

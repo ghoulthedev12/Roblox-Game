@@ -215,8 +215,9 @@ function GameConfig.FillDigTerrain(terrain, world)
 	local depth = top - bottom
 	-- clear anything above ground level (terrain works in 4-stud blocks)
 	terrain:FillBlock(CFrame.new(origin + Vector3.new(0, 8, 0)), Vector3.new(200, 16, 200), Enum.Material.Air)
-	-- stone ground around the pit (and under it)
+	-- stone ground around the pit (and under it), with a grassy top layer
 	terrain:FillBlock(CFrame.new(origin + Vector3.new(0, -depth / 2, 0)), Vector3.new(200, depth, 200), Enum.Material.Slate)
+	terrain:FillBlock(CFrame.new(origin + Vector3.new(0, -2, 0)), Vector3.new(200, 4, 200), Enum.Material.Grass)
 	if world.HubPaths then
 		-- keep the walkways clear (otherwise the stone pokes through them)
 		for k = 0, 5 do
