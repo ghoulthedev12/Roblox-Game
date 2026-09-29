@@ -136,22 +136,45 @@ GameConfig.Worlds = {
 	},
 }
 
--- Worlds 2-9: placeholders. Each one sits far out on the map and is unlocked with money.
--- Give each one Zones + Shovels like World 1 above, then set Enabled = true.
-local FUTURE_WORLD_PRICES = {1e9, 25e9, 500e9, 10e12, 250e12, 5e15, 100e15, 2.5e18}
-for i, price in ipairs(FUTURE_WORLD_PRICES) do
+-- Worlds 2-9: floating islands far out on the map, unlocked with money (see WorldsData).
+-- Each one has its own dirt materials, memes (ArtifactsWorlds), shovels and sky.
+local WorldsData = require(script.Parent:WaitForChild("WorldsData"))
+GameConfig.TerrainColors = WorldsData.TerrainColors
+local ZONE_INFO = {
+	{Name = "Shallow Zone", Rarities = SHALLOW},
+	{Name = "Mid Zone", Rarities = MID},
+	{Name = "Deep Zone", Rarities = DEEP},
+	{Name = "The Abyss", Rarities = ABYSS},
+}
+for i, info in ipairs(WorldsData.Worlds) do
 	local id = i + 1
+	local area = 21 + i -- this world's memes (ArtifactData areas 22-29)
+	local zoneList = {}
+	for z, material in ipairs(info.Zones) do
+		table.insert(zoneList, {Name = ZONE_INFO[z].Name, Era = info.Theme, Areas = {area}, Rarities = ZONE_INFO[z].Rarities,
+			Material = material, Color = WorldsData.TerrainColors[material]})
+	end
+	local shovels = {}
+	for t, entry in ipairs(info.Shovels) do
+		local tier = WorldsData.ShovelTiers[t]
+		table.insert(shovels, {
+			Id = (entry[1]:gsub("[^%w]", "")), Name = entry[1], Description = entry[2],
+			Price = tier.PriceFactor * info.Price, MaxZone = tier.MaxZone,
+			DigRadius = tier.DigRadius, FindChance = tier.FindChance, Luck = tier.Luck, Cooldown = tier.Cooldown,
+			Color = t % 2 == 1 and info.Look.Main or info.Look.Second, Material = "SmoothPlastic",
+			-- ShovelModels builds these from the world's colors (Theme decides the decorations)
+			Look = {Theme = info.Theme, Tier = t, Blade = entry[3], Grip = entry[4], Colors = info.Look},
+		})
+	end
 	table.insert(GameConfig.Worlds, {
-		Id = id, Name = "World " .. id, Enabled = false, Price = price,
+		Id = id, Name = info.Name, Enabled = true, Price = info.Price, Theme = info.Theme, Tagline = info.Tagline,
 		Origin = Vector3.new(0, 0, 3000 * id), -- far away along +Z, clear of the city
 		PitRadius = 41, CenterNoDigRadius = 0, HubPaths = false,
-		Zones = zones({
-			{Name = "Shallow Zone", Era = "Brainrot", Areas = {1}, Rarities = SHALLOW, Material = "Ground", Color = Color3.fromRGB(176, 138, 96)},
-			{Name = "Mid Zone", Era = "GoldenAge", Areas = {8}, Rarities = MID, Material = "Sandstone", Color = Color3.fromRGB(214, 186, 128)},
-			{Name = "Deep Zone", Era = "Paleolithic", Areas = {15}, Rarities = DEEP, Material = "CrackedLava", Color = Color3.fromRGB(214, 110, 70)},
-			{Name = "The Abyss", Era = "Abyss", Areas = {21}, Rarities = ABYSS, Material = "Glacier", Color = Color3.fromRGB(150, 196, 214)},
-		}),
-		Shovels = {},
+		IslandRadius = 125, -- floating island around the pit (built by WorldBuilder)
+		TopMaterial = info.Top, WallMaterial = info.Wall,
+		Look = info.Look, Sky = info.Sky,
+		Zones = zones(zoneList),
+		Shovels = shovels,
 	})
 end
 
@@ -216,7 +239,7 @@ function GameConfig.GetFirstShovelForZone(world, zoneIndex)
 	return nil
 end
 
--- Fills a world's dig site with terrain: stone ground around, the 4 zones in the pit, bedrock below.
+-- Fills a world's dig site with terrain: ground around, the 4 zones in the pit, bedrock below.
 -- Used on server start and every pit reset.
 function GameConfig.FillDigTerrain(terrain, world)
 	local origin = world.Origin
@@ -225,11 +248,22 @@ function GameConfig.FillDigTerrain(terrain, world)
 	local lastZone = world.Zones[#world.Zones]
 	local bottom = top + lastZone.Bottom - GameConfig.BedrockThickness
 	local depth = top - bottom
-	-- clear anything above ground level (terrain works in 4-stud blocks)
-	terrain:FillBlock(CFrame.new(origin + Vector3.new(0, 8, 0)), Vector3.new(200, 16, 200), Enum.Material.Air)
-	-- stone ground around the pit (and under it), with a grassy top layer
-	terrain:FillBlock(CFrame.new(origin + Vector3.new(0, -depth / 2, 0)), Vector3.new(200, depth, 200), Enum.Material.Slate)
-	terrain:FillBlock(CFrame.new(origin + Vector3.new(0, -2, 0)), Vector3.new(200, 4, 200), Enum.Material.Grass)
+	local wall = Enum.Material[world.WallMaterial or "Slate"]
+	local surface = Enum.Material[world.TopMaterial or "Grass"]
+	if world.IslandRadius then
+		-- floating island worlds: only the column around the pit gets refilled
+		-- (WorldBuilder shapes the rest of the island once)
+		local column = world.PitRadius + 12
+		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, 8, 0)), 16, column, Enum.Material.Air)
+		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -depth / 2, 0)), depth, column, wall)
+		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -2, 0)), 4, column, surface)
+	else
+		-- clear anything above ground level (terrain works in 4-stud blocks)
+		terrain:FillBlock(CFrame.new(origin + Vector3.new(0, 8, 0)), Vector3.new(200, 16, 200), Enum.Material.Air)
+		-- stone ground around the pit (and under it), with a grassy top layer
+		terrain:FillBlock(CFrame.new(origin + Vector3.new(0, -depth / 2, 0)), Vector3.new(200, depth, 200), wall)
+		terrain:FillBlock(CFrame.new(origin + Vector3.new(0, -2, 0)), Vector3.new(200, 4, 200), surface)
+	end
 	if world.HubPaths then
 		-- keep the walkways clear (otherwise the stone pokes through them)
 		for k = 0, 5 do

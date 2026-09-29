@@ -24,11 +24,33 @@ All game scripts live in `src/` and sync into Roblox Studio with [Rojo](https://
 - Each zone only spawns its own rarities: Common–Rare at the top, Mythic and above only in the Abyss.
 - All of this is set in `src/shared/GameConfig.lua` (`GameConfig.Worlds`).
 
-## Adding one of the 8 extra worlds
-In `GameConfig.Worlds`, give the world its `Name`, `Zones` (which artifact areas and rarities spawn
-in each zone) and `Shovels` (each with a unique `Id` and a `MaxZone`), then set `Enabled = true`.
-Its pit, Shovel Shop and World Gate are built automatically at its `Origin`, and it appears on the
-World Map for its `Price`. Add its memes as a new area in `src/shared/ArtifactData.lua`.
+## The museum (World 1 only)
+Each player gets a museum with 24 display slots over 3 floors (`MuseumManager` + `MuseumClient`).
+- Press E at a pedestal: unlock it, put a meme from your bag on it, swap it or take it back.
+  Memes on display earn money every second.
+- Elevators take you between floors and sell the next floor (`GameConfig.FloorPrices`).
+- The Alien Art Dealer buys memes from your bag (`ArtifactData.SellMultiplier`).
+Slot prices are `GameConfig.SlotPrices`.
+
+## The 9 worlds
+World 1 is the Meme Dig Site next to the museums. Worlds 2-9 are floating islands reached
+through the World Gate, each unlocked with cash:
+
+| # | World | Dirt (shallow → abyss) |
+|---|-------|------------------------|
+| 2 | Neon Sakura Grove | Mud, Brick, WoodPlanks, Salt |
+| 3 | Galaxy Drift | Pavement, Limestone, Basalt, Ice |
+| 4 | Frostbyte Tundra | Ice, Concrete, Glacier, Cobblestone |
+| 5 | Chrome Dunes | Sandstone, Ground, Brick, Salt |
+| 6 | Coral Circuit | Brick, Limestone, Ice, Pavement |
+| 7 | Candy Mainframe | LeafyGrass, Sand, Mud, Ice |
+| 8 | Volcano Forge | Ground, Brick, Asphalt, CrackedLava |
+| 9 | Glitch Nexus | Cobblestone, Asphalt, Limestone, Snow |
+
+- `src/shared/WorldsData.lua`: each world's price, materials, colors, sky and 7 shovels.
+  (Terrain colors are global per material, see `WorldsData.TerrainColors`.)
+- `src/shared/ArtifactsWorlds.lua`: each world's 14 memes.
+- `src/server/WorldBuilder.lua`: builds the island and its themed decorations.
 
 ## Meme pictures
 `assets/meme_images/` has an original meme picture for every artifact (see its CREDITS.md).

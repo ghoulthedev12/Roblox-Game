@@ -29,14 +29,12 @@ if spawnLocation then
 	spawnLocation.Color = Color3.fromRGB(178, 158, 255)
 end
 
--- Terrain colors: bright cartoon grass on top, soft stone walls, warm dig layers
+-- Terrain colors: bright cartoon grass on top, soft stone walls, warm dig layers, plus the
+-- ground materials of worlds 2-9 (see WorldsData.TerrainColors)
 local terrain = workspace.Terrain
-terrain:SetMaterialColor(Enum.Material.Grass, Color3.fromRGB(112, 204, 108))
-terrain:SetMaterialColor(Enum.Material.Slate, Color3.fromRGB(150, 146, 172))
-terrain:SetMaterialColor(Enum.Material.Ground, Color3.fromRGB(176, 124, 84))
-terrain:SetMaterialColor(Enum.Material.Sandstone, Color3.fromRGB(222, 180, 120))
-terrain:SetMaterialColor(Enum.Material.Glacier, Color3.fromRGB(150, 210, 240))
-terrain:SetMaterialColor(Enum.Material.Basalt, Color3.fromRGB(70, 64, 96))
+for materialName, color in pairs(GameConfig.TerrainColors) do
+	terrain:SetMaterialColor(Enum.Material[materialName], color)
+end
 
 ---------------------------------------------------------------------
 -- CITY + DIG SITE

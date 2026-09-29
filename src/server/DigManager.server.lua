@@ -13,6 +13,7 @@ local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
 local ShovelModels = require(ReplicatedStorage:WaitForChild("ShovelModels"))
 local ShopBuilder = require(script.Parent:WaitForChild("ShopBuilder"))
 local WorldGate = require(script.Parent:WaitForChild("WorldGate"))
+local WorldBuilder = require(script.Parent:WaitForChild("WorldBuilder"))
 
 local terrain = workspace.Terrain
 
@@ -451,7 +452,9 @@ local function resetPits()
 	resetting = false
 end
 
+local worldsBuilt = false -- the floating islands must exist before the pits are filled
 task.spawn(function()
+	while not worldsBuilt do task.wait(0.1) end
 	resetPits() -- fresh ground when the server starts
 	while true do
 		task.wait(GameConfig.PitResetMinutes * 60 - 30)
@@ -585,7 +588,11 @@ for _, world in ipairs(enabledWorlds()) do
 		openWorldMapRemote:FireClient(player)
 	end)
 	arrivalSpots[world.Id] = gateCF * CFrame.new(0, 5, -10) -- in front of the gate, facing the pit
+	if world.Id ~= 1 then
+		WorldBuilder(container, world) -- floating island, decorations, rim and zone rings
+	end
 end
+worldsBuilt = true
 
 ---------------------------------------------------------------------
 -- PLAYERS

@@ -571,6 +571,220 @@ CUSTOM.SingularitySpade = function(k)
 end
 
 ---------------------------------------------------------------------
+-- THEMED SHOVELS FOR WORLDS 2-9
+-- Built from the world's colors (def.Look, see WorldsData). The blade shape and grip come
+-- from the shovel, the decorations from the world's theme, and higher tiers get fancier:
+-- tier 3+ more decorations, 5+ a glowing rim, 6+ a light, 7 sparkles and a halo.
+---------------------------------------------------------------------
+local function sparkle(part, color, rate)
+	local e = Instance.new("ParticleEmitter")
+	e.Rate = rate or 5
+	e.Lifetime = NumberRange.new(0.6, 1.2)
+	e.Speed = NumberRange.new(0.3, 0.8)
+	e.SpreadAngle = Vector2.new(180, 180)
+	e.LightEmission = 0.6
+	e.Color = ColorSequence.new(color)
+	e.Parent = part
+end
+
+-- a disc lying flat on the blade's front face (radius r, at blade position x, z)
+local function faceDisc(k, name, d, x, z, color, material, lift)
+	return k.part(name, Vector3.new(0.05, d, d), k.blade * CFrame.new(x, lift or 0.09, z) * CFrame.Angles(0, 0, math.rad(90)), color, material, Enum.PartType.Cylinder)
+end
+
+local DECO = {}
+
+-- little five-petal blossoms, and a paper lantern charm on fancier ones
+DECO.Sakura = function(k, c, tier)
+	local b = k.blade
+	local spots = {Vector3.new(-0.35, 0, -0.5), Vector3.new(0.4, 0, -1.05), Vector3.new(-0.2, 0, -1.4), Vector3.new(0.3, 0, -0.35)}
+	for i = 1, math.min(#spots, 1 + tier // 2) do
+		local spot = spots[i] + Vector3.new(0, 0.1, 0)
+		k.ball("FlowerCore", 0.16, b * CFrame.new(spot), c.Accent)
+		for p = 0, 4 do
+			local a = math.rad(p * 72 + i * 20)
+			k.ball("Petal", 0.2, b * CFrame.new(spot + Vector3.new(math.cos(a) * 0.17, -0.02, math.sin(a) * 0.17)), i % 2 == 0 and c.Second or c.Main)
+		end
+	end
+	k.rodZ("Wrap", 0.5, 0.36, 0.9, c.Second, "Fabric")
+	if tier >= 4 then
+		k.part("LanternString", Vector3.new(0.04, 0.5, 0.04), CFrame.new(0, -0.45, 0.3), c.Dark)
+		k.blob("Lantern", Vector3.new(0.5, 0.62, 0.5), CFrame.new(0, -0.95, 0.3), rgb(255, 110, 110))
+		k.ball("LanternGlow", 0.3, CFrame.new(0, -0.95, 0.3), c.Accent, "Neon")
+	end
+end
+
+-- stars on the blade, a ringed planet on the socket, an orbiting moon on fancy ones
+DECO.Galaxy = function(k, c, tier)
+	local b = k.blade
+	for i = 1, 3 + tier do
+		local x = math.sin(i * 2.4) * 0.6
+		local z = -0.3 - (i * 0.37) % 1.3
+		k.ball("Star", 0.1 + (i % 3) * 0.04, b * CFrame.new(x, 0.1, z), i % 2 == 0 and c.Accent or rgb(255, 255, 255), "Neon")
+	end
+	k.ball("Planet", 0.5, CFrame.new(0, 0.32, -1.7), c.Main)
+	k.part("PlanetRing", Vector3.new(0.04, 0.95, 0.95), CFrame.new(0, 0.32, -1.7) * CFrame.Angles(0, 0, math.rad(90)) * CFrame.Angles(math.rad(20), 0, 0), c.Accent, "SmoothPlastic", Enum.PartType.Cylinder)
+	if tier >= 3 then
+		k.ball("Moon", 0.26, CFrame.new(0.55, 0.2, 0.3), rgb(220, 224, 240))
+		for i = 0, 7 do
+			local a = math.rad(i * 45)
+			k.ball("OrbitDot", 0.06, CFrame.new(math.cos(a) * 0.55, math.sin(a) * 0.55, 0.3), c.Glow, "Neon")
+		end
+	end
+end
+
+-- ice shards sticking out of the blade and the socket
+DECO.Frost = function(k, c, tier)
+	local b = k.blade
+	for i = 1, 2 + tier do
+		local side = i % 2 == 0 and 1 or -1
+		local z = -0.3 - (i * 0.29) % 1.2
+		k.part("IceShard", Vector3.new(0.16, 0.16, 0.45 + (i % 3) * 0.12), b * CFrame.new(side * (0.35 + (i % 3) * 0.12), 0.18, z) * CFrame.Angles(math.rad(-55), side * math.rad(20), math.rad(45)), c.Main, "Glass").Transparency = 0.15
+	end
+	for i = 0, 2 do
+		local a = math.rad(i * 120)
+		k.part("SocketShard", Vector3.new(0.14, 0.14, 0.5), CFrame.new(math.cos(a) * 0.25, math.sin(a) * 0.25, -1.9) * CFrame.Angles(math.sin(a) * 0.6, -math.cos(a) * 0.6, 0), c.Second, "Glass")
+	end
+	k.rodZ("FurWrap", 0.6, 0.4, 0.85, c.Second, "Fabric")
+end
+
+-- a golden sun on the blade with rays; chrome bands on the shaft
+DECO.Dunes = function(k, c, tier)
+	local b = k.blade
+	faceDisc(k, "Sun", 0.6, 0, -0.85, c.Main, "Metal", 0.1).Reflectance = 0.25
+	for i = 0, 7 do
+		local a = math.rad(i * 45)
+		k.part("SunRay", Vector3.new(0.08, 0.06, 0.28), b * CFrame.new(math.cos(a) * 0.48, 0.1, -0.85 + math.sin(a) * 0.48) * CFrame.Angles(0, -a + math.pi / 2, 0), c.Accent)
+	end
+	for _, z in ipairs({0.9, -0.2, -1.2}) do
+		k.rodZ("ChromeBand", 0.14, 0.38, z, c.Second, "Metal").Reflectance = 0.3
+	end
+	if tier >= 4 then
+		k.part("Pyramid", Vector3.new(0.5, 0.4, 0.5), CFrame.new(0, 0, TOP + 0.8), c.Main, "Metal", Enum.PartType.Wedge)
+	end
+end
+
+-- bubbles floating off the blade, a seashell, and a pearl
+DECO.Coral = function(k, c, tier)
+	local b = k.blade
+	for i = 1, 3 + tier do
+		local bubble = k.ball("Bubble", 0.12 + (i % 3) * 0.08, b * CFrame.new(math.sin(i * 1.7) * 0.7, 0.25 + (i % 4) * 0.12, -0.3 - (i * 0.31) % 1.3), rgb(220, 250, 255), "Glass")
+		bubble.Transparency = 0.35
+	end
+	k.blob("Shell", Vector3.new(0.6, 0.18, 0.5), b * CFrame.new(0.35, 0.1, -0.5), c.Main)
+	for i = -1, 1 do
+		k.part("ShellRidge", Vector3.new(0.05, 0.08, 0.42), b * CFrame.new(0.35 + i * 0.14, 0.18, -0.52) * CFrame.Angles(0, i * 0.35, 0), c.Accent)
+	end
+	k.ball("Pearl", 0.26, b * CFrame.new(-0.3, 0.16, -1.05), rgb(250, 246, 255), "SmoothPlastic").Reflectance = 0.3
+	k.rodZ("Seaweed", 0.6, 0.36, 0.85, c.Second, "Fabric")
+end
+
+-- candy stripes on the shaft, sprinkles on the blade, a lollipop on the grip
+DECO.Candy = function(k, c, tier)
+	local b = k.blade
+	for z = -1.6, 1.3, 0.36 do
+		k.rodZ("CandyStripe", 0.14, 0.34, z, c.Main)
+	end
+	local sprinkleColors = {c.Main, c.Second, c.Accent, rgb(120, 170, 255), rgb(255, 255, 255)}
+	for i = 1, 6 + tier * 2 do
+		local x = math.sin(i * 2.1) * 0.65
+		local z = -0.2 - (i * 0.23) % 1.35
+		k.part("Sprinkle", Vector3.new(0.06, 0.06, 0.2), b * CFrame.new(x, 0.09, z) * CFrame.Angles(0, i, 0), sprinkleColors[i % #sprinkleColors + 1])
+	end
+	if tier >= 3 then
+		k.part("LollipopStick", Vector3.new(0.06, 0.06, 0.6), CFrame.new(0.62, 0, TOP + 0.3), rgb(255, 255, 255))
+		k.part("Lollipop", Vector3.new(0.12, 0.6, 0.6), CFrame.new(0.62, 0, TOP + 0.7) * CFrame.Angles(0, math.rad(90), 0), c.Main, "SmoothPlastic", Enum.PartType.Cylinder)
+		k.part("LollipopSwirl", Vector3.new(0.13, 0.32, 0.32), CFrame.new(0.62, 0, TOP + 0.7) * CFrame.Angles(0, math.rad(90), 0), c.Accent, "SmoothPlastic", Enum.PartType.Cylinder)
+	end
+end
+
+-- glowing lava cracks across a dark blade, embers, and a molten core on fancy ones
+DECO.Forge = function(k, c, tier)
+	local b = k.blade
+	local path = {Vector3.new(-0.5, 0, -0.2), Vector3.new(-0.2, 0, -0.6), Vector3.new(-0.45, 0, -1.0), Vector3.new(0, 0, -1.35), Vector3.new(0.3, 0, -0.9), Vector3.new(0.55, 0, -1.2)}
+	for i = 1, #path - 1 do
+		local p, q = path[i] + Vector3.new(0, 0.08, 0), path[i + 1] + Vector3.new(0, 0.08, 0)
+		k.bar("LavaCrack", b * p, b * q, 0.07, c.Glow, "Neon")
+	end
+	for i = 0, 3 do
+		k.rodZ("ObsidianBand", 0.14, 0.36, 0.9 - i * 0.7, c.Dark, "Glass")
+	end
+	if tier >= 3 then
+		k.ball("MoltenCore", 0.36, CFrame.new(0, 0.28, -2.2), c.Glow, "Neon")
+	end
+	if tier >= 5 then
+		for i = -1, 1, 2 do
+			k.part("Horn", Vector3.new(0.14, 0.14, 0.55), CFrame.new(i * 0.32, 0.12, -2.15) * CFrame.Angles(math.rad(-30), i * math.rad(35), 0), c.Accent, "Metal")
+		end
+	end
+end
+
+-- a magenta/black "missing texture" checker, floating pixel cubes that don't line up
+DECO.Glitch = function(k, c, tier)
+	local b = k.blade
+	for i = 0, 3 do
+		local x, z = (i % 2) * 0.36 - 0.18, -0.55 - math.floor(i / 2) * 0.36
+		k.part("MissingTexture", Vector3.new(0.34, 0.06, 0.34), b * CFrame.new(x, 0.08, z), (i == 0 or i == 3) and c.Second or c.Dark)
+	end
+	for i = 1, 2 + tier do
+		local side = i % 2 == 0 and 1 or -1
+		k.part("PixelCube", Vector3.new(0.2, 0.2, 0.2), CFrame.new(side * (0.35 + (i % 3) * 0.18), 0.1 + (i % 2) * 0.2, -0.4 - (i * 0.53) % 2.4), i % 3 == 0 and c.Second or c.Main, "Neon")
+	end
+	-- a ghost copy of the blade, slightly off, like a bad render
+	local ghost = k.part("GhostBlade", Vector3.new(1.6, 0.05, 1.4), b * CFrame.new(0.14, 0.2, -0.8), c.Main, "ForceField")
+	ghost.Transparency = 0.3
+end
+
+local function themed(k, def)
+	local look = def.Look
+	local c, tier = look.Colors, look.Tier
+	local fancy = tier >= 5
+	local shaftColor = (tier % 2 == 1) and c.Dark or c.Second
+	local bladeColor = (tier % 2 == 1) and c.Main or c.Second
+	if look.Theme == "Glitch" or look.Theme == "Forge" then
+		shaftColor, bladeColor = c.Dark, (tier % 2 == 1) and c.Second or c.Dark
+	end
+	shaft(k, shaftColor, fancy and "Metal" or "SmoothPlastic", 0.3)
+	if look.Grip == "T" then
+		tGrip(k, c.Dark, "Fabric", c.Accent, "SmoothPlastic")
+	else
+		dGrip(k, shaftColor, "SmoothPlastic", c.Accent, "SmoothPlastic")
+	end
+	socket(k, c.Accent, fancy and "Metal" or "SmoothPlastic")
+
+	local b = k.blade
+	local plate
+	if look.Blade == "Scoop" then
+		plate = k.blob("Blade", Vector3.new(2.1, 0.3, 2.3), b * CFrame.new(0, 0, -1.05), bladeColor)
+		k.blob("ScoopRim", Vector3.new(2.25, 0.16, 2.45), b * CFrame.new(0, -0.06, -1.05), c.Accent)
+	elseif look.Blade == "Spoon" then
+		plate = k.blob("Blade", Vector3.new(1.8, 0.4, 2.3), b * CFrame.new(0, 0, -1.1), bladeColor)
+		k.blob("SpoonShell", Vector3.new(1.95, 0.3, 2.45), b * CFrame.new(0, -0.08, -1.1), c.Dark)
+	else
+		plate = spade(k, bladeColor, "SmoothPlastic", 1.7, c.Accent)
+		if fancy then
+			-- glowing rim peeking out around the round end
+			k.part("GlowRim", Vector3.new(0.06, 1.85, 1.85), b * CFrame.new(0, -0.05, -1.5) * CFrame.Angles(0, 0, math.rad(90)), c.Glow, "Neon", Enum.PartType.Cylinder)
+		end
+	end
+	plate.Reflectance = fancy and 0.15 or 0.05
+
+	local deco = DECO[look.Theme]
+	if deco then deco(k, c, tier) end
+
+	if tier >= 6 then
+		light(plate, c.Glow, 7)
+	end
+	if tier >= 7 then
+		sparkle(plate, c.Glow, 6)
+		for i = 0, 9 do
+			local a = math.rad(i * 36)
+			k.ball("Halo", 0.1, CFrame.new(math.cos(a) * 0.62, math.sin(a) * 0.62, TOP + 1.1), c.Accent, "Neon")
+		end
+	end
+end
+
+---------------------------------------------------------------------
 -- BUILD A SHOVEL TOOL
 ---------------------------------------------------------------------
 return function(def)
@@ -587,7 +801,7 @@ return function(def)
 	local handle = newPart(tool, "Handle", Vector3.new(0.3, 0.3, 4.4), CFrame.new(), s.Shaft, s.ShaftMat)
 	handle.Transparency = 1
 
-	local custom = CUSTOM[def.Id]
+	local custom = CUSTOM[def.Id] or (def.Look and themed)
 	local rightZ, leftZ -- where the right and left hands hold the shaft (before scaling)
 	if custom then
 		local k = kit(tool)

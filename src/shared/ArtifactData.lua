@@ -51,6 +51,12 @@ ArtifactData.Areas = {
 	-- Secret 2050 memes, only found in World 1's Abyss (worth one step above The Homepage Ruins)
 	{Name = "The Abyss",            Era = "Abyss", Multiplier = ArtifactData.AreaMultiplier ^ 15},
 }
+-- Worlds 2-9 each add one area (22-29) from ArtifactsWorlds. Every world is worth 3 steps
+-- (x64) more than the one before, starting 3 steps above World 1's Abyss.
+local ArtifactsWorlds = require(script.Parent:WaitForChild("ArtifactsWorlds"))
+for k, area in ipairs(ArtifactsWorlds.Areas) do
+	table.insert(ArtifactData.Areas, {Name = area.Name, Era = area.Era, Multiplier = ArtifactData.AreaMultiplier ^ (15 + 3 * k)})
+end
 for i, area in ipairs(ArtifactData.Areas) do
 	area.Index = i
 	area.Multiplier = area.Multiplier or ArtifactData.AreaMultiplier ^ (i - 1)
@@ -62,6 +68,10 @@ ArtifactData.Eras = {
 	Paleolithic = {DisplayName = "The Paleolithic Web", Years = "1990-2004", FirstArea = 15},
 	Abyss       = {DisplayName = "The Abyss",           Years = "2050",      FirstArea = 21},
 }
+for k, area in ipairs(ArtifactsWorlds.Areas) do
+	local era = ArtifactsWorlds.Eras[area.Era]
+	ArtifactData.Eras[area.Era] = {DisplayName = era.DisplayName, Years = era.Years, FirstArea = 21 + k}
+end
 for _, era in pairs(ArtifactData.Eras) do
 	era.Multiplier = ArtifactData.Areas[era.FirstArea].Multiplier
 end
@@ -328,6 +338,10 @@ local AREA_ARTIFACTS = {
 		{"T", "SourceOfIrony", "The Source Code of Irony", "Unironically the most important artifact in the museum."},
 	},
 }
+
+for k, list in ipairs(ArtifactsWorlds.Artifacts) do
+	AREA_ARTIFACTS[21 + k] = list
+end
 
 ---------------------------------------------------------------------
 -- BUILD THE ARTIFACT LIST (you don't need to edit anything below)

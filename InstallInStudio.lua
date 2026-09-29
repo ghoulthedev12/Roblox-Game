@@ -68,6 +68,12 @@ ArtifactData.Areas = {
 	-- Secret 2050 memes, only found in World 1's Abyss (worth one step above The Homepage Ruins)
 	{Name = "The Abyss",            Era = "Abyss", Multiplier = ArtifactData.AreaMultiplier ^ 15},
 }
+-- Worlds 2-9 each add one area (22-29) from ArtifactsWorlds. Every world is worth 3 steps
+-- (x64) more than the one before, starting 3 steps above World 1's Abyss.
+local ArtifactsWorlds = require(script.Parent:WaitForChild("ArtifactsWorlds"))
+for k, area in ipairs(ArtifactsWorlds.Areas) do
+	table.insert(ArtifactData.Areas, {Name = area.Name, Era = area.Era, Multiplier = ArtifactData.AreaMultiplier ^ (15 + 3 * k)})
+end
 for i, area in ipairs(ArtifactData.Areas) do
 	area.Index = i
 	area.Multiplier = area.Multiplier or ArtifactData.AreaMultiplier ^ (i - 1)
@@ -79,6 +85,10 @@ ArtifactData.Eras = {
 	Paleolithic = {DisplayName = "The Paleolithic Web", Years = "1990-2004", FirstArea = 15},
 	Abyss       = {DisplayName = "The Abyss",           Years = "2050",      FirstArea = 21},
 }
+for k, area in ipairs(ArtifactsWorlds.Areas) do
+	local era = ArtifactsWorlds.Eras[area.Era]
+	ArtifactData.Eras[area.Era] = {DisplayName = era.DisplayName, Years = era.Years, FirstArea = 21 + k}
+end
 for _, era in pairs(ArtifactData.Eras) do
 	era.Multiplier = ArtifactData.Areas[era.FirstArea].Multiplier
 end
@@ -346,6 +356,10 @@ local AREA_ARTIFACTS = {
 	},
 }
 
+for k, list in ipairs(ArtifactsWorlds.Artifacts) do
+	AREA_ARTIFACTS[21 + k] = list
+end
+
 ---------------------------------------------------------------------
 -- BUILD THE ARTIFACT LIST (you don't need to edit anything below)
 ---------------------------------------------------------------------
@@ -586,6 +600,22 @@ return {
 	-- 21. The Abyss (secret 2050 memes)
 	LastHumanMeme = "😢", AIGirlfriendFirmware = "💘", BrainrotCoreSample = "❄️", SkibidiMonolith = "🗼",
 	FinalUpvote = "🔼", QuantumDoge = "🐕", MemeSingularity = "🕳️", SourceOfIrony = "🙃",
+	-- 22. Neon Sakura Grove
+	SakuraPetalChip = "🌸", BonsaiRouter = "🌳", HoloFanFlex = "🎐", MatchaDrone = "🍵", KoiNFT = "🐟", LanternBot = "🏮", CyberKatana = "🗡️", SenpaiNoticer = "👀", PetalStorm = "🌺", TeaCeremonyAI = "🍶", NekoMecha = "😺", BlossomServer = "🌷", HanamiHologram = "🎎", SakuraSingularity = "💮",
+	-- 23. Galaxy Drift
+	MoonRockUSB = "🌒", AstroSnackBar = "🍫", OrbitSelfie = "🛰️", AlienRatingStar = "👽", SaturnRingFidget = "🔘", CometMailbox = "📬", UFOTractorClaw = "🛸", BlackHoleBin = "⚫", StarChartWiFi = "🗺️", AstronautDog = "🚀", NebulaEngine = "🎇", PlanetLoadingBar = "🌎", GalacticRickroll = "📻", BigBangMeme = "🎆",
+	-- 24. Frostbyte Tundra
+	IcicleStylus = "🖊️", SnowmanWebcam = "⛄", FrozenLagSpike = "🧊", PenguinPager = "🐧", IglooServer = "🏔️", HotCocoaCoolant = "☕", YetiInfluencer = "🦍", BlizzardBuffer = "🌨️", AuroraFirewall = "🧱", SnowGlobeCloud = "⛅", MammothMemory = "🐘", PermafrostPing = "☃️", FrozenFrame = "📽️", AbsoluteZero = "❄",
+	-- 25. Chrome Dunes
+	SandTimerApp = "⏳", CactusCharger = "🌵", MirageWallpaper = "🏝️", CamelCaseCamel = "🐫", SolarSunglasses = "🕶️", TumbleweedBot = "🌾", ChromePyramid = "⛰️", SandwormStream = "🐛", OasisHologram = "🌴", DuneRacer = "🏎️", SphinxRiddleBot = "🦁", SunCoreBattery = "🔋", MirageMultiverse = "🏜️", FirstSandcastle = "🏯",
+	-- 26. Coral Circuit
+	BubbleWrapModem = "🎈", ShellPhone = "🐚", JellyfishLamp = "🦑", SeahorseStylus = "🦄", KrakenCable = "🐙", PufferfishPing = "🐡", SubmarineStreamer = "🚢", CoralMotherboard = "🧫", TurtleServer = "🐢", AnglerFishLight = "🔦", MermaidMic = "🧜", AtlantisWiFi = "🔱", DeepSeaDubstep = "🐋", OceanOfMemes = "🌊",
+	-- 27. Candy Mainframe
+	GummyByte = "🍬", LollipopAntenna = "🍭", CottonCandyCloud = "🌥️", ChocoChip = "🍪", CandyCaneCable = "🎄", DonutRouter = "🍩", JellyBeanRNG = "🎲", FortuneCookieFirewall = "🥠", SugarRushServer = "🧁", RainbowSprinkleGPU = "🍧", ChocolateFountainCore = "🍯", CakeIsNotALie = "🎂", SweetToothComet = "🍮", SugarSingularity = "🍰",
+	-- 28. Volcano Forge
+	AshKeyboard = "🧯", LavaLampPhone = "🌋", ObsidianMouse = "🐭", MagmaMeme = "🌡️", ForgeHammerMod = "🔨", SulfurSpeaker = "🔉", DragonWiFi = "🐉", MoltenCPU = "🌶️", PhoenixReboot = "🐦", AnvilDrop = "⚒️", VolcanoGod = "🗻", EruptionStream = "🎥", CoreOfTheForge = "🔩", MoltenMemeKing = "🤴",
+	-- 29. Glitch Nexus
+	MissingTexture = "🔳", NullPointer = "👉", CorruptedJPEG = "🗾", InfiniteLoopRing = "➿", TPoseStatue = "🙆", LagSwitch = "🎚️", BlueScreenMirror = "📘", NoClipBoots = "🥾", DebugConsole = "🖲️", CtrlZTimeMachine = "⏪", GlitchedCreator = "🧙", SimulationPatchNotes = "📋", VoidRenderer = "🔲", EndOfTheInternet = "🔚",
 }
 ]=])
 install(game:GetService("ReplicatedStorage"), "ArtifactImages", "ModuleScript", [=[
@@ -597,6 +627,178 @@ install(game:GetService("ReplicatedStorage"), "ArtifactImages", "ModuleScript", 
 
 return {
 }
+]=])
+install(game:GetService("ReplicatedStorage"), "ArtifactsWorlds", "ModuleScript", [=[
+-- ArtifactsWorlds (ModuleScript in ReplicatedStorage)
+-- The memes for worlds 2-9. ArtifactData merges these in: each world has one area (22-29)
+-- with 14 memes, and each world's depth zones pull from its own area.
+-- Format per meme: {rarity code, id, name, museum description}
+
+local ArtifactsWorlds = {}
+
+-- one area per world (area 22 = world 2 ... area 29 = world 9), each worth a big step more
+ArtifactsWorlds.Areas = {
+	{Name = "Neon Sakura Grove", Era = "Sakura"},
+	{Name = "Galaxy Drift",      Era = "Galaxy"},
+	{Name = "Frostbyte Tundra",  Era = "Frost"},
+	{Name = "Chrome Dunes",      Era = "Dunes"},
+	{Name = "Coral Circuit",     Era = "Coral"},
+	{Name = "Candy Mainframe",   Era = "Candy"},
+	{Name = "Volcano Forge",     Era = "Forge"},
+	{Name = "Glitch Nexus",      Era = "Glitch"},
+}
+
+ArtifactsWorlds.Eras = {
+	Sakura = {DisplayName = "Neon Sakura Grove", Years = "2051"},
+	Galaxy = {DisplayName = "Galaxy Drift",      Years = "2052"},
+	Frost  = {DisplayName = "Frostbyte Tundra",  Years = "2053"},
+	Dunes  = {DisplayName = "Chrome Dunes",      Years = "2054"},
+	Coral  = {DisplayName = "Coral Circuit",     Years = "2055"},
+	Candy  = {DisplayName = "Candy Mainframe",   Years = "2056"},
+	Forge  = {DisplayName = "Volcano Forge",     Years = "2057"},
+	Glitch = {DisplayName = "Glitch Nexus",      Years = "2058"},
+}
+
+ArtifactsWorlds.Artifacts = {
+	-- 22. NEON SAKURA GROVE (world 2)
+	{
+		{"C", "SakuraPetalChip", "Petal-Shaped Memory Chip", "Stores exactly one blossom. Deletes itself every spring."},
+		{"C", "BonsaiRouter", "Bonsai Wi-Fi Router", "Trimmed so carefully that the signal only reaches one room."},
+		{"U", "HoloFanFlex", "Holographic Flex Fan", "Snapped open whenever someone bragged online."},
+		{"U", "MatchaDrone", "Matcha Delivery Drone", "Delivered tea at 300 mph. Mostly spilled it."},
+		{"R", "KoiNFT", "The Koi NFT Pond", "Every fish was 'one of a kind'. There were 10,000 of them."},
+		{"R", "LanternBot", "Lantern Bot", "A floating paper lantern with a tiny robot inside."},
+		{"E", "CyberKatana", "Cyber Katana of Hot Takes", "Sliced through a whole comment section in one post."},
+		{"E", "SenpaiNoticer", "The Senpai Noticer 3000", "Beeps loudly whenever someone finally notices you."},
+		{"L", "PetalStorm", "Bottled Petal Storm", "Open it and your screen fills with sakura for 3 hours."},
+		{"L", "TeaCeremonyAI", "Tea Ceremony AI", "Performs a perfect ceremony, then asks you to rate it 5 stars."},
+		{"M", "NekoMecha", "Neko Mecha Core", "The heart of a giant cat robot. Purrs at 90 decibels."},
+		{"D", "BlossomServer", "The Blossom Server", "A server made of living cherry wood. Blooms when traffic spikes."},
+		{"CE", "HanamiHologram", "Eternal Hanami Hologram", "A picnic under the blossoms that never ends and never loads."},
+		{"T", "SakuraSingularity", "The Sakura Singularity", "Every petal that ever fell, squeezed into one pink star."},
+	},
+	-- 23. GALAXY DRIFT (world 3)
+	{
+		{"C", "MoonRockUSB", "Moon Rock USB Stick", "Holds 2 GB of memes and a little moon dust."},
+		{"C", "AstroSnackBar", "Freeze-Dried Astro Snack", "Tastes like strawberry and vacuum."},
+		{"U", "OrbitSelfie", "Zero-G Selfie Satellite", "Took selfies from every angle at once."},
+		{"U", "AlienRatingStar", "One-Star Alien Review", "Rated planet Earth: 'Loud. Weird memes. Would visit again.'"},
+		{"R", "SaturnRingFidget", "Saturn Ring Fidget", "Spins forever, because there is no friction in space."},
+		{"R", "CometMailbox", "Comet Mailbox", "Delivers messages 400 years late."},
+		{"E", "UFOTractorClaw", "UFO Claw Machine", "Abducts plushies with a 3% success rate."},
+		{"E", "BlackHoleBin", "Black Hole Recycle Bin", "Empty it once and it takes the whole desktop with it."},
+		{"L", "StarChartWiFi", "Star Chart Wi-Fi Map", "Shows every hotspot in the galaxy. Password: stars123."},
+		{"L", "AstronautDog", "Astronaut Doge Helmet", "Such space. Very helmet. Much oxygen."},
+		{"M", "NebulaEngine", "The Nebula Engine", "Turns space dust into memes at warp speed."},
+		{"D", "PlanetLoadingBar", "Planet Loading Bar", "A whole planet stuck at 99%."},
+		{"CE", "GalacticRickroll", "The Galactic Rickroll", "A signal that plays the same song across the universe. It never gives up."},
+		{"T", "BigBangMeme", "The Big Bang Meme", "The joke that started everything. It was a pun."},
+	},
+	-- 24. FROSTBYTE TUNDRA (world 4)
+	{
+		{"C", "IcicleStylus", "Icicle Stylus", "Writes on any screen. Melts halfway through the message."},
+		{"C", "SnowmanWebcam", "Snowman Webcam", "Always online. Always frozen."},
+		{"U", "FrozenLagSpike", "Frozen Lag Spike", "A 3000 ms ping, preserved in ice."},
+		{"U", "PenguinPager", "Penguin Pager", "Waddles your messages over to you. Slowly."},
+		{"R", "IglooServer", "Igloo Server Rack", "Naturally cooled. Unnaturally cute."},
+		{"R", "HotCocoaCoolant", "Hot Cocoa Coolant", "Kept the servers warm and the admins happy."},
+		{"E", "YetiInfluencer", "Yeti Influencer Ring Light", "Nobody ever saw the yeti. Everyone saw its posts."},
+		{"E", "BlizzardBuffer", "The Blizzard Buffer", "The loading wheel, but made of snowflakes."},
+		{"L", "AuroraFirewall", "Aurora Firewall", "Blocks hackers with a very pretty light show."},
+		{"L", "SnowGlobeCloud", "Snow Globe Cloud Storage", "Shake it to defragment."},
+		{"M", "MammothMemory", "Woolly Mammoth Memory", "Remembers every meme since the Ice Age."},
+		{"D", "PermafrostPing", "The Permafrost Ping", "A message sent in 2050. Still on its way."},
+		{"CE", "FrozenFrame", "The Frozen Frame", "One video frame, frozen for eternity. It's a sneeze."},
+		{"T", "AbsoluteZero", "Absolute Zero Chill", "The chillest meme ever made. Literally 0 kelvin."},
+	},
+	-- 25. CHROME DUNES (world 5)
+	{
+		{"C", "SandTimerApp", "Hourglass Loading App", "Every app in the desert loaded like this."},
+		{"C", "CactusCharger", "Cactus Phone Charger", "Charges your phone. Pokes your hand."},
+		{"U", "MirageWallpaper", "Mirage Wallpaper", "Looks like an oasis. It's a pop-up ad."},
+		{"U", "CamelCaseCamel", "The camelCase Camel", "A camel that only speaks in variable names."},
+		{"R", "SolarSunglasses", "Solar-Powered Shades", "Deal with it, but renewable."},
+		{"R", "TumbleweedBot", "Tumbleweed Bot", "Rolls across the chat whenever nobody says anything."},
+		{"E", "ChromePyramid", "Chrome Pyramid Router", "Pharaoh-grade Wi-Fi. Cursed if you forget the password."},
+		{"E", "SandwormStream", "Sandworm Livestream", "12 hours of a sandworm. 4 million viewers."},
+		{"L", "OasisHologram", "The Oasis Hologram", "The most refreshing thing in the desert, and none of it is real."},
+		{"L", "DuneRacer", "Hover Dune Racer", "Fastest thing on sand. Once lost a race to a snail meme."},
+		{"M", "SphinxRiddleBot", "Sphinx Riddle Bot", "Asks 'are you a robot?' and never accepts your answer."},
+		{"D", "SunCoreBattery", "Sun Core Battery", "A tiny sun in a can. Do not shake."},
+		{"CE", "MirageMultiverse", "The Mirage Multiverse", "Every desert mirage from every timeline, all at once."},
+		{"T", "FirstSandcastle", "The First Sandcastle Server", "Built by hand in 2049. Still online. Somehow."},
+	},
+	-- 26. CORAL CIRCUIT (world 6)
+	{
+		{"C", "BubbleWrapModem", "Bubble Wrap Modem", "Pop it to connect."},
+		{"C", "ShellPhone", "Seashell Smartphone", "Hold it to your ear to hear the ocean's notifications."},
+		{"U", "JellyfishLamp", "Jellyfish Desk Lamp", "Glows gently. Stings lightly."},
+		{"U", "SeahorseStylus", "Seahorse Stylus", "The only pen that can draw underwater."},
+		{"R", "KrakenCable", "Kraken Ethernet Cable", "Eight connections at once. Very fast. Very wet."},
+		{"R", "PufferfishPing", "Pufferfish Ping", "Puffs up to 999 ms whenever the lag hits."},
+		{"E", "SubmarineStreamer", "Submarine Streaming Setup", "The deepest stream ever. Zero viewers above sea level."},
+		{"E", "CoralMotherboard", "Coral Motherboard", "Grown, not built. Still needs updates."},
+		{"L", "TurtleServer", "Ancient Turtle Server", "Slow, reliable, 200 years of uptime."},
+		{"L", "AnglerFishLight", "Anglerfish Ring Light", "Makes every face look spooky and professional."},
+		{"M", "MermaidMic", "The Mermaid Microphone", "Every song comes out as an ocean ballad."},
+		{"D", "AtlantisWiFi", "Atlantis Wi-Fi Password", "Nobody has found it. The password or the city."},
+		{"CE", "DeepSeaDubstep", "Deep Sea Dubstep", "Whales invented the bass drop. This is the proof."},
+		{"T", "OceanOfMemes", "The Ocean of Memes", "Every meme ever dumped into the sea, in one bottle."},
+	},
+	-- 27. CANDY MAINFRAME (world 7)
+	{
+		{"C", "GummyByte", "Gummy Byte", "Eight bits of pure sugar."},
+		{"C", "LollipopAntenna", "Lollipop Antenna", "Better signal every time you lick it. Please don't."},
+		{"U", "CottonCandyCloud", "Cotton Candy Cloud Drive", "Your files dissolve in water."},
+		{"U", "ChocoChip", "Chocolate Chip Processor", "Runs hot. Melts faster."},
+		{"R", "CandyCaneCable", "Candy Cane Cable", "Striped for faster sugar transfer."},
+		{"R", "DonutRouter", "Donut Router", "The signal goes through the hole."},
+		{"E", "JellyBeanRNG", "Jelly Bean RNG", "Every bean is a random flavor. Some are 'earwax'."},
+		{"E", "FortuneCookieFirewall", "Fortune Cookie Firewall", "Every blocked hacker gets a fortune: 'You will not get in.'"},
+		{"L", "SugarRushServer", "Sugar Rush Server", "A million requests a second, then it crashes for a nap."},
+		{"L", "RainbowSprinkleGPU", "Rainbow Sprinkle GPU", "Renders everything with extra sprinkles."},
+		{"M", "ChocolateFountainCore", "Chocolate Fountain Core", "Endless flowing chocolate. Endless flowing data."},
+		{"D", "CakeIsNotALie", "The Cake That Is Not a Lie", "Scientists confirm: the cake was real all along."},
+		{"CE", "SweetToothComet", "The Sweet Tooth Comet", "A comet made of pudding. Tastes like 2012."},
+		{"T", "SugarSingularity", "The Sugar Singularity", "Infinitely sweet. Your teeth hurt just looking at it."},
+	},
+	-- 28. VOLCANO FORGE (world 8)
+	{
+		{"C", "AshKeyboard", "Ash-Covered Keyboard", "Every key types 'hot'."},
+		{"C", "LavaLampPhone", "Lava Lamp Phone", "Very groovy. Very hot to hold."},
+		{"U", "ObsidianMouse", "Obsidian Mouse", "Every click sounds like a tiny eruption."},
+		{"U", "MagmaMeme", "Magma Meme Template", "The caption melts before you can read it."},
+		{"R", "ForgeHammerMod", "The Forged Ban Hammer", "Smithed in lava. Bans in one swing."},
+		{"R", "SulfurSpeaker", "Sulfur Speaker", "Great bass. Terrible smell."},
+		{"E", "DragonWiFi", "Dragon Wi-Fi", "Breathes fire on anyone who steals bandwidth."},
+		{"E", "MoltenCPU", "The Molten CPU", "Overclocked until it became a lava lake."},
+		{"L", "PhoenixReboot", "Phoenix Reboot Button", "Your PC burns down and comes back stronger."},
+		{"L", "AnvilDrop", "The Anvil Drop", "The heaviest bass drop ever recorded."},
+		{"M", "VolcanoGod", "The Volcano Idol", "Demands one sacrifice: your screen time."},
+		{"D", "EruptionStream", "The Eruption Stream", "The most explosive livestream in history."},
+		{"CE", "CoreOfTheForge", "Core of the Forge", "Every meme ever forged started here."},
+		{"T", "MoltenMemeKing", "The Molten Meme King", "Crowned in lava. Ruler of the hottest takes."},
+	},
+	-- 29. GLITCH NEXUS (world 9)
+	{
+		{"C", "MissingTexture", "Missing Texture Cube", "Purple and black. Everyone knows it. Nobody fixed it."},
+		{"C", "NullPointer", "Null Pointer", "Points at nothing. Very confidently."},
+		{"U", "CorruptedJPEG", "Corrupted JPEG", "Was a cat once. Now it's modern art."},
+		{"U", "InfiniteLoopRing", "Infinite Loop Ring", "Wear it forever. Literally, it won't come off."},
+		{"R", "TPoseStatue", "T-Pose Statue", "Asserting dominance since the first missing animation."},
+		{"R", "LagSwitch", "The Lag Switch", "Makes everyone else freeze. Rude."},
+		{"E", "BlueScreenMirror", "Blue Screen Mirror", "Look into it and it tells you something went wrong."},
+		{"E", "NoClipBoots", "No-Clip Boots", "Walk through walls. Fall through floors. Worth it."},
+		{"L", "DebugConsole", "The Admin Debug Console", "Type /fly. It worked once."},
+		{"L", "CtrlZTimeMachine", "Ctrl+Z Time Machine", "Undo anything. Except this purchase."},
+		{"M", "GlitchedCreator", "The Glitched Creator", "The developer of the simulation. They left a bug."},
+		{"D", "SimulationPatchNotes", "Simulation Patch Notes", "v2050.1: fixed gravity. Added more memes."},
+		{"CE", "VoidRenderer", "The Void Renderer", "Draws the empty space between all the memes."},
+		{"T", "EndOfTheInternet", "The End of the Internet", "You have reached the last page. Please go outside."},
+	},
+}
+
+return ArtifactsWorlds
 ]=])
 install(game:GetService("ReplicatedStorage"), "GameConfig", "ModuleScript", [=[
 -- GameConfig (ModuleScript in ReplicatedStorage)
@@ -737,22 +939,45 @@ GameConfig.Worlds = {
 	},
 }
 
--- Worlds 2-9: placeholders. Each one sits far out on the map and is unlocked with money.
--- Give each one Zones + Shovels like World 1 above, then set Enabled = true.
-local FUTURE_WORLD_PRICES = {1e9, 25e9, 500e9, 10e12, 250e12, 5e15, 100e15, 2.5e18}
-for i, price in ipairs(FUTURE_WORLD_PRICES) do
+-- Worlds 2-9: floating islands far out on the map, unlocked with money (see WorldsData).
+-- Each one has its own dirt materials, memes (ArtifactsWorlds), shovels and sky.
+local WorldsData = require(script.Parent:WaitForChild("WorldsData"))
+GameConfig.TerrainColors = WorldsData.TerrainColors
+local ZONE_INFO = {
+	{Name = "Shallow Zone", Rarities = SHALLOW},
+	{Name = "Mid Zone", Rarities = MID},
+	{Name = "Deep Zone", Rarities = DEEP},
+	{Name = "The Abyss", Rarities = ABYSS},
+}
+for i, info in ipairs(WorldsData.Worlds) do
 	local id = i + 1
+	local area = 21 + i -- this world's memes (ArtifactData areas 22-29)
+	local zoneList = {}
+	for z, material in ipairs(info.Zones) do
+		table.insert(zoneList, {Name = ZONE_INFO[z].Name, Era = info.Theme, Areas = {area}, Rarities = ZONE_INFO[z].Rarities,
+			Material = material, Color = WorldsData.TerrainColors[material]})
+	end
+	local shovels = {}
+	for t, entry in ipairs(info.Shovels) do
+		local tier = WorldsData.ShovelTiers[t]
+		table.insert(shovels, {
+			Id = (entry[1]:gsub("[^%w]", "")), Name = entry[1], Description = entry[2],
+			Price = tier.PriceFactor * info.Price, MaxZone = tier.MaxZone,
+			DigRadius = tier.DigRadius, FindChance = tier.FindChance, Luck = tier.Luck, Cooldown = tier.Cooldown,
+			Color = t % 2 == 1 and info.Look.Main or info.Look.Second, Material = "SmoothPlastic",
+			-- ShovelModels builds these from the world's colors (Theme decides the decorations)
+			Look = {Theme = info.Theme, Tier = t, Blade = entry[3], Grip = entry[4], Colors = info.Look},
+		})
+	end
 	table.insert(GameConfig.Worlds, {
-		Id = id, Name = "World " .. id, Enabled = false, Price = price,
+		Id = id, Name = info.Name, Enabled = true, Price = info.Price, Theme = info.Theme, Tagline = info.Tagline,
 		Origin = Vector3.new(0, 0, 3000 * id), -- far away along +Z, clear of the city
 		PitRadius = 41, CenterNoDigRadius = 0, HubPaths = false,
-		Zones = zones({
-			{Name = "Shallow Zone", Era = "Brainrot", Areas = {1}, Rarities = SHALLOW, Material = "Ground", Color = Color3.fromRGB(176, 138, 96)},
-			{Name = "Mid Zone", Era = "GoldenAge", Areas = {8}, Rarities = MID, Material = "Sandstone", Color = Color3.fromRGB(214, 186, 128)},
-			{Name = "Deep Zone", Era = "Paleolithic", Areas = {15}, Rarities = DEEP, Material = "CrackedLava", Color = Color3.fromRGB(214, 110, 70)},
-			{Name = "The Abyss", Era = "Abyss", Areas = {21}, Rarities = ABYSS, Material = "Glacier", Color = Color3.fromRGB(150, 196, 214)},
-		}),
-		Shovels = {},
+		IslandRadius = 125, -- floating island around the pit (built by WorldBuilder)
+		TopMaterial = info.Top, WallMaterial = info.Wall,
+		Look = info.Look, Sky = info.Sky,
+		Zones = zones(zoneList),
+		Shovels = shovels,
 	})
 end
 
@@ -817,7 +1042,7 @@ function GameConfig.GetFirstShovelForZone(world, zoneIndex)
 	return nil
 end
 
--- Fills a world's dig site with terrain: stone ground around, the 4 zones in the pit, bedrock below.
+-- Fills a world's dig site with terrain: ground around, the 4 zones in the pit, bedrock below.
 -- Used on server start and every pit reset.
 function GameConfig.FillDigTerrain(terrain, world)
 	local origin = world.Origin
@@ -826,11 +1051,22 @@ function GameConfig.FillDigTerrain(terrain, world)
 	local lastZone = world.Zones[#world.Zones]
 	local bottom = top + lastZone.Bottom - GameConfig.BedrockThickness
 	local depth = top - bottom
-	-- clear anything above ground level (terrain works in 4-stud blocks)
-	terrain:FillBlock(CFrame.new(origin + Vector3.new(0, 8, 0)), Vector3.new(200, 16, 200), Enum.Material.Air)
-	-- stone ground around the pit (and under it), with a grassy top layer
-	terrain:FillBlock(CFrame.new(origin + Vector3.new(0, -depth / 2, 0)), Vector3.new(200, depth, 200), Enum.Material.Slate)
-	terrain:FillBlock(CFrame.new(origin + Vector3.new(0, -2, 0)), Vector3.new(200, 4, 200), Enum.Material.Grass)
+	local wall = Enum.Material[world.WallMaterial or "Slate"]
+	local surface = Enum.Material[world.TopMaterial or "Grass"]
+	if world.IslandRadius then
+		-- floating island worlds: only the column around the pit gets refilled
+		-- (WorldBuilder shapes the rest of the island once)
+		local column = world.PitRadius + 12
+		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, 8, 0)), 16, column, Enum.Material.Air)
+		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -depth / 2, 0)), depth, column, wall)
+		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -2, 0)), 4, column, surface)
+	else
+		-- clear anything above ground level (terrain works in 4-stud blocks)
+		terrain:FillBlock(CFrame.new(origin + Vector3.new(0, 8, 0)), Vector3.new(200, 16, 200), Enum.Material.Air)
+		-- stone ground around the pit (and under it), with a grassy top layer
+		terrain:FillBlock(CFrame.new(origin + Vector3.new(0, -depth / 2, 0)), Vector3.new(200, depth, 200), wall)
+		terrain:FillBlock(CFrame.new(origin + Vector3.new(0, -2, 0)), Vector3.new(200, 4, 200), surface)
+	end
 	if world.HubPaths then
 		-- keep the walkways clear (otherwise the stone pokes through them)
 		for k = 0, 5 do
@@ -1426,6 +1662,220 @@ CUSTOM.SingularitySpade = function(k)
 end
 
 ---------------------------------------------------------------------
+-- THEMED SHOVELS FOR WORLDS 2-9
+-- Built from the world's colors (def.Look, see WorldsData). The blade shape and grip come
+-- from the shovel, the decorations from the world's theme, and higher tiers get fancier:
+-- tier 3+ more decorations, 5+ a glowing rim, 6+ a light, 7 sparkles and a halo.
+---------------------------------------------------------------------
+local function sparkle(part, color, rate)
+	local e = Instance.new("ParticleEmitter")
+	e.Rate = rate or 5
+	e.Lifetime = NumberRange.new(0.6, 1.2)
+	e.Speed = NumberRange.new(0.3, 0.8)
+	e.SpreadAngle = Vector2.new(180, 180)
+	e.LightEmission = 0.6
+	e.Color = ColorSequence.new(color)
+	e.Parent = part
+end
+
+-- a disc lying flat on the blade's front face (radius r, at blade position x, z)
+local function faceDisc(k, name, d, x, z, color, material, lift)
+	return k.part(name, Vector3.new(0.05, d, d), k.blade * CFrame.new(x, lift or 0.09, z) * CFrame.Angles(0, 0, math.rad(90)), color, material, Enum.PartType.Cylinder)
+end
+
+local DECO = {}
+
+-- little five-petal blossoms, and a paper lantern charm on fancier ones
+DECO.Sakura = function(k, c, tier)
+	local b = k.blade
+	local spots = {Vector3.new(-0.35, 0, -0.5), Vector3.new(0.4, 0, -1.05), Vector3.new(-0.2, 0, -1.4), Vector3.new(0.3, 0, -0.35)}
+	for i = 1, math.min(#spots, 1 + tier // 2) do
+		local spot = spots[i] + Vector3.new(0, 0.1, 0)
+		k.ball("FlowerCore", 0.16, b * CFrame.new(spot), c.Accent)
+		for p = 0, 4 do
+			local a = math.rad(p * 72 + i * 20)
+			k.ball("Petal", 0.2, b * CFrame.new(spot + Vector3.new(math.cos(a) * 0.17, -0.02, math.sin(a) * 0.17)), i % 2 == 0 and c.Second or c.Main)
+		end
+	end
+	k.rodZ("Wrap", 0.5, 0.36, 0.9, c.Second, "Fabric")
+	if tier >= 4 then
+		k.part("LanternString", Vector3.new(0.04, 0.5, 0.04), CFrame.new(0, -0.45, 0.3), c.Dark)
+		k.blob("Lantern", Vector3.new(0.5, 0.62, 0.5), CFrame.new(0, -0.95, 0.3), rgb(255, 110, 110))
+		k.ball("LanternGlow", 0.3, CFrame.new(0, -0.95, 0.3), c.Accent, "Neon")
+	end
+end
+
+-- stars on the blade, a ringed planet on the socket, an orbiting moon on fancy ones
+DECO.Galaxy = function(k, c, tier)
+	local b = k.blade
+	for i = 1, 3 + tier do
+		local x = math.sin(i * 2.4) * 0.6
+		local z = -0.3 - (i * 0.37) % 1.3
+		k.ball("Star", 0.1 + (i % 3) * 0.04, b * CFrame.new(x, 0.1, z), i % 2 == 0 and c.Accent or rgb(255, 255, 255), "Neon")
+	end
+	k.ball("Planet", 0.5, CFrame.new(0, 0.32, -1.7), c.Main)
+	k.part("PlanetRing", Vector3.new(0.04, 0.95, 0.95), CFrame.new(0, 0.32, -1.7) * CFrame.Angles(0, 0, math.rad(90)) * CFrame.Angles(math.rad(20), 0, 0), c.Accent, "SmoothPlastic", Enum.PartType.Cylinder)
+	if tier >= 3 then
+		k.ball("Moon", 0.26, CFrame.new(0.55, 0.2, 0.3), rgb(220, 224, 240))
+		for i = 0, 7 do
+			local a = math.rad(i * 45)
+			k.ball("OrbitDot", 0.06, CFrame.new(math.cos(a) * 0.55, math.sin(a) * 0.55, 0.3), c.Glow, "Neon")
+		end
+	end
+end
+
+-- ice shards sticking out of the blade and the socket
+DECO.Frost = function(k, c, tier)
+	local b = k.blade
+	for i = 1, 2 + tier do
+		local side = i % 2 == 0 and 1 or -1
+		local z = -0.3 - (i * 0.29) % 1.2
+		k.part("IceShard", Vector3.new(0.16, 0.16, 0.45 + (i % 3) * 0.12), b * CFrame.new(side * (0.35 + (i % 3) * 0.12), 0.18, z) * CFrame.Angles(math.rad(-55), side * math.rad(20), math.rad(45)), c.Main, "Glass").Transparency = 0.15
+	end
+	for i = 0, 2 do
+		local a = math.rad(i * 120)
+		k.part("SocketShard", Vector3.new(0.14, 0.14, 0.5), CFrame.new(math.cos(a) * 0.25, math.sin(a) * 0.25, -1.9) * CFrame.Angles(math.sin(a) * 0.6, -math.cos(a) * 0.6, 0), c.Second, "Glass")
+	end
+	k.rodZ("FurWrap", 0.6, 0.4, 0.85, c.Second, "Fabric")
+end
+
+-- a golden sun on the blade with rays; chrome bands on the shaft
+DECO.Dunes = function(k, c, tier)
+	local b = k.blade
+	faceDisc(k, "Sun", 0.6, 0, -0.85, c.Main, "Metal", 0.1).Reflectance = 0.25
+	for i = 0, 7 do
+		local a = math.rad(i * 45)
+		k.part("SunRay", Vector3.new(0.08, 0.06, 0.28), b * CFrame.new(math.cos(a) * 0.48, 0.1, -0.85 + math.sin(a) * 0.48) * CFrame.Angles(0, -a + math.pi / 2, 0), c.Accent)
+	end
+	for _, z in ipairs({0.9, -0.2, -1.2}) do
+		k.rodZ("ChromeBand", 0.14, 0.38, z, c.Second, "Metal").Reflectance = 0.3
+	end
+	if tier >= 4 then
+		k.part("Pyramid", Vector3.new(0.5, 0.4, 0.5), CFrame.new(0, 0, TOP + 0.8), c.Main, "Metal", Enum.PartType.Wedge)
+	end
+end
+
+-- bubbles floating off the blade, a seashell, and a pearl
+DECO.Coral = function(k, c, tier)
+	local b = k.blade
+	for i = 1, 3 + tier do
+		local bubble = k.ball("Bubble", 0.12 + (i % 3) * 0.08, b * CFrame.new(math.sin(i * 1.7) * 0.7, 0.25 + (i % 4) * 0.12, -0.3 - (i * 0.31) % 1.3), rgb(220, 250, 255), "Glass")
+		bubble.Transparency = 0.35
+	end
+	k.blob("Shell", Vector3.new(0.6, 0.18, 0.5), b * CFrame.new(0.35, 0.1, -0.5), c.Main)
+	for i = -1, 1 do
+		k.part("ShellRidge", Vector3.new(0.05, 0.08, 0.42), b * CFrame.new(0.35 + i * 0.14, 0.18, -0.52) * CFrame.Angles(0, i * 0.35, 0), c.Accent)
+	end
+	k.ball("Pearl", 0.26, b * CFrame.new(-0.3, 0.16, -1.05), rgb(250, 246, 255), "SmoothPlastic").Reflectance = 0.3
+	k.rodZ("Seaweed", 0.6, 0.36, 0.85, c.Second, "Fabric")
+end
+
+-- candy stripes on the shaft, sprinkles on the blade, a lollipop on the grip
+DECO.Candy = function(k, c, tier)
+	local b = k.blade
+	for z = -1.6, 1.3, 0.36 do
+		k.rodZ("CandyStripe", 0.14, 0.34, z, c.Main)
+	end
+	local sprinkleColors = {c.Main, c.Second, c.Accent, rgb(120, 170, 255), rgb(255, 255, 255)}
+	for i = 1, 6 + tier * 2 do
+		local x = math.sin(i * 2.1) * 0.65
+		local z = -0.2 - (i * 0.23) % 1.35
+		k.part("Sprinkle", Vector3.new(0.06, 0.06, 0.2), b * CFrame.new(x, 0.09, z) * CFrame.Angles(0, i, 0), sprinkleColors[i % #sprinkleColors + 1])
+	end
+	if tier >= 3 then
+		k.part("LollipopStick", Vector3.new(0.06, 0.06, 0.6), CFrame.new(0.62, 0, TOP + 0.3), rgb(255, 255, 255))
+		k.part("Lollipop", Vector3.new(0.12, 0.6, 0.6), CFrame.new(0.62, 0, TOP + 0.7) * CFrame.Angles(0, math.rad(90), 0), c.Main, "SmoothPlastic", Enum.PartType.Cylinder)
+		k.part("LollipopSwirl", Vector3.new(0.13, 0.32, 0.32), CFrame.new(0.62, 0, TOP + 0.7) * CFrame.Angles(0, math.rad(90), 0), c.Accent, "SmoothPlastic", Enum.PartType.Cylinder)
+	end
+end
+
+-- glowing lava cracks across a dark blade, embers, and a molten core on fancy ones
+DECO.Forge = function(k, c, tier)
+	local b = k.blade
+	local path = {Vector3.new(-0.5, 0, -0.2), Vector3.new(-0.2, 0, -0.6), Vector3.new(-0.45, 0, -1.0), Vector3.new(0, 0, -1.35), Vector3.new(0.3, 0, -0.9), Vector3.new(0.55, 0, -1.2)}
+	for i = 1, #path - 1 do
+		local p, q = path[i] + Vector3.new(0, 0.08, 0), path[i + 1] + Vector3.new(0, 0.08, 0)
+		k.bar("LavaCrack", b * p, b * q, 0.07, c.Glow, "Neon")
+	end
+	for i = 0, 3 do
+		k.rodZ("ObsidianBand", 0.14, 0.36, 0.9 - i * 0.7, c.Dark, "Glass")
+	end
+	if tier >= 3 then
+		k.ball("MoltenCore", 0.36, CFrame.new(0, 0.28, -2.2), c.Glow, "Neon")
+	end
+	if tier >= 5 then
+		for i = -1, 1, 2 do
+			k.part("Horn", Vector3.new(0.14, 0.14, 0.55), CFrame.new(i * 0.32, 0.12, -2.15) * CFrame.Angles(math.rad(-30), i * math.rad(35), 0), c.Accent, "Metal")
+		end
+	end
+end
+
+-- a magenta/black "missing texture" checker, floating pixel cubes that don't line up
+DECO.Glitch = function(k, c, tier)
+	local b = k.blade
+	for i = 0, 3 do
+		local x, z = (i % 2) * 0.36 - 0.18, -0.55 - math.floor(i / 2) * 0.36
+		k.part("MissingTexture", Vector3.new(0.34, 0.06, 0.34), b * CFrame.new(x, 0.08, z), (i == 0 or i == 3) and c.Second or c.Dark)
+	end
+	for i = 1, 2 + tier do
+		local side = i % 2 == 0 and 1 or -1
+		k.part("PixelCube", Vector3.new(0.2, 0.2, 0.2), CFrame.new(side * (0.35 + (i % 3) * 0.18), 0.1 + (i % 2) * 0.2, -0.4 - (i * 0.53) % 2.4), i % 3 == 0 and c.Second or c.Main, "Neon")
+	end
+	-- a ghost copy of the blade, slightly off, like a bad render
+	local ghost = k.part("GhostBlade", Vector3.new(1.6, 0.05, 1.4), b * CFrame.new(0.14, 0.2, -0.8), c.Main, "ForceField")
+	ghost.Transparency = 0.3
+end
+
+local function themed(k, def)
+	local look = def.Look
+	local c, tier = look.Colors, look.Tier
+	local fancy = tier >= 5
+	local shaftColor = (tier % 2 == 1) and c.Dark or c.Second
+	local bladeColor = (tier % 2 == 1) and c.Main or c.Second
+	if look.Theme == "Glitch" or look.Theme == "Forge" then
+		shaftColor, bladeColor = c.Dark, (tier % 2 == 1) and c.Second or c.Dark
+	end
+	shaft(k, shaftColor, fancy and "Metal" or "SmoothPlastic", 0.3)
+	if look.Grip == "T" then
+		tGrip(k, c.Dark, "Fabric", c.Accent, "SmoothPlastic")
+	else
+		dGrip(k, shaftColor, "SmoothPlastic", c.Accent, "SmoothPlastic")
+	end
+	socket(k, c.Accent, fancy and "Metal" or "SmoothPlastic")
+
+	local b = k.blade
+	local plate
+	if look.Blade == "Scoop" then
+		plate = k.blob("Blade", Vector3.new(2.1, 0.3, 2.3), b * CFrame.new(0, 0, -1.05), bladeColor)
+		k.blob("ScoopRim", Vector3.new(2.25, 0.16, 2.45), b * CFrame.new(0, -0.06, -1.05), c.Accent)
+	elseif look.Blade == "Spoon" then
+		plate = k.blob("Blade", Vector3.new(1.8, 0.4, 2.3), b * CFrame.new(0, 0, -1.1), bladeColor)
+		k.blob("SpoonShell", Vector3.new(1.95, 0.3, 2.45), b * CFrame.new(0, -0.08, -1.1), c.Dark)
+	else
+		plate = spade(k, bladeColor, "SmoothPlastic", 1.7, c.Accent)
+		if fancy then
+			-- glowing rim peeking out around the round end
+			k.part("GlowRim", Vector3.new(0.06, 1.85, 1.85), b * CFrame.new(0, -0.05, -1.5) * CFrame.Angles(0, 0, math.rad(90)), c.Glow, "Neon", Enum.PartType.Cylinder)
+		end
+	end
+	plate.Reflectance = fancy and 0.15 or 0.05
+
+	local deco = DECO[look.Theme]
+	if deco then deco(k, c, tier) end
+
+	if tier >= 6 then
+		light(plate, c.Glow, 7)
+	end
+	if tier >= 7 then
+		sparkle(plate, c.Glow, 6)
+		for i = 0, 9 do
+			local a = math.rad(i * 36)
+			k.ball("Halo", 0.1, CFrame.new(math.cos(a) * 0.62, math.sin(a) * 0.62, TOP + 1.1), c.Accent, "Neon")
+		end
+	end
+end
+
+---------------------------------------------------------------------
 -- BUILD A SHOVEL TOOL
 ---------------------------------------------------------------------
 return function(def)
@@ -1442,7 +1892,7 @@ return function(def)
 	local handle = newPart(tool, "Handle", Vector3.new(0.3, 0.3, 4.4), CFrame.new(), s.Shaft, s.ShaftMat)
 	handle.Transparency = 1
 
-	local custom = CUSTOM[def.Id]
+	local custom = CUSTOM[def.Id] or (def.Look and themed)
 	local rightZ, leftZ -- where the right and left hands hold the shaft (before scaling)
 	if custom then
 		local k = kit(tool)
@@ -2108,6 +2558,207 @@ end
 
 return VehicleModels
 ]=])
+install(game:GetService("ReplicatedStorage"), "WorldsData", "ModuleScript", [=[
+-- WorldsData (ModuleScript in ReplicatedStorage)
+-- The 8 worlds you travel to through the World Gate (worlds 2-9). GameConfig turns each entry
+-- into a full world: a floating island with its own pit, Shovel Shop, World Gate, memes,
+-- shovels, dirt materials and sky. (The museum only exists in World 1.)
+--
+-- Per world:
+--   Top / Wall      terrain material of the island surface and of the pit walls
+--   Zones           terrain material + color of the 4 depth zones (Shallow, Mid, Deep, Abyss)
+--   Look            colors for the island decorations and the world's shovels
+--   Sky             lighting players see while they're in the world
+--   Shovels         {name, description, blade shape, grip}; stats come from SHOVEL_TIERS
+
+local rgb = Color3.fromRGB
+
+local WorldsData = {}
+
+-- Every world's 7 shovels follow the same progression; prices scale with the world's price.
+-- MaxZone: 1 = Shallow, 2 = Mid, 3 = Deep, 4 = Abyss
+WorldsData.ShovelTiers = {
+	{MaxZone = 1, DigRadius = 4.5, FindChance = 0.012, Luck = 1,   Cooldown = 0.5,  PriceFactor = 0},
+	{MaxZone = 2, DigRadius = 5,   FindChance = 0.014, Luck = 1.2, Cooldown = 0.46, PriceFactor = 0.02},
+	{MaxZone = 2, DigRadius = 5.5, FindChance = 0.016, Luck = 1.4, Cooldown = 0.43, PriceFactor = 0.08},
+	{MaxZone = 3, DigRadius = 6,   FindChance = 0.018, Luck = 1.7, Cooldown = 0.4,  PriceFactor = 0.3},
+	{MaxZone = 3, DigRadius = 6.5, FindChance = 0.02,  Luck = 2,   Cooldown = 0.37, PriceFactor = 1},
+	{MaxZone = 4, DigRadius = 7.5, FindChance = 0.024, Luck = 2.5, Cooldown = 0.34, PriceFactor = 3},
+	{MaxZone = 4, DigRadius = 8,   FindChance = 0.027, Luck = 3,   Cooldown = 0.31, PriceFactor = 10},
+}
+
+-- Terrain colors are shared by the whole map (Roblox paints each material one color
+-- everywhere), so every world uses its own mix of materials. MapStyle applies these.
+WorldsData.TerrainColors = {
+	-- World 1
+	Grass = rgb(112, 204, 108), Slate = rgb(150, 146, 172), Ground = rgb(176, 124, 84),
+	Sandstone = rgb(222, 180, 120), CrackedLava = rgb(214, 110, 70), Glacier = rgb(150, 210, 240),
+	Basalt = rgb(70, 64, 96),
+	-- Worlds 2-9
+	LeafyGrass = rgb(255, 176, 208), Mud = rgb(150, 78, 110), Brick = rgb(236, 130, 140),
+	WoodPlanks = rgb(120, 60, 70), Salt = rgb(255, 236, 246), Asphalt = rgb(34, 30, 70),
+	Pavement = rgb(86, 72, 170), Limestone = rgb(176, 150, 236), Ice = rgb(120, 230, 255),
+	Snow = rgb(236, 246, 255), Concrete = rgb(170, 200, 225), Cobblestone = rgb(90, 120, 170),
+	Sand = rgb(240, 180, 96), Rock = rgb(110, 90, 120),
+}
+
+WorldsData.Worlds = {
+	-----------------------------------------------------------------
+	{
+		Name = "Neon Sakura Grove", Theme = "Sakura", Price = 3e17,
+		Tagline = "Pink blossoms, paper lanterns and robot koi.",
+		Top = "LeafyGrass", Wall = "Rock",
+		Zones = {"Mud", "Brick", "WoodPlanks", "Salt"},
+		Look = {Main = rgb(255, 170, 205), Second = rgb(255, 238, 244), Dark = rgb(128, 62, 80), Glow = rgb(255, 120, 180), Accent = rgb(255, 214, 120)},
+		Sky = {ClockTime = 17.3, Ambient = rgb(120, 96, 120), OutdoorAmbient = rgb(160, 130, 160), Tint = rgb(255, 232, 242),
+			Fog = rgb(255, 200, 225), Decay = rgb(200, 130, 170), Density = 0.28, Clouds = 0.55},
+		Shovels = {
+			{"Blossom Trowel", "A little pink trowel. Leaves petals everywhere it digs.", "Spade", "D"},
+			{"Bamboo Spade", "Light, strong and grown in a week.", "Spade", "T"},
+			{"Koi Scoop", "Shaped like a koi fin. Scoops dirt like water.", "Scoop", "T"},
+			{"Lantern Spade", "A paper lantern lights every swing.", "Spade", "D"},
+			{"Katana Shovel", "Folded 1000 times. Cuts through bricks like tofu.", "Spade", "T"},
+			{"Petal Excavator", "Blows a storm of petals into the Abyss.", "Spoon", "D"},
+			{"Hanami Harvester", "Mythic. Blossoms bloom wherever it strikes.", "Spade", "T"},
+		},
+	},
+	-----------------------------------------------------------------
+	{
+		Name = "Galaxy Drift", Theme = "Galaxy", Price = 1.9e19,
+		Tagline = "A dig site floating between the stars.",
+		Top = "Asphalt", Wall = "Rock",
+		Zones = {"Pavement", "Limestone", "Basalt", "Ice"},
+		Look = {Main = rgb(130, 96, 255), Second = rgb(40, 36, 96), Dark = rgb(22, 20, 52), Glow = rgb(110, 220, 255), Accent = rgb(255, 214, 110)},
+		Sky = {ClockTime = 0, Ambient = rgb(118, 110, 170), OutdoorAmbient = rgb(140, 130, 200), Tint = rgb(226, 222, 255),
+			Fog = rgb(80, 60, 160), Decay = rgb(40, 30, 100), Density = 0.2, Clouds = 0},
+		Shovels = {
+			{"Meteor Scoop", "Made from a meteor that landed on a meme.", "Scoop", "T"},
+			{"Rocket Spade", "Has tiny thrusters. Mostly for style.", "Spade", "T"},
+			{"Orbit Shovel", "A little moon orbits the handle.", "Spade", "D"},
+			{"Nebula Trowel", "Swirls with space dust.", "Spoon", "D"},
+			{"Comet Crusher", "Leaves a sparkly tail with every swing.", "Spade", "T"},
+			{"Supernova Spade", "Legendary. Hot as a dying star.", "Spade", "D"},
+			{"Event Horizon", "Mythic. Nothing escapes it. Not even the Abyss.", "Spoon", "T"},
+		},
+	},
+	-----------------------------------------------------------------
+	{
+		Name = "Frostbyte Tundra", Theme = "Frost", Price = 1.2e21,
+		Tagline = "Snowy servers, ice crystals and a big aurora.",
+		Top = "Snow", Wall = "Rock",
+		Zones = {"Ice", "Concrete", "Glacier", "Cobblestone"},
+		Look = {Main = rgb(150, 226, 255), Second = rgb(246, 250, 255), Dark = rgb(56, 88, 140), Glow = rgb(130, 255, 220), Accent = rgb(190, 170, 255)},
+		Sky = {ClockTime = 9.5, Ambient = rgb(110, 120, 150), OutdoorAmbient = rgb(150, 165, 195), Tint = rgb(236, 246, 255),
+			Fog = rgb(215, 235, 255), Decay = rgb(140, 170, 220), Density = 0.3, Clouds = 0.7},
+		Shovels = {
+			{"Snowball Scoop", "Packs perfect snowballs. Also digs.", "Scoop", "T"},
+			{"Icicle Spade", "Sharp, shiny and a bit drippy.", "Spade", "D"},
+			{"Penguin Paddle", "Waddles through snow at top speed.", "Scoop", "D"},
+			{"Frostbite Shovel", "Cold enough to freeze a lag spike.", "Spade", "T"},
+			{"Blizzard Breaker", "Every swing is a tiny snowstorm.", "Spade", "D"},
+			{"Aurora Auger", "Legendary. Glows with northern lights.", "Spoon", "T"},
+			{"Absolute Zero Spade", "Mythic. So cold the Abyss shatters.", "Spade", "T"},
+		},
+	},
+	-----------------------------------------------------------------
+	{
+		Name = "Chrome Dunes", Theme = "Dunes", Price = 7.9e22,
+		Tagline = "Golden sand, chrome pyramids and solar towers.",
+		Top = "Sand", Wall = "Rock",
+		Zones = {"Sandstone", "Ground", "Brick", "Salt"},
+		Look = {Main = rgb(255, 196, 90), Second = rgb(226, 232, 244), Dark = rgb(120, 76, 50), Glow = rgb(255, 150, 70), Accent = rgb(80, 210, 220)},
+		Sky = {ClockTime = 13, Ambient = rgb(128, 112, 96), OutdoorAmbient = rgb(170, 150, 128), Tint = rgb(255, 244, 226),
+			Fog = rgb(255, 222, 170), Decay = rgb(220, 160, 110), Density = 0.3, Clouds = 0.2},
+		Shovels = {
+			{"Sandy Scoop", "Full of sand. Always. Forever.", "Scoop", "T"},
+			{"Cactus Spade", "Hug it at your own risk.", "Spade", "D"},
+			{"Mirage Shovel", "Is it really there? Yes. Probably.", "Spade", "T"},
+			{"Pharaoh Spade", "Once dug a pyramid in an afternoon.", "Spade", "D"},
+			{"Solar Sifter", "Solar powered. Works best at noon.", "Spoon", "T"},
+			{"Sandstorm Drill", "Legendary. Spins up a sandstorm on every swing.", "Spade", "T"},
+			{"Sun King Shovel", "Mythic. Blazes like a second sun.", "Spade", "D"},
+		},
+	},
+	-----------------------------------------------------------------
+	{
+		Name = "Coral Circuit", Theme = "Coral", Price = 5e24,
+		Tagline = "A bubbly reef of coral, shells and glowing jellies.",
+		Top = "Sand", Wall = "Rock",
+		Zones = {"Brick", "Limestone", "Ice", "Pavement"},
+		Look = {Main = rgb(255, 128, 150), Second = rgb(90, 220, 220), Dark = rgb(30, 80, 120), Glow = rgb(120, 240, 255), Accent = rgb(255, 230, 160)},
+		Sky = {ClockTime = 15, Ambient = rgb(90, 120, 140), OutdoorAmbient = rgb(120, 160, 180), Tint = rgb(226, 250, 255),
+			Fog = rgb(120, 210, 230), Decay = rgb(60, 140, 180), Density = 0.35, Clouds = 0.4},
+		Shovels = {
+			{"Seashell Scoop", "Hold it to your ear: you hear dirt.", "Scoop", "D"},
+			{"Anchor Spade", "Heavy. Very heavy. Digs straight down.", "Spade", "T"},
+			{"Pearl Shovel", "A perfect pearl sits on the blade.", "Spade", "D"},
+			{"Trident Trowel", "Borrowed from a sea king. No returns.", "Spoon", "T"},
+			{"Kraken Claw", "Eight times the grip.", "Scoop", "T"},
+			{"Tidal Excavator", "Legendary. Moves dirt like a wave.", "Spade", "D"},
+			{"Atlantis Spade", "Mythic. Found at the bottom of a lost city.", "Spade", "T"},
+		},
+	},
+	-----------------------------------------------------------------
+	{
+		Name = "Candy Mainframe", Theme = "Candy", Price = 3.2e26,
+		Tagline = "A sugar-coated server farm made of sweets.",
+		Top = "Salt", Wall = "Rock",
+		Zones = {"LeafyGrass", "Sand", "Mud", "Ice"},
+		Look = {Main = rgb(255, 120, 190), Second = rgb(130, 236, 200), Dark = rgb(120, 70, 60), Glow = rgb(255, 170, 230), Accent = rgb(255, 226, 110)},
+		Sky = {ClockTime = 14, Ambient = rgb(130, 110, 130), OutdoorAmbient = rgb(175, 150, 175), Tint = rgb(255, 238, 248),
+			Fog = rgb(255, 214, 240), Decay = rgb(220, 160, 210), Density = 0.25, Clouds = 0.6},
+		Shovels = {
+			{"Lollipop Scoop", "Swirly, sticky and surprisingly strong.", "Scoop", "T"},
+			{"Candy Cane Spade", "Minty fresh digging.", "Spade", "D"},
+			{"Gummy Shovel", "Bends a lot. Never breaks.", "Scoop", "D"},
+			{"Sprinkle Spade", "Leaves sprinkles in every hole.", "Spade", "T"},
+			{"Choco Crusher", "Solid chocolate. Please don't eat it.", "Spade", "D"},
+			{"Jawbreaker Auger", "Legendary. Harder than any rock.", "Spoon", "T"},
+			{"Sugar Rush Spade", "Mythic. Digs at 1000% speed. Crashes later.", "Spade", "T"},
+		},
+	},
+	-----------------------------------------------------------------
+	{
+		Name = "Volcano Forge", Theme = "Forge", Price = 2e28,
+		Tagline = "Lava rivers, obsidian and a giant meme forge.",
+		Top = "Basalt", Wall = "Rock",
+		Zones = {"Ground", "Brick", "Asphalt", "CrackedLava"},
+		Look = {Main = rgb(255, 120, 50), Second = rgb(60, 52, 70), Dark = rgb(34, 28, 40), Glow = rgb(255, 150, 60), Accent = rgb(255, 214, 90)},
+		Sky = {ClockTime = 18.6, Ambient = rgb(120, 86, 80), OutdoorAmbient = rgb(150, 105, 95), Tint = rgb(255, 232, 220),
+			Fog = rgb(200, 110, 80), Decay = rgb(120, 60, 50), Density = 0.35, Clouds = 0.5},
+		Shovels = {
+			{"Ember Spade", "Always a little bit warm.", "Spade", "D"},
+			{"Anvil Shovel", "Forged on an anvil. Kind of shaped like one too.", "Spade", "T"},
+			{"Magma Scoop", "Scoops lava like soup.", "Scoop", "T"},
+			{"Obsidian Blade", "Glassy black and razor sharp.", "Spade", "D"},
+			{"Dragonbone Spade", "Made from a dragon's lost tooth.", "Spade", "T"},
+			{"Inferno Auger", "Legendary. Melts straight through rock.", "Spoon", "D"},
+			{"Core Breaker", "Mythic. Forged in the heart of the volcano.", "Spade", "T"},
+		},
+	},
+	-----------------------------------------------------------------
+	{
+		Name = "Glitch Nexus", Theme = "Glitch", Price = 1.3e30,
+		Tagline = "The edge of the simulation. Things don't load right here.",
+		Top = "Concrete", Wall = "Rock",
+		Zones = {"Cobblestone", "Asphalt", "Limestone", "Snow"},
+		Look = {Main = rgb(90, 255, 150), Second = rgb(255, 80, 220), Dark = rgb(20, 18, 30), Glow = rgb(90, 255, 170), Accent = rgb(90, 200, 255)},
+		Sky = {ClockTime = 21.5, Ambient = rgb(100, 120, 120), OutdoorAmbient = rgb(125, 150, 150), Tint = rgb(236, 255, 244),
+			Fog = rgb(40, 60, 70), Decay = rgb(90, 40, 110), Density = 0.25, Clouds = 0},
+		Shovels = {
+			{"Placeholder Spade", "TODO: add a description.", "Spade", "D"},
+			{"Pixel Shovel", "Rendered at 8 pixels. Works anyway.", "Spade", "T"},
+			{"Lag Spade", "Hits the ground a second after you swing.", "Scoop", "T"},
+			{"Wireframe Shovel", "The texture never loaded.", "Spade", "D"},
+			{"Error 404 Scoop", "Scoop not found. Digging anyway.", "Scoop", "D"},
+			{"Debug Drill", "Legendary. Has admin commands built in.", "Spoon", "T"},
+			{"The Final Patch", "Mythic. Fixes the simulation, one hole at a time.", "Spade", "T"},
+		},
+	},
+}
+
+return WorldsData
+]=])
 install(game:GetService("ServerScriptService"), "Architecture", "ModuleScript", [=[
 -- Architecture (ModuleScript in ServerScriptService)
 -- Shared building kit for the cartoony 2050 look: chunky rounded shapes (discs, capsules,
@@ -2653,6 +3304,7 @@ local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
 local ShovelModels = require(ReplicatedStorage:WaitForChild("ShovelModels"))
 local ShopBuilder = require(script.Parent:WaitForChild("ShopBuilder"))
 local WorldGate = require(script.Parent:WaitForChild("WorldGate"))
+local WorldBuilder = require(script.Parent:WaitForChild("WorldBuilder"))
 
 local terrain = workspace.Terrain
 
@@ -3091,7 +3743,9 @@ local function resetPits()
 	resetting = false
 end
 
+local worldsBuilt = false -- the floating islands must exist before the pits are filled
 task.spawn(function()
+	while not worldsBuilt do task.wait(0.1) end
 	resetPits() -- fresh ground when the server starts
 	while true do
 		task.wait(GameConfig.PitResetMinutes * 60 - 30)
@@ -3225,7 +3879,11 @@ for _, world in ipairs(enabledWorlds()) do
 		openWorldMapRemote:FireClient(player)
 	end)
 	arrivalSpots[world.Id] = gateCF * CFrame.new(0, 5, -10) -- in front of the gate, facing the pit
+	if world.Id ~= 1 then
+		WorldBuilder(container, world) -- floating island, decorations, rim and zone rings
+	end
 end
+worldsBuilt = true
 
 ---------------------------------------------------------------------
 -- PLAYERS
@@ -3449,14 +4107,12 @@ if spawnLocation then
 	spawnLocation.Color = Color3.fromRGB(178, 158, 255)
 end
 
--- Terrain colors: bright cartoon grass on top, soft stone walls, warm dig layers
+-- Terrain colors: bright cartoon grass on top, soft stone walls, warm dig layers, plus the
+-- ground materials of worlds 2-9 (see WorldsData.TerrainColors)
 local terrain = workspace.Terrain
-terrain:SetMaterialColor(Enum.Material.Grass, Color3.fromRGB(112, 204, 108))
-terrain:SetMaterialColor(Enum.Material.Slate, Color3.fromRGB(150, 146, 172))
-terrain:SetMaterialColor(Enum.Material.Ground, Color3.fromRGB(176, 124, 84))
-terrain:SetMaterialColor(Enum.Material.Sandstone, Color3.fromRGB(222, 180, 120))
-terrain:SetMaterialColor(Enum.Material.Glacier, Color3.fromRGB(150, 210, 240))
-terrain:SetMaterialColor(Enum.Material.Basalt, Color3.fromRGB(70, 64, 96))
+for materialName, color in pairs(GameConfig.TerrainColors) do
+	terrain:SetMaterialColor(Enum.Material[materialName], color)
+end
 
 ---------------------------------------------------------------------
 -- CITY + DIG SITE
@@ -3552,6 +4208,391 @@ calmWorld()
 task.delay(5, calmWorld)
 
 print("MapStyle: cartoony 2050 skyline, dig site and sky ready")
+]=])
+install(game:GetService("ServerScriptService"), "MuseumManager", "Script", [=[
+-- MuseumManager (Script in ServerScriptService)
+-- Makes every player's museum (World 1 only) work:
+--   * 24 display slots. Walk up to a pedestal and press E:
+--       locked slot   -> buy it (its floor must be unlocked first)
+--       empty slot    -> pick a meme from your inventory to put on it
+--       occupied slot -> swap it for another meme, or take it back
+--     Memes on display earn money every second (PlayerData pays it).
+--   * The elevators: ride between floors, or buy the next floor.
+--   * The Alien Art Dealer: sell memes from your inventory for cash.
+-- The pedestals' signs, fact screens and info tags show what's on display; MuseumClient draws
+-- the spinning meme card on top of each pedestal.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+local function getRemote(name)
+	local r = remotes:FindFirstChild(name) or Instance.new("RemoteEvent")
+	r.Name = name
+	r.Parent = remotes
+	return r
+end
+local openSlotRemote = getRemote("OpenSlotMenu")      -- server -> client: (slotIndex)
+local placeRemote = getRemote("PlaceInSlot")          -- client -> server: (slotIndex, artifactId)
+local takeRemote = getRemote("TakeFromSlot")          -- client -> server: (slotIndex)
+local openDealerRemote = getRemote("OpenDealer")      -- server -> client
+local sellRemote = getRemote("SellArtifacts")         -- client -> server: (artifactId, sellAll)
+local messageRemote = getRemote("ShopMessage")        -- server -> client: (text, success) toast
+local inventoryChangedRemote = getRemote("InventoryChanged")
+
+local SLOT_COUNT = #GameConfig.SlotPrices
+local LOCKED_COLOR = Color3.fromRGB(150, 150, 170)
+local EMPTY_COLOR = Color3.fromRGB(178, 158, 255)
+
+local museums = {} -- [player] = museum model
+
+---------------------------------------------------------------------
+-- HELPERS
+---------------------------------------------------------------------
+local function isOwner(player, museum)
+	return museum and museum.Parent and museum:GetAttribute("OwnerUserId") == player.UserId
+end
+
+local function labelsIn(part)
+	local gui = part and part:FindFirstChildOfClass("SurfaceGui")
+	local list = {}
+	if gui then
+		for _, child in ipairs(gui:GetChildren()) do
+			if child:IsA("TextLabel") then table.insert(list, child) end
+		end
+	end
+	return list
+end
+
+local function setText(label, text, color)
+	if label then
+		label.Text = text
+		if color then label.TextColor3 = color end
+	end
+end
+
+local function prompt(parent, name, objectText, distance)
+	local p = parent:FindFirstChild(name) or Instance.new("ProximityPrompt")
+	p.Name = name
+	p.ObjectText = objectText
+	p.KeyboardKeyCode = Enum.KeyCode.E
+	p.HoldDuration = 0
+	p.MaxActivationDistance = distance or 12
+	p.RequiresLineOfSight = false
+	p.Parent = parent
+	return p
+end
+
+-- Takes one copy of an artifact out of the inventory (returns true if the player had one)
+local function takeFromInventory(player, artifactId)
+	local data = PlayerData.Get(player)
+	if not data then return false end
+	local best
+	for uid, id in pairs(data.Inventory) do
+		if id == artifactId and (not best or tonumber(uid) < tonumber(best)) then
+			best = uid
+		end
+	end
+	if not best then return false end
+	PlayerData.RemoveArtifact(player, best)
+	return true
+end
+
+local function countInInventory(data, artifactId)
+	local n = 0
+	for _, id in pairs(data.Inventory) do
+		if id == artifactId then n += 1 end
+	end
+	return n
+end
+
+---------------------------------------------------------------------
+-- SLOT VISUALS
+---------------------------------------------------------------------
+local function slotModel(museum, index)
+	local slots = museum:FindFirstChild("Slots")
+	return slots and slots:FindFirstChild("Slot" .. index)
+end
+
+local function paintGlow(slot, color)
+	for _, name in ipairs({"AlcoveGlow", "GlowRing", "Band", "FactGlow"}) do
+		local part = slot:FindFirstChild(name)
+		if part and part:IsA("BasePart") then
+			part.Color = color
+		end
+	end
+end
+
+local function refreshSlot(player, museum, index)
+	local slot = slotModel(museum, index)
+	if not slot then return end
+	local data = PlayerData.Get(player)
+	if not data then return end
+	local floor = GameConfig.GetFloorOfSlot(index)
+	local unlocked = data.UnlockedSlots[tostring(index)] == true
+	local artifact = unlocked and ArtifactData.GetArtifact(data.Displayed[tostring(index)] or "")
+
+	local plaque = labelsIn(slot:FindFirstChild("Plaque"))[1]
+	local facts = labelsIn(slot:FindFirstChild("FactScreen"))
+	local spot = slot:FindFirstChild("DisplaySpot")
+	local info = spot and spot:FindFirstChild("InfoGui")
+	if info then
+		info.StudsOffset = Vector3.new(0, 5.2, 0) -- above the spinning meme card
+		info.MaxDistance = 60
+	end
+	local nameLabel = info and info:FindFirstChild("NameLabel")
+	local incomeLabel = info and info:FindFirstChild("IncomeLabel")
+
+	local slotPrompt = slot:FindFirstChild("Column") or slot:FindFirstChild("Cap") or spot
+	slotPrompt = slotPrompt and prompt(slotPrompt, "SlotPrompt", "Display Slot " .. index, 12)
+
+	slot:SetAttribute("SlotIndex", index)
+	if not unlocked then
+		local price = GameConfig.SlotPrices[index]
+		local floorOpen = data.UnlockedFloors[tostring(floor)] == true
+		slot:SetAttribute("ArtifactId", nil)
+		slot:SetAttribute("Locked", true)
+		paintGlow(slot, LOCKED_COLOR)
+		setText(plaque, "LOCKED  •  " .. ArtifactData.FormatMoney(price))
+		setText(facts[1], "SLOT " .. index .. " LOCKED", LOCKED_COLOR)
+		setText(facts[2], floorOpen and ("Unlock it for " .. ArtifactData.FormatMoney(price)) or ("Unlock floor " .. floor .. " first"))
+		setText(nameLabel, "🔒 LOCKED", LOCKED_COLOR)
+		setText(incomeLabel, ArtifactData.FormatMoney(price))
+		if slotPrompt then
+			slotPrompt.ActionText = floorOpen and ("Unlock  " .. ArtifactData.FormatMoney(price)) or ("Floor " .. floor .. " locked")
+		end
+	elseif not artifact then
+		slot:SetAttribute("ArtifactId", nil)
+		slot:SetAttribute("Locked", false)
+		paintGlow(slot, EMPTY_COLOR)
+		setText(plaque, "EMPTY SLOT " .. index)
+		setText(facts[1], "EMPTY DISPLAY", EMPTY_COLOR)
+		setText(facts[2], "Put a meme here to earn money every second!")
+		setText(nameLabel, "EMPTY", EMPTY_COLOR)
+		setText(incomeLabel, "Press E to display a meme")
+		if slotPrompt then slotPrompt.ActionText = "Display a meme" end
+	else
+		local rarity = ArtifactData.GetRarity(artifact.Rarity)
+		local income = ArtifactData.GetIncome(artifact)
+		slot:SetAttribute("ArtifactId", artifact.Id)
+		slot:SetAttribute("Locked", false)
+		paintGlow(slot, rarity.Color)
+		setText(plaque, string.upper(artifact.Rarity) .. "  •  " .. artifact.Name)
+		setText(facts[1], artifact.Name, rarity.Color)
+		setText(facts[2], artifact.Description)
+		setText(nameLabel, artifact.Name, rarity.Color)
+		setText(incomeLabel, "+" .. ArtifactData.FormatMoney(income) .. "/s")
+		if slotPrompt then slotPrompt.ActionText = "Swap / take back" end
+	end
+end
+
+local function refreshAllSlots(player)
+	local museum = museums[player]
+	if not museum then return end
+	for i = 1, SLOT_COUNT do
+		refreshSlot(player, museum, i)
+	end
+end
+
+---------------------------------------------------------------------
+-- ELEVATORS
+---------------------------------------------------------------------
+local function arrivalFor(museum, floor)
+	local arrivals = museum:FindFirstChild("Arrivals")
+	local part = arrivals and arrivals:FindFirstChild("Floor" .. floor .. "Arrival")
+	return part and part.CFrame * CFrame.new(0, 3, 0)
+end
+
+local function refreshElevators(player, museum)
+	local data = PlayerData.Get(player)
+	local elevators = museum:FindFirstChild("Elevators")
+	if not data or not elevators then return end
+	for _, elevator in ipairs(elevators:GetChildren()) do
+		local target = tonumber(elevator.Name:match("_to_F(%d+)"))
+		local door = elevator:FindFirstChild("DoorBack") or elevator:FindFirstChild("DoorField")
+		if target and door then
+			local open = data.UnlockedFloors[tostring(target)] == true
+			local price = GameConfig.FloorPrices[target] or 0
+			local p = prompt(door, "ElevatorPrompt", "Elevator", 14)
+			p.ActionText = open and ("Go to floor " .. target) or ("Unlock floor " .. target .. "  " .. ArtifactData.FormatMoney(price))
+			local labels = labelsIn(elevator:FindFirstChild("ElevatorSign"))
+			setText(labels[1], "FLOOR " .. target)
+			setText(labels[2], open and "PRESS E TO RIDE" or ("LOCKED  •  " .. ArtifactData.FormatMoney(price)))
+		end
+	end
+end
+
+local function ride(player, museum, target)
+	local character = player.Character
+	local destination = arrivalFor(museum, target)
+	if character and destination then
+		character:PivotTo(destination)
+	end
+end
+
+---------------------------------------------------------------------
+-- SET UP A MUSEUM WHEN ITS OWNER JOINS
+---------------------------------------------------------------------
+local function setupMuseum(player, museum)
+	museums[player] = museum
+	PlayerData.WaitForData(player)
+	if not player.Parent or not museum.Parent then return end
+
+	-- display slots
+	for i = 1, SLOT_COUNT do
+		local slot = slotModel(museum, i)
+		if slot then
+			refreshSlot(player, museum, i)
+			local p = slot:FindFirstChild("SlotPrompt", true)
+			if p then
+				p.Triggered:Connect(function(who)
+					if not isOwner(who, museum) then
+						messageRemote:FireClient(who, "This is " .. player.DisplayName .. "'s museum!", false)
+						return
+					end
+					local data = PlayerData.Get(who)
+					if not data then return end
+					if data.UnlockedSlots[tostring(i)] then
+						openSlotRemote:FireClient(who, i)
+						return
+					end
+					-- buying a locked slot
+					local floor = GameConfig.GetFloorOfSlot(i)
+					if not data.UnlockedFloors[tostring(floor)] then
+						messageRemote:FireClient(who, "Unlock floor " .. floor .. " first (use the elevator)!", false)
+					elseif PlayerData.SpendMoney(who, GameConfig.SlotPrices[i]) then
+						PlayerData.UnlockSlot(who, i)
+						refreshSlot(who, museum, i)
+						messageRemote:FireClient(who, "Slot " .. i .. " unlocked! Put a meme on it.", true)
+					else
+						messageRemote:FireClient(who, "You need " .. ArtifactData.FormatMoney(GameConfig.SlotPrices[i]) .. " for this slot.", false)
+					end
+				end)
+			end
+		end
+	end
+
+	-- elevators (visitors can ride the floors the owner has opened)
+	refreshElevators(player, museum)
+	local elevators = museum:FindFirstChild("Elevators")
+	for _, elevator in ipairs(elevators and elevators:GetChildren() or {}) do
+		local target = tonumber(elevator.Name:match("_to_F(%d+)"))
+		local p = elevator:FindFirstChild("ElevatorPrompt", true)
+		if target and p then
+			p.Triggered:Connect(function(who)
+				local data = PlayerData.Get(player)
+				if not data then return end
+				if data.UnlockedFloors[tostring(target)] then
+					ride(who, museum, target)
+				elseif who ~= player then
+					messageRemote:FireClient(who, player.DisplayName .. " hasn't opened floor " .. target .. " yet.", false)
+				elseif not data.UnlockedFloors[tostring(target - 1)] then
+					messageRemote:FireClient(who, "Unlock floor " .. (target - 1) .. " first!", false)
+				elseif PlayerData.SpendMoney(player, GameConfig.FloorPrices[target]) then
+					PlayerData.UnlockFloor(player, target)
+					refreshElevators(player, museum)
+					refreshAllSlots(player)
+					messageRemote:FireClient(player, "Floor " .. target .. " unlocked!", true)
+					ride(player, museum, target)
+				else
+					messageRemote:FireClient(who, "You need " .. ArtifactData.FormatMoney(GameConfig.FloorPrices[target]) .. " to open floor " .. target .. ".", false)
+				end
+			end)
+		end
+	end
+
+	-- the alien art dealer
+	local dealer = museum:FindFirstChild("AlienDealer")
+	local counter = dealer and (dealer:FindFirstChild("Counter") or dealer:FindFirstChildWhichIsA("BasePart", true))
+	if counter then
+		local p = prompt(counter, "DealerPrompt", "Alien Art Dealer", 14)
+		p.ActionText = "Sell memes"
+		p.Triggered:Connect(function(who)
+			openDealerRemote:FireClient(who)
+		end)
+	end
+end
+
+local function watchPlayer(player)
+	local function hook(ref)
+		if ref:IsA("ObjectValue") and ref.Name == "Museum" and ref.Value then
+			task.spawn(setupMuseum, player, ref.Value)
+		end
+	end
+	player.ChildAdded:Connect(hook)
+	local existing = player:FindFirstChild("Museum")
+	if existing then hook(existing) end
+end
+
+Players.PlayerAdded:Connect(watchPlayer)
+for _, player in ipairs(Players:GetPlayers()) do
+	watchPlayer(player)
+end
+Players.PlayerRemoving:Connect(function(player)
+	museums[player] = nil
+end)
+
+---------------------------------------------------------------------
+-- REMOTES FROM THE SLOT MENU AND THE DEALER
+---------------------------------------------------------------------
+local function validSlot(player, index)
+	return typeof(index) == "number" and index == math.floor(index) and index >= 1 and index <= SLOT_COUNT
+		and PlayerData.IsSlotUnlocked(player, index) and museums[player] ~= nil
+end
+
+placeRemote.OnServerEvent:Connect(function(player, index, artifactId)
+	if not validSlot(player, index) or typeof(artifactId) ~= "string" or not ArtifactData.GetArtifact(artifactId) then return end
+	local data = PlayerData.Get(player)
+	if not data or not takeFromInventory(player, artifactId) then
+		messageRemote:FireClient(player, "You don't have that meme anymore.", false)
+		return
+	end
+	local old = data.Displayed[tostring(index)]
+	if old then
+		PlayerData.AddArtifact(player, old) -- the swapped-out meme goes back to the bag
+	end
+	PlayerData.SetDisplayed(player, index, artifactId)
+	refreshSlot(player, museums[player], index)
+	inventoryChangedRemote:FireClient(player)
+	local artifact = ArtifactData.GetArtifact(artifactId)
+	messageRemote:FireClient(player, artifact.Name .. " is on display! +" .. ArtifactData.FormatMoney(ArtifactData.GetIncome(artifact)) .. "/s", true)
+end)
+
+takeRemote.OnServerEvent:Connect(function(player, index)
+	if not validSlot(player, index) then return end
+	local data = PlayerData.Get(player)
+	local old = data and data.Displayed[tostring(index)]
+	if not old then return end
+	PlayerData.SetDisplayed(player, index, nil)
+	PlayerData.AddArtifact(player, old)
+	refreshSlot(player, museums[player], index)
+	inventoryChangedRemote:FireClient(player)
+end)
+
+sellRemote.OnServerEvent:Connect(function(player, artifactId, sellAll)
+	if typeof(artifactId) ~= "string" then return end
+	local artifact = ArtifactData.GetArtifact(artifactId)
+	local data = PlayerData.Get(player)
+	if not artifact or not data then return end
+	local count = sellAll == true and countInInventory(data, artifactId) or 1
+	local sold = 0
+	for _ = 1, count do
+		if takeFromInventory(player, artifactId) then
+			sold += 1
+		end
+	end
+	if sold == 0 then return end
+	local total = ArtifactData.GetSellValue(artifact) * sold
+	PlayerData.AddMoney(player, total)
+	inventoryChangedRemote:FireClient(player)
+	messageRemote:FireClient(player, "Sold " .. sold .. "x " .. artifact.Name .. " for " .. ArtifactData.FormatMoney(total) .. "!", true)
+end)
+
+print("MuseumManager ready: " .. SLOT_COUNT .. " display slots, elevators and the art dealer")
 ]=])
 install(game:GetService("ServerScriptService"), "MuseumStyle", "ModuleScript", [=[
 -- MuseumStyle (ModuleScript in ServerScriptService)
@@ -4405,6 +5446,597 @@ return function(parent, world, base)
 	return shop, prompt
 end
 ]=])
+install(game:GetService("ServerScriptService"), "WorldBuilder", "ModuleScript", [=[
+-- WorldBuilder (ModuleScript in ServerScriptService)
+-- Builds worlds 2-9: a floating terrain island around the pit (in the world's own ground
+-- material), an invisible safety wall at the edge, the candy rim ring and zone rings, and a
+-- themed set of decorations: a big landmark behind the pit, props around the island and
+-- lamps near the rim. Everything stays clear of the Shovel Shop (30°) and World Gate (-30°).
+-- DigManager calls it once per world when the server starts, after building the shop and gate.
+
+local Architecture = require(script.Parent:WaitForChild("Architecture"))
+local DigSiteStyle = require(script.Parent:WaitForChild("DigSiteStyle"))
+
+local terrain = workspace.Terrain
+local rgb = Color3.fromRGB
+local PLASTIC = Enum.Material.SmoothPlastic
+
+-- Angles (degrees, around the pit) where the island props stand. 30 and -30 (330) are
+-- the shop and the gate, so they're left out; 180 is the landmark behind the pit.
+local PROP_ANGLES = {75, 110, 145, 215, 250, 285}
+local LAMP_ANGLES = {90, 135, 180, 225, 270}
+local PROP_DISTANCE = 104
+local LAMP_DISTANCE = 58
+local LANDMARK_DISTANCE = 96
+
+-- Registers the world's colors as palette finishes ("W2Main", "W2Glow", ...)
+local function finishes(world)
+	local look = world.Look
+	local key = "W" .. world.Id
+	local P = Architecture.Palette
+	P[key .. "Main"] = {Color = look.Main, Material = PLASTIC}
+	P[key .. "Second"] = {Color = look.Second, Material = PLASTIC}
+	P[key .. "Dark"] = {Color = look.Dark, Material = PLASTIC}
+	P[key .. "Accent"] = {Color = look.Accent, Material = PLASTIC}
+	P[key .. "Glow"] = {Color = look.Glow, Material = Enum.Material.Neon}
+	P[key .. "Crystal"] = {Color = look.Main, Material = Enum.Material.Glass, Transparency = 0.25, Reflectance = 0.1}
+	P[key .. "Metal"] = {Color = look.Second, Material = Enum.Material.Metal, Reflectance = 0.2}
+	return {
+		Main = key .. "Main", Second = key .. "Second", Dark = key .. "Dark", Accent = key .. "Accent",
+		Glow = key .. "Glow", Crystal = key .. "Crystal", Metal = key .. "Metal",
+	}
+end
+
+local function custom(name, color, material, extra)
+	local finish = {Color = color, Material = material or PLASTIC}
+	if extra then
+		for k, v in pairs(extra) do finish[k] = v end
+	end
+	Architecture.Palette[name] = finish
+	return name
+end
+
+-- CFrame on the ground at an angle/distance around the pit, facing the pit
+local function spot(angle, distance, height)
+	local a = math.rad(angle)
+	local pos = Vector3.new(math.cos(a) * distance, height or 0, math.sin(a) * distance)
+	return CFrame.lookAt(pos, Vector3.new(0, pos.Y, 0))
+end
+
+local function particles(part, color, props)
+	local e = Instance.new("ParticleEmitter")
+	e.Color = ColorSequence.new(color)
+	e.LightEmission = 0.3
+	for k, v in pairs(props) do e[k] = v end
+	e.Parent = part
+	return e
+end
+
+---------------------------------------------------------------------
+-- THE ISLAND (terrain)
+---------------------------------------------------------------------
+local function buildIsland(world, rng)
+	local origin = world.Origin
+	local R = world.IslandRadius
+	local wall = Enum.Material[world.WallMaterial]
+	local top = Enum.Material[world.TopMaterial]
+	-- thick top slab, then an underside that narrows into the pit column (a floating island)
+	terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -14, 0)), 28, R, wall)
+	local layers = {{0.82, -34, 14}, {0.64, -52, 22}, {0.48, -76, 28}}
+	for _, layer in ipairs(layers) do
+		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, layer[2], 0)), layer[3], R * layer[1], wall)
+	end
+	-- lumpy rocks hanging under the edge
+	for i = 1, 14 do
+		local a = rng:NextNumber(0, math.pi * 2)
+		local d = rng:NextNumber(R * 0.45, R * 0.85)
+		terrain:FillBall(origin + Vector3.new(math.cos(a) * d, rng:NextNumber(-60, -30), math.sin(a) * d), rng:NextNumber(10, 18), wall)
+	end
+	-- rounded tip under the pit column
+	terrain:FillBall(origin + Vector3.new(0, world.Zones[#world.Zones].Bottom - 20, 0), 40, wall)
+	-- the surface
+	terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -2, 0)), 4, R, top)
+	-- a few soft hills near the edge (away from the shop and gate)
+	for _, angle in ipairs({95, 160, 200, 265}) do
+		local a = math.rad(angle + rng:NextNumber(-8, 8))
+		local d = R - 12
+		terrain:FillBall(origin + Vector3.new(math.cos(a) * d, -4, math.sin(a) * d), rng:NextNumber(9, 13), top)
+	end
+end
+
+-- invisible wall around the edge so nobody walks off the island
+local function buildEdgeWall(parent, world)
+	local R = world.IslandRadius - 3
+	local segments = 48
+	local folder = Instance.new("Folder")
+	folder.Name = "EdgeWall"
+	for i = 0, segments - 1 do
+		local a = (i + 0.5) / segments * math.pi * 2
+		local pos = world.Origin + Vector3.new(math.cos(a) * R, 20, math.sin(a) * R)
+		local p = Instance.new("Part")
+		p.Name = "EdgeWall"
+		p.Anchored = true
+		p.Transparency = 1
+		p.CanQuery = false
+		p.Size = Vector3.new(2 * math.pi * R / segments + 1, 44, 2)
+		p.CFrame = CFrame.lookAt(pos, Vector3.new(world.Origin.X, pos.Y, world.Origin.Z))
+		p.Parent = folder
+	end
+	folder.Parent = parent
+end
+
+---------------------------------------------------------------------
+-- THEMES: each has Landmark (behind the pit), Props (around the island), Lamp (near the rim)
+-- and optional Sky (things floating overhead). b builds relative to the world origin.
+---------------------------------------------------------------------
+local THEMES = {}
+
+-- NEON SAKURA GROVE --------------------------------------------------
+THEMES.Sakura = {
+	Landmark = function(b, F, cf)
+		local red = custom("SakuraTorii", rgb(236, 84, 96))
+		for _, side in ipairs({-1, 1}) do
+			b:disc("ToriiFoot", 4.4, 1.2, cf * CFrame.new(side * 11, 0.6, 0), F.Dark)
+			b:disc("ToriiPillar", 3, 24, cf * CFrame.new(side * 11, 12.6, 0), red)
+		end
+		b:roundedBlock("ToriiBeam", Vector3.new(32, 2.2, 3), cf * CFrame.new(0, 25.5, 0), 1, F.Dark)
+		b:roundedBlock("ToriiBeamTop", Vector3.new(36, 1.6, 4), cf * CFrame.new(0, 27.4, 0), 1.2, red)
+		b:box("ToriiTie", Vector3.new(26, 1.4, 2), cf * CFrame.new(0, 20, 0), red)
+		local plaque = b:roundedBlock("ToriiPlaque", Vector3.new(6, 4, 1), cf * CFrame.new(0, 22.8, -0.8), 0.5, F.Dark)
+		Architecture.sign(plaque, "SAKURA", nil, Enum.NormalId.Front, rgb(255, 214, 120))
+		for i = 0, 5 do
+			b:bulb("ToriiLantern", 1.2, cf * CFrame.new(-12.5 + i * 5, 18, -1.2), F.Glow, 8)
+		end
+	end,
+	Props = function(b, F, cf, i, rng)
+		-- a round blossom tree; every third spot gets a stone lantern pair instead
+		if i % 3 == 0 then
+			for _, side in ipairs({-1, 1}) do
+				local p = cf * CFrame.new(side * 5, 0, 0)
+				b:disc("StoneBase", 3.4, 1, p * CFrame.new(0, 0.5, 0), F.Second)
+				b:disc("StonePost", 1.4, 4, p * CFrame.new(0, 3, 0), F.Second)
+				b:roundedBlock("LanternBox", Vector3.new(2.6, 2.2, 2.6), p * CFrame.new(0, 6.1, 0), 0.6, F.Accent)
+				b:bulb("LanternLight", 1.4, p * CFrame.new(0, 6.1, 0), F.Glow, 12)
+				b:disc("LanternRoof", 4, 0.8, p * CFrame.new(0, 7.6, 0), F.Dark)
+			end
+			return
+		end
+		local s = rng:NextNumber(1.4, 1.8)
+		b:pill("Trunk", (cf * CFrame.new(0, 0, 0)).Position, (cf * CFrame.new(0.8, 10 * s, 0)).Position, 2.2 * s, F.Dark)
+		b:pill("Branch", (cf * CFrame.new(0.6, 7 * s, 0)).Position, (cf * CFrame.new(-4 * s, 11 * s, 1)).Position, 1.1 * s, F.Dark)
+		b:pill("Branch", (cf * CFrame.new(0.6, 8 * s, 0)).Position, (cf * CFrame.new(4.5 * s, 12 * s, -1)).Position, 1.1 * s, F.Dark)
+		local crowns = {Vector3.new(0, 14, 0), Vector3.new(-4.5, 12.5, 1), Vector3.new(4.8, 13, -1), Vector3.new(0.5, 12, 4), Vector3.new(0, 12.5, -4)}
+		for c, offset in ipairs(crowns) do
+			local crown = b:ball("Blossom", (c == 1 and 9 or 7) * s, cf * CFrame.new(offset * s), c % 2 == 0 and F.Second or F.Main)
+			if c == 1 then
+				particles(crown, rgb(255, 190, 215), {
+					Rate = 3, Lifetime = NumberRange.new(4, 6), Speed = NumberRange.new(1, 2),
+					Acceleration = Vector3.new(0.5, -1.2, 0), SpreadAngle = Vector2.new(180, 180),
+					Size = NumberSequence.new(0.35), Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-90, 90),
+				})
+			end
+		end
+	end,
+	Lamp = function(b, F, cf)
+		b:disc("LampBase", 2.2, 0.6, cf * CFrame.new(0, 0.3, 0), F.Dark)
+		b:disc("LampPole", 0.6, 6, cf * CFrame.new(0, 3.6, 0), F.Dark)
+		b:ellipsoid("PaperLantern", Vector3.new(2, 2.6, 2), cf * CFrame.new(0, 7.6, 0), custom("SakuraPaper", rgb(255, 120, 130)))
+		b:bulb("LanternGlow", 0.9, cf * CFrame.new(0, 7.6, 0), F.Glow, 10)
+	end,
+}
+
+-- GALAXY DRIFT ------------------------------------------------------
+THEMES.Galaxy = {
+	Landmark = function(b, F, cf)
+		-- a giant ringed planet floating over the island, on a beam of light
+		local planet = cf * CFrame.new(0, 48, 0)
+		b:ball("GiantPlanet", 30, planet, F.Main)
+		b:ellipsoid("PlanetBand", Vector3.new(30.4, 6, 30.4), planet * CFrame.new(0, 4, 0), F.Accent)
+		b:ring("PlanetRing", planet * CFrame.Angles(math.rad(75), 0, math.rad(15)), 24, 2.4, F.Second, 40)
+		b:ring("PlanetRingGlow", planet * CFrame.Angles(math.rad(75), 0, math.rad(15)), 27, 0.8, F.Glow, 40)
+		b:tiers("Observatory", cf, {{18, 1, F.Dark}, {15, 1.2, F.Second}, {10, 0.6, F.Glow}})
+		local beam = b:disc("TractorBeam", 6, 30, cf * CFrame.new(0, 18, 0), F.Crystal, {CanCollide = false})
+		beam.Transparency = 0.75
+		for i = 1, 3 do
+			local a = math.rad(i * 120)
+			b:ball("Moon", 4, planet * CFrame.new(math.cos(a) * 22, math.sin(a) * 6, math.sin(a) * 22), "Cloud")
+		end
+	end,
+	Props = function(b, F, cf, i, rng)
+		if i % 2 == 0 then
+			-- crystal cluster
+			for c = 1, 6 do
+				local h = rng:NextNumber(5, 12)
+				local tilt = CFrame.Angles(rng:NextNumber(-0.4, 0.4), rng:NextNumber(0, 6), rng:NextNumber(-0.4, 0.4))
+				b:box("SpaceCrystal", Vector3.new(1.8, h, 1.8), cf * CFrame.new(rng:NextNumber(-3, 3), h / 2 - 1, rng:NextNumber(-3, 3)) * tilt, c % 3 == 0 and F.Crystal or F.Main)
+			end
+			b:bulb("CrystalGlow", 1.2, cf * CFrame.new(0, 2, 0), F.Glow, 14)
+		else
+			-- little planet on a pedestal
+			b:tiers("Pedestal", cf, {{6, 1, F.Dark}, {3, 5, F.Second}, {4.4, 0.6, F.Glow}})
+			local p = cf * CFrame.new(0, 11, 0)
+			b:ball("MiniPlanet", 6, p, i % 3 == 0 and F.Accent or "Coral")
+			b:ring("MiniRing", p * CFrame.Angles(math.rad(70), 0, 0), 4.6, 0.5, F.Second, 20)
+		end
+	end,
+	Lamp = function(b, F, cf)
+		b:disc("LampBase", 2.2, 0.6, cf * CFrame.new(0, 0.3, 0), F.Dark)
+		b:disc("LampPole", 0.5, 7, cf * CFrame.new(0, 4, 0), F.Second)
+		b:bulb("StarLamp", 1.6, cf * CFrame.new(0, 8.2, 0), F.Glow, 14)
+		b:ring("StarLampRing", cf * CFrame.new(0, 8.2, 0), 1.6, 0.25, F.Accent, 12)
+	end,
+	Sky = function(b, F, rng)
+		for i = 1, 10 do
+			local a = rng:NextNumber(0, math.pi * 2)
+			local d = rng:NextNumber(150, 260)
+			local rock = b:ellipsoid("Asteroid", Vector3.new(rng:NextNumber(8, 16), rng:NextNumber(5, 9), rng:NextNumber(8, 14)),
+				CFrame.new(math.cos(a) * d, rng:NextNumber(30, 110), math.sin(a) * d) * CFrame.Angles(rng:NextNumber(0, 3), rng:NextNumber(0, 3), 0), F.Dark)
+			rock.CanCollide = false
+		end
+	end,
+}
+
+-- FROSTBYTE TUNDRA --------------------------------------------------
+THEMES.Frost = {
+	Landmark = function(b, F, cf)
+		-- a cluster of huge ice spires with a glowing core
+		local spires = {{0, 44, 7}, {-8, 30, 5}, {8, 34, 5.5}, {-4, 22, 4}, {5, 20, 4}, {-12, 16, 3.5}, {12, 18, 3.5}}
+		for i, s in ipairs(spires) do
+			local lean = CFrame.Angles(0, math.rad(i * 40), math.rad(s[1] * 0.8))
+			b:box("IceSpire", Vector3.new(s[3], s[2], s[3]), cf * CFrame.new(s[1], s[2] / 2 - 2, (i % 2) * 3) * lean * CFrame.Angles(0, math.rad(45), 0), i % 2 == 0 and F.Crystal or F.Main)
+		end
+		b:bulb("SpireCore", 4, cf * CFrame.new(0, 10, -2), F.Glow, 24)
+		b:tiers("SnowMound", cf, {{30, 2, "White"}, {22, 1.5, "White"}})
+	end,
+	Props = function(b, F, cf, i, rng)
+		if i % 3 == 0 then
+			-- a friendly snowman
+			b:ball("SnowBottom", 6, cf * CFrame.new(0, 2.6, 0), "White")
+			b:ball("SnowMiddle", 4.4, cf * CFrame.new(0, 6.8, 0), "White")
+			b:ball("SnowHead", 3.2, cf * CFrame.new(0, 9.9, 0), "White")
+			b:disc("HatBrim", 3.4, 0.3, cf * CFrame.new(0, 11.4, 0), F.Dark)
+			b:disc("Hat", 2.2, 2, cf * CFrame.new(0, 12.5, 0), F.Dark)
+			b:rod("Nose", 1.4, 0.4, cf * CFrame.new(0, 9.9, -1.9) * CFrame.Angles(0, math.rad(90), 0), custom("Carrot", rgb(255, 150, 60)))
+			for _, side in ipairs({-1, 1}) do
+				b:ball("Eye", 0.4, cf * CFrame.new(side * 0.6, 10.4, -1.45), "Ink")
+			end
+			b:disc("Scarf", 3.8, 0.8, cf * CFrame.new(0, 8.5, 0), F.Accent)
+			return
+		end
+		-- a round snowy pine
+		local s = rng:NextNumber(1.3, 1.7)
+		b:disc("PineTrunk", 1.6 * s, 4 * s, cf * CFrame.new(0, 2 * s, 0), custom("PineWood", rgb(120, 86, 80)))
+		for t = 0, 3 do
+			local y = (4 + t * 3.2) * s
+			local d = (9 - t * 2) * s
+			b:ellipsoid("PineLayer", Vector3.new(d, 3.4 * s, d), cf * CFrame.new(0, y, 0), custom("PineGreen", rgb(70, 150, 130)))
+			b:ellipsoid("PineSnow", Vector3.new(d * 0.8, 1.6 * s, d * 0.8), cf * CFrame.new(0, y + 1.2 * s, 0), "White")
+		end
+	end,
+	Lamp = function(b, F, cf)
+		b:disc("LampBase", 2.2, 0.6, cf * CFrame.new(0, 0.3, 0), F.Dark)
+		b:disc("LampPole", 0.6, 6, cf * CFrame.new(0, 3.6, 0), F.Second)
+		b:box("IceLamp", Vector3.new(1.6, 2.6, 1.6), cf * CFrame.new(0, 7.8, 0) * CFrame.Angles(0, math.rad(45), 0), F.Crystal)
+		b:bulb("IceGlow", 0.8, cf * CFrame.new(0, 7.8, 0), F.Glow, 10)
+	end,
+	Sky = function(b, F)
+		-- aurora: thin glowing ribbons high above the far side of the island
+		local colors = {F.Glow, custom("AuroraViolet", rgb(170, 130, 255), Enum.Material.Neon)}
+		for i = 0, 11 do
+			local ribbon = b:box("Aurora", Vector3.new(34, 2, 0.4),
+				CFrame.new(-190 + i * 32, 120 + math.sin(i * 0.9) * 10, 170 + math.cos(i * 0.7) * 20) * CFrame.Angles(0, math.sin(i) * 0.4, math.rad(8)), colors[i % 2 + 1])
+			ribbon.Transparency = 0.45
+			ribbon.CanCollide = false
+		end
+	end,
+}
+
+-- CHROME DUNES ------------------------------------------------------
+THEMES.Dunes = {
+	Landmark = function(b, F, cf)
+		-- stepped chrome pyramid with a golden cap and a glowing eye
+		for t = 0, 6 do
+			local w = 34 - t * 4.6
+			b:box("PyramidStep", Vector3.new(w, 4, w), cf * CFrame.new(0, 2 + t * 4, 0), t % 2 == 0 and F.Metal or F.Main)
+		end
+		b:box("PyramidCap", Vector3.new(4, 4, 4), cf * CFrame.new(0, 30, 0) * CFrame.Angles(0, math.rad(45), 0), F.Accent)
+		b:bulb("PyramidEye", 3, cf * CFrame.new(0, 18, -8.4), F.Glow, 18)
+		b:ring("EyeRing", cf * CFrame.new(0, 18, -8.7), 2.6, 0.5, F.Accent, 16)
+	end,
+	Props = function(b, F, cf, i, rng)
+		if i % 2 == 0 then
+			-- solar tower
+			b:disc("SolarBase", 5, 1, cf * CFrame.new(0, 0.5, 0), F.Dark)
+			b:disc("SolarPole", 1, 10, cf * CFrame.new(0, 6, 0), F.Metal)
+			b:box("SolarPanel", Vector3.new(9, 0.4, 6), cf * CFrame.new(0, 11.5, 0) * CFrame.Angles(math.rad(-30), 0, 0), custom("SolarGlass", rgb(60, 80, 160), Enum.Material.Glass, {Reflectance = 0.3}))
+			b:box("SolarFrame", Vector3.new(9.4, 0.3, 0.4), cf * CFrame.new(0, 11.9, 2.6) * CFrame.Angles(math.rad(-30), 0, 0), F.Metal)
+			return
+		end
+		-- cartoon cactus
+		local green = custom("Cactus", rgb(96, 196, 120))
+		local h = rng:NextNumber(11, 16)
+		b:pill("CactusBody", (cf * CFrame.new(0, 0, 0)).Position, (cf * CFrame.new(0, h, 0)).Position, 3, green)
+		b:pill("CactusArm", (cf * CFrame.new(0, h * 0.5, 0)).Position, (cf * CFrame.new(3, h * 0.5, 0)).Position, 1.8, green)
+		b:pill("CactusArm", (cf * CFrame.new(3, h * 0.5, 0)).Position, (cf * CFrame.new(3, h * 0.8, 0)).Position, 1.8, green)
+		b:pill("CactusArm", (cf * CFrame.new(0, h * 0.35, 0)).Position, (cf * CFrame.new(-2.6, h * 0.35, 0)).Position, 1.6, green)
+		b:pill("CactusArm", (cf * CFrame.new(-2.6, h * 0.35, 0)).Position, (cf * CFrame.new(-2.6, h * 0.6, 0)).Position, 1.6, green)
+		b:ball("CactusFlower", 1.2, cf * CFrame.new(0, h + 1.4, 0), "Coral")
+	end,
+	Lamp = function(b, F, cf)
+		b:disc("LampBase", 2.2, 0.6, cf * CFrame.new(0, 0.3, 0), F.Dark)
+		b:disc("LampPole", 0.6, 6, cf * CFrame.new(0, 3.6, 0), F.Metal)
+		b:bulb("SunLamp", 1.6, cf * CFrame.new(0, 7.6, 0), F.Glow, 12)
+		b:ring("SunLampRing", cf * CFrame.new(0, 7.6, 0), 1.5, 0.3, F.Accent, 12)
+	end,
+}
+
+-- CORAL CIRCUIT -----------------------------------------------------
+THEMES.Coral = {
+	Landmark = function(b, F, cf)
+		-- a giant open clam with a glowing pearl, and a coral arch over it
+		b:ellipsoid("ClamBottom", Vector3.new(26, 7, 20), cf * CFrame.new(0, 3, 0), F.Main)
+		b:ellipsoid("ClamTop", Vector3.new(26, 7, 20), cf * CFrame.new(0, 12, 6) * CFrame.Angles(math.rad(-60), 0, 0), F.Main)
+		b:ball("GiantPearl", 8, cf * CFrame.new(0, 8, -1), custom("Pearl", rgb(250, 244, 255), PLASTIC, {Reflectance = 0.3}))
+		b:bulb("PearlGlow", 1, cf * CFrame.new(0, 8, -5.2), F.Glow, 20)
+		b:ring("CoralArch", cf * CFrame.new(0, 2, 4), 18, 2.6, F.Second, 28, 180, 0)
+	end,
+	Props = function(b, F, cf, i, rng)
+		if i % 2 == 0 then
+			-- branching coral
+			local colors = {F.Main, F.Second, F.Accent}
+			local base = cf.Position
+			for c = 1, 5 do
+				local a = c * 1.3
+				local tip = base + (cf.RightVector * math.cos(a) * 3 + cf.LookVector * math.sin(a) * 3) + Vector3.new(0, rng:NextNumber(6, 11), 0)
+				b:pill("Coral", base + Vector3.new(0, 1, 0), tip, 1.4, colors[c % 3 + 1])
+				b:ball("CoralTip", 2.2, CFrame.new(tip), colors[c % 3 + 1])
+			end
+			return
+		end
+		-- kelp + bubbles
+		local green = custom("Kelp", rgb(70, 190, 140))
+		for k = -1, 1 do
+			local prev = (cf * CFrame.new(k * 2.5, 0, 0)).Position
+			for s = 1, 4 do
+				local nextPos = (cf * CFrame.new(k * 2.5 + math.sin(s + k) * 1.2, s * 3.2, 0)).Position
+				b:pill("Kelp", prev, nextPos, 1, green)
+				prev = nextPos
+			end
+		end
+		for s = 1, 5 do
+			local bubble = b:ball("Bubble", rng:NextNumber(1, 2.4), cf * CFrame.new(rng:NextNumber(-3, 3), 6 + s * 3, rng:NextNumber(-2, 2)), "Glass")
+			bubble.CanCollide = false
+		end
+	end,
+	Lamp = function(b, F, cf)
+		-- jellyfish lamp
+		b:disc("LampBase", 2.2, 0.6, cf * CFrame.new(0, 0.3, 0), F.Dark)
+		b:disc("LampPole", 0.5, 5, cf * CFrame.new(0, 3, 0), F.Second)
+		b:ellipsoid("JellyDome", Vector3.new(3.6, 2.4, 3.6), cf * CFrame.new(0, 7.6, 0), F.Crystal)
+		b:bulb("JellyGlow", 1, cf * CFrame.new(0, 7.4, 0), F.Glow, 12)
+		for t = 0, 3 do
+			local a = math.rad(t * 90 + 45)
+			b:box("Tentacle", Vector3.new(0.25, 2.6, 0.25), cf * CFrame.new(math.cos(a), 5.4, math.sin(a)), F.Main, {CanCollide = false})
+		end
+	end,
+	Sky = function(b, F, rng)
+		for i = 1, 16 do
+			local a = rng:NextNumber(0, math.pi * 2)
+			local d = rng:NextNumber(20, 110)
+			local bubble = b:ball("FloatingBubble", rng:NextNumber(2, 5), CFrame.new(math.cos(a) * d, rng:NextNumber(24, 60), math.sin(a) * d), "Glass")
+			bubble.CanCollide = false
+		end
+	end,
+}
+
+-- CANDY MAINFRAME ---------------------------------------------------
+THEMES.Candy = {
+	Landmark = function(b, F, cf)
+		-- a giant cupcake with a cherry, and two huge lollipops
+		b:tiers("CupcakeCup", cf, {{24, 8, F.Second}, {25, 1, F.Accent}})
+		b:ellipsoid("Frosting", Vector3.new(26, 10, 26), cf * CFrame.new(0, 12, 0), F.Main)
+		b:ellipsoid("FrostingTop", Vector3.new(16, 8, 16), cf * CFrame.new(0, 17, 0), custom("Frosting", rgb(255, 238, 246)))
+		b:ball("Cherry", 5, cf * CFrame.new(0, 22.5, 0), custom("Cherry", rgb(236, 60, 90)))
+		for _, side in ipairs({-1, 1}) do
+			local base = cf * CFrame.new(side * 18, 0, 2)
+			b:disc("LollipopStick", 1, 24, base * CFrame.new(0, 12, 0), "White")
+			local head = base * CFrame.new(0, 26, 0)
+			b:rod("LollipopHead", 1.6, 12, head * CFrame.Angles(0, math.rad(90), 0), side < 0 and F.Main or F.Second)
+			b:ring("LollipopSwirl", head * CFrame.new(0, 0, -0.9), 3.6, 1, "White", 20)
+		end
+	end,
+	Props = function(b, F, cf, i, rng)
+		if i % 3 == 0 then
+			-- gumdrops
+			for g = 1, 3 do
+				local colors = {F.Main, F.Second, F.Accent}
+				b:ellipsoid("Gumdrop", Vector3.new(5, 5, 5), cf * CFrame.new((g - 2) * 5, 1.2, (g % 2) * 3), colors[g])
+			end
+			return
+		elseif i % 3 == 1 then
+			-- candy cane: striped pole + hook
+			local red = custom("CaneRed", rgb(236, 70, 90))
+			for s = 0, 7 do
+				b:disc("CaneStripe", 1.6, 1.5, cf * CFrame.new(0, 0.75 + s * 1.5, 0), s % 2 == 0 and red or "White")
+			end
+			b:ring("CaneHook", cf * CFrame.new(1.8, 12, 0), 1.8, 1.6, red, 12, 180, 0)
+			return
+		end
+		-- giant donut
+		b:ring("Donut", cf * CFrame.new(0, 5, 0), 3.4, 3.2, custom("Dough", rgb(236, 180, 110)), 20)
+		b:ring("DonutIcing", cf * CFrame.new(0, 5, -0.8), 3.4, 2.4, F.Main, 20)
+	end,
+	Lamp = function(b, F, cf)
+		b:disc("LampStick", 0.6, 7, cf * CFrame.new(0, 3.5, 0), "White")
+		b:rod("LampCandy", 0.8, 3.4, cf * CFrame.new(0, 8.4, 0) * CFrame.Angles(0, math.rad(90), 0), F.Main)
+		b:bulb("LampGlow", 0.8, cf * CFrame.new(0, 8.4, -0.5), F.Glow, 10)
+	end,
+	Sky = function(b, F, rng)
+		for i = 1, 8 do
+			local a = rng:NextNumber(0, math.pi * 2)
+			local d = rng:NextNumber(60, 180)
+			local center = CFrame.new(math.cos(a) * d, rng:NextNumber(50, 90), math.sin(a) * d)
+			for c = 1, 3 do
+				local puff = b:ball("CottonCandyCloud", rng:NextNumber(8, 12), center * CFrame.new((c - 2) * 6, rng:NextNumber(-1, 2), 0), c % 2 == 0 and F.Main or "Frosting")
+				puff.CanCollide = false
+			end
+		end
+	end,
+}
+
+-- VOLCANO FORGE -----------------------------------------------------
+THEMES.Forge = {
+	Landmark = function(b, F, cf, world)
+		-- a terrain volcano with a lava crater, glowing lava streams and smoke
+		local origin = world.Origin
+		local base = origin + cf.Position
+		local layers = {{24, 6}, {19, 12}, {14, 18}, {10, 24}}
+		for _, layer in ipairs(layers) do
+			terrain:FillCylinder(CFrame.new(base + Vector3.new(0, layer[2] / 2, 0)), layer[2], layer[1], Enum.Material.Basalt)
+		end
+		terrain:FillCylinder(CFrame.new(base + Vector3.new(0, 22, 0)), 4, 7, Enum.Material.CrackedLava)
+		local lava = b:disc("LavaPool", 12, 0.6, cf * CFrame.new(0, 24.3, 0), F.Glow)
+		lava.Material = Enum.Material.Neon
+		b:bulb("LavaLight", 1, cf * CFrame.new(0, 26, 0), F.Glow, 30)
+		particles(lava, rgb(70, 60, 70), {
+			Rate = 6, Lifetime = NumberRange.new(5, 8), Speed = NumberRange.new(4, 7),
+			SpreadAngle = Vector2.new(15, 15), Size = NumberSequence.new(4, 12), LightEmission = 0,
+			Transparency = NumberSequence.new(0.4, 1), EmissionDirection = Enum.NormalId.Top,
+		})
+		for s = 0, 2 do
+			local a = math.rad(-60 + s * 60)
+			local from = Vector3.new(math.cos(a) * 6, 23, math.sin(a) * 6)
+			local to = Vector3.new(math.cos(a) * 22, 2, math.sin(a) * 22)
+			b:pill("LavaStream", (cf * CFrame.new(from)).Position, (cf * CFrame.new(to)).Position, 1.6, F.Glow)
+		end
+	end,
+	Props = function(b, F, cf, i, rng)
+		if i % 2 == 0 then
+			-- obsidian spikes
+			for s = 1, 5 do
+				local h = rng:NextNumber(5, 11)
+				b:box("ObsidianSpike", Vector3.new(2, h, 2), cf * CFrame.new(rng:NextNumber(-4, 4), h / 2 - 1, rng:NextNumber(-3, 3)) * CFrame.Angles(rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, 3), rng:NextNumber(-0.3, 0.3)),
+					custom("Obsidian", rgb(40, 30, 56), Enum.Material.Glass, {Reflectance = 0.2}))
+			end
+			return
+		end
+		-- the meme forge: an anvil next to a glowing furnace
+		b:roundedBlock("AnvilBase", Vector3.new(3, 3, 3), cf * CFrame.new(-4, 1.5, 0), 0.6, F.Second)
+		b:box("AnvilTop", Vector3.new(6, 1.6, 2.6), cf * CFrame.new(-4, 3.8, 0), F.Second)
+		b:tiers("Furnace", cf * CFrame.new(4, 0, 0), {{6, 5, F.Dark}, {4.6, 3, F.Second}, {2.4, 3, F.Dark}})
+		b:bulb("FurnaceFire", 2.4, cf * CFrame.new(4, 2.6, -2.2), F.Glow, 14)
+	end,
+	Lamp = function(b, F, cf)
+		-- fire brazier
+		b:disc("BrazierPole", 0.8, 4.5, cf * CFrame.new(0, 2.25, 0), F.Second)
+		b:disc("BrazierBowl", 3, 1.2, cf * CFrame.new(0, 5, 0), F.Dark)
+		local fire = b:bulb("BrazierFire", 1.4, cf * CFrame.new(0, 6, 0), F.Glow, 14)
+		particles(fire, rgb(255, 150, 60), {
+			Rate = 12, Lifetime = NumberRange.new(0.5, 1), Speed = NumberRange.new(2, 4), LightEmission = 1,
+			SpreadAngle = Vector2.new(10, 10), Size = NumberSequence.new(1, 0), EmissionDirection = Enum.NormalId.Top,
+		})
+	end,
+}
+
+-- GLITCH NEXUS ------------------------------------------------------
+THEMES.Glitch = {
+	Landmark = function(b, F, cf, world, rng)
+		-- a giant broken monolith with a missing-texture face, and fragments floating off it
+		b:box("Monolith", Vector3.new(14, 36, 5), cf * CFrame.new(0, 18, 0), F.Dark)
+		for x = 0, 3 do
+			for y = 0, 7 do
+				b:box("MissingTexture", Vector3.new(3.2, 3.2, 0.3), cf * CFrame.new(-4.8 + x * 3.2, 8 + y * 3.2, -2.6), (x + y) % 2 == 0 and F.Second or "Ink")
+			end
+		end
+		for i = 1, 14 do
+			local s = rng:NextNumber(1.5, 4)
+			local cube = b:box("Fragment", Vector3.new(s, s, s), cf * CFrame.new(rng:NextNumber(-14, 14), rng:NextNumber(20, 48), rng:NextNumber(-6, 6)) * CFrame.Angles(rng:NextNumber(0, 3), rng:NextNumber(0, 3), 0), i % 3 == 0 and F.Glow or F.Dark)
+			cube.CanCollide = false
+		end
+	end,
+	Props = function(b, F, cf, i, rng)
+		if i % 2 == 0 then
+			-- wireframe cube (the texture never loaded)
+			local s = 8
+			local h = s / 2
+			local corners = {}
+			for x = -1, 1, 2 do for y = -1, 1, 2 do for z = -1, 1, 2 do
+				table.insert(corners, Vector3.new(x * h, y * h + h + 2, z * h))
+			end end end
+			for a = 1, #corners do
+				for c = a + 1, #corners do
+					local d = corners[c] - corners[a]
+					if d.Magnitude == s then
+						b:rod("Wire", s + 0.4, 0.4, cf * CFrame.new((corners[a] + corners[c]) / 2) * Architecture.alongX(Vector3.zero, d), F.Glow)
+					end
+				end
+			end
+			return
+		end
+		-- stack of pixel cubes that don't line up
+		for c = 0, 4 do
+			b:box("PixelStack", Vector3.new(4, 4, 4), cf * CFrame.new(rng:NextNumber(-1.2, 1.2), 2 + c * 4, rng:NextNumber(-1.2, 1.2)), c % 2 == 0 and F.Main or F.Second)
+		end
+	end,
+	Lamp = function(b, F, cf)
+		b:disc("LampBase", 2.2, 0.6, cf * CFrame.new(0, 0.3, 0), F.Dark)
+		b:box("LampPole", Vector3.new(0.6, 6, 0.6), cf * CFrame.new(0, 3.6, 0), F.Dark)
+		b:box("PixelLamp", Vector3.new(1.8, 1.8, 1.8), cf * CFrame.new(0, 7.6, 0) * CFrame.Angles(math.rad(45), math.rad(45), 0), F.Glow)
+	end,
+	Sky = function(b, F, rng)
+		for i = 1, 20 do
+			local a = rng:NextNumber(0, math.pi * 2)
+			local d = rng:NextNumber(70, 220)
+			local s = rng:NextNumber(3, 9)
+			local cube = b:box("SkyGlitch", Vector3.new(s, s, s), CFrame.new(math.cos(a) * d, rng:NextNumber(30, 120), math.sin(a) * d), i % 2 == 0 and F.Main or F.Second)
+			cube.CanCollide = false
+		end
+	end,
+}
+
+---------------------------------------------------------------------
+-- BUILD
+---------------------------------------------------------------------
+return function(container, world)
+	local rng = Random.new(world.Id * 7919)
+	buildIsland(world, rng)
+
+	-- rim ring + zone rings, recolored to the world's colors
+	DigSiteStyle(container, world)
+	buildEdgeWall(container, world)
+	local F = finishes(world)
+	local rim = container:FindFirstChild("Cartoon2050")
+	if rim then
+		local i = 0
+		for _, part in ipairs(rim:GetChildren()) do
+			if part:IsA("BasePart") and part.Name == "RimStripe" then
+				i += 1
+				local f = Architecture.Palette[(i // 2) % 2 == 0 and F.Main or F.Second]
+				part.Color = f.Color
+			elseif part:IsA("BasePart") and part.Name == "RimBulb" then
+				part.Color = world.Look.Glow
+			end
+		end
+	end
+
+	local theme = THEMES[world.Theme]
+	if not theme then return end
+	local decor = Instance.new("Model")
+	decor.Name = "Decor"
+	local b = Architecture.builder(decor, CFrame.new(world.Origin))
+	theme.Landmark(b, F, spot(180, LANDMARK_DISTANCE), world, rng)
+	for i, angle in ipairs(PROP_ANGLES) do
+		theme.Props(b, F, spot(angle, PROP_DISTANCE + rng:NextNumber(-4, 6)), i, rng)
+	end
+	for _, angle in ipairs(LAMP_ANGLES) do
+		theme.Lamp(b, F, spot(angle, LAMP_DISTANCE))
+	end
+	if theme.Sky then
+		theme.Sky(b, F, rng)
+	end
+	decor.Parent = container
+end
+]=])
 install(game:GetService("ServerScriptService"), "WorldGate", "ModuleScript", [=[
 -- WorldGate (ModuleScript in ServerScriptService)
 -- Builds the portal players use to travel between worlds: a big chunky portal ring
@@ -5239,6 +6871,322 @@ inventoryChangedRemote.OnClientEvent:Connect(function()
 	UIKit.pop(bagButton, 1.3)
 end)
 ]=])
+install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "MuseumClient", "LocalScript", [=[
+-- MuseumClient (LocalScript in StarterPlayer > StarterPlayerScripts)
+-- The museum side of the UI (World 1 only):
+--   * a spinning, floating meme card over every pedestal that has a meme on it (in every
+--     player's museum, so visitors can see your collection too)
+--   * the Display window: pick a meme from your inventory to put on a slot, or take it back
+--   * the Alien Art Dealer window: sell memes for cash
+-- Slot prompts only show up in your own museum.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local C = UIKit.Colors
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+local getInventory = remotes:WaitForChild("GetInventory")
+local inventoryChangedRemote = remotes:WaitForChild("InventoryChanged")
+local openSlotRemote = remotes:WaitForChild("OpenSlotMenu")
+local placeRemote = remotes:WaitForChild("PlaceInSlot")
+local takeRemote = remotes:WaitForChild("TakeFromSlot")
+local openDealerRemote = remotes:WaitForChild("OpenDealer")
+local sellRemote = remotes:WaitForChild("SellArtifacts")
+
+local player = Players.LocalPlayer
+local museumsFolder = workspace:WaitForChild("Museums")
+
+---------------------------------------------------------------------
+-- SPINNING MEME CARDS ON THE PEDESTALS
+---------------------------------------------------------------------
+local cards = {} -- [slot model] = {Part, Base CFrame, Phase}
+
+local function removeCard(slot)
+	local card = cards[slot]
+	if card then
+		card.Part:Destroy()
+		cards[slot] = nil
+	end
+end
+
+local function cardFace(part, face, artifact)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = face
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 50
+	gui.LightInfluence = 0
+	gui.Parent = part
+	UIKit.artifactIcon(gui, artifact, {Size = UDim2.fromScale(1, 1), Radius = 28, Stroke = 6})
+end
+
+local function updateCard(slot)
+	removeCard(slot)
+	local artifact = ArtifactData.GetArtifact(slot:GetAttribute("ArtifactId") or "")
+	local spot = slot:FindFirstChild("DisplaySpot")
+	if not artifact or not spot then return end
+	local rarity = ArtifactData.GetRarity(artifact.Rarity)
+
+	local part = Instance.new("Part")
+	part.Name = "MemeCard"
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.CastShadow = false
+	part.Size = Vector3.new(4.4, 4.4, 0.35)
+	part.Color = rarity.Color
+	part.Material = Enum.Material.SmoothPlastic
+	cardFace(part, Enum.NormalId.Front, artifact)
+	cardFace(part, Enum.NormalId.Back, artifact)
+	local light = Instance.new("PointLight")
+	light.Color = rarity.Color
+	light.Range = 10
+	light.Brightness = 0.7
+	light.Parent = part
+	-- fancier memes sparkle
+	if ArtifactData.GetRarityIndex(artifact.Rarity) >= 5 then
+		local sparkles = Instance.new("ParticleEmitter")
+		sparkles.Rate = 4
+		sparkles.Lifetime = NumberRange.new(0.8, 1.4)
+		sparkles.Speed = NumberRange.new(0.5, 1.2)
+		sparkles.SpreadAngle = Vector2.new(180, 180)
+		sparkles.Size = NumberSequence.new(0.25, 0)
+		sparkles.LightEmission = 0.8
+		sparkles.Color = ColorSequence.new(rarity.Color)
+		sparkles.Parent = part
+	end
+	local base = CFrame.new(spot.Position + Vector3.new(0, 1, 0))
+	part.CFrame = base
+	part.Parent = slot
+	cards[slot] = {Part = part, Base = base, Phase = (slot:GetAttribute("SlotIndex") or 1) * 0.7}
+end
+
+local function watchSlot(slot, owned)
+	slot:GetAttributeChangedSignal("ArtifactId"):Connect(function()
+		updateCard(slot)
+	end)
+	slot.AncestryChanged:Connect(function()
+		if not slot:IsDescendantOf(workspace) then removeCard(slot) end
+	end)
+	updateCard(slot)
+	-- only the owner sees the slot prompts
+	local function checkPrompt(child)
+		if child:IsA("ProximityPrompt") and child.Name == "SlotPrompt" then
+			child.Enabled = owned
+		end
+	end
+	slot.DescendantAdded:Connect(checkPrompt)
+	for _, d in ipairs(slot:GetDescendants()) do checkPrompt(d) end
+end
+
+local function watchMuseum(museum)
+	local slots = museum:WaitForChild("Slots", 10)
+	if not slots then return end
+	local owned = museum:GetAttribute("OwnerUserId") == player.UserId
+	for _, slot in ipairs(slots:GetChildren()) do
+		watchSlot(slot, owned)
+	end
+end
+
+museumsFolder.ChildAdded:Connect(watchMuseum)
+for _, museum in ipairs(museumsFolder:GetChildren()) do
+	task.spawn(watchMuseum, museum)
+end
+
+RunService.RenderStepped:Connect(function()
+	local t = os.clock()
+	for _, card in pairs(cards) do
+		local bob = math.sin(t * 1.6 + card.Phase) * 0.3
+		card.Part.CFrame = card.Base * CFrame.new(0, bob, 0) * CFrame.Angles(0, t * 0.9 + card.Phase, 0)
+	end
+end)
+
+---------------------------------------------------------------------
+-- SHARED: an inventory grid with a button on every meme
+---------------------------------------------------------------------
+local function fetchInventory()
+	local ok, list = pcall(function() return getInventory:InvokeServer() end)
+	if not ok or type(list) ~= "table" then return {} end
+	local entries = {}
+	for _, item in ipairs(list) do
+		local artifact = ArtifactData.GetArtifact(item.Id)
+		if artifact then
+			table.insert(entries, {Artifact = artifact, Count = item.Count})
+		end
+	end
+	-- best earners first
+	table.sort(entries, function(a, b)
+		local ia, ib = ArtifactData.GetIncome(a.Artifact), ArtifactData.GetIncome(b.Artifact)
+		if ia ~= ib then return ia > ib end
+		return a.Artifact.Name < b.Artifact.Name
+	end)
+	return entries
+end
+
+local function makeGrid(parent, top)
+	local holder = Instance.new("ScrollingFrame")
+	holder.BackgroundTransparency = 1
+	holder.BorderSizePixel = 0
+	holder.Size = UDim2.new(1, 0, 1, -top)
+	holder.Position = UDim2.fromOffset(0, top)
+	holder.ScrollBarThickness = 8
+	holder.ScrollBarImageColor3 = C.Lilac
+	holder.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	holder.CanvasSize = UDim2.new()
+	holder.Parent = parent
+	local grid = Instance.new("UIGridLayout")
+	grid.CellSize = UDim2.fromOffset(150, 214)
+	grid.CellPadding = UDim2.fromOffset(12, 12)
+	grid.SortOrder = Enum.SortOrder.LayoutOrder
+	grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	grid.Parent = holder
+	local pad = Instance.new("UIPadding")
+	pad.PaddingTop = UDim.new(0, 8)
+	pad.PaddingBottom = UDim.new(0, 8)
+	pad.Parent = holder
+	return holder
+end
+
+local function clear(holder)
+	for _, child in ipairs(holder:GetChildren()) do
+		if child:IsA("GuiObject") then child:Destroy() end
+	end
+end
+
+-- one meme card; returns the card frame
+local function memeCard(holder, entry, order, valueText)
+	local artifact = entry.Artifact
+	local rarity = ArtifactData.GetRarity(artifact.Rarity)
+	local card = UIKit.panel(holder, {Size = UDim2.fromOffset(150, 214), Color = C.Row, Radius = 18})
+	card.LayoutOrder = order
+	UIKit.artifactIcon(card, artifact, {Size = UDim2.fromOffset(84, 84), Position = UDim2.new(0.5, 0, 0, 8), AnchorPoint = Vector2.new(0.5, 0)})
+	if entry.Count and entry.Count > 1 then
+		local tag = UIKit.panel(card, {Size = UDim2.fromOffset(44, 26), Position = UDim2.fromOffset(8, 8), Color = C.Violet, Radius = 13, Stroke = 2})
+		UIKit.label(tag, "x" .. entry.Count, {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+	end
+	UIKit.label(card, artifact.Name, {Size = UDim2.new(1, -14, 0, 32), Position = UDim2.new(0.5, 0, 0, 96), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0})
+	local tag = UIKit.panel(card, {Size = UDim2.new(1, -24, 0, 16), Position = UDim2.new(0.5, 0, 0, 130), AnchorPoint = Vector2.new(0.5, 0), Color = rarity.Color, Radius = 8, Stroke = 2, Shade = false})
+	UIKit.label(tag, string.upper(artifact.Rarity), {Size = UDim2.fromScale(0.9, 0.85), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+	UIKit.label(card, valueText, {Size = UDim2.new(1, -14, 0, 16), Position = UDim2.new(0.5, 0, 0, 150), AnchorPoint = Vector2.new(0.5, 0), Color = C.Money, Stroke = 0})
+	return card
+end
+
+local gui = UIKit.screen(player, "MuseumGui", 3)
+
+---------------------------------------------------------------------
+-- DISPLAY WINDOW (opened from a slot)
+---------------------------------------------------------------------
+local displayWindow, displayContent = UIKit.window(gui, "DISPLAY", UDim2.fromOffset(720, 560), C.Lilac)
+local currentPanel = UIKit.panel(displayContent, {Size = UDim2.new(1, 0, 0, 96), Color = C.PanelTint, Radius = 18})
+local currentTitle = UIKit.label(currentPanel, "", {Size = UDim2.new(1, -330, 0, 30), Position = UDim2.fromOffset(104, 14), Align = "Left", Color = C.Ink, Stroke = 0})
+local currentSub = UIKit.label(currentPanel, "", {Size = UDim2.new(1, -330, 0, 22), Position = UDim2.fromOffset(104, 50), Align = "Left", Color = C.Money, Stroke = 0})
+local takeButton = UIKit.button(currentPanel, "TAKE BACK", {Size = UDim2.fromOffset(170, 50), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Color = C.Coral})
+local currentIconHolder = Instance.new("Frame")
+currentIconHolder.BackgroundTransparency = 1
+currentIconHolder.Size = UDim2.fromOffset(80, 80)
+currentIconHolder.Position = UDim2.fromOffset(10, 8)
+currentIconHolder.Parent = currentPanel
+local pickLabel = UIKit.label(displayContent, "Pick a meme from your inventory:", {Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(4, 104), Align = "Left", Color = C.Violet, Stroke = 0})
+local displayGrid = makeGrid(displayContent, 134)
+local displayEmpty = UIKit.label(displayContent, "Your bag is empty... go dig up some memes!", {
+	Size = UDim2.new(0.9, 0, 0, 30), Position = UDim2.fromScale(0.5, 0.62), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Grey, Stroke = 0,
+})
+
+local openSlot -- slot number the window is for
+
+local function myMuseum()
+	local ref = player:FindFirstChild("Museum")
+	return ref and ref.Value
+end
+
+local function refreshDisplay()
+	if not openSlot then return end
+	local museum = myMuseum()
+	local slot = museum and museum:FindFirstChild("Slots") and museum.Slots:FindFirstChild("Slot" .. openSlot)
+	local shown = slot and ArtifactData.GetArtifact(slot:GetAttribute("ArtifactId") or "")
+	clear(currentIconHolder)
+	if shown then
+		UIKit.artifactIcon(currentIconHolder, shown, {Size = UDim2.fromScale(1, 1)})
+		currentTitle.Text = "Slot " .. openSlot .. ":  " .. shown.Name
+		currentSub.Text = "Earning +" .. ArtifactData.FormatMoney(ArtifactData.GetIncome(shown)) .. "/s"
+		takeButton.Visible = true
+		pickLabel.Text = "Swap it for another meme:"
+	else
+		currentTitle.Text = "Slot " .. openSlot .. " is empty"
+		currentSub.Text = "Memes on display earn money every second"
+		takeButton.Visible = false
+		pickLabel.Text = "Pick a meme from your inventory:"
+	end
+
+	clear(displayGrid)
+	local entries = fetchInventory()
+	displayEmpty.Visible = #entries == 0
+	for i, entry in ipairs(entries) do
+		local card = memeCard(displayGrid, entry, i, "+" .. ArtifactData.FormatMoney(ArtifactData.GetIncome(entry.Artifact)) .. "/s")
+		local place = UIKit.button(card, shown and "SWAP" or "PLACE", {Size = UDim2.new(1, -20, 0, 34), Position = UDim2.new(0.5, 0, 1, -8), AnchorPoint = Vector2.new(0.5, 1), Color = C.Mint})
+		place.MouseButton1Click:Connect(function()
+			placeRemote:FireServer(openSlot, entry.Artifact.Id)
+			displayWindow.Visible = false
+		end)
+	end
+end
+
+takeButton.MouseButton1Click:Connect(function()
+	if openSlot then
+		takeRemote:FireServer(openSlot)
+		displayWindow.Visible = false
+	end
+end)
+
+openSlotRemote.OnClientEvent:Connect(function(slotIndex)
+	openSlot = slotIndex
+	refreshDisplay()
+	UIKit.open(displayWindow)
+end)
+
+---------------------------------------------------------------------
+-- ALIEN ART DEALER WINDOW
+---------------------------------------------------------------------
+local dealerWindow, dealerContent = UIKit.window(gui, "ALIEN ART DEALER", UDim2.fromOffset(720, 560), C.Mint)
+UIKit.label(dealerContent, "\"Greetings, Earthling. I pay top dollar for ancient memes.\"", {
+	Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0,
+})
+local dealerGrid = makeGrid(dealerContent, 40)
+local dealerEmpty = UIKit.label(dealerContent, "Nothing to sell... go dig up some memes!", {
+	Size = UDim2.new(0.9, 0, 0, 30), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Grey, Stroke = 0,
+})
+
+local function refreshDealer()
+	clear(dealerGrid)
+	local entries = fetchInventory()
+	dealerEmpty.Visible = #entries == 0
+	for i, entry in ipairs(entries) do
+		local value = ArtifactData.GetSellValue(entry.Artifact)
+		local card = memeCard(dealerGrid, entry, i, "Sells for " .. ArtifactData.FormatMoney(value))
+		local one = UIKit.button(card, "SELL", {Size = UDim2.new(0.5, -12, 0, 34), Position = UDim2.new(0, 8, 1, -8), AnchorPoint = Vector2.new(0, 1), Color = C.Sun})
+		local all = UIKit.button(card, "ALL", {Size = UDim2.new(0.5, -12, 0, 34), Position = UDim2.new(1, -8, 1, -8), AnchorPoint = Vector2.new(1, 1), Color = C.Coral})
+		one.MouseButton1Click:Connect(function()
+			sellRemote:FireServer(entry.Artifact.Id, false)
+		end)
+		all.MouseButton1Click:Connect(function()
+			sellRemote:FireServer(entry.Artifact.Id, true)
+		end)
+	end
+end
+
+openDealerRemote.OnClientEvent:Connect(function()
+	refreshDealer()
+	UIKit.open(dealerWindow)
+end)
+
+inventoryChangedRemote.OnClientEvent:Connect(function()
+	if dealerWindow.Visible then refreshDealer() end
+	if displayWindow.Visible then refreshDisplay() end
+end)
+]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "ShovelClient", "LocalScript", [=[
 -- ShovelClient (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- Shovel swing + dig animation, depth + zone meter, underground light,
@@ -6015,9 +7963,12 @@ install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "
 -- WorldClient (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- The World Map opened at any World Gate: a card per world showing whether it's unlocked,
 -- its price, and a button to unlock it or travel there.
+-- Also changes the sky and lighting to each world's mood when you travel there.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Lighting = game:GetService("Lighting")
+local TweenService = game:GetService("TweenService")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
@@ -6051,12 +8002,13 @@ for _, world in ipairs(GameConfig.Worlds) do
 	local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 84), Color = world.Enabled and C.Row or C.PanelTint, Radius = 18})
 	card.LayoutOrder = world.Id
 	-- little planet badge with the world number
-	local planet = UIKit.panel(card, {Size = UDim2.fromOffset(60, 60), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = PLANET_COLORS[world.Id] or C.Lilac, Radius = 30})
+	local planetColor = world.Look and world.Look.Main or PLANET_COLORS[world.Id] or C.Lilac
+	local planet = UIKit.panel(card, {Size = UDim2.fromOffset(60, 60), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = planetColor, Radius = 30})
 	UIKit.label(planet, tostring(world.Id), {Size = UDim2.fromScale(0.6, 0.6), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
 	UIKit.label(card, world.Name, {Size = UDim2.new(0.6, -90, 0, 28), Position = UDim2.fromOffset(86, 12), Align = "Left", Color = C.Ink, Stroke = 0})
-	local sub = world.Enabled and (#world.Shovels .. " shovels  •  digs down to " .. -world.Zones[#world.Zones].Bottom .. "m")
+	local sub = world.Enabled and (world.Tagline or (#world.Shovels .. " shovels  •  digs down to " .. -world.Zones[#world.Zones].Bottom .. "m  •  your museum is here"))
 		or "Still being excavated... coming soon!"
-	UIKit.label(card, sub, {Size = UDim2.new(0.6, -90, 0, 20), Position = UDim2.fromOffset(86, 46), Align = "Left", Color = C.Grey, Stroke = 0})
+	UIKit.label(card, sub, {Size = UDim2.new(0.62, -90, 0, 34), Position = UDim2.fromOffset(86, 42), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = Enum.Font.GothamMedium, TextSize = 13})
 
 	local b = UIKit.button(card, "", {Size = UDim2.new(0.3, 0, 0, 52), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5)})
 	buttons[world.Id] = b
@@ -6104,6 +8056,54 @@ openWorldMapRemote.OnClientEvent:Connect(function()
 	refresh()
 	UIKit.open(window)
 end)
+
+---------------------------------------------------------------------
+-- WORLD SKIES: each world has its own time of day, haze and color grade (WorldsData.Sky).
+-- World 1's look (set by MapStyle on the server) is remembered and restored when you return.
+---------------------------------------------------------------------
+local home -- World 1's lighting, captured the first time you leave it
+local function capture()
+	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+	local grade = Lighting:FindFirstChild("Cartoon2050Grade")
+	local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
+	return {
+		ClockTime = Lighting.ClockTime, Ambient = Lighting.Ambient, OutdoorAmbient = Lighting.OutdoorAmbient,
+		Tint = grade and grade.TintColor or Color3.new(1, 1, 1),
+		Fog = atmosphere and atmosphere.Color, Decay = atmosphere and atmosphere.Decay, Density = atmosphere and atmosphere.Density,
+		Clouds = clouds and clouds.Cover,
+	}
+end
+
+local function applySky(sky)
+	local info = TweenInfo.new(1.2, Enum.EasingStyle.Sine)
+	-- ClockTime jumps (tweening it would spin the sun through the whole day)
+	Lighting.ClockTime = sky.ClockTime
+	TweenService:Create(Lighting, info, {Ambient = sky.Ambient, OutdoorAmbient = sky.OutdoorAmbient}):Play()
+	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+	if atmosphere and sky.Fog then
+		TweenService:Create(atmosphere, info, {Color = sky.Fog, Decay = sky.Decay, Density = sky.Density}):Play()
+	end
+	local grade = Lighting:FindFirstChild("Cartoon2050Grade")
+	if grade then
+		TweenService:Create(grade, info, {TintColor = sky.Tint}):Play()
+	end
+	local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
+	if clouds and sky.Clouds then
+		clouds.Cover = sky.Clouds
+	end
+end
+
+local function onWorldChanged()
+	local world = GameConfig.GetWorld(player:GetAttribute("CurrentWorld") or 1)
+	if world and world.Sky then
+		home = home or capture()
+		applySky(world.Sky)
+	elseif home then
+		applySky(home)
+	end
+end
+player:GetAttributeChangedSignal("CurrentWorld"):Connect(onWorldChanged)
+onWorldChanged()
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
 print("Meme Archaeologist: installed " .. count .. " scripts. Now save the place (Ctrl+S).")

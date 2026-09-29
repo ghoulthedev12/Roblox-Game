@@ -1,9 +1,12 @@
 -- WorldClient (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- The World Map opened at any World Gate: a card per world showing whether it's unlocked,
 -- its price, and a button to unlock it or travel there.
+-- Also changes the sky and lighting to each world's mood when you travel there.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Lighting = game:GetService("Lighting")
+local TweenService = game:GetService("TweenService")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
@@ -37,12 +40,13 @@ for _, world in ipairs(GameConfig.Worlds) do
 	local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 84), Color = world.Enabled and C.Row or C.PanelTint, Radius = 18})
 	card.LayoutOrder = world.Id
 	-- little planet badge with the world number
-	local planet = UIKit.panel(card, {Size = UDim2.fromOffset(60, 60), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = PLANET_COLORS[world.Id] or C.Lilac, Radius = 30})
+	local planetColor = world.Look and world.Look.Main or PLANET_COLORS[world.Id] or C.Lilac
+	local planet = UIKit.panel(card, {Size = UDim2.fromOffset(60, 60), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = planetColor, Radius = 30})
 	UIKit.label(planet, tostring(world.Id), {Size = UDim2.fromScale(0.6, 0.6), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
 	UIKit.label(card, world.Name, {Size = UDim2.new(0.6, -90, 0, 28), Position = UDim2.fromOffset(86, 12), Align = "Left", Color = C.Ink, Stroke = 0})
-	local sub = world.Enabled and (#world.Shovels .. " shovels  •  digs down to " .. -world.Zones[#world.Zones].Bottom .. "m")
+	local sub = world.Enabled and (world.Tagline or (#world.Shovels .. " shovels  •  digs down to " .. -world.Zones[#world.Zones].Bottom .. "m  •  your museum is here"))
 		or "Still being excavated... coming soon!"
-	UIKit.label(card, sub, {Size = UDim2.new(0.6, -90, 0, 20), Position = UDim2.fromOffset(86, 46), Align = "Left", Color = C.Grey, Stroke = 0})
+	UIKit.label(card, sub, {Size = UDim2.new(0.62, -90, 0, 34), Position = UDim2.fromOffset(86, 42), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = Enum.Font.GothamMedium, TextSize = 13})
 
 	local b = UIKit.button(card, "", {Size = UDim2.new(0.3, 0, 0, 52), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5)})
 	buttons[world.Id] = b
@@ -90,3 +94,51 @@ openWorldMapRemote.OnClientEvent:Connect(function()
 	refresh()
 	UIKit.open(window)
 end)
+
+---------------------------------------------------------------------
+-- WORLD SKIES: each world has its own time of day, haze and color grade (WorldsData.Sky).
+-- World 1's look (set by MapStyle on the server) is remembered and restored when you return.
+---------------------------------------------------------------------
+local home -- World 1's lighting, captured the first time you leave it
+local function capture()
+	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+	local grade = Lighting:FindFirstChild("Cartoon2050Grade")
+	local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
+	return {
+		ClockTime = Lighting.ClockTime, Ambient = Lighting.Ambient, OutdoorAmbient = Lighting.OutdoorAmbient,
+		Tint = grade and grade.TintColor or Color3.new(1, 1, 1),
+		Fog = atmosphere and atmosphere.Color, Decay = atmosphere and atmosphere.Decay, Density = atmosphere and atmosphere.Density,
+		Clouds = clouds and clouds.Cover,
+	}
+end
+
+local function applySky(sky)
+	local info = TweenInfo.new(1.2, Enum.EasingStyle.Sine)
+	-- ClockTime jumps (tweening it would spin the sun through the whole day)
+	Lighting.ClockTime = sky.ClockTime
+	TweenService:Create(Lighting, info, {Ambient = sky.Ambient, OutdoorAmbient = sky.OutdoorAmbient}):Play()
+	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+	if atmosphere and sky.Fog then
+		TweenService:Create(atmosphere, info, {Color = sky.Fog, Decay = sky.Decay, Density = sky.Density}):Play()
+	end
+	local grade = Lighting:FindFirstChild("Cartoon2050Grade")
+	if grade then
+		TweenService:Create(grade, info, {TintColor = sky.Tint}):Play()
+	end
+	local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
+	if clouds and sky.Clouds then
+		clouds.Cover = sky.Clouds
+	end
+end
+
+local function onWorldChanged()
+	local world = GameConfig.GetWorld(player:GetAttribute("CurrentWorld") or 1)
+	if world and world.Sky then
+		home = home or capture()
+		applySky(world.Sky)
+	elseif home then
+		applySky(home)
+	end
+end
+player:GetAttributeChangedSignal("CurrentWorld"):Connect(onWorldChanged)
+onWorldChanged()

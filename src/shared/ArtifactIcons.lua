@@ -82,4 +82,20 @@ return {
 	-- 21. The Abyss (secret 2050 memes)
 	LastHumanMeme = "😢", AIGirlfriendFirmware = "💘", BrainrotCoreSample = "❄️", SkibidiMonolith = "🗼",
 	FinalUpvote = "🔼", QuantumDoge = "🐕", MemeSingularity = "🕳️", SourceOfIrony = "🙃",
+	-- 22. Neon Sakura Grove
+	SakuraPetalChip = "🌸", BonsaiRouter = "🌳", HoloFanFlex = "🎐", MatchaDrone = "🍵", KoiNFT = "🐟", LanternBot = "🏮", CyberKatana = "🗡️", SenpaiNoticer = "👀", PetalStorm = "🌺", TeaCeremonyAI = "🍶", NekoMecha = "😺", BlossomServer = "🌷", HanamiHologram = "🎎", SakuraSingularity = "💮",
+	-- 23. Galaxy Drift
+	MoonRockUSB = "🌒", AstroSnackBar = "🍫", OrbitSelfie = "🛰️", AlienRatingStar = "👽", SaturnRingFidget = "🔘", CometMailbox = "📬", UFOTractorClaw = "🛸", BlackHoleBin = "⚫", StarChartWiFi = "🗺️", AstronautDog = "🚀", NebulaEngine = "🎇", PlanetLoadingBar = "🌎", GalacticRickroll = "📻", BigBangMeme = "🎆",
+	-- 24. Frostbyte Tundra
+	IcicleStylus = "🖊️", SnowmanWebcam = "⛄", FrozenLagSpike = "🧊", PenguinPager = "🐧", IglooServer = "🏔️", HotCocoaCoolant = "☕", YetiInfluencer = "🦍", BlizzardBuffer = "🌨️", AuroraFirewall = "🧱", SnowGlobeCloud = "⛅", MammothMemory = "🐘", PermafrostPing = "☃️", FrozenFrame = "📽️", AbsoluteZero = "❄",
+	-- 25. Chrome Dunes
+	SandTimerApp = "⏳", CactusCharger = "🌵", MirageWallpaper = "🏝️", CamelCaseCamel = "🐫", SolarSunglasses = "🕶️", TumbleweedBot = "🌾", ChromePyramid = "⛰️", SandwormStream = "🐛", OasisHologram = "🌴", DuneRacer = "🏎️", SphinxRiddleBot = "🦁", SunCoreBattery = "🔋", MirageMultiverse = "🏜️", FirstSandcastle = "🏯",
+	-- 26. Coral Circuit
+	BubbleWrapModem = "🎈", ShellPhone = "🐚", JellyfishLamp = "🦑", SeahorseStylus = "🦄", KrakenCable = "🐙", PufferfishPing = "🐡", SubmarineStreamer = "🚢", CoralMotherboard = "🧫", TurtleServer = "🐢", AnglerFishLight = "🔦", MermaidMic = "🧜", AtlantisWiFi = "🔱", DeepSeaDubstep = "🐋", OceanOfMemes = "🌊",
+	-- 27. Candy Mainframe
+	GummyByte = "🍬", LollipopAntenna = "🍭", CottonCandyCloud = "🌥️", ChocoChip = "🍪", CandyCaneCable = "🎄", DonutRouter = "🍩", JellyBeanRNG = "🎲", FortuneCookieFirewall = "🥠", SugarRushServer = "🧁", RainbowSprinkleGPU = "🍧", ChocolateFountainCore = "🍯", CakeIsNotALie = "🎂", SweetToothComet = "🍮", SugarSingularity = "🍰",
+	-- 28. Volcano Forge
+	AshKeyboard = "🧯", LavaLampPhone = "🌋", ObsidianMouse = "🐭", MagmaMeme = "🌡️", ForgeHammerMod = "🔨", SulfurSpeaker = "🔉", DragonWiFi = "🐉", MoltenCPU = "🌶️", PhoenixReboot = "🐦", AnvilDrop = "⚒️", VolcanoGod = "🗻", EruptionStream = "🎥", CoreOfTheForge = "🔩", MoltenMemeKing = "🤴",
+	-- 29. Glitch Nexus
+	MissingTexture = "🔳", NullPointer = "👉", CorruptedJPEG = "🗾", InfiniteLoopRing = "➿", TPoseStatue = "🙆", LagSwitch = "🎚️", BlueScreenMirror = "📘", NoClipBoots = "🥾", DebugConsole = "🖲️", CtrlZTimeMachine = "⏪", GlitchedCreator = "🧙", SimulationPatchNotes = "📋", VoidRenderer = "🔲", EndOfTheInternet = "🔚",
 }
