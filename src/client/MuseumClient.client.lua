@@ -190,17 +190,17 @@ end
 local function memeCard(holder, entry, order, valueText)
 	local artifact = entry.Artifact
 	local rarity = ArtifactData.GetRarity(artifact.Rarity)
-	local card = UIKit.panel(holder, {Size = UDim2.fromOffset(150, 214), Color = C.Row, Radius = 18})
+	local card = UIKit.panel(holder, {Size = UDim2.fromOffset(150, 214), Color = C.White, Radius = 20, ShadeAmount = 0.06})
 	card.LayoutOrder = order
 	UIKit.artifactIcon(card, artifact, {Size = UDim2.fromOffset(84, 84), Position = UDim2.new(0.5, 0, 0, 8), AnchorPoint = Vector2.new(0.5, 0)})
 	if entry.Count and entry.Count > 1 then
 		local tag = UIKit.panel(card, {Size = UDim2.fromOffset(44, 26), Position = UDim2.fromOffset(8, 8), Color = C.Violet, Radius = 13, Stroke = 2})
 		UIKit.label(tag, "x" .. entry.Count, {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
 	end
-	UIKit.label(card, artifact.Name, {Size = UDim2.new(1, -14, 0, 32), Position = UDim2.new(0.5, 0, 0, 96), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0})
-	local tag = UIKit.panel(card, {Size = UDim2.new(1, -24, 0, 16), Position = UDim2.new(0.5, 0, 0, 130), AnchorPoint = Vector2.new(0.5, 0), Color = rarity.Color, Radius = 8, Stroke = 2, Shade = false})
-	UIKit.label(tag, string.upper(artifact.Rarity), {Size = UDim2.fromScale(0.9, 0.85), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
-	UIKit.label(card, valueText, {Size = UDim2.new(1, -14, 0, 16), Position = UDim2.new(0.5, 0, 0, 150), AnchorPoint = Vector2.new(0.5, 0), Color = C.Money, Stroke = 0})
+	UIKit.label(card, artifact.Name, {Size = UDim2.new(1, -14, 0, 30), Position = UDim2.new(0.5, 0, 0, 96), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0, MaxText = 16})
+	local tag = UIKit.panel(card, {Size = UDim2.new(1, -28, 0, 20), Position = UDim2.new(0.5, 0, 0, 128), AnchorPoint = Vector2.new(0.5, 0), Color = rarity.Color, Radius = 10, Stroke = 2})
+	UIKit.label(tag, string.upper(artifact.Rarity), {Size = UDim2.fromScale(0.9, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 14})
+	UIKit.label(card, valueText, {Size = UDim2.new(1, -14, 0, 16), Position = UDim2.new(0.5, 0, 0, 152), AnchorPoint = Vector2.new(0.5, 0), Color = C.Money, Stroke = 0, MaxText = 15})
 	return card
 end
 
@@ -209,17 +209,17 @@ local gui = UIKit.screen(player, "MuseumGui", 3)
 ---------------------------------------------------------------------
 -- DISPLAY WINDOW (opened from a slot)
 ---------------------------------------------------------------------
-local displayWindow, displayContent = UIKit.window(gui, "DISPLAY", UDim2.fromOffset(720, 560), C.Lilac)
-local currentPanel = UIKit.panel(displayContent, {Size = UDim2.new(1, 0, 0, 96), Color = C.PanelTint, Radius = 18})
-local currentTitle = UIKit.label(currentPanel, "", {Size = UDim2.new(1, -330, 0, 30), Position = UDim2.fromOffset(104, 14), Align = "Left", Color = C.Ink, Stroke = 0})
-local currentSub = UIKit.label(currentPanel, "", {Size = UDim2.new(1, -330, 0, 22), Position = UDim2.fromOffset(104, 50), Align = "Left", Color = C.Money, Stroke = 0})
+local displayWindow, displayContent = UIKit.window(gui, "DISPLAY", UDim2.fromOffset(740, 580), C.Violet, "🏛️")
+local currentPanel = UIKit.panel(displayContent, {Size = UDim2.new(1, 0, 0, 96), Color = C.PanelTint, Radius = 20, StrokeColor = C.Lilac})
+local currentTitle = UIKit.label(currentPanel, "", {Size = UDim2.new(1, -310, 0, 30), Position = UDim2.fromOffset(104, 16), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
+local currentSub = UIKit.label(currentPanel, "", {Size = UDim2.new(1, -310, 0, 22), Position = UDim2.fromOffset(104, 52), Align = "Left", Color = C.Money, Stroke = 0, MaxText = 18})
 local takeButton = UIKit.button(currentPanel, "TAKE BACK", {Size = UDim2.fromOffset(170, 50), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Color = C.Coral})
 local currentIconHolder = Instance.new("Frame")
 currentIconHolder.BackgroundTransparency = 1
 currentIconHolder.Size = UDim2.fromOffset(80, 80)
 currentIconHolder.Position = UDim2.fromOffset(10, 8)
 currentIconHolder.Parent = currentPanel
-local pickLabel = UIKit.label(displayContent, "Pick a meme from your inventory:", {Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(4, 104), Align = "Left", Color = C.Violet, Stroke = 0})
+local pickLabel = UIKit.label(displayContent, "Pick a meme from your inventory:", {Size = UDim2.new(1, 0, 0, 24), Position = UDim2.fromOffset(4, 106), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 20})
 local displayGrid = makeGrid(displayContent, 134)
 local displayEmpty = UIKit.label(displayContent, "Your bag is empty... go dig up some memes!", {
 	Size = UDim2.new(0.9, 0, 0, 30), Position = UDim2.fromScale(0.5, 0.62), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Grey, Stroke = 0,
@@ -280,9 +280,9 @@ end)
 ---------------------------------------------------------------------
 -- ALIEN ART DEALER WINDOW
 ---------------------------------------------------------------------
-local dealerWindow, dealerContent = UIKit.window(gui, "ALIEN ART DEALER", UDim2.fromOffset(720, 560), C.Mint)
+local dealerWindow, dealerContent = UIKit.window(gui, "ALIEN ART DEALER", UDim2.fromOffset(740, 580), C.Mint, "👽")
 UIKit.label(dealerContent, "\"Greetings, Earthling. I pay top dollar for ancient memes.\"", {
-	Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0,
+	Size = UDim2.new(1, 0, 0, 24), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 20,
 })
 local dealerGrid = makeGrid(dealerContent, 40)
 local dealerEmpty = UIKit.label(dealerContent, "Nothing to sell... go dig up some memes!", {
@@ -320,12 +320,12 @@ end)
 ---------------------------------------------------------------------
 -- FLOOR ARROWS (only while you're inside a museum)
 ---------------------------------------------------------------------
-local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(96, 196), Position = UDim2.fromOffset(16, 270), Color = C.Panel, Radius = 20})
+local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(96, 196), Position = UDim2.fromOffset(18, 268), Color = C.Panel, Radius = 22, StrokeColor = C.Ink, Stroke = 3})
 floorPanel.Visible = false
-local upButton = UIKit.button(floorPanel, "▲", {Size = UDim2.fromOffset(72, 60), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sky, Radius = 16})
-local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -10, 0, 22), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0})
-local upPrice = UIKit.label(floorPanel, "", {Size = UDim2.new(1, -8, 0, 16), Position = UDim2.new(0.5, 0, 0, 72), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Stroke = 0})
-local downButton = UIKit.button(floorPanel, "▼", {Size = UDim2.fromOffset(72, 60), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), Color = C.Violet, Radius = 16})
+local upButton = UIKit.button(floorPanel, "▲", {Size = UDim2.fromOffset(72, 60), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sky, Radius = 16, MaxText = 30})
+local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -12, 0, 22), Position = UDim2.new(0.5, 0, 0.5, 4), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0, MaxText = 18})
+local upPrice = UIKit.label(floorPanel, "", {Size = UDim2.new(1, -8, 0, 16), Position = UDim2.new(0.5, 0, 0, 74), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Stroke = 0, MaxText = 14})
+local downButton = UIKit.button(floorPanel, "▼", {Size = UDim2.fromOffset(72, 60), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), Color = C.Violet, Radius = 16, MaxText = 30})
 for _, b in ipairs({upButton, downButton}) do
 	local arrow = b:FindFirstChild("Label")
 	if arrow then arrow.Font = Enum.Font.GothamBlack end

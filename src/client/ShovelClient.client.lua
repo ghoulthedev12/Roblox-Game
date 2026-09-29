@@ -29,18 +29,23 @@ local gui = UIKit.screen(player, "ShovelGui", 2)
 ---------------------------------------------------------------------
 -- HINT MESSAGES (bubbly text above the hotbar)
 ---------------------------------------------------------------------
-local hint = UIKit.label(gui, "", {
-	Size = UDim2.fromOffset(620, 30), Position = UDim2.new(0.5, 0, 1, -150), AnchorPoint = Vector2.new(0.5, 0),
-	Color = C.Sun, Stroke = 3,
+local hint = UIKit.panel(gui, {
+	Size = UDim2.fromOffset(560, 46), Position = UDim2.new(0.5, 0, 1, -196), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Ink, Radius = 23, Stroke = 2.5, StrokeColor = C.Lilac, ShadeAmount = 0.2,
 })
+hint.BackgroundTransparency = 0.12
 hint.Visible = false
+local hintDot = UIKit.panel(hint, {Size = UDim2.fromOffset(14, 14), Position = UDim2.new(0, 16, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Sun, Radius = 7, Stroke = false})
+local hintText = UIKit.label(hint, "", {Size = UDim2.new(1, -56, 1, -14), Position = UDim2.new(0, 40, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+	Align = "Left", Color = C.White, Stroke = 0, MaxText = 22})
 
 local hintToken = 0
 local function showHint(text, color)
 	hintToken += 1
 	local myToken = hintToken
-	hint.Text = text
-	hint.TextColor3 = color or C.Sun
+	hintText.Text = text
+	hintDot.BackgroundColor3 = color or C.Sun
+	hintText.TextColor3 = (color or C.Sun):Lerp(C.White, 0.55)
 	hint.Visible = true
 	UIKit.pop(hint, 0.7)
 	task.delay(2.8, function()
@@ -75,11 +80,12 @@ camera:GetPropertyChangedSignal("ViewportSize"):Connect(fitScreen)
 fitScreen()
 
 -- depth number bubble
-local depthBubble = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(92, 40), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0), Color = C.Panel, Radius = 20})
-local depthLabel = UIKit.label(depthBubble, "0m", {Size = UDim2.new(1, -16, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0})
+local depthBubble = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(96, 42), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Radius = 21, StrokeColor = C.Lilac})
+depthBubble.BackgroundTransparency = 0.1
+local depthLabel = UIKit.label(depthBubble, "0m", {Size = UDim2.new(1, -16, 0.7, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 0, MaxText = 26})
 
 -- the tube, filled with one colored band per zone (thicker zones = taller bands)
-local tube = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(30, GAUGE_H), Position = UDim2.new(0.5, 8, 0, 50), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 15, Stroke = 3, Shade = false})
+local tube = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(30, GAUGE_H), Position = UDim2.new(0.5, 8, 0, 50), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 15, Stroke = 3, StrokeColor = C.Ink, Shade = false})
 tube.ClipsDescendants = true
 local bands = Instance.new("Frame")
 bands.BackgroundTransparency = 1
@@ -101,7 +107,7 @@ shovelLabel.ZIndex = 4
 
 -- zone name pill under the tube
 local zonePill = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(104, 28), Position = UDim2.new(0.5, 0, 0, 50 + GAUGE_H + 8), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sun, Radius = 14})
-local zoneLabel = UIKit.label(zonePill, "", {Size = UDim2.new(1, -12, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+local zoneLabel = UIKit.label(zonePill, "", {Size = UDim2.new(1, -12, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 16})
 
 -- small "surface" button under everything, only while underground
 local surfaceButton = UIKit.button(depthPanel, "SURFACE", {
@@ -562,8 +568,8 @@ end)
 
 -- combo counter: pops up next to the hotbar while you keep digging
 local comboLabel = UIKit.label(gui, "", {
-	Size = UDim2.fromOffset(200, 44), Position = UDim2.new(0.5, 70, 1, -150), AnchorPoint = Vector2.new(0, 0),
-	Align = "Left", Color = C.Sun, Stroke = 3,
+	Size = UDim2.fromOffset(300, 44), Position = UDim2.new(0.5, 60, 1, -250), AnchorPoint = Vector2.new(0, 0),
+	Align = "Left", Color = C.Sun, Stroke = 3.5, MaxText = 34,
 })
 comboLabel.Rotation = -6
 comboLabel.Visible = false
@@ -663,11 +669,11 @@ end
 ---------------------------------------------------------------------
 -- SHOVEL SHOP WINDOW
 ---------------------------------------------------------------------
-local window, content = UIKit.window(gui, "SHOVEL SHOP", UDim2.fromOffset(760, 560), C.Violet)
+local window, content = UIKit.window(gui, "SHOVEL SHOP", UDim2.fromOffset(780, 580), C.Violet, "⛏️")
 
-local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(190, 36), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 18})
-local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -20, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
-local worldLabel = UIKit.label(content, "", {Size = UDim2.new(1, -210, 0, 30), Position = UDim2.fromOffset(4, 3), Align = "Left", Color = C.Violet, Stroke = 0})
+local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(180, 38), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 19})
+local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -24, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, StrokeColor = UIKit.shadeColor(C.Money, 0.6), MaxText = 24})
+local worldLabel = UIKit.label(content, "", {Size = UDim2.new(1, -210, 0, 28), Position = UDim2.fromOffset(4, 5), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 24})
 
 local listHolder = Instance.new("Frame")
 listHolder.BackgroundTransparency = 1
@@ -691,33 +697,33 @@ local function buildCards(world)
 		if child:IsA("GuiObject") then child:Destroy() end
 	end
 	cards = {}
-	worldLabel.Text = world.Name
+	worldLabel.Text = "🌍  " .. world.Name
 	local maxFind, maxLuck = maxStat(world, "FindChance"), maxStat(world, "Luck")
 	local minCooldown = math.huge
 	for _, def in ipairs(world.Shovels) do minCooldown = math.min(minCooldown, def.Cooldown) end
 
 	for i, def in ipairs(world.Shovels) do
 		local zone = world.Zones[def.MaxZone]
-		local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 128), Color = C.Row, Radius = 18})
+		local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 132), Color = C.White, Radius = 20, ShadeAmount = 0.06})
 		card.LayoutOrder = i
 		-- icon on a colored plate (plate color = the deepest zone it reaches)
-		local plate = UIKit.panel(card, {Size = UDim2.fromOffset(104, 104), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = zone.Color, Radius = 16})
+		local plate = UIKit.panel(card, {Size = UDim2.fromOffset(108, 108), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = zone.Color, Radius = 18, ShadeAmount = 0.2})
 		UIKit.shovelIcon(plate, def, {Size = UDim2.fromScale(1, 1)})
-		UIKit.label(card, def.Name, {Size = UDim2.new(0.52, -136, 0, 26), Position = UDim2.fromOffset(128, 10), Align = "Left", Color = C.Ink, Stroke = 0})
-		UIKit.label(card, def.Description, {Size = UDim2.new(0.52, -136, 0, 46), Position = UDim2.fromOffset(128, 36), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = Enum.Font.GothamMedium, TextSize = 12})
-		local zoneTag = UIKit.panel(card, {Size = UDim2.fromOffset(190, 26), Position = UDim2.fromOffset(128, 90), Color = zone.Color, Radius = 13, Stroke = 2})
-		UIKit.label(zoneTag, "DIGS TO " .. -zone.Bottom .. "m  •  " .. string.upper(zone.Name), {Size = UDim2.new(1, -12, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+		UIKit.label(card, def.Name, {Size = UDim2.new(0.52, -138, 0, 28), Position = UDim2.fromOffset(134, 10), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
+		UIKit.label(card, def.Description, {Size = UDim2.new(0.52, -138, 0, 40), Position = UDim2.fromOffset(134, 40), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 14})
+		local zoneTag = UIKit.panel(card, {Size = UDim2.fromOffset(200, 26), Position = UDim2.fromOffset(134, 92), Color = zone.Color, Radius = 13})
+		UIKit.label(zoneTag, "⬇ " .. -zone.Bottom .. "m  •  " .. string.upper(zone.Name), {Size = UDim2.new(1, -14, 0.74, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 16})
 
 		local statsBox = Instance.new("Frame")
 		statsBox.BackgroundTransparency = 1
-		statsBox.Size = UDim2.new(0.3, 0, 0, 80)
-		statsBox.Position = UDim2.new(0.52, 0, 0, 14)
+		statsBox.Size = UDim2.new(0.28, 0, 0, 80)
+		statsBox.Position = UDim2.new(0.52, 0, 0.5, -38)
 		statsBox.Parent = card
 		UIKit.statBar(statsBox, "Find", def.FindChance / maxFind, math.floor(def.FindChance * 1000 + 0.5) / 10 .. "%", C.Mint, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 0)})
 		UIKit.statBar(statsBox, "Luck", def.Luck / maxLuck, "x" .. def.Luck, C.Sun, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 26)})
 		UIKit.statBar(statsBox, "Speed", minCooldown / def.Cooldown, string.format("%.2fs", def.Cooldown), C.Sky, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 52)})
 
-		local b = UIKit.button(card, "", {Size = UDim2.new(0.15, 0, 0, 52), Position = UDim2.new(1, -12, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5)})
+		local b = UIKit.button(card, "", {Size = UDim2.new(0.17, 0, 0, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5)})
 		cards[def.Id] = b
 		b.MouseButton1Click:Connect(function()
 			local owned = string.split(player:GetAttribute("OwnedShovels") or "", ",")
@@ -739,11 +745,11 @@ local function refreshShop()
 		local b = cards[def.Id]
 		if b then
 			if def.Id == equipped then
-				UIKit.setButton(b, "EQUIPPED", C.Grey)
+				UIKit.setButton(b, "EQUIPPED", C.Lilac)
 			elseif table.find(owned, def.Id) then
 				UIKit.setButton(b, "EQUIP", C.Sky)
 			else
-				UIKit.setButton(b, ArtifactData.FormatMoney(def.Price), money >= def.Price and C.Mint or C.Coral)
+				UIKit.setButton(b, def.Price <= 0 and "FREE" or ArtifactData.FormatMoney(def.Price), money >= def.Price and C.Mint or C.Coral)
 			end
 		end
 	end

@@ -2048,9 +2048,13 @@ end
 ]=])
 install(game:GetService("ReplicatedStorage"), "UIKit", "ModuleScript", [=[
 -- UIKit (ModuleScript in ReplicatedStorage)
--- One cartoony 2050 look for every screen in the game: chunky rounded panels with thick
--- outlines, bubbly FredokaOne text with an outline, bouncy buttons, pop-in windows and
--- live 3D shovel icons (ViewportFrames that render the real shovel model).
+-- One cartoony 2050 look for every screen in the game:
+--   * rounded panels with a soft top-to-bottom sheen; colored panels get an outline in a
+--     darker shade of their own color (no more black outlines everywhere)
+--   * glossy "candy" buttons with a darker bottom lip, white bubbly text and a bounce
+--   * windows with a full-width colored header bar, an icon, and the close button inside it
+--   * text that scales with its box but never past a sensible size (so nothing looks huge)
+--   * live 3D shovel icons (ViewportFrames that render the real shovel model)
 
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -2059,22 +2063,43 @@ local UIKit = {}
 
 local rgb = Color3.fromRGB
 UIKit.Colors = {
-	Ink = rgb(38, 34, 84),        -- outlines and dark text
-	Panel = rgb(250, 248, 255),   -- window background
-	PanelTint = rgb(232, 226, 255),
-	Row = rgb(238, 234, 252),
-	Violet = rgb(122, 92, 232),
-	Lilac = rgb(178, 158, 255),
-	Sky = rgb(92, 176, 255),
-	Mint = rgb(80, 214, 150),
-	Sun = rgb(255, 200, 70),
-	Coral = rgb(255, 110, 124),
-	Grey = rgb(160, 160, 184),
+	Ink = rgb(40, 32, 92),        -- dark text and window outlines
+	Panel = rgb(252, 251, 255),   -- window background
+	PanelTint = rgb(236, 231, 255),
+	Row = rgb(246, 243, 255),     -- cards inside windows
+	Violet = rgb(128, 90, 255),
+	Lilac = rgb(184, 164, 255),
+	Sky = rgb(58, 168, 255),
+	Mint = rgb(38, 206, 140),
+	Sun = rgb(255, 188, 40),
+	Coral = rgb(255, 84, 112),
+	Grey = rgb(128, 122, 162),    -- secondary text
 	White = rgb(255, 255, 255),
-	Money = rgb(90, 210, 110),
+	Money = rgb(46, 196, 90),
 }
 local C = UIKit.Colors
 UIKit.Font = Enum.Font.FredokaOne
+UIKit.BodyFont = Enum.Font.GothamMedium
+
+-- a darker (amount > 0) or lighter (amount < 0) version of a color
+function UIKit.shadeColor(color, amount)
+	if amount >= 0 then
+		return color:Lerp(Color3.new(0.1, 0.07, 0.25), amount)
+	end
+	return color:Lerp(Color3.new(1, 1, 1), -amount)
+end
+local function luminance(c)
+	return 0.299 * c.R + 0.587 * c.G + 0.114 * c.B
+end
+-- outline that suits a background: soft lavender around light panels, a deep shade of the
+-- color itself around colored ones
+local function autoOutline(color)
+	if luminance(color) > 0.86 then
+		return rgb(208, 198, 246)
+	end
+	return UIKit.shadeColor(color, 0.5)
+end
+UIKit.autoOutline = autoOutline
 
 ---------------------------------------------------------------------
 -- BASICS
@@ -2107,16 +2132,22 @@ function UIKit.outline(parent, thickness, color)
 	return s
 end
 
--- soft top-to-bottom shading so flat panels look chunky
+-- soft top-to-bottom sheen so flat panels look chunky
 function UIKit.shade(parent, amount)
+	amount = amount or 0.1
 	local g = Instance.new("UIGradient")
 	g.Rotation = 90
-	g.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(1 - (amount or 0.12), 1 - (amount or 0.12), 1 - (amount or 0.1)))
+	g.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+		ColorSequenceKeypoint.new(0.5, Color3.new(1 - amount * 0.35, 1 - amount * 0.35, 1 - amount * 0.3)),
+		ColorSequenceKeypoint.new(1, Color3.new(1 - amount, 1 - amount, 1 - amount * 0.8)),
+	})
 	g.Parent = parent
 	return g
 end
 
--- A plain rounded, outlined box. props: Size, Position, AnchorPoint, Color, Radius, Stroke
+-- A rounded box. props: Size, Position, AnchorPoint, Color, Radius, Transparency,
+-- Stroke (thickness or false), StrokeColor (default: matches the color), Shade (false for flat)
 function UIKit.panel(parent, props)
 	local f = Instance.new("Frame")
 	f.Size = props.Size or UDim2.fromOffset(200, 100)
@@ -2128,7 +2159,13 @@ function UIKit.panel(parent, props)
 	f.Parent = parent
 	UIKit.corner(f, props.Radius or 16)
 	if props.Stroke ~= false then
-		UIKit.outline(f, props.Stroke or 3)
+		local stroke = UIKit.outline(f, props.Stroke or 2.5, props.StrokeColor or autoOutline(f.BackgroundColor3))
+		if not props.StrokeColor then
+			-- keep the outline matching when the color changes later (rarity tags etc.)
+			f:GetPropertyChangedSignal("BackgroundColor3"):Connect(function()
+				stroke.Color = autoOutline(f.BackgroundColor3)
+			end)
+		end
 	end
 	if props.Shade ~= false then
 		UIKit.shade(f, props.ShadeAmount)
@@ -2136,8 +2173,9 @@ function UIKit.panel(parent, props)
 	return f
 end
 
--- Bubbly outlined text. props: Size, Position, AnchorPoint, Color, Align ("Left"/"Center"/"Right"),
--- Stroke (outline thickness, 0 for none), TextSize (fixed size instead of scaled)
+-- Bubbly text. props: Size, Position, AnchorPoint, Color, Align ("Left"/"Center"/"Right"),
+-- VAlign, Stroke (outline thickness, 0 for none), StrokeColor, Font,
+-- TextSize (fixed size) or MaxText (largest size scaled text may grow to, default 30)
 function UIKit.label(parent, text, props)
 	props = props or {}
 	local l = Instance.new("TextLabel")
@@ -2153,6 +2191,10 @@ function UIKit.label(parent, text, props)
 		l.TextWrapped = true
 	else
 		l.TextScaled = true
+		local limit = Instance.new("UITextSizeConstraint")
+		limit.MaxTextSize = props.MaxText or 30
+		limit.MinTextSize = 6
+		limit.Parent = l
 	end
 	l.TextXAlignment = Enum.TextXAlignment[props.Align or "Center"]
 	l.TextYAlignment = Enum.TextYAlignment[props.VAlign or "Center"]
@@ -2169,8 +2211,9 @@ function UIKit.label(parent, text, props)
 	return l
 end
 
--- Chunky button that squishes when pressed and grows a bit on hover.
--- props: Size, Position, AnchorPoint, Color, TextColor
+-- A glossy candy button that squishes when pressed and grows a bit on hover.
+-- props: Size, Position, AnchorPoint, Color, TextColor, Radius, MaxText
+-- Changing the button's BackgroundColor3 later recolors the whole button.
 function UIKit.button(parent, text, props)
 	props = props or {}
 	local b = Instance.new("TextButton")
@@ -2181,14 +2224,47 @@ function UIKit.button(parent, text, props)
 	b.AutoButtonColor = false
 	b.Text = ""
 	b.Parent = parent
-	UIKit.corner(b, props.Radius or 12)
-	UIKit.outline(b, 3)
-	UIKit.shade(b, 0.18)
+	local radius = props.Radius or 14
+	UIKit.corner(b, radius)
+	local stroke = UIKit.outline(b, 2.5)
+	local gloss = Instance.new("UIGradient")
+	gloss.Rotation = 90
+	gloss.Parent = b
+	-- darker bottom lip, like the edge of a chunky key
+	local lip = Instance.new("Frame")
+	lip.Name = "Lip"
+	lip.BorderSizePixel = 0
+	lip.AnchorPoint = Vector2.new(0, 1)
+	lip.Position = UDim2.fromScale(0, 1)
+	lip.Size = UDim2.new(1, 0, 0, math.min(radius, 7))
+	lip.Parent = b
+	UIKit.corner(lip, radius)
+	local shine = Instance.new("Frame")
+	shine.Name = "Shine"
+	shine.BorderSizePixel = 0
+	shine.BackgroundColor3 = Color3.new(1, 1, 1)
+	shine.BackgroundTransparency = 0.72
+	shine.Position = UDim2.new(0, 6, 0, 4)
+	shine.Size = UDim2.new(1, -12, 0.3, 0)
+	shine.Parent = b
+	UIKit.corner(shine, math.max(radius - 4, 4))
 	local label = UIKit.label(b, text, {
-		Size = UDim2.new(1, -14, 1, -12), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
-		Color = props.TextColor or C.White,
+		Size = UDim2.new(1, -16, 1, -14), Position = UDim2.new(0.5, 0, 0.5, -2), AnchorPoint = Vector2.new(0.5, 0.5),
+		Color = props.TextColor or C.White, Stroke = 2.5, MaxText = props.MaxText or 24,
 	})
 	label.Name = "Label"
+	local labelStroke = label:FindFirstChildOfClass("UIStroke")
+
+	local function paint()
+		local c = b.BackgroundColor3
+		stroke.Color = UIKit.shadeColor(c, 0.5)
+		lip.BackgroundColor3 = UIKit.shadeColor(c, 0.28)
+		gloss.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(0.86, 0.86, 0.9))
+		if labelStroke then labelStroke.Color = UIKit.shadeColor(c, 0.62) end
+	end
+	paint()
+	b:GetPropertyChangedSignal("BackgroundColor3"):Connect(paint)
+
 	local scale = Instance.new("UIScale")
 	scale.Parent = b
 	local function to(v, t)
@@ -2215,14 +2291,28 @@ function UIKit.pop(frame, from)
 	TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
 end
 
+-- A round colored badge with an emoji (or short text) in it
+function UIKit.badge(parent, iconText, color, props)
+	props = props or {}
+	local d = props.Diameter or 44
+	local circle = UIKit.panel(parent, {Size = UDim2.fromOffset(d, d), Position = props.Position, AnchorPoint = props.AnchorPoint,
+		Color = color, Radius = d, Stroke = props.Stroke or 2.5})
+	local icon = UIKit.label(circle, iconText, {Size = UDim2.fromScale(0.64, 0.64), Position = UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = Vector2.new(0.5, 0.5), Stroke = props.TextStroke or 0, MaxText = 60, Font = props.Font or Enum.Font.GothamBlack})
+	icon.Name = "Icon"
+	return circle, icon
+end
+
 ---------------------------------------------------------------------
--- WINDOW: a big panel with a colored title tab and a round close button
+-- WINDOW: a panel with a colored header bar (icon + title + close button) and a body.
 -- returns window, content (frame to put things in), closeButton
 ---------------------------------------------------------------------
-function UIKit.window(gui, title, size, accent)
+local HEADER = 58
+function UIKit.window(gui, title, size, accent, icon)
+	accent = accent or C.Violet
 	local window = UIKit.panel(gui, {
 		Size = size, Position = UDim2.fromScale(0.5, 0.52), AnchorPoint = Vector2.new(0.5, 0.5),
-		Color = C.Panel, Radius = 22, Stroke = 4,
+		Color = C.Panel, Radius = 24, Stroke = 4, StrokeColor = C.Ink, ShadeAmount = 0.05,
 	})
 	window.Visible = false
 	local sizeLimit = Instance.new("UISizeConstraint")
@@ -2233,14 +2323,48 @@ function UIKit.window(gui, title, size, accent)
 	aspect.Parent = window
 	window.Size = UDim2.fromScale(0.92, 0.85)
 
-	local tab = UIKit.panel(window, {
-		Size = UDim2.new(0.5, 0, 0, 52), Position = UDim2.new(0.5, 0, 0, -20), AnchorPoint = Vector2.new(0.5, 0),
-		Color = accent or C.Violet, Radius = 16, Stroke = 4,
-	})
-	UIKit.label(tab, title, {Size = UDim2.new(1, -20, 1, -12), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
+	-- header bar: rounded on top, square where it meets the body
+	local header = Instance.new("Frame")
+	header.Name = "Header"
+	header.BorderSizePixel = 0
+	header.BackgroundColor3 = accent
+	header.Size = UDim2.new(1, 0, 0, HEADER)
+	header.Parent = window
+	UIKit.corner(header, 22)
+	local headerFill = Instance.new("Frame")
+	headerFill.BorderSizePixel = 0
+	headerFill.BackgroundColor3 = accent
+	headerFill.AnchorPoint = Vector2.new(0, 1)
+	headerFill.Position = UDim2.fromScale(0, 1)
+	headerFill.Size = UDim2.new(1, 0, 0, 22)
+	headerFill.Parent = header
+	local headerEdge = Instance.new("Frame")
+	headerEdge.BorderSizePixel = 0
+	headerEdge.BackgroundColor3 = UIKit.shadeColor(accent, 0.35)
+	headerEdge.AnchorPoint = Vector2.new(0, 1)
+	headerEdge.Position = UDim2.fromScale(0, 1)
+	headerEdge.Size = UDim2.new(1, 0, 0, 4)
+	headerEdge.Parent = header
+	local shine = Instance.new("Frame")
+	shine.BorderSizePixel = 0
+	shine.BackgroundColor3 = Color3.new(1, 1, 1)
+	shine.BackgroundTransparency = 0.8
+	shine.Position = UDim2.new(0, 10, 0, 6)
+	shine.Size = UDim2.new(1, -20, 0, 16)
+	shine.Parent = header
+	UIKit.corner(shine, 8)
 
-	local close = UIKit.button(window, "X", {
-		Size = UDim2.fromOffset(46, 46), Position = UDim2.new(1, 14, 0, -14), AnchorPoint = Vector2.new(1, 0), Color = C.Coral, Radius = 23,
+	local titleX = 22
+	if icon then
+		UIKit.badge(header, icon, UIKit.shadeColor(accent, -0.25), {Diameter = 40, Position = UDim2.new(0, 14, 0.5, -2), AnchorPoint = Vector2.new(0, 0.5)})
+		titleX = 64
+	end
+	local titleLabel = UIKit.label(header, title, {Size = UDim2.new(1, -titleX - 70, 0, 34), Position = UDim2.new(0, titleX, 0.5, -2), AnchorPoint = Vector2.new(0, 0.5),
+		Align = "Left", Stroke = 3, StrokeColor = UIKit.shadeColor(accent, 0.6), MaxText = 30})
+	titleLabel.Name = "Title"
+
+	local close = UIKit.button(header, "X", {
+		Size = UDim2.fromOffset(42, 42), Position = UDim2.new(1, -10, 0.5, -2), AnchorPoint = Vector2.new(1, 0.5), Color = C.Coral, Radius = 14, MaxText = 22,
 	})
 	close.MouseButton1Click:Connect(function()
 		window.Visible = false
@@ -2249,15 +2373,15 @@ function UIKit.window(gui, title, size, accent)
 	local content = Instance.new("Frame")
 	content.Name = "Content"
 	content.BackgroundTransparency = 1
-	content.Size = UDim2.new(1, -36, 1, -64)
-	content.Position = UDim2.new(0, 18, 0, 46)
+	content.Size = UDim2.new(1, -36, 1, -HEADER - 30)
+	content.Position = UDim2.new(0, 18, 0, HEADER + 14)
 	content.Parent = window
 	return window, content, close
 end
 
 function UIKit.open(window)
 	window.Visible = true
-	UIKit.pop(window)
+	UIKit.pop(window, 0.8)
 end
 
 -- Scrolling list with padding. returns the scrolling frame
@@ -2291,11 +2415,11 @@ function UIKit.statBar(parent, name, fraction, valueText, color, props)
 	row.Size = props and props.Size or UDim2.new(1, 0, 0, 18)
 	row.Position = props and props.Position or UDim2.new()
 	row.Parent = parent
-	UIKit.label(row, name, {Size = UDim2.new(0.26, 0, 1, 0), Align = "Left", Color = C.Ink, Stroke = 0})
-	local track = UIKit.panel(row, {Size = UDim2.new(0.46, 0, 0.7, 0), Position = UDim2.new(0.27, 0, 0.15, 0), Color = rgb(222, 218, 240), Radius = 8, Stroke = 2, Shade = false})
-	local fill = UIKit.panel(track, {Size = UDim2.new(math.clamp(fraction, 0.04, 1), 0, 1, 0), Color = color, Radius = 8, Stroke = false})
+	UIKit.label(row, name, {Size = UDim2.new(0.26, 0, 0.9, 0), Position = UDim2.fromScale(0, 0.05), Align = "Left", Color = C.Grey, Stroke = 0, MaxText = 16})
+	local track = UIKit.panel(row, {Size = UDim2.new(0.46, 0, 0.62, 0), Position = UDim2.new(0.27, 0, 0.19, 0), Color = rgb(232, 227, 250), Radius = 8, Stroke = false, Shade = false})
+	local fill = UIKit.panel(track, {Size = UDim2.new(math.clamp(fraction, 0.06, 1), 0, 1, 0), Color = color, Radius = 8, Stroke = false, ShadeAmount = 0.2})
 	fill.Name = "Fill"
-	UIKit.label(row, valueText, {Size = UDim2.new(0.25, 0, 1, 0), Position = UDim2.new(0.75, 0, 0, 0), Align = "Right", Color = C.Ink, Stroke = 0})
+	UIKit.label(row, valueText, {Size = UDim2.new(0.25, 0, 0.9, 0), Position = UDim2.new(0.75, 0, 0.05, 0), Align = "Right", Color = C.Ink, Stroke = 0, MaxText = 16})
 	return row
 end
 
@@ -6169,24 +6293,55 @@ local gui = UIKit.screen(player, "DigGui", 5)
 ---------------------------------------------------------------------
 -- MINIGAME
 ---------------------------------------------------------------------
-local mini = UIKit.panel(gui, {Size = UDim2.fromOffset(460, 130), Position = UDim2.fromScale(0.5, 0.7), AnchorPoint = Vector2.new(0.5, 0.5), Radius = 22, Stroke = 4})
-mini.Visible = false
-local miniTab = UIKit.panel(mini, {Size = UDim2.new(0.7, 0, 0, 40), Position = UDim2.new(0.5, 0, 0, -18), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sun, Radius = 14})
-UIKit.label(miniTab, "LUCKY DIG!", {Size = UDim2.new(1, -16, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
-UIKit.label(mini, "Stop in the green for bonus luck!", {Size = UDim2.new(0.9, 0, 0, 22), Position = UDim2.new(0.5, 0, 0, 30), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0})
+-- a small card with a colored header strip (used by the minigame and the find popup)
+local function headerCard(size, position, color, title)
+	local card = UIKit.panel(gui, {Size = size, Position = position, AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Panel, Radius = 24, Stroke = 4, StrokeColor = C.Ink, ShadeAmount = 0.05})
+	local header = Instance.new("Frame")
+	header.Name = "Header"
+	header.BorderSizePixel = 0
+	header.Size = UDim2.new(1, 0, 0, 50)
+	header.Parent = card
+	UIKit.corner(header, 22)
+	local fill = Instance.new("Frame")
+	fill.BorderSizePixel = 0
+	fill.AnchorPoint = Vector2.new(0, 1)
+	fill.Position = UDim2.fromScale(0, 1)
+	fill.Size = UDim2.new(1, 0, 0, 22)
+	fill.Parent = header
+	local edge = Instance.new("Frame")
+	edge.BorderSizePixel = 0
+	edge.AnchorPoint = Vector2.new(0, 1)
+	edge.Position = UDim2.fromScale(0, 1)
+	edge.Size = UDim2.new(1, 0, 0, 4)
+	edge.Parent = header
+	local titleLabel = UIKit.label(header, title, {Size = UDim2.new(1, -40, 0, 30), Position = UDim2.new(0.5, 0, 0.5, -2), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3, MaxText = 28})
+	local titleStroke = titleLabel:FindFirstChildOfClass("UIStroke")
+	local function paint(c)
+		header.BackgroundColor3 = c
+		fill.BackgroundColor3 = c
+		edge.BackgroundColor3 = UIKit.shadeColor(c, 0.35)
+		if titleStroke then titleStroke.Color = UIKit.shadeColor(c, 0.6) end
+	end
+	paint(color)
+	return card, titleLabel, paint
+end
 
-local bar = UIKit.panel(mini, {Size = UDim2.new(0.9, 0, 0, 32), Position = UDim2.new(0.5, 0, 0, 60), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 16, Stroke = 3, Shade = false})
+local mini = headerCard(UDim2.fromOffset(480, 160), UDim2.fromScale(0.5, 0.7), C.Sun, "🍀 LUCKY DIG!")
+mini.Visible = false
+UIKit.label(mini, "Stop in the green for bonus luck!", {Size = UDim2.new(0.9, 0, 0, 22), Position = UDim2.new(0.5, 0, 0, 58), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0, MaxText = 20})
+
+local bar = UIKit.panel(mini, {Size = UDim2.new(0.88, 0, 0, 30), Position = UDim2.new(0.5, 0, 0, 88), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 15, Stroke = 3, StrokeColor = C.Ink, Shade = false})
 bar.ClipsDescendants = false
 
-local goodZone = UIKit.panel(bar, {Size = UDim2.new(0.22, 0, 1, 0), Color = GRADE_COLORS.Good, Radius = 12, Stroke = false, Shade = false})
+local goodZone = UIKit.panel(bar, {Size = UDim2.new(0.22, 0, 1, 0), Color = GRADE_COLORS.Good, Radius = 12, Stroke = false})
 
-local perfectZone = UIKit.panel(goodZone, {Size = UDim2.new(0.3, 0, 1, 0), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0), Color = GRADE_COLORS.Perfect, Radius = 8, Stroke = false, Shade = false})
+local perfectZone = UIKit.panel(goodZone, {Size = UDim2.new(0.3, 0, 1, 0), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0), Color = GRADE_COLORS.Perfect, Radius = 8, Stroke = false})
 
-local marker = UIKit.panel(bar, {Size = UDim2.new(0, 12, 1.6, 0), Position = UDim2.new(0, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Radius = 6, Stroke = 3, Shade = false})
+local marker = UIKit.panel(bar, {Size = UDim2.new(0, 12, 1.6, 0), Position = UDim2.new(0, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Radius = 6, Stroke = 3, StrokeColor = C.Ink, Shade = false})
 marker.ZIndex = 3
 
-UIKit.label(mini, "Click, tap, or press Space", {Size = UDim2.new(0.9, 0, 0, 18), Position = UDim2.new(0.5, 0, 1, -24), AnchorPoint = Vector2.new(0.5, 0), Color = C.Grey, Stroke = 0})
-local gradeText = UIKit.label(gui, "", {Size = UDim2.fromOffset(420, 72), Position = UDim2.fromScale(0.5, 0.58), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 4})
+UIKit.label(mini, "Click, tap, or press Space", {Size = UDim2.new(0.9, 0, 0, 16), Position = UDim2.new(0.5, 0, 1, -26), AnchorPoint = Vector2.new(0.5, 0), Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, MaxText = 14})
+local gradeText = UIKit.label(gui, "", {Size = UDim2.fromOffset(420, 72), Position = UDim2.fromScale(0.5, 0.58), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 5, MaxText = 64})
 gradeText.Visible = false
 
 local playing = false
@@ -6268,30 +6423,30 @@ minigameRemote.OnClientEvent:Connect(startMinigame)
 ---------------------------------------------------------------------
 local claimRemote = remotes:WaitForChild("ClaimFind")
 
-local popup = UIKit.panel(gui, {Size = UDim2.fromOffset(420, 330), Position = UDim2.fromScale(0.5, 0.45), AnchorPoint = Vector2.new(0.5, 0.5), Radius = 24, Stroke = 5})
+local popup, foundLabel, paintPopupHeader = headerCard(UDim2.fromOffset(460, 368), UDim2.fromScale(0.5, 0.45), C.Violet, "YOU FOUND")
 popup.Visible = false
 local popupStroke = popup:FindFirstChildOfClass("UIStroke")
 local popupScale = Instance.new("UIScale")
 popupScale.Parent = popup
 
-local foundTab = UIKit.panel(popup, {Size = UDim2.new(0.62, 0, 0, 42), Position = UDim2.new(0.5, 0, 0, -20), AnchorPoint = Vector2.new(0.5, 0), Color = C.Violet, Radius = 14})
-local foundLabel = UIKit.label(foundTab, "YOU FOUND", {Size = UDim2.new(1, -16, 0.78, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
 local iconHolder = Instance.new("Frame")
 iconHolder.BackgroundTransparency = 1
-iconHolder.Size = UDim2.fromOffset(96, 96)
-iconHolder.Position = UDim2.fromOffset(20, 34)
+iconHolder.Size = UDim2.fromOffset(112, 112)
+iconHolder.Position = UDim2.fromOffset(22, 66)
 iconHolder.Parent = popup
-local nameLabel = UIKit.label(popup, "", {Size = UDim2.new(1, -140, 0, 34), Position = UDim2.fromOffset(128, 36), Align = "Left", Color = C.Ink, Stroke = 0})
-local rarityTag = UIKit.panel(popup, {Size = UDim2.fromOffset(170, 30), Position = UDim2.fromOffset(128, 74), Color = C.Lilac, Radius = 15})
-local rarityLabel = UIKit.label(rarityTag, "", {Size = UDim2.new(1, -16, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
-local incomeLabel = UIKit.label(popup, "", {Size = UDim2.new(1, -140, 0, 24), Position = UDim2.fromOffset(128, 108), Align = "Left", Color = C.Money, Stroke = 2})
-local descLabel = UIKit.label(popup, "", {Size = UDim2.new(1, -40, 0, 48), Position = UDim2.new(0.5, 0, 0, 142), AnchorPoint = Vector2.new(0.5, 0), Color = C.Grey, Stroke = 0, Font = Enum.Font.GothamMedium, TextSize = 15})
+local nameLabel = UIKit.label(popup, "", {Size = UDim2.new(1, -170, 0, 34), Position = UDim2.fromOffset(150, 66), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 28})
+local rarityTag = UIKit.panel(popup, {Size = UDim2.fromOffset(150, 28), Position = UDim2.fromOffset(150, 106), Color = C.Lilac, Radius = 14})
+local rarityLabel = UIKit.label(rarityTag, "", {Size = UDim2.new(1, -16, 0.76, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, StrokeColor = C.Ink, MaxText = 20})
+local incomePill = UIKit.panel(popup, {Size = UDim2.fromOffset(170, 32), Position = UDim2.fromOffset(150, 142), Color = C.Money, Radius = 16})
+local incomeLabel = UIKit.label(incomePill, "", {Size = UDim2.new(1, -18, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, StrokeColor = UIKit.shadeColor(C.Money, 0.6), MaxText = 20})
+local descBox = UIKit.panel(popup, {Size = UDim2.new(1, -44, 0, 62), Position = UDim2.new(0.5, 0, 0, 190), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 14, Stroke = false, Shade = false})
+local descLabel = UIKit.label(descBox, "", {Size = UDim2.new(1, -24, 1, -12), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 15})
 
-local pickButton = UIKit.button(popup, "PICK UP  [E]", {Size = UDim2.new(0.5, -26, 0, 54), Position = UDim2.new(0, 20, 1, -86), Color = C.Mint})
-local leaveButton = UIKit.button(popup, "LEAVE IT", {Size = UDim2.new(0.5, -26, 0, 54), Position = UDim2.new(1, -20, 1, -86), AnchorPoint = Vector2.new(1, 0), Color = C.Coral})
+local pickButton = UIKit.button(popup, "PICK UP  [E]", {Size = UDim2.new(0.5, -28, 0, 56), Position = UDim2.new(0, 22, 1, -94), Color = C.Mint})
+local leaveButton = UIKit.button(popup, "LEAVE IT", {Size = UDim2.new(0.5, -28, 0, 56), Position = UDim2.new(1, -22, 1, -94), AnchorPoint = Vector2.new(1, 0), Color = C.Coral})
 -- countdown: the find is left in the dirt when this runs out
-local timerTrack = UIKit.panel(popup, {Size = UDim2.new(1, -40, 0, 12), Position = UDim2.new(0.5, 0, 1, -24), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 6, Stroke = 2, Shade = false})
-local timerFill = UIKit.panel(timerTrack, {Size = UDim2.fromScale(1, 1), Color = C.Sun, Radius = 6, Stroke = false, Shade = false})
+local timerTrack = UIKit.panel(popup, {Size = UDim2.new(1, -44, 0, 12), Position = UDim2.new(0.5, 0, 1, -26), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 6, Stroke = 2, StrokeColor = C.Lilac, Shade = false})
+local timerFill = UIKit.panel(timerTrack, {Size = UDim2.fromScale(1, 1), Color = C.Sun, Radius = 6, Stroke = false})
 
 local flash = Instance.new("Frame")
 flash.Size = UDim2.fromScale(1, 1)
@@ -6425,10 +6580,11 @@ resultRemote.OnClientEvent:Connect(function(info)
 		nameLabel.Text = info.Name
 		rarityLabel.Text = string.upper(info.Rarity)
 		rarityTag.BackgroundColor3 = info.Color
-		popupStroke.Color = info.Color:Lerp(C.Ink, 0.35)
-		incomeLabel.Text = ArtifactData.FormatMoney(info.Income) .. " / sec"
+		popupStroke.Color = info.Color:Lerp(C.Ink, 0.45)
+		paintPopupHeader(info.Color:Lerp(C.Violet, 0.25))
+		incomeLabel.Text = "💵 " .. ArtifactData.FormatMoney(info.Income) .. "/s"
 		descLabel.Text = info.Description
-		foundLabel.Text = (info.Grade == "Perfect" and "PERFECT DIG!") or "YOU FOUND"
+		foundLabel.Text = (info.Grade == "Perfect" and "✨ PERFECT DIG! ✨") or "YOU FOUND A MEME!"
 
 		-- pop-in animation
 		popup.Visible = true
@@ -6461,20 +6617,21 @@ end)
 ---------------------------------------------------------------------
 -- RARE FIND ANNOUNCEMENTS (whole server)
 ---------------------------------------------------------------------
-local banner = UIKit.panel(gui, {Size = UDim2.fromOffset(660, 56), Position = UDim2.new(0.5, 0, 0, 70), AnchorPoint = Vector2.new(0.5, 0), Radius = 28, Stroke = 4})
+local banner = UIKit.panel(gui, {Size = UDim2.fromOffset(640, 54), Position = UDim2.new(0.5, 0, 0, 14), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Radius = 27, Stroke = 3, StrokeColor = C.Sun, ShadeAmount = 0.2})
+banner.BackgroundTransparency = 0.08
 banner.Visible = false
 local bannerStroke = banner:FindFirstChildOfClass("UIStroke")
-local bannerStar = UIKit.panel(banner, {Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0, 6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Sun, Radius = 23})
-UIKit.label(bannerStar, "!", {Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
-local bannerText = UIKit.label(banner, "", {Size = UDim2.new(1, -80, 0.62, 0), Position = UDim2.new(0, 62, 0.19, 0), Align = "Left", Color = C.Ink, Stroke = 0})
+local bannerStar = UIKit.badge(banner, "🎉", C.Sun, {Diameter = 44, Position = UDim2.new(0, 6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+local bannerText = UIKit.label(banner, "", {Size = UDim2.new(1, -80, 0.56, 0), Position = UDim2.new(0, 62, 0.22, 0), Align = "Left", Color = C.White, Stroke = 0, MaxText = 24})
 
 local bannerToken = 0
 announceRemote.OnClientEvent:Connect(function(message, color)
 	bannerToken += 1
 	local myToken = bannerToken
 	bannerText.Text = message
-	bannerStar.BackgroundColor3 = typeof(color) == "Color3" and color or C.Sun
-	bannerStroke.Color = C.Ink
+	local accent = typeof(color) == "Color3" and color or C.Sun
+	bannerStar.BackgroundColor3 = accent
+	bannerStroke.Color = accent
 	banner.Visible = true
 	UIKit.pop(banner, 0.7)
 	task.delay(6, function()
@@ -6588,24 +6745,29 @@ end)
 local stats = Instance.new("Frame")
 stats.BackgroundTransparency = 1
 stats.Size = UDim2.fromOffset(260, 150)
-stats.Position = UDim2.fromOffset(16, 16)
+stats.Position = UDim2.fromOffset(14, 12)
 stats.Parent = gui
 local statsLayout = Instance.new("UIListLayout")
 statsLayout.Padding = UDim.new(0, 8)
 statsLayout.Parent = stats
 
-local function pill(color, iconText, iconColor, order)
-	local p = UIKit.panel(stats, {Size = UDim2.fromOffset(230, 44), Color = C.Panel, Radius = 22})
-	p.LayoutOrder = order
-	local icon = UIKit.panel(p, {Size = UDim2.fromOffset(52, 52), Position = UDim2.new(0, -8, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = color, Radius = 26})
-	UIKit.label(icon, iconText, {Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = iconColor or C.White, Stroke = 2})
-	local text = UIKit.label(p, "", {Size = UDim2.new(1, -62, 0.7, 0), Position = UDim2.new(0, 54, 0.15, 0), Align = "Left", Color = C.Ink, Stroke = 0})
-	return p, text
+-- a glossy colored pill with a round emoji badge poking out on the left
+local function pill(color, badgeColor, iconText, width, height, order)
+	local holder = Instance.new("Frame")
+	holder.BackgroundTransparency = 1
+	holder.Size = UDim2.fromOffset(width + 14, height)
+	holder.LayoutOrder = order
+	holder.Parent = stats
+	local p = UIKit.panel(holder, {Size = UDim2.new(1, -14, 1, 0), Position = UDim2.fromOffset(14, 0), Color = color, Radius = height / 2, ShadeAmount = 0.16})
+	UIKit.badge(holder, iconText, badgeColor, {Diameter = height + 8, Position = UDim2.new(0, -2, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+	local text = UIKit.label(p, "", {Size = UDim2.new(1, -height - 10, 1, -12), Position = UDim2.new(0, height - 2, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+		Align = "Left", Stroke = 2.5, StrokeColor = UIKit.shadeColor(color, 0.6), MaxText = 30})
+	return holder, text
 end
 
-local moneyPill, moneyText = pill(C.Money, "$", C.White, 1)
-local _, incomeText = pill(C.Sun, "+", C.White, 2)
-local _, worldText = pill(C.Lilac, "W", C.White, 3)
+local moneyPill, moneyText = pill(C.Money, C.Sun, "💵", 230, 50, 1)
+local _, incomeText = pill(C.Sun, C.White, "⚡", 190, 38, 2)
+local _, worldText = pill(C.Violet, C.Lilac, "🌍", 210, 34, 3)
 
 local shownMoney = 0
 local moneyScale = Instance.new("UIScale")
@@ -6621,7 +6783,7 @@ local function refreshMoney()
 	moneyText.Text = ArtifactData.FormatMoney(money)
 end
 local function refreshIncome()
-	incomeText.Text = ArtifactData.FormatMoney(player:GetAttribute("Income") or 0) .. " / sec"
+	incomeText.Text = "+" .. ArtifactData.FormatMoney(player:GetAttribute("Income") or 0) .. "/s"
 end
 local function refreshWorld()
 	local world = GameConfig.GetWorld(player:GetAttribute("CurrentWorld") or 1)
@@ -6704,9 +6866,9 @@ local function rebuild()
 		else
 			UIKit.label(button, tool.Name, {Size = UDim2.fromScale(0.9, 0.5), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0})
 		end
-		local key = UIKit.panel(button, {Size = UDim2.fromOffset(26, 26), Position = UDim2.fromOffset(-6, -6), Color = C.Violet, Radius = 13, Stroke = 2})
-		UIKit.label(key, tostring(i), {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 0})
-		local hint = UIKit.label(button, "Equip!", {Size = UDim2.new(1.4, 0, 0, 22), Position = UDim2.new(0.5, 0, 0, -30), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sun, Stroke = 2})
+		UIKit.badge(button, tostring(i), C.Violet, {Diameter = 26, Position = UDim2.fromOffset(-7, -7), Font = UIKit.Font, TextStroke = 0})
+		local hint = UIKit.panel(button, {Size = UDim2.fromOffset(70, 24), Position = UDim2.new(0.5, 0, 0, -32), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sun, Radius = 12})
+		UIKit.label(hint, "EQUIP [" .. i .. "]", {Size = UDim2.new(1, -10, 1, -6), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = UIKit.shadeColor(C.Sun, 0.6)})
 		local slot = {Tool = tool, Button = button, Hint = hint}
 		button.MouseButton1Click:Connect(function() toggle(tool) end)
 		table.insert(slots, slot)
@@ -6782,7 +6944,7 @@ local gui = UIKit.screen(player, "InventoryGui", 3)
 ---------------------------------------------------------------------
 -- BAG BUTTON (left side, under the money pills)
 ---------------------------------------------------------------------
-local bagButton = UIKit.button(gui, "", {Size = UDim2.fromOffset(64, 64), Position = UDim2.new(0, 16, 0, 186), Color = C.Sun, Radius = 20})
+local bagButton = UIKit.button(gui, "", {Size = UDim2.fromOffset(66, 66), Position = UDim2.new(0, 18, 0, 170), Color = C.Sun, Radius = 20})
 local bagEmoji = Instance.new("TextLabel")
 bagEmoji.BackgroundTransparency = 1
 bagEmoji.Size = UDim2.fromScale(0.62, 0.62)
@@ -6791,13 +6953,14 @@ bagEmoji.AnchorPoint = Vector2.new(0.5, 0.5)
 bagEmoji.Text = "🎒"
 bagEmoji.TextScaled = true
 bagEmoji.Parent = bagButton
-UIKit.label(bagButton, "BAG (B)", {Size = UDim2.new(1.2, 0, 0, 16), Position = UDim2.new(0.5, 0, 1, -2), AnchorPoint = Vector2.new(0.5, 0), Stroke = 2})
+local bagTag = UIKit.panel(bagButton, {Size = UDim2.fromOffset(62, 22), Position = UDim2.new(0.5, 0, 1, 2), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Radius = 11, StrokeColor = C.Sun})
+UIKit.label(bagTag, "BAG [B]", {Size = UDim2.new(1, -10, 1, -6), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 0, MaxText = 14})
 
 ---------------------------------------------------------------------
 -- WINDOW
 ---------------------------------------------------------------------
-local window, content = UIKit.window(gui, "INVENTORY", UDim2.fromOffset(720, 540), C.Sun)
-local countLabel = UIKit.label(content, "", {Size = UDim2.new(1, 0, 0, 28), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0})
+local window, content = UIKit.window(gui, "INVENTORY", UDim2.fromOffset(740, 560), C.Sun, "🎒")
+local countLabel = UIKit.label(content, "", {Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 22})
 
 local gridHolder = Instance.new("ScrollingFrame")
 gridHolder.BackgroundTransparency = 1
@@ -6850,17 +7013,17 @@ local function refresh()
 	for i, entry in ipairs(entries) do
 		local artifact = entry.Artifact
 		local rarity = ArtifactData.GetRarity(artifact.Rarity)
-		local card = UIKit.panel(gridHolder, {Size = UDim2.fromOffset(150, 186), Color = C.Row, Radius = 18})
+		local card = UIKit.panel(gridHolder, {Size = UDim2.fromOffset(150, 186), Color = C.White, Radius = 20, ShadeAmount = 0.06})
 		card.LayoutOrder = i
 		UIKit.artifactIcon(card, artifact, {Size = UDim2.fromOffset(96, 96), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0)})
 		if entry.Count > 1 then
 			local countTag = UIKit.panel(card, {Size = UDim2.fromOffset(44, 28), Position = UDim2.fromOffset(8, 8), Color = C.Violet, Radius = 14, Stroke = 2})
 			UIKit.label(countTag, "x" .. entry.Count, {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
 		end
-		UIKit.label(card, artifact.Name, {Size = UDim2.new(1, -14, 0, 34), Position = UDim2.new(0.5, 0, 0, 110), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0})
-		local rarityTag = UIKit.panel(card, {Size = UDim2.new(1, -24, 0, 18), Position = UDim2.new(0.5, 0, 0, 146), AnchorPoint = Vector2.new(0.5, 0), Color = rarity.Color, Radius = 9, Stroke = 2, Shade = false})
-		UIKit.label(rarityTag, string.upper(artifact.Rarity), {Size = UDim2.fromScale(0.9, 0.85), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
-		UIKit.label(card, ArtifactData.FormatMoney(ArtifactData.GetIncome(artifact)) .. "/s", {Size = UDim2.new(1, -14, 0, 16), Position = UDim2.new(0.5, 0, 1, -20), AnchorPoint = Vector2.new(0.5, 0), Color = C.Money, Stroke = 0})
+		UIKit.label(card, artifact.Name, {Size = UDim2.new(1, -14, 0, 32), Position = UDim2.new(0.5, 0, 0, 110), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0, MaxText = 16})
+		local rarityTag = UIKit.panel(card, {Size = UDim2.new(1, -28, 0, 20), Position = UDim2.new(0.5, 0, 0, 144), AnchorPoint = Vector2.new(0.5, 0), Color = rarity.Color, Radius = 10, Stroke = 2})
+		UIKit.label(rarityTag, string.upper(artifact.Rarity), {Size = UDim2.fromScale(0.9, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 14})
+		UIKit.label(card, ArtifactData.FormatMoney(ArtifactData.GetIncome(artifact)) .. "/s", {Size = UDim2.new(1, -14, 0, 16), Position = UDim2.new(0.5, 0, 1, -20), AnchorPoint = Vector2.new(0.5, 0), Color = C.Money, Stroke = 0, MaxText = 15})
 	end
 end
 
@@ -7078,17 +7241,17 @@ end
 local function memeCard(holder, entry, order, valueText)
 	local artifact = entry.Artifact
 	local rarity = ArtifactData.GetRarity(artifact.Rarity)
-	local card = UIKit.panel(holder, {Size = UDim2.fromOffset(150, 214), Color = C.Row, Radius = 18})
+	local card = UIKit.panel(holder, {Size = UDim2.fromOffset(150, 214), Color = C.White, Radius = 20, ShadeAmount = 0.06})
 	card.LayoutOrder = order
 	UIKit.artifactIcon(card, artifact, {Size = UDim2.fromOffset(84, 84), Position = UDim2.new(0.5, 0, 0, 8), AnchorPoint = Vector2.new(0.5, 0)})
 	if entry.Count and entry.Count > 1 then
 		local tag = UIKit.panel(card, {Size = UDim2.fromOffset(44, 26), Position = UDim2.fromOffset(8, 8), Color = C.Violet, Radius = 13, Stroke = 2})
 		UIKit.label(tag, "x" .. entry.Count, {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
 	end
-	UIKit.label(card, artifact.Name, {Size = UDim2.new(1, -14, 0, 32), Position = UDim2.new(0.5, 0, 0, 96), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0})
-	local tag = UIKit.panel(card, {Size = UDim2.new(1, -24, 0, 16), Position = UDim2.new(0.5, 0, 0, 130), AnchorPoint = Vector2.new(0.5, 0), Color = rarity.Color, Radius = 8, Stroke = 2, Shade = false})
-	UIKit.label(tag, string.upper(artifact.Rarity), {Size = UDim2.fromScale(0.9, 0.85), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
-	UIKit.label(card, valueText, {Size = UDim2.new(1, -14, 0, 16), Position = UDim2.new(0.5, 0, 0, 150), AnchorPoint = Vector2.new(0.5, 0), Color = C.Money, Stroke = 0})
+	UIKit.label(card, artifact.Name, {Size = UDim2.new(1, -14, 0, 30), Position = UDim2.new(0.5, 0, 0, 96), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0, MaxText = 16})
+	local tag = UIKit.panel(card, {Size = UDim2.new(1, -28, 0, 20), Position = UDim2.new(0.5, 0, 0, 128), AnchorPoint = Vector2.new(0.5, 0), Color = rarity.Color, Radius = 10, Stroke = 2})
+	UIKit.label(tag, string.upper(artifact.Rarity), {Size = UDim2.fromScale(0.9, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 14})
+	UIKit.label(card, valueText, {Size = UDim2.new(1, -14, 0, 16), Position = UDim2.new(0.5, 0, 0, 152), AnchorPoint = Vector2.new(0.5, 0), Color = C.Money, Stroke = 0, MaxText = 15})
 	return card
 end
 
@@ -7097,17 +7260,17 @@ local gui = UIKit.screen(player, "MuseumGui", 3)
 ---------------------------------------------------------------------
 -- DISPLAY WINDOW (opened from a slot)
 ---------------------------------------------------------------------
-local displayWindow, displayContent = UIKit.window(gui, "DISPLAY", UDim2.fromOffset(720, 560), C.Lilac)
-local currentPanel = UIKit.panel(displayContent, {Size = UDim2.new(1, 0, 0, 96), Color = C.PanelTint, Radius = 18})
-local currentTitle = UIKit.label(currentPanel, "", {Size = UDim2.new(1, -330, 0, 30), Position = UDim2.fromOffset(104, 14), Align = "Left", Color = C.Ink, Stroke = 0})
-local currentSub = UIKit.label(currentPanel, "", {Size = UDim2.new(1, -330, 0, 22), Position = UDim2.fromOffset(104, 50), Align = "Left", Color = C.Money, Stroke = 0})
+local displayWindow, displayContent = UIKit.window(gui, "DISPLAY", UDim2.fromOffset(740, 580), C.Violet, "🏛️")
+local currentPanel = UIKit.panel(displayContent, {Size = UDim2.new(1, 0, 0, 96), Color = C.PanelTint, Radius = 20, StrokeColor = C.Lilac})
+local currentTitle = UIKit.label(currentPanel, "", {Size = UDim2.new(1, -310, 0, 30), Position = UDim2.fromOffset(104, 16), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
+local currentSub = UIKit.label(currentPanel, "", {Size = UDim2.new(1, -310, 0, 22), Position = UDim2.fromOffset(104, 52), Align = "Left", Color = C.Money, Stroke = 0, MaxText = 18})
 local takeButton = UIKit.button(currentPanel, "TAKE BACK", {Size = UDim2.fromOffset(170, 50), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Color = C.Coral})
 local currentIconHolder = Instance.new("Frame")
 currentIconHolder.BackgroundTransparency = 1
 currentIconHolder.Size = UDim2.fromOffset(80, 80)
 currentIconHolder.Position = UDim2.fromOffset(10, 8)
 currentIconHolder.Parent = currentPanel
-local pickLabel = UIKit.label(displayContent, "Pick a meme from your inventory:", {Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(4, 104), Align = "Left", Color = C.Violet, Stroke = 0})
+local pickLabel = UIKit.label(displayContent, "Pick a meme from your inventory:", {Size = UDim2.new(1, 0, 0, 24), Position = UDim2.fromOffset(4, 106), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 20})
 local displayGrid = makeGrid(displayContent, 134)
 local displayEmpty = UIKit.label(displayContent, "Your bag is empty... go dig up some memes!", {
 	Size = UDim2.new(0.9, 0, 0, 30), Position = UDim2.fromScale(0.5, 0.62), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Grey, Stroke = 0,
@@ -7168,9 +7331,9 @@ end)
 ---------------------------------------------------------------------
 -- ALIEN ART DEALER WINDOW
 ---------------------------------------------------------------------
-local dealerWindow, dealerContent = UIKit.window(gui, "ALIEN ART DEALER", UDim2.fromOffset(720, 560), C.Mint)
+local dealerWindow, dealerContent = UIKit.window(gui, "ALIEN ART DEALER", UDim2.fromOffset(740, 580), C.Mint, "👽")
 UIKit.label(dealerContent, "\"Greetings, Earthling. I pay top dollar for ancient memes.\"", {
-	Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0,
+	Size = UDim2.new(1, 0, 0, 24), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 20,
 })
 local dealerGrid = makeGrid(dealerContent, 40)
 local dealerEmpty = UIKit.label(dealerContent, "Nothing to sell... go dig up some memes!", {
@@ -7208,12 +7371,12 @@ end)
 ---------------------------------------------------------------------
 -- FLOOR ARROWS (only while you're inside a museum)
 ---------------------------------------------------------------------
-local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(96, 196), Position = UDim2.fromOffset(16, 270), Color = C.Panel, Radius = 20})
+local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(96, 196), Position = UDim2.fromOffset(18, 268), Color = C.Panel, Radius = 22, StrokeColor = C.Ink, Stroke = 3})
 floorPanel.Visible = false
-local upButton = UIKit.button(floorPanel, "▲", {Size = UDim2.fromOffset(72, 60), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sky, Radius = 16})
-local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -10, 0, 22), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0})
-local upPrice = UIKit.label(floorPanel, "", {Size = UDim2.new(1, -8, 0, 16), Position = UDim2.new(0.5, 0, 0, 72), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Stroke = 0})
-local downButton = UIKit.button(floorPanel, "▼", {Size = UDim2.fromOffset(72, 60), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), Color = C.Violet, Radius = 16})
+local upButton = UIKit.button(floorPanel, "▲", {Size = UDim2.fromOffset(72, 60), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sky, Radius = 16, MaxText = 30})
+local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -12, 0, 22), Position = UDim2.new(0.5, 0, 0.5, 4), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0, MaxText = 18})
+local upPrice = UIKit.label(floorPanel, "", {Size = UDim2.new(1, -8, 0, 16), Position = UDim2.new(0.5, 0, 0, 74), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Stroke = 0, MaxText = 14})
+local downButton = UIKit.button(floorPanel, "▼", {Size = UDim2.fromOffset(72, 60), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), Color = C.Violet, Radius = 16, MaxText = 30})
 for _, b in ipairs({upButton, downButton}) do
 	local arrow = b:FindFirstChild("Label")
 	if arrow then arrow.Font = Enum.Font.GothamBlack end
@@ -7288,18 +7451,23 @@ local gui = UIKit.screen(player, "ShovelGui", 2)
 ---------------------------------------------------------------------
 -- HINT MESSAGES (bubbly text above the hotbar)
 ---------------------------------------------------------------------
-local hint = UIKit.label(gui, "", {
-	Size = UDim2.fromOffset(620, 30), Position = UDim2.new(0.5, 0, 1, -150), AnchorPoint = Vector2.new(0.5, 0),
-	Color = C.Sun, Stroke = 3,
+local hint = UIKit.panel(gui, {
+	Size = UDim2.fromOffset(560, 46), Position = UDim2.new(0.5, 0, 1, -196), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Ink, Radius = 23, Stroke = 2.5, StrokeColor = C.Lilac, ShadeAmount = 0.2,
 })
+hint.BackgroundTransparency = 0.12
 hint.Visible = false
+local hintDot = UIKit.panel(hint, {Size = UDim2.fromOffset(14, 14), Position = UDim2.new(0, 16, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Sun, Radius = 7, Stroke = false})
+local hintText = UIKit.label(hint, "", {Size = UDim2.new(1, -56, 1, -14), Position = UDim2.new(0, 40, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+	Align = "Left", Color = C.White, Stroke = 0, MaxText = 22})
 
 local hintToken = 0
 local function showHint(text, color)
 	hintToken += 1
 	local myToken = hintToken
-	hint.Text = text
-	hint.TextColor3 = color or C.Sun
+	hintText.Text = text
+	hintDot.BackgroundColor3 = color or C.Sun
+	hintText.TextColor3 = (color or C.Sun):Lerp(C.White, 0.55)
 	hint.Visible = true
 	UIKit.pop(hint, 0.7)
 	task.delay(2.8, function()
@@ -7334,11 +7502,12 @@ camera:GetPropertyChangedSignal("ViewportSize"):Connect(fitScreen)
 fitScreen()
 
 -- depth number bubble
-local depthBubble = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(92, 40), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0), Color = C.Panel, Radius = 20})
-local depthLabel = UIKit.label(depthBubble, "0m", {Size = UDim2.new(1, -16, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0})
+local depthBubble = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(96, 42), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Radius = 21, StrokeColor = C.Lilac})
+depthBubble.BackgroundTransparency = 0.1
+local depthLabel = UIKit.label(depthBubble, "0m", {Size = UDim2.new(1, -16, 0.7, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 0, MaxText = 26})
 
 -- the tube, filled with one colored band per zone (thicker zones = taller bands)
-local tube = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(30, GAUGE_H), Position = UDim2.new(0.5, 8, 0, 50), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 15, Stroke = 3, Shade = false})
+local tube = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(30, GAUGE_H), Position = UDim2.new(0.5, 8, 0, 50), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 15, Stroke = 3, StrokeColor = C.Ink, Shade = false})
 tube.ClipsDescendants = true
 local bands = Instance.new("Frame")
 bands.BackgroundTransparency = 1
@@ -7360,7 +7529,7 @@ shovelLabel.ZIndex = 4
 
 -- zone name pill under the tube
 local zonePill = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(104, 28), Position = UDim2.new(0.5, 0, 0, 50 + GAUGE_H + 8), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sun, Radius = 14})
-local zoneLabel = UIKit.label(zonePill, "", {Size = UDim2.new(1, -12, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+local zoneLabel = UIKit.label(zonePill, "", {Size = UDim2.new(1, -12, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 16})
 
 -- small "surface" button under everything, only while underground
 local surfaceButton = UIKit.button(depthPanel, "SURFACE", {
@@ -7821,8 +7990,8 @@ end)
 
 -- combo counter: pops up next to the hotbar while you keep digging
 local comboLabel = UIKit.label(gui, "", {
-	Size = UDim2.fromOffset(200, 44), Position = UDim2.new(0.5, 70, 1, -150), AnchorPoint = Vector2.new(0, 0),
-	Align = "Left", Color = C.Sun, Stroke = 3,
+	Size = UDim2.fromOffset(300, 44), Position = UDim2.new(0.5, 60, 1, -250), AnchorPoint = Vector2.new(0, 0),
+	Align = "Left", Color = C.Sun, Stroke = 3.5, MaxText = 34,
 })
 comboLabel.Rotation = -6
 comboLabel.Visible = false
@@ -7922,11 +8091,11 @@ end
 ---------------------------------------------------------------------
 -- SHOVEL SHOP WINDOW
 ---------------------------------------------------------------------
-local window, content = UIKit.window(gui, "SHOVEL SHOP", UDim2.fromOffset(760, 560), C.Violet)
+local window, content = UIKit.window(gui, "SHOVEL SHOP", UDim2.fromOffset(780, 580), C.Violet, "⛏️")
 
-local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(190, 36), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 18})
-local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -20, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
-local worldLabel = UIKit.label(content, "", {Size = UDim2.new(1, -210, 0, 30), Position = UDim2.fromOffset(4, 3), Align = "Left", Color = C.Violet, Stroke = 0})
+local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(180, 38), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 19})
+local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -24, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, StrokeColor = UIKit.shadeColor(C.Money, 0.6), MaxText = 24})
+local worldLabel = UIKit.label(content, "", {Size = UDim2.new(1, -210, 0, 28), Position = UDim2.fromOffset(4, 5), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 24})
 
 local listHolder = Instance.new("Frame")
 listHolder.BackgroundTransparency = 1
@@ -7950,33 +8119,33 @@ local function buildCards(world)
 		if child:IsA("GuiObject") then child:Destroy() end
 	end
 	cards = {}
-	worldLabel.Text = world.Name
+	worldLabel.Text = "🌍  " .. world.Name
 	local maxFind, maxLuck = maxStat(world, "FindChance"), maxStat(world, "Luck")
 	local minCooldown = math.huge
 	for _, def in ipairs(world.Shovels) do minCooldown = math.min(minCooldown, def.Cooldown) end
 
 	for i, def in ipairs(world.Shovels) do
 		local zone = world.Zones[def.MaxZone]
-		local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 128), Color = C.Row, Radius = 18})
+		local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 132), Color = C.White, Radius = 20, ShadeAmount = 0.06})
 		card.LayoutOrder = i
 		-- icon on a colored plate (plate color = the deepest zone it reaches)
-		local plate = UIKit.panel(card, {Size = UDim2.fromOffset(104, 104), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = zone.Color, Radius = 16})
+		local plate = UIKit.panel(card, {Size = UDim2.fromOffset(108, 108), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = zone.Color, Radius = 18, ShadeAmount = 0.2})
 		UIKit.shovelIcon(plate, def, {Size = UDim2.fromScale(1, 1)})
-		UIKit.label(card, def.Name, {Size = UDim2.new(0.52, -136, 0, 26), Position = UDim2.fromOffset(128, 10), Align = "Left", Color = C.Ink, Stroke = 0})
-		UIKit.label(card, def.Description, {Size = UDim2.new(0.52, -136, 0, 46), Position = UDim2.fromOffset(128, 36), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = Enum.Font.GothamMedium, TextSize = 12})
-		local zoneTag = UIKit.panel(card, {Size = UDim2.fromOffset(190, 26), Position = UDim2.fromOffset(128, 90), Color = zone.Color, Radius = 13, Stroke = 2})
-		UIKit.label(zoneTag, "DIGS TO " .. -zone.Bottom .. "m  •  " .. string.upper(zone.Name), {Size = UDim2.new(1, -12, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+		UIKit.label(card, def.Name, {Size = UDim2.new(0.52, -138, 0, 28), Position = UDim2.fromOffset(134, 10), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
+		UIKit.label(card, def.Description, {Size = UDim2.new(0.52, -138, 0, 40), Position = UDim2.fromOffset(134, 40), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 14})
+		local zoneTag = UIKit.panel(card, {Size = UDim2.fromOffset(200, 26), Position = UDim2.fromOffset(134, 92), Color = zone.Color, Radius = 13})
+		UIKit.label(zoneTag, "⬇ " .. -zone.Bottom .. "m  •  " .. string.upper(zone.Name), {Size = UDim2.new(1, -14, 0.74, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 16})
 
 		local statsBox = Instance.new("Frame")
 		statsBox.BackgroundTransparency = 1
-		statsBox.Size = UDim2.new(0.3, 0, 0, 80)
-		statsBox.Position = UDim2.new(0.52, 0, 0, 14)
+		statsBox.Size = UDim2.new(0.28, 0, 0, 80)
+		statsBox.Position = UDim2.new(0.52, 0, 0.5, -38)
 		statsBox.Parent = card
 		UIKit.statBar(statsBox, "Find", def.FindChance / maxFind, math.floor(def.FindChance * 1000 + 0.5) / 10 .. "%", C.Mint, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 0)})
 		UIKit.statBar(statsBox, "Luck", def.Luck / maxLuck, "x" .. def.Luck, C.Sun, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 26)})
 		UIKit.statBar(statsBox, "Speed", minCooldown / def.Cooldown, string.format("%.2fs", def.Cooldown), C.Sky, {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 52)})
 
-		local b = UIKit.button(card, "", {Size = UDim2.new(0.15, 0, 0, 52), Position = UDim2.new(1, -12, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5)})
+		local b = UIKit.button(card, "", {Size = UDim2.new(0.17, 0, 0, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5)})
 		cards[def.Id] = b
 		b.MouseButton1Click:Connect(function()
 			local owned = string.split(player:GetAttribute("OwnedShovels") or "", ",")
@@ -7998,11 +8167,11 @@ local function refreshShop()
 		local b = cards[def.Id]
 		if b then
 			if def.Id == equipped then
-				UIKit.setButton(b, "EQUIPPED", C.Grey)
+				UIKit.setButton(b, "EQUIPPED", C.Lilac)
 			elseif table.find(owned, def.Id) then
 				UIKit.setButton(b, "EQUIP", C.Sky)
 			else
-				UIKit.setButton(b, ArtifactData.FormatMoney(def.Price), money >= def.Price and C.Mint or C.Coral)
+				UIKit.setButton(b, def.Price <= 0 and "FREE" or ArtifactData.FormatMoney(def.Price), money >= def.Price and C.Mint or C.Coral)
 			end
 		end
 	end
@@ -8051,11 +8220,11 @@ local travelRemote = remotes:WaitForChild("TravelToWorld")
 local player = Players.LocalPlayer
 local gui = UIKit.screen(player, "WorldMapGui", 3)
 
-local window, content = UIKit.window(gui, "WORLD MAP", UDim2.fromOffset(640, 540), C.Sky)
+local window, content = UIKit.window(gui, "WORLD MAP", UDim2.fromOffset(680, 560), C.Sky, "🌍")
 
-local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(190, 36), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 18})
-local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -20, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
-UIKit.label(content, "Unlock new dig sites with cash!", {Size = UDim2.new(1, -210, 0, 28), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0})
+local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(180, 38), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 19})
+local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -24, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, StrokeColor = UIKit.shadeColor(C.Money, 0.6), MaxText = 24})
+UIKit.label(content, "Unlock new dig sites with cash!", {Size = UDim2.new(1, -210, 0, 28), Position = UDim2.fromOffset(4, 5), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 22})
 
 local listHolder = Instance.new("Frame")
 listHolder.BackgroundTransparency = 1
@@ -8068,18 +8237,18 @@ local PLANET_COLORS = {C.Mint, C.Sun, C.Coral, C.Sky, C.Lilac, C.Violet, C.Money
 local buttons = {} -- [worldId] = button
 
 for _, world in ipairs(GameConfig.Worlds) do
-	local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 84), Color = world.Enabled and C.Row or C.PanelTint, Radius = 18})
+	local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 88), Color = world.Enabled and C.White or C.PanelTint, Radius = 20, ShadeAmount = 0.06})
 	card.LayoutOrder = world.Id
 	-- little planet badge with the world number
 	local planetColor = world.Look and world.Look.Main or PLANET_COLORS[world.Id] or C.Lilac
-	local planet = UIKit.panel(card, {Size = UDim2.fromOffset(60, 60), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = planetColor, Radius = 30})
-	UIKit.label(planet, tostring(world.Id), {Size = UDim2.fromScale(0.6, 0.6), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
-	UIKit.label(card, world.Name, {Size = UDim2.new(0.6, -90, 0, 28), Position = UDim2.fromOffset(86, 12), Align = "Left", Color = C.Ink, Stroke = 0})
+	local planet = UIKit.panel(card, {Size = UDim2.fromOffset(62, 62), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = planetColor, Radius = 31, ShadeAmount = 0.25})
+	UIKit.label(planet, tostring(world.Id), {Size = UDim2.fromScale(0.56, 0.56), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3, StrokeColor = UIKit.shadeColor(planetColor, 0.6), MaxText = 30})
+	UIKit.label(card, world.Name, {Size = UDim2.new(0.62, -90, 0, 28), Position = UDim2.fromOffset(88, 12), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
 	local sub = world.Enabled and (world.Tagline or (#world.Shovels .. " shovels  •  digs down to " .. -world.Zones[#world.Zones].Bottom .. "m  •  your museum is here"))
 		or "Still being excavated... coming soon!"
-	UIKit.label(card, sub, {Size = UDim2.new(0.62, -90, 0, 34), Position = UDim2.fromOffset(86, 42), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = Enum.Font.GothamMedium, TextSize = 13})
+	UIKit.label(card, sub, {Size = UDim2.new(0.62, -90, 0, 34), Position = UDim2.fromOffset(88, 42), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
 
-	local b = UIKit.button(card, "", {Size = UDim2.new(0.3, 0, 0, 52), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5)})
+	local b = UIKit.button(card, "", {Size = UDim2.new(0.3, 0, 0, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), MaxText = 20})
 	buttons[world.Id] = b
 	b.MouseButton1Click:Connect(function()
 		local unlocked = table.find(string.split(player:GetAttribute("UnlockedWorlds") or "1", ","), tostring(world.Id))
@@ -8106,11 +8275,11 @@ local function refresh()
 		if not world.Enabled then
 			UIKit.setButton(b, "SOON • " .. ArtifactData.FormatMoney(world.Price), C.Grey)
 		elseif world.Id == current then
-			UIKit.setButton(b, "YOU ARE HERE", C.Lilac)
+			UIKit.setButton(b, "📍 YOU ARE HERE", C.Lilac)
 		elseif table.find(unlocked, tostring(world.Id)) then
 			UIKit.setButton(b, "TRAVEL", C.Sky)
 		else
-			UIKit.setButton(b, "UNLOCK " .. ArtifactData.FormatMoney(world.Price), money >= world.Price and C.Mint or C.Coral)
+			UIKit.setButton(b, "🔒 " .. ArtifactData.FormatMoney(world.Price), money >= world.Price and C.Mint or C.Coral)
 		end
 	end
 end

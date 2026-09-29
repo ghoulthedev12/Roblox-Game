@@ -30,24 +30,29 @@ end)
 local stats = Instance.new("Frame")
 stats.BackgroundTransparency = 1
 stats.Size = UDim2.fromOffset(260, 150)
-stats.Position = UDim2.fromOffset(16, 16)
+stats.Position = UDim2.fromOffset(14, 12)
 stats.Parent = gui
 local statsLayout = Instance.new("UIListLayout")
 statsLayout.Padding = UDim.new(0, 8)
 statsLayout.Parent = stats
 
-local function pill(color, iconText, iconColor, order)
-	local p = UIKit.panel(stats, {Size = UDim2.fromOffset(230, 44), Color = C.Panel, Radius = 22})
-	p.LayoutOrder = order
-	local icon = UIKit.panel(p, {Size = UDim2.fromOffset(52, 52), Position = UDim2.new(0, -8, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = color, Radius = 26})
-	UIKit.label(icon, iconText, {Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = iconColor or C.White, Stroke = 2})
-	local text = UIKit.label(p, "", {Size = UDim2.new(1, -62, 0.7, 0), Position = UDim2.new(0, 54, 0.15, 0), Align = "Left", Color = C.Ink, Stroke = 0})
-	return p, text
+-- a glossy colored pill with a round emoji badge poking out on the left
+local function pill(color, badgeColor, iconText, width, height, order)
+	local holder = Instance.new("Frame")
+	holder.BackgroundTransparency = 1
+	holder.Size = UDim2.fromOffset(width + 14, height)
+	holder.LayoutOrder = order
+	holder.Parent = stats
+	local p = UIKit.panel(holder, {Size = UDim2.new(1, -14, 1, 0), Position = UDim2.fromOffset(14, 0), Color = color, Radius = height / 2, ShadeAmount = 0.16})
+	UIKit.badge(holder, iconText, badgeColor, {Diameter = height + 8, Position = UDim2.new(0, -2, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+	local text = UIKit.label(p, "", {Size = UDim2.new(1, -height - 10, 1, -12), Position = UDim2.new(0, height - 2, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+		Align = "Left", Stroke = 2.5, StrokeColor = UIKit.shadeColor(color, 0.6), MaxText = 30})
+	return holder, text
 end
 
-local moneyPill, moneyText = pill(C.Money, "$", C.White, 1)
-local _, incomeText = pill(C.Sun, "+", C.White, 2)
-local _, worldText = pill(C.Lilac, "W", C.White, 3)
+local moneyPill, moneyText = pill(C.Money, C.Sun, "💵", 230, 50, 1)
+local _, incomeText = pill(C.Sun, C.White, "⚡", 190, 38, 2)
+local _, worldText = pill(C.Violet, C.Lilac, "🌍", 210, 34, 3)
 
 local shownMoney = 0
 local moneyScale = Instance.new("UIScale")
@@ -63,7 +68,7 @@ local function refreshMoney()
 	moneyText.Text = ArtifactData.FormatMoney(money)
 end
 local function refreshIncome()
-	incomeText.Text = ArtifactData.FormatMoney(player:GetAttribute("Income") or 0) .. " / sec"
+	incomeText.Text = "+" .. ArtifactData.FormatMoney(player:GetAttribute("Income") or 0) .. "/s"
 end
 local function refreshWorld()
 	local world = GameConfig.GetWorld(player:GetAttribute("CurrentWorld") or 1)
@@ -146,9 +151,9 @@ local function rebuild()
 		else
 			UIKit.label(button, tool.Name, {Size = UDim2.fromScale(0.9, 0.5), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0})
 		end
-		local key = UIKit.panel(button, {Size = UDim2.fromOffset(26, 26), Position = UDim2.fromOffset(-6, -6), Color = C.Violet, Radius = 13, Stroke = 2})
-		UIKit.label(key, tostring(i), {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 0})
-		local hint = UIKit.label(button, "Equip!", {Size = UDim2.new(1.4, 0, 0, 22), Position = UDim2.new(0.5, 0, 0, -30), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sun, Stroke = 2})
+		UIKit.badge(button, tostring(i), C.Violet, {Diameter = 26, Position = UDim2.fromOffset(-7, -7), Font = UIKit.Font, TextStroke = 0})
+		local hint = UIKit.panel(button, {Size = UDim2.fromOffset(70, 24), Position = UDim2.new(0.5, 0, 0, -32), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sun, Radius = 12})
+		UIKit.label(hint, "EQUIP [" .. i .. "]", {Size = UDim2.new(1, -10, 1, -6), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = UIKit.shadeColor(C.Sun, 0.6)})
 		local slot = {Tool = tool, Button = button, Hint = hint}
 		button.MouseButton1Click:Connect(function() toggle(tool) end)
 		table.insert(slots, slot)

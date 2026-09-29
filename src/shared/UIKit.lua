@@ -1,7 +1,11 @@
 -- UIKit (ModuleScript in ReplicatedStorage)
--- One cartoony 2050 look for every screen in the game: chunky rounded panels with thick
--- outlines, bubbly FredokaOne text with an outline, bouncy buttons, pop-in windows and
--- live 3D shovel icons (ViewportFrames that render the real shovel model).
+-- One cartoony 2050 look for every screen in the game:
+--   * rounded panels with a soft top-to-bottom sheen; colored panels get an outline in a
+--     darker shade of their own color (no more black outlines everywhere)
+--   * glossy "candy" buttons with a darker bottom lip, white bubbly text and a bounce
+--   * windows with a full-width colored header bar, an icon, and the close button inside it
+--   * text that scales with its box but never past a sensible size (so nothing looks huge)
+--   * live 3D shovel icons (ViewportFrames that render the real shovel model)
 
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,22 +14,43 @@ local UIKit = {}
 
 local rgb = Color3.fromRGB
 UIKit.Colors = {
-	Ink = rgb(38, 34, 84),        -- outlines and dark text
-	Panel = rgb(250, 248, 255),   -- window background
-	PanelTint = rgb(232, 226, 255),
-	Row = rgb(238, 234, 252),
-	Violet = rgb(122, 92, 232),
-	Lilac = rgb(178, 158, 255),
-	Sky = rgb(92, 176, 255),
-	Mint = rgb(80, 214, 150),
-	Sun = rgb(255, 200, 70),
-	Coral = rgb(255, 110, 124),
-	Grey = rgb(160, 160, 184),
+	Ink = rgb(40, 32, 92),        -- dark text and window outlines
+	Panel = rgb(252, 251, 255),   -- window background
+	PanelTint = rgb(236, 231, 255),
+	Row = rgb(246, 243, 255),     -- cards inside windows
+	Violet = rgb(128, 90, 255),
+	Lilac = rgb(184, 164, 255),
+	Sky = rgb(58, 168, 255),
+	Mint = rgb(38, 206, 140),
+	Sun = rgb(255, 188, 40),
+	Coral = rgb(255, 84, 112),
+	Grey = rgb(128, 122, 162),    -- secondary text
 	White = rgb(255, 255, 255),
-	Money = rgb(90, 210, 110),
+	Money = rgb(46, 196, 90),
 }
 local C = UIKit.Colors
 UIKit.Font = Enum.Font.FredokaOne
+UIKit.BodyFont = Enum.Font.GothamMedium
+
+-- a darker (amount > 0) or lighter (amount < 0) version of a color
+function UIKit.shadeColor(color, amount)
+	if amount >= 0 then
+		return color:Lerp(Color3.new(0.1, 0.07, 0.25), amount)
+	end
+	return color:Lerp(Color3.new(1, 1, 1), -amount)
+end
+local function luminance(c)
+	return 0.299 * c.R + 0.587 * c.G + 0.114 * c.B
+end
+-- outline that suits a background: soft lavender around light panels, a deep shade of the
+-- color itself around colored ones
+local function autoOutline(color)
+	if luminance(color) > 0.86 then
+		return rgb(208, 198, 246)
+	end
+	return UIKit.shadeColor(color, 0.5)
+end
+UIKit.autoOutline = autoOutline
 
 ---------------------------------------------------------------------
 -- BASICS
@@ -58,16 +83,22 @@ function UIKit.outline(parent, thickness, color)
 	return s
 end
 
--- soft top-to-bottom shading so flat panels look chunky
+-- soft top-to-bottom sheen so flat panels look chunky
 function UIKit.shade(parent, amount)
+	amount = amount or 0.1
 	local g = Instance.new("UIGradient")
 	g.Rotation = 90
-	g.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(1 - (amount or 0.12), 1 - (amount or 0.12), 1 - (amount or 0.1)))
+	g.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+		ColorSequenceKeypoint.new(0.5, Color3.new(1 - amount * 0.35, 1 - amount * 0.35, 1 - amount * 0.3)),
+		ColorSequenceKeypoint.new(1, Color3.new(1 - amount, 1 - amount, 1 - amount * 0.8)),
+	})
 	g.Parent = parent
 	return g
 end
 
--- A plain rounded, outlined box. props: Size, Position, AnchorPoint, Color, Radius, Stroke
+-- A rounded box. props: Size, Position, AnchorPoint, Color, Radius, Transparency,
+-- Stroke (thickness or false), StrokeColor (default: matches the color), Shade (false for flat)
 function UIKit.panel(parent, props)
 	local f = Instance.new("Frame")
 	f.Size = props.Size or UDim2.fromOffset(200, 100)
@@ -79,7 +110,13 @@ function UIKit.panel(parent, props)
 	f.Parent = parent
 	UIKit.corner(f, props.Radius or 16)
 	if props.Stroke ~= false then
-		UIKit.outline(f, props.Stroke or 3)
+		local stroke = UIKit.outline(f, props.Stroke or 2.5, props.StrokeColor or autoOutline(f.BackgroundColor3))
+		if not props.StrokeColor then
+			-- keep the outline matching when the color changes later (rarity tags etc.)
+			f:GetPropertyChangedSignal("BackgroundColor3"):Connect(function()
+				stroke.Color = autoOutline(f.BackgroundColor3)
+			end)
+		end
 	end
 	if props.Shade ~= false then
 		UIKit.shade(f, props.ShadeAmount)
@@ -87,8 +124,9 @@ function UIKit.panel(parent, props)
 	return f
 end
 
--- Bubbly outlined text. props: Size, Position, AnchorPoint, Color, Align ("Left"/"Center"/"Right"),
--- Stroke (outline thickness, 0 for none), TextSize (fixed size instead of scaled)
+-- Bubbly text. props: Size, Position, AnchorPoint, Color, Align ("Left"/"Center"/"Right"),
+-- VAlign, Stroke (outline thickness, 0 for none), StrokeColor, Font,
+-- TextSize (fixed size) or MaxText (largest size scaled text may grow to, default 30)
 function UIKit.label(parent, text, props)
 	props = props or {}
 	local l = Instance.new("TextLabel")
@@ -104,6 +142,10 @@ function UIKit.label(parent, text, props)
 		l.TextWrapped = true
 	else
 		l.TextScaled = true
+		local limit = Instance.new("UITextSizeConstraint")
+		limit.MaxTextSize = props.MaxText or 30
+		limit.MinTextSize = 6
+		limit.Parent = l
 	end
 	l.TextXAlignment = Enum.TextXAlignment[props.Align or "Center"]
 	l.TextYAlignment = Enum.TextYAlignment[props.VAlign or "Center"]
@@ -120,8 +162,9 @@ function UIKit.label(parent, text, props)
 	return l
 end
 
--- Chunky button that squishes when pressed and grows a bit on hover.
--- props: Size, Position, AnchorPoint, Color, TextColor
+-- A glossy candy button that squishes when pressed and grows a bit on hover.
+-- props: Size, Position, AnchorPoint, Color, TextColor, Radius, MaxText
+-- Changing the button's BackgroundColor3 later recolors the whole button.
 function UIKit.button(parent, text, props)
 	props = props or {}
 	local b = Instance.new("TextButton")
@@ -132,14 +175,47 @@ function UIKit.button(parent, text, props)
 	b.AutoButtonColor = false
 	b.Text = ""
 	b.Parent = parent
-	UIKit.corner(b, props.Radius or 12)
-	UIKit.outline(b, 3)
-	UIKit.shade(b, 0.18)
+	local radius = props.Radius or 14
+	UIKit.corner(b, radius)
+	local stroke = UIKit.outline(b, 2.5)
+	local gloss = Instance.new("UIGradient")
+	gloss.Rotation = 90
+	gloss.Parent = b
+	-- darker bottom lip, like the edge of a chunky key
+	local lip = Instance.new("Frame")
+	lip.Name = "Lip"
+	lip.BorderSizePixel = 0
+	lip.AnchorPoint = Vector2.new(0, 1)
+	lip.Position = UDim2.fromScale(0, 1)
+	lip.Size = UDim2.new(1, 0, 0, math.min(radius, 7))
+	lip.Parent = b
+	UIKit.corner(lip, radius)
+	local shine = Instance.new("Frame")
+	shine.Name = "Shine"
+	shine.BorderSizePixel = 0
+	shine.BackgroundColor3 = Color3.new(1, 1, 1)
+	shine.BackgroundTransparency = 0.72
+	shine.Position = UDim2.new(0, 6, 0, 4)
+	shine.Size = UDim2.new(1, -12, 0.3, 0)
+	shine.Parent = b
+	UIKit.corner(shine, math.max(radius - 4, 4))
 	local label = UIKit.label(b, text, {
-		Size = UDim2.new(1, -14, 1, -12), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
-		Color = props.TextColor or C.White,
+		Size = UDim2.new(1, -16, 1, -14), Position = UDim2.new(0.5, 0, 0.5, -2), AnchorPoint = Vector2.new(0.5, 0.5),
+		Color = props.TextColor or C.White, Stroke = 2.5, MaxText = props.MaxText or 24,
 	})
 	label.Name = "Label"
+	local labelStroke = label:FindFirstChildOfClass("UIStroke")
+
+	local function paint()
+		local c = b.BackgroundColor3
+		stroke.Color = UIKit.shadeColor(c, 0.5)
+		lip.BackgroundColor3 = UIKit.shadeColor(c, 0.28)
+		gloss.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(0.86, 0.86, 0.9))
+		if labelStroke then labelStroke.Color = UIKit.shadeColor(c, 0.62) end
+	end
+	paint()
+	b:GetPropertyChangedSignal("BackgroundColor3"):Connect(paint)
+
 	local scale = Instance.new("UIScale")
 	scale.Parent = b
 	local function to(v, t)
@@ -166,14 +242,28 @@ function UIKit.pop(frame, from)
 	TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
 end
 
+-- A round colored badge with an emoji (or short text) in it
+function UIKit.badge(parent, iconText, color, props)
+	props = props or {}
+	local d = props.Diameter or 44
+	local circle = UIKit.panel(parent, {Size = UDim2.fromOffset(d, d), Position = props.Position, AnchorPoint = props.AnchorPoint,
+		Color = color, Radius = d, Stroke = props.Stroke or 2.5})
+	local icon = UIKit.label(circle, iconText, {Size = UDim2.fromScale(0.64, 0.64), Position = UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = Vector2.new(0.5, 0.5), Stroke = props.TextStroke or 0, MaxText = 60, Font = props.Font or Enum.Font.GothamBlack})
+	icon.Name = "Icon"
+	return circle, icon
+end
+
 ---------------------------------------------------------------------
--- WINDOW: a big panel with a colored title tab and a round close button
+-- WINDOW: a panel with a colored header bar (icon + title + close button) and a body.
 -- returns window, content (frame to put things in), closeButton
 ---------------------------------------------------------------------
-function UIKit.window(gui, title, size, accent)
+local HEADER = 58
+function UIKit.window(gui, title, size, accent, icon)
+	accent = accent or C.Violet
 	local window = UIKit.panel(gui, {
 		Size = size, Position = UDim2.fromScale(0.5, 0.52), AnchorPoint = Vector2.new(0.5, 0.5),
-		Color = C.Panel, Radius = 22, Stroke = 4,
+		Color = C.Panel, Radius = 24, Stroke = 4, StrokeColor = C.Ink, ShadeAmount = 0.05,
 	})
 	window.Visible = false
 	local sizeLimit = Instance.new("UISizeConstraint")
@@ -184,14 +274,48 @@ function UIKit.window(gui, title, size, accent)
 	aspect.Parent = window
 	window.Size = UDim2.fromScale(0.92, 0.85)
 
-	local tab = UIKit.panel(window, {
-		Size = UDim2.new(0.5, 0, 0, 52), Position = UDim2.new(0.5, 0, 0, -20), AnchorPoint = Vector2.new(0.5, 0),
-		Color = accent or C.Violet, Radius = 16, Stroke = 4,
-	})
-	UIKit.label(tab, title, {Size = UDim2.new(1, -20, 1, -12), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3})
+	-- header bar: rounded on top, square where it meets the body
+	local header = Instance.new("Frame")
+	header.Name = "Header"
+	header.BorderSizePixel = 0
+	header.BackgroundColor3 = accent
+	header.Size = UDim2.new(1, 0, 0, HEADER)
+	header.Parent = window
+	UIKit.corner(header, 22)
+	local headerFill = Instance.new("Frame")
+	headerFill.BorderSizePixel = 0
+	headerFill.BackgroundColor3 = accent
+	headerFill.AnchorPoint = Vector2.new(0, 1)
+	headerFill.Position = UDim2.fromScale(0, 1)
+	headerFill.Size = UDim2.new(1, 0, 0, 22)
+	headerFill.Parent = header
+	local headerEdge = Instance.new("Frame")
+	headerEdge.BorderSizePixel = 0
+	headerEdge.BackgroundColor3 = UIKit.shadeColor(accent, 0.35)
+	headerEdge.AnchorPoint = Vector2.new(0, 1)
+	headerEdge.Position = UDim2.fromScale(0, 1)
+	headerEdge.Size = UDim2.new(1, 0, 0, 4)
+	headerEdge.Parent = header
+	local shine = Instance.new("Frame")
+	shine.BorderSizePixel = 0
+	shine.BackgroundColor3 = Color3.new(1, 1, 1)
+	shine.BackgroundTransparency = 0.8
+	shine.Position = UDim2.new(0, 10, 0, 6)
+	shine.Size = UDim2.new(1, -20, 0, 16)
+	shine.Parent = header
+	UIKit.corner(shine, 8)
 
-	local close = UIKit.button(window, "X", {
-		Size = UDim2.fromOffset(46, 46), Position = UDim2.new(1, 14, 0, -14), AnchorPoint = Vector2.new(1, 0), Color = C.Coral, Radius = 23,
+	local titleX = 22
+	if icon then
+		UIKit.badge(header, icon, UIKit.shadeColor(accent, -0.25), {Diameter = 40, Position = UDim2.new(0, 14, 0.5, -2), AnchorPoint = Vector2.new(0, 0.5)})
+		titleX = 64
+	end
+	local titleLabel = UIKit.label(header, title, {Size = UDim2.new(1, -titleX - 70, 0, 34), Position = UDim2.new(0, titleX, 0.5, -2), AnchorPoint = Vector2.new(0, 0.5),
+		Align = "Left", Stroke = 3, StrokeColor = UIKit.shadeColor(accent, 0.6), MaxText = 30})
+	titleLabel.Name = "Title"
+
+	local close = UIKit.button(header, "X", {
+		Size = UDim2.fromOffset(42, 42), Position = UDim2.new(1, -10, 0.5, -2), AnchorPoint = Vector2.new(1, 0.5), Color = C.Coral, Radius = 14, MaxText = 22,
 	})
 	close.MouseButton1Click:Connect(function()
 		window.Visible = false
@@ -200,15 +324,15 @@ function UIKit.window(gui, title, size, accent)
 	local content = Instance.new("Frame")
 	content.Name = "Content"
 	content.BackgroundTransparency = 1
-	content.Size = UDim2.new(1, -36, 1, -64)
-	content.Position = UDim2.new(0, 18, 0, 46)
+	content.Size = UDim2.new(1, -36, 1, -HEADER - 30)
+	content.Position = UDim2.new(0, 18, 0, HEADER + 14)
 	content.Parent = window
 	return window, content, close
 end
 
 function UIKit.open(window)
 	window.Visible = true
-	UIKit.pop(window)
+	UIKit.pop(window, 0.8)
 end
 
 -- Scrolling list with padding. returns the scrolling frame
@@ -242,11 +366,11 @@ function UIKit.statBar(parent, name, fraction, valueText, color, props)
 	row.Size = props and props.Size or UDim2.new(1, 0, 0, 18)
 	row.Position = props and props.Position or UDim2.new()
 	row.Parent = parent
-	UIKit.label(row, name, {Size = UDim2.new(0.26, 0, 1, 0), Align = "Left", Color = C.Ink, Stroke = 0})
-	local track = UIKit.panel(row, {Size = UDim2.new(0.46, 0, 0.7, 0), Position = UDim2.new(0.27, 0, 0.15, 0), Color = rgb(222, 218, 240), Radius = 8, Stroke = 2, Shade = false})
-	local fill = UIKit.panel(track, {Size = UDim2.new(math.clamp(fraction, 0.04, 1), 0, 1, 0), Color = color, Radius = 8, Stroke = false})
+	UIKit.label(row, name, {Size = UDim2.new(0.26, 0, 0.9, 0), Position = UDim2.fromScale(0, 0.05), Align = "Left", Color = C.Grey, Stroke = 0, MaxText = 16})
+	local track = UIKit.panel(row, {Size = UDim2.new(0.46, 0, 0.62, 0), Position = UDim2.new(0.27, 0, 0.19, 0), Color = rgb(232, 227, 250), Radius = 8, Stroke = false, Shade = false})
+	local fill = UIKit.panel(track, {Size = UDim2.new(math.clamp(fraction, 0.06, 1), 0, 1, 0), Color = color, Radius = 8, Stroke = false, ShadeAmount = 0.2})
 	fill.Name = "Fill"
-	UIKit.label(row, valueText, {Size = UDim2.new(0.25, 0, 1, 0), Position = UDim2.new(0.75, 0, 0, 0), Align = "Right", Color = C.Ink, Stroke = 0})
+	UIKit.label(row, valueText, {Size = UDim2.new(0.25, 0, 0.9, 0), Position = UDim2.new(0.75, 0, 0.05, 0), Align = "Right", Color = C.Ink, Stroke = 0, MaxText = 16})
 	return row
 end
 
