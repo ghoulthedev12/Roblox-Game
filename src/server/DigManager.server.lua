@@ -23,6 +23,9 @@ local MINIGAME_TIMEOUT = 8
 local MINIGAME_LUCK = {Perfect = 3, Good = 1.5, Miss = 1} -- multiplies the shovel's luck
 local ANNOUNCE_FROM = ArtifactData.GetRarityIndex("Mythic")
 local MAX_REACH = 14 -- how far from your character you can dig
+local COMBO_WINDOW = 1.4   -- seconds between digs to keep a combo going
+local COMBO_MAX = 10
+local COMBO_LUCK = 0.04    -- each combo step adds +4% find chance (x10 combo = +36%)
 local SURFACE_RING = 52 -- where "Return to Surface" puts you (distance from the pit center)
 
 -- Where the shop and the World Gate stand around each pit (angle, distance from center)
@@ -46,6 +49,7 @@ local resultRemote = getRemote("DigResult")
 local announceRemote = getRemote("Announcement")
 local swingRemote = getRemote("DigSwing")          -- client -> server: swing at a position
 local swingFxRemote = getRemote("ShovelSwingFx")   -- server -> other clients: play this player's swing
+local digHitRemote = getRemote("DigHit")           -- server -> digger: impact info for juice (combo, color, spot)
 local digMessageRemote = getRemote("DigProgress")  -- server -> client: short messages (text, color)
 local surfaceRemote = getRemote("ReturnToSurface")
 local openShopRemote = getRemote("OpenShovelShop") -- server -> client: (worldId)
@@ -127,6 +131,8 @@ end
 ---------------------------------------------------------------------
 local rng = Random.new()
 local lastSwing = {}  -- [player] = time of last swing
+local lastHit = {}    -- [player] = time of last successful dig (for combos)
+local combos = {}     -- [player] = current combo count
 local sessions = {}   -- [player] = Lucky Dig session
 local resetting = false
 
@@ -173,7 +179,7 @@ local function isSolid(position)
 	return false
 end
 
-local function giveArtifact(player, zone, luck, grade)
+local function giveArtifact(player, zone, luck, grade, position)
 	local artifact = ArtifactData.RollForZone(zone, luck)
 	local data = PlayerData.Get(player)
 	if not artifact or not data then return end
@@ -191,6 +197,7 @@ local function giveArtifact(player, zone, luck, grade)
 		Income = ArtifactData.GetIncome(artifact),
 		Description = artifact.Description,
 		Grade = grade,
+		Position = position, -- where it popped out of the ground
 	})
 	if rarityIndex >= ANNOUNCE_FROM then
 		announceRemote:FireAllClients(player.DisplayName .. " found a " .. string.upper(artifact.Rarity) .. " " .. artifact.Name .. " in " .. zone.Name .. "!", rarity.Color)
@@ -201,12 +208,12 @@ local function finishLuckyDig(player, grade)
 	local session = sessions[player]
 	if not session then return end
 	sessions[player] = nil
-	giveArtifact(player, session.Zone, session.ShovelLuck * (MINIGAME_LUCK[grade] or 1), grade)
+	giveArtifact(player, session.Zone, session.ShovelLuck * (MINIGAME_LUCK[grade] or 1), grade, session.Position)
 end
 
-local function onFind(player, def, zone)
+local function onFind(player, def, zone, position)
 	if rng:NextNumber() < GameConfig.MinigameChance then
-		local session = {Started = os.clock(), ShovelLuck = def.Luck, Zone = zone}
+		local session = {Started = os.clock(), ShovelLuck = def.Luck, Zone = zone, Position = position}
 		sessions[player] = session
 		minigameRemote:FireClient(player)
 		task.delay(MINIGAME_TIMEOUT, function()
@@ -215,7 +222,7 @@ local function onFind(player, def, zone)
 			end
 		end)
 	else
-		giveArtifact(player, zone, def.Luck, nil)
+		giveArtifact(player, zone, def.Luck, nil, position)
 	end
 end
 
@@ -295,23 +302,33 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	end
 	if zoneIndex > def.MaxZone then
 		bounceOff(player, world, def, zoneIndex, zone, carveAt + Vector3.new(0, 2, 0))
+		digHitRemote:FireClient(player, {Bounced = true, Position = carveAt + Vector3.new(0, 2, 0), Color = zone.Color, Combo = 0})
+		combos[player] = 0
 		return
 	end
 
-	-- Carve the hole and throw dirt. Wide but one block deep, plus the block above so tunnels
-	-- are tall enough to walk into. Never carve below the bottom of the shovel's deepest zone.
+	-- Carve a round crater (smooth terrain looks much nicer than square holes). It reaches a
+	-- bit below the clicked cell and up enough to walk into, but never below the bottom of
+	-- the shovel's deepest zone.
 	local floorY = origin.Y + world.Zones[def.MaxZone].Bottom
-	local bottomY = math.max(carveAt.Y - 2, floorY)
-	local topY = carveAt.Y + 6
-	if topY > bottomY then
-		terrain:FillBlock(CFrame.new(carveAt.X, (topY + bottomY) / 2, carveAt.Z),
-			Vector3.new(def.DigRadius + 2, topY - bottomY, def.DigRadius + 2), Enum.Material.Air)
+	local radius = (def.DigRadius + 2) / 2 + 0.75
+	local centerY = math.max(carveAt.Y + radius * 0.35, floorY + radius)
+	terrain:FillBall(Vector3.new(carveAt.X, centerY, carveAt.Z), radius, Enum.Material.Air)
+	burst(target, zone.Color, 28, 14)
+
+	-- Combo: keep digging without long pauses to build it up (more luck per dig)
+	if now - (lastHit[player] or 0) <= COMBO_WINDOW then
+		combos[player] = math.min((combos[player] or 0) + 1, COMBO_MAX)
+	else
+		combos[player] = 1
 	end
-	burst(target, zone.Color)
+	lastHit[player] = now
+	local combo = combos[player]
+	digHitRemote:FireClient(player, {Combo = combo, Position = carveAt, Color = zone.Color})
 
 	-- Did we find something?
-	if rng:NextNumber() < def.FindChance then
-		onFind(player, def, zone)
+	if rng:NextNumber() < def.FindChance * (1 + COMBO_LUCK * (combo - 1)) then
+		onFind(player, def, zone, carveAt + Vector3.new(0, 2, 0))
 	end
 end)
 
@@ -559,6 +576,8 @@ end
 
 Players.PlayerRemoving:Connect(function(player)
 	lastSwing[player] = nil
+	lastHit[player] = nil
+	combos[player] = nil
 	sessions[player] = nil
 	currentWorld[player] = nil
 	lastBounceMessage[player] = nil

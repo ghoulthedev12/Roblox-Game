@@ -34,6 +34,15 @@ end
 ---------------------------------------------------------------------
 -- DIGGING
 ---------------------------------------------------------------------
+-- Optional sound effects. Paste a sound's id from the Toolbox (e.g. "rbxassetid://123456")
+-- and it plays; leave "" for silence.
+GameConfig.Sounds = {
+	Dig = "",    -- every time the shovel hits the dirt
+	Clang = "",  -- shovel bounces off a zone that's too hard
+	Find = "",   -- an artifact pops out of the ground
+	Combo = "",  -- combo goes up
+}
+
 -- Chance that a find becomes a "Lucky Dig" with the bonus minigame (0.1 = 1 in 10)
 GameConfig.MinigameChance = 0.1
 
@@ -88,39 +97,39 @@ GameConfig.Worlds = {
 		-- Luck = rare find multiplier, Cooldown = seconds between swings
 		Shovels = {
 			{Id = "RustyShovel", Name = "Rusty Shovel", Price = 0, MaxZone = 1,
-				DigRadius = 4, FindChance = 0.02, Luck = 1, Cooldown = 0.7,
+				DigRadius = 4, FindChance = 0.012, Luck = 1, Cooldown = 0.5,
 				Color = Color3.fromRGB(150, 85, 50), Material = "CorrodedMetal",
 				Description = "Found in a dumpster in 2049. Still works. Mostly."},
 			{Id = "PlasticShovel", Name = "Plastic Beach Shovel", Price = 1000, MaxZone = 2,
-				DigRadius = 4.5, FindChance = 0.022, Luck = 1.1, Cooldown = 0.67,
+				DigRadius = 4.5, FindChance = 0.013, Luck = 1.1, Cooldown = 0.47,
 				Color = Color3.fromRGB(255, 200, 40), Material = "SmoothPlastic",
 				Description = "Built for sandcastles. Somehow better than rust."},
 			{Id = "GardenSpade", Name = "Garden Spade", Price = 7500, MaxZone = 2,
-				DigRadius = 5, FindChance = 0.025, Luck = 1.2, Cooldown = 0.64,
+				DigRadius = 5, FindChance = 0.015, Luck = 1.2, Cooldown = 0.45,
 				Color = Color3.fromRGB(90, 170, 80), Material = "Metal",
 				Description = "Borrowed from a grandma. She wants it back."},
 			{Id = "IronShovel", Name = "Iron Shovel", Price = 40000, MaxZone = 2,
-				DigRadius = 5.5, FindChance = 0.028, Luck = 1.35, Cooldown = 0.6,
+				DigRadius = 5.5, FindChance = 0.017, Luck = 1.35, Cooldown = 0.42,
 				Color = Color3.fromRGB(175, 180, 190), Material = "Metal",
 				Description = "A real tool for a real archaeologist."},
 			{Id = "SteelSpade", Name = "Steel Spade", Price = 200000, MaxZone = 3,
-				DigRadius = 6, FindChance = 0.03, Luck = 1.5, Cooldown = 0.56,
+				DigRadius = 6, FindChance = 0.018, Luck = 1.5, Cooldown = 0.39,
 				Color = Color3.fromRGB(120, 140, 170), Material = "Metal",
 				Description = "Sharp enough to cut through ancient comment sections."},
 			{Id = "GoldenShovel", Name = "Golden Shovel", Price = 500000, MaxZone = 3,
-				DigRadius = 6.5, FindChance = 0.033, Luck = 1.7, Cooldown = 0.53,
+				DigRadius = 6.5, FindChance = 0.02, Luck = 1.7, Cooldown = 0.37,
 				Color = Color3.fromRGB(255, 200, 60), Material = "Metal",
 				Description = "Shiny. Heavy. Completely unnecessary. Perfect."},
 			{Id = "GamerShovel", Name = "RGB Gamer Shovel", Price = 1000000, MaxZone = 3,
-				DigRadius = 7, FindChance = 0.036, Luck = 2, Cooldown = 0.5,
+				DigRadius = 7, FindChance = 0.022, Luck = 2, Cooldown = 0.35,
 				Color = Color3.fromRGB(255, 60, 200), Material = "Neon",
 				Description = "The RGB lights add +200% digging power. Science."},
 			{Id = "TectonicAuger", Name = "Tectonic Auger", Price = 10000000, MaxZone = 4,
-				DigRadius = 7.5, FindChance = 0.04, Luck = 2.4, Cooldown = 0.47,
+				DigRadius = 7.5, FindChance = 0.024, Luck = 2.4, Cooldown = 0.33,
 				Color = Color3.fromRGB(128, 132, 138), Material = "Foil",
 				Description = "Legendary. Rated for bedrock, permafrost and 2049-era server racks."},
 			{Id = "SingularitySpade", Name = "Singularity Spade", Price = 50000000, MaxZone = 4,
-				DigRadius = 8, FindChance = 0.045, Luck = 3, Cooldown = 0.44,
+				DigRadius = 8, FindChance = 0.027, Luck = 3, Cooldown = 0.31,
 				Color = Color3.fromRGB(62, 64, 70), Material = "Foil",
 				Description = "Mythic. Folds the Abyss around the blade. Do not dig near pets."},
 		},

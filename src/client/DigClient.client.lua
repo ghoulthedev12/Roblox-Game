@@ -150,36 +150,108 @@ flash.BorderSizePixel = 0
 flash.ZIndex = 0
 flash.Parent = gui
 
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+
+-- the find visibly pops out of the hole: a glowing orb in the rarity's color jumps out of
+-- the ground and arcs into the player's hands, then the popup shows
+local function treasurePop(position, color, onArrive)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if typeof(position) ~= "Vector3" or not root then
+		onArrive()
+		return
+	end
+	local orb = Instance.new("Part")
+	orb.Shape = Enum.PartType.Ball
+	orb.Size = Vector3.one * 1.6
+	orb.Material = Enum.Material.Neon
+	orb.Color = color
+	orb.Anchored = true
+	orb.CanCollide = false
+	orb.CanQuery = false
+	orb.CanTouch = false
+	orb.CastShadow = false
+	orb.CFrame = CFrame.new(position)
+	orb.Parent = workspace
+	local light = Instance.new("PointLight")
+	light.Color = color
+	light.Range = 10
+	light.Brightness = 1
+	light.Parent = orb
+	local sparkle = Instance.new("ParticleEmitter")
+	sparkle.Color = ColorSequence.new(color)
+	sparkle.LightEmission = 0.6
+	sparkle.Size = NumberSequence.new(0.35, 0)
+	sparkle.Lifetime = NumberRange.new(0.4, 0.7)
+	sparkle.Rate = 40
+	sparkle.Speed = NumberRange.new(1, 3)
+	sparkle.SpreadAngle = Vector2.new(180, 180)
+	sparkle.Parent = orb
+
+	local start = os.clock()
+	local DURATION = 0.6
+	local conn
+	conn = RunService.RenderStepped:Connect(function()
+		local t = (os.clock() - start) / DURATION
+		local goal = root.Parent and (root.Position + Vector3.new(0, 1.5, 0)) or position
+		if t >= 1 then
+			conn:Disconnect()
+			orb:Destroy()
+			onArrive()
+			return
+		end
+		-- pop straight up first, then arc over into the player
+		local ease = t * t * (3 - 2 * t)
+		local pos = position:Lerp(goal, ease) + Vector3.new(0, math.sin(t * math.pi) * 7, 0)
+		local spin = CFrame.Angles(0, t * 12, 0)
+		local size = 1.6 * (1 + math.sin(t * math.pi) * 0.5) * (1 - t * 0.5)
+		orb.Size = Vector3.one * size
+		orb.CFrame = CFrame.new(pos) * spin
+	end)
+end
+
 local popupToken = 0
 resultRemote.OnClientEvent:Connect(function(info)
 	popupToken += 1
 	local myToken = popupToken
-
-	nameLabel.Text = info.Name
-	rarityLabel.Text = string.upper(info.Rarity)
-	rarityTag.BackgroundColor3 = info.Color
-	popupStroke.Color = info.Color:Lerp(C.Ink, 0.35)
-	incomeLabel.Text = ArtifactData.FormatMoney(info.Income) .. " / sec"
-	descLabel.Text = info.Description
-	foundLabel.Text = (info.Grade == "Perfect" and "PERFECT DIG!") or "YOU FOUND"
-
-	-- pop-in animation
-	popup.Visible = true
-	popupScale.Scale = 0.3
-	TweenService:Create(popupScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
-
-	-- big finds (Legendary and up) flash the screen
-	local big = info.RarityIndex >= ArtifactData.GetRarityIndex("Legendary")
-	if big then
-		flash.BackgroundColor3 = info.Color
-		flash.BackgroundTransparency = 0.55
-		TweenService:Create(flash, TweenInfo.new(1.2), {BackgroundTransparency = 1}):Play()
+	local sound = GameConfig.Sounds and GameConfig.Sounds.Find
+	if sound and sound ~= "" then
+		local s = Instance.new("Sound")
+		s.SoundId = sound
+		s.Volume = 0.7
+		s.Parent = workspace.CurrentCamera
+		s:Play()
+		game:GetService("Debris"):AddItem(s, 4)
 	end
+	treasurePop(info.Position, info.Color, function()
+		if popupToken ~= myToken then return end
 
-	task.delay(big and 6 or 4, function()
-		if popupToken == myToken then
-			popup.Visible = false
+		nameLabel.Text = info.Name
+		rarityLabel.Text = string.upper(info.Rarity)
+		rarityTag.BackgroundColor3 = info.Color
+		popupStroke.Color = info.Color:Lerp(C.Ink, 0.35)
+		incomeLabel.Text = ArtifactData.FormatMoney(info.Income) .. " / sec"
+		descLabel.Text = info.Description
+		foundLabel.Text = (info.Grade == "Perfect" and "PERFECT DIG!") or "YOU FOUND"
+
+		-- pop-in animation
+		popup.Visible = true
+		popupScale.Scale = 0.3
+		TweenService:Create(popupScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+
+		-- big finds (Legendary and up) flash the screen
+		local big = info.RarityIndex >= ArtifactData.GetRarityIndex("Legendary")
+		if big then
+			flash.BackgroundColor3 = info.Color
+			flash.BackgroundTransparency = 0.55
+			TweenService:Create(flash, TweenInfo.new(1.2), {BackgroundTransparency = 1}):Play()
 		end
+
+		task.delay(big and 6 or 4, function()
+			if popupToken == myToken then
+				popup.Visible = false
+			end
+		end)
 	end)
 end)
 

@@ -208,8 +208,10 @@ end)
 ---------------------------------------------------------------------
 -- SHOVEL POSE + DIG ANIMATION (for every player's character on this screen)
 -- The real tool is hidden on this screen. A copy of the shovel is placed exactly where the
--- pose wants it every frame, the right hand holds its grip with IK (one-handed), and the
--- torso leans and twists with the swing. The blade is never allowed to sink into the ground.
+-- pose wants it every frame, the right hand grips its shaft with IK (position AND rotation,
+-- so the fist really wraps the handle like a normal Roblox tool), and the torso leans and
+-- twists with the swing. The swing is short and snappy with a tiny freeze on impact.
+-- The blade is never allowed to sink into the ground.
 -- Other players' swings arrive through ShovelSwingFx, so everyone sees everyone dig.
 ---------------------------------------------------------------------
 local Debris = game:GetService("Debris")
@@ -224,14 +226,13 @@ local swingFxRemote = remotes:WaitForChild("ShovelSwingFx")
 local IDLE = {Hand = Vector3.new(1.05, 0, -0.55), Tilt = 55, Turn = -10, Lean = 0, Twist = 0}
 local SWING = {
 	{0.00, IDLE.Hand, 55, -10, 0, 0},                          -- carried at the side, blade forward
-	{0.26, Vector3.new(1.0, 0.9, 0.05), 25, -8, -8, 12},       -- wind up: pull it back and up
-	{0.44, Vector3.new(0.9, 0.15, -1.2), 40, -4, 22, -4},      -- strike: blade meets the dirt in front
-	{0.60, Vector3.new(0.95, -0.1, -1.0), 78, -10, 14, -8},    -- lever: pry the dirt up
-	{0.78, Vector3.new(1.3, 1.1, -0.6), 95, -65, 2, -30},      -- toss it off to the right
+	{0.30, Vector3.new(1.0, 1.05, -0.15), 12, -8, -8, 10},     -- quick wind up: yank it back and up
+	{0.50, Vector3.new(0.9, 0.1, -1.25), 44, -4, 22, -4},      -- slam: blade bites the dirt in front
+	{0.70, Vector3.new(0.95, 0.4, -1.05), 62, -8, 12, -6},     -- small recoil bounce
 	{1.00, IDLE.Hand, 55, -10, 0, 0},
 }
-local STRIKE_TIME = 0.44
-local TOSS_TIME = 0.78
+local STRIKE_TIME = 0.5
+local HIT_STOP = 0.06 -- the pose freezes this long on impact, which makes hits feel heavy
 
 -- tool axes when upright: shaft (+Z) points up, blade face (+Y) points forward
 local UPRIGHT = CFrame.fromMatrix(Vector3.zero, Vector3.xAxis, -Vector3.zAxis, Vector3.yAxis)
@@ -363,6 +364,9 @@ local function createRig(character, tool)
 	local rightPole = newAttachment(root, "ShovelRightElbow")
 	rightPole.Position = Vector3.new(2.4, -1.4, 0.8)
 	local rightIK = newArmIK(humanoid, "ShovelRightArm", parts.RU, parts.RH, rightTarget, rightPole)
+	-- match the hand's rotation too, so the fist closes around the shaft
+	rightIK.Type = Enum.IKControlType.Transform
+	local gripAttachment = parts.RH:FindFirstChild("RightGripAttachment")
 
 	local rayParams = RaycastParams.new()
 	rayParams.FilterType = Enum.RaycastFilterType.Exclude
@@ -381,7 +385,8 @@ local function createRig(character, tool)
 		RightTarget = rightTarget,
 		Waist = waist and waist:IsA("Motor6D") and waist or nil,
 		WaistC0 = waist and waist:IsA("Motor6D") and waist.C0 or nil,
-		SwingStart = nil, SwingLength = 0.6, Tossed = true,
+		SwingStart = nil, SwingLength = 0.4, Struck = true,
+		GripOffset = gripAttachment and gripAttachment.CFrame or CFrame.new(0, -0.15, 0) * CFrame.Angles(math.rad(-90), 0, 0),
 		RayParams = rayParams,
 		Cleanup = {holder, rightTarget, rightPole, rightIK},
 	}
@@ -391,7 +396,7 @@ end
 
 -- throws a few little dirt clumps off the blade
 local function tossDirt(position, color)
-	for i = 1, 5 do
+	for i = 1, 7 do
 		local clump = Instance.new("Part")
 		clump.Shape = Enum.PartType.Ball
 		clump.Size = Vector3.one * (0.35 + math.random() * 0.3)
@@ -402,7 +407,7 @@ local function tossDirt(position, color)
 		clump.CanTouch = false
 		clump.CastShadow = false
 		clump.CFrame = CFrame.new(position + Vector3.new(math.random() - 0.5, 0, math.random() - 0.5) * 0.6)
-		clump.AssemblyLinearVelocity = Vector3.new(math.random() * 8 - 4, 14 + math.random() * 8, math.random() * 8 - 4)
+		clump.AssemblyLinearVelocity = Vector3.new(math.random() * 12 - 6, 12 + math.random() * 10, math.random() * 12 - 6)
 		clump.Parent = puppetFolder
 		Debris:AddItem(clump, 1.1 + i * 0.05)
 	end
@@ -419,20 +424,26 @@ local function startSwing(character, length)
 	if not rig then return end
 	rig.SwingStart = os.clock()
 	rig.SwingLength = length
-	rig.Tossed = false
+	rig.Struck = false
 end
 
 local function poseRig(character, rig, clock)
 	local pose
 	if rig.SwingStart then
-		local t = (clock - rig.SwingStart) / rig.SwingLength
+		-- hit-stop: time stands still for a moment right at the impact
+		local elapsed = clock - rig.SwingStart
+		local strikeAt = rig.SwingLength * STRIKE_TIME
+		if elapsed > strikeAt then
+			elapsed -= math.min(elapsed - strikeAt, HIT_STOP)
+		end
+		local t = elapsed / rig.SwingLength
 		if t >= 1 then
 			rig.SwingStart = nil
 			pose = idlePose(clock)
 		else
 			pose = samplePose(t)
-			if not rig.Tossed and t >= TOSS_TIME then
-				rig.Tossed = true
+			if not rig.Struck and t >= STRIKE_TIME then
+				rig.Struck = true
 				if rig.Blade then
 					tossDirt(rig.Blade.Position, dirtColorAt(rig.Root.Position))
 				end
@@ -474,7 +485,10 @@ local function poseRig(character, rig, clock)
 	end
 	workspace:BulkMoveTo(parts, cframes, Enum.BulkMoveMode.FireCFrameChanged)
 
-	rig.RightTarget.Position = hand
+	-- the hand goes exactly where a normal Roblox tool grip would put it on this shaft:
+	-- handle = hand * gripAttachment * grip^-1, so hand = handle * grip * gripAttachment^-1
+	local handCF = shovelCF * CFrame.new(0, 0, rig.HoldZ) * rig.GripOffset:Inverse()
+	rig.RightTarget.CFrame = rig.Root.CFrame:ToObjectSpace(handCF)
 	if rig.Waist then
 		rig.Waist.C0 = rig.WaistC0 * CFrame.Angles(math.rad(-pose.Lean), math.rad(pose.Twist), 0)
 	end
@@ -513,45 +527,122 @@ swingFxRemote.OnClientEvent:Connect(function(otherPlayer, length)
 	end
 end)
 
--- A small, smooth camera dip when the shovel hits the ground
-local function impactDip()
-	local start = os.clock()
-	local conn
-	conn = RunService.RenderStepped:Connect(function()
-		local t = (os.clock() - start) / 0.2
-		if t >= 1 then
-			conn:Disconnect()
-			return
-		end
-		local offset = math.sin(t * math.pi) * 0.16
-		camera.CFrame = camera.CFrame * CFrame.new(0, -offset, 0)
+---------------------------------------------------------------------
+-- DIG JUICE: screen shake, combo counter, sounds, bounce feedback
+---------------------------------------------------------------------
+local digHitRemote = remotes:WaitForChild("DigHit")
+
+local function playSound(id, volume, pitch)
+	if not id or id == "" then return end
+	local sound = Instance.new("Sound")
+	sound.SoundId = id
+	sound.Volume = volume or 0.6
+	sound.PlaybackSpeed = pitch or 1
+	sound.Parent = camera
+	sound:Play()
+	Debris:AddItem(sound, 3)
+end
+
+-- short, punchy camera shake (strength in studs)
+local shakeUntil, shakeStrength = 0, 0
+local function shake(strength, duration)
+	shakeStrength = math.max(shakeStrength, strength)
+	shakeUntil = math.max(shakeUntil, os.clock() + duration)
+end
+RunService:BindToRenderStep("DigShake", Enum.RenderPriority.Camera.Value + 1, function()
+	local left = shakeUntil - os.clock()
+	if left <= 0 then
+		shakeStrength = 0
+		return
+	end
+	local s = shakeStrength * math.clamp(left / 0.15, 0, 1)
+	camera.CFrame = camera.CFrame * CFrame.new((math.random() - 0.5) * s, (math.random() - 0.5) * s, 0)
+		* CFrame.Angles(0, 0, math.rad((math.random() - 0.5) * s * 6))
+end)
+
+-- combo counter: pops up next to the hotbar while you keep digging
+local comboLabel = UIKit.label(gui, "", {
+	Size = UDim2.fromOffset(200, 44), Position = UDim2.new(0.5, 70, 1, -150), AnchorPoint = Vector2.new(0, 0),
+	Align = "Left", Color = C.Sun, Stroke = 3,
+})
+comboLabel.Rotation = -6
+comboLabel.Visible = false
+local comboToken = 0
+local COMBO_COLORS = {C.White, C.Sun, C.Sun, C.Mint, C.Mint, C.Sky, C.Sky, C.Lilac, C.Coral, C.Coral}
+
+digHitRemote.OnClientEvent:Connect(function(info)
+	if typeof(info) ~= "table" then return end
+	if info.Bounced then
+		shake(0.35, 0.18)
+		playSound(GameConfig.Sounds.Clang, 0.7)
+		comboLabel.Visible = false
+		return
+	end
+	local combo = tonumber(info.Combo) or 1
+	shake(0.12 + combo * 0.012, 0.12)
+	playSound(GameConfig.Sounds.Dig, 0.5, 0.9 + math.random() * 0.2 + combo * 0.02)
+	if typeof(info.Position) == "Vector3" and typeof(info.Color) == "Color3" then
+		tossDirt(info.Position + Vector3.new(0, 1.5, 0), info.Color)
+	end
+	if combo >= 2 then
+		comboToken += 1
+		local myToken = comboToken
+		comboLabel.Text = "COMBO x" .. combo .. "  +" .. (combo - 1) * 4 .. "% luck"
+		comboLabel.TextColor3 = COMBO_COLORS[math.clamp(combo, 1, #COMBO_COLORS)]
+		comboLabel.Visible = true
+		UIKit.pop(comboLabel, 1.35)
+		playSound(GameConfig.Sounds.Combo, 0.35, 0.8 + combo * 0.06)
+		task.delay(1.5, function()
+			if comboToken == myToken then comboLabel.Visible = false end
+		end)
+	end
+end)
+
+---------------------------------------------------------------------
+-- SWINGING: click to dig, or hold the button to keep digging
+---------------------------------------------------------------------
+local lastSwing = 0
+local holding = false
+
+local function trySwing(def)
+	local now = os.clock()
+	if now - lastSwing < def.Cooldown then return end
+	lastSwing = now
+
+	local length = math.clamp(def.Cooldown * 0.9, 0.28, 0.45)
+	startSwing(player.Character, length)
+
+	-- the dig happens exactly when the blade hits the ground
+	local target = mouse.Hit and mouse.Hit.Position
+	task.delay(length * STRIKE_TIME, function()
+		swingRemote:FireServer(target, length)
 	end)
 end
 
-local lastSwing = 0
 local function onToolEquipped(tool)
 	local def = GameConfig.GetShovel(tool:GetAttribute("ShovelId")) or GameConfig.Shovels[1]
 	equippedDef = def
 	depthPanel.Visible = true
 
 	local activatedConn = tool.Activated:Connect(function()
-		local now = os.clock()
-		if now - lastSwing < def.Cooldown then return end
-		lastSwing = now
-
-		local length = math.clamp(def.Cooldown * 1.05, 0.45, 0.75)
-		startSwing(player.Character, length)
-
-		-- the dig happens exactly when the blade hits the ground
-		local target = mouse.Hit and mouse.Hit.Position
-		task.delay(length * STRIKE_TIME, function()
-			swingRemote:FireServer(target, length)
-			impactDip()
-		end)
+		holding = true
+		trySwing(def)
+	end)
+	local deactivatedConn = tool.Deactivated:Connect(function()
+		holding = false
+	end)
+	-- while the button is held, dig again as soon as the shovel is ready
+	local holdConn = RunService.Heartbeat:Connect(function()
+		if holding and tool.Parent == player.Character then
+			trySwing(def)
+		end
 	end)
 
 	tool.Unequipped:Once(function()
+		holding = false
 		activatedConn:Disconnect()
+		deactivatedConn:Disconnect()
+		holdConn:Disconnect()
 		if equippedDef == def then equippedDef = nil end
 	end)
 end
