@@ -1,7 +1,7 @@
 -- InventoryClient (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- The Inventory window: every meme you've picked up, as icon tiles sorted from rarest to
 -- most common, with how many you have and how much each one earns on display.
--- Open it with the bag button on the left or the B key.
+-- Open it with the BAG button on the HUD or the B key.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,25 +18,15 @@ local player = Players.LocalPlayer
 local gui = UIKit.screen(player, "InventoryGui", 3)
 
 ---------------------------------------------------------------------
--- BAG BUTTON (left side, under the money pills)
----------------------------------------------------------------------
-local bagButton = UIKit.button(gui, "", {Size = UDim2.fromOffset(66, 66), Position = UDim2.new(0, 18, 0, 170), Color = C.Sun, Radius = 20})
-local bagEmoji = Instance.new("TextLabel")
-bagEmoji.BackgroundTransparency = 1
-bagEmoji.Size = UDim2.fromScale(0.62, 0.62)
-bagEmoji.Position = UDim2.fromScale(0.5, 0.45)
-bagEmoji.AnchorPoint = Vector2.new(0.5, 0.5)
-bagEmoji.Text = "🎒"
-bagEmoji.TextScaled = true
-bagEmoji.Parent = bagButton
-local bagTag = UIKit.panel(bagButton, {Size = UDim2.fromOffset(62, 22), Position = UDim2.new(0.5, 0, 1, 2), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Radius = 11, StrokeColor = C.Sun})
-UIKit.label(bagTag, "BAG [B]", {Size = UDim2.new(1, -10, 1, -6), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 0, MaxText = 14})
-
----------------------------------------------------------------------
 -- WINDOW
 ---------------------------------------------------------------------
 local window, content = UIKit.window(gui, "INVENTORY", UDim2.fromOffset(740, 560), C.Sun, "🎒")
-local countLabel = UIKit.label(content, "", {Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 22})
+local countLabel = UIKit.label(content, "", {Size = UDim2.new(1, -260, 0, 26), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 22})
+-- fills every empty display slot in your museum with your best-earning memes
+local placeAllButton = UIKit.button(content, "🏛️ PLACE ALL IN MUSEUM", {Size = UDim2.fromOffset(250, 38), Position = UDim2.new(1, -4, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Violet, Radius = 19, MaxText = 16})
+placeAllButton.MouseButton1Click:Connect(function()
+	remotes:WaitForChild("PlaceAll"):FireServer()
+end)
 
 local gridHolder = Instance.new("ScrollingFrame")
 gridHolder.BackgroundTransparency = 1
@@ -63,12 +53,26 @@ local emptyLabel = UIKit.label(content, "Nothing here yet... go dig up some meme
 	Size = UDim2.new(0.9, 0, 0, 30), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Grey, Stroke = 0,
 })
 
+-- rainbow borders spin slowly
+local RAINBOW = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)), ColorSequenceKeypoint.new(0.2, Color3.fromRGB(255, 200, 60)),
+	ColorSequenceKeypoint.new(0.4, Color3.fromRGB(90, 230, 110)), ColorSequenceKeypoint.new(0.6, Color3.fromRGB(70, 170, 255)),
+	ColorSequenceKeypoint.new(0.8, Color3.fromRGB(180, 90, 255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80)),
+})
+local rainbows = {}
+game:GetService("RunService").RenderStepped:Connect(function()
+	if not window.Visible then return end
+	local r = (os.clock() * 90) % 360
+	for _, gradient in ipairs(rainbows) do gradient.Rotation = r end
+end)
+
 local function refresh()
 	local ok, list = pcall(function() return getInventory:InvokeServer() end)
 	if not ok or type(list) ~= "table" then return end
 	for _, child in ipairs(gridHolder:GetChildren()) do
 		if child:IsA("GuiObject") then child:Destroy() end
 	end
+	rainbows = {}
 	-- rarest first, then by name
 	local entries, total = {}, 0
 	for _, item in ipairs(list) do
@@ -89,8 +93,18 @@ local function refresh()
 	for i, entry in ipairs(entries) do
 		local artifact = entry.Artifact
 		local rarity = ArtifactData.GetRarity(artifact.Rarity)
-		local card = UIKit.panel(gridHolder, {Size = UDim2.fromOffset(150, 186), Color = C.White, Radius = 20, ShadeAmount = 0.06})
+		-- the card's border shows the rarity (Mythic and better get an animated rainbow border)
+		local rarityIndex = ArtifactData.GetRarityIndex(artifact.Rarity)
+		local card = UIKit.panel(gridHolder, {Size = UDim2.fromOffset(150, 186), Color = C.White, Radius = 20, Stroke = 4, StrokeColor = rarity.Color, ShadeAmount = 0.06})
 		card.LayoutOrder = i
+		if rarityIndex >= ArtifactData.GetRarityIndex("Mythic") then
+			local border = card:FindFirstChildOfClass("UIStroke")
+			border.Color = Color3.new(1, 1, 1)
+			local rainbow = Instance.new("UIGradient")
+			rainbow.Color = RAINBOW
+			rainbow.Parent = border
+			table.insert(rainbows, rainbow)
+		end
 		UIKit.artifactIcon(card, artifact, {Size = UDim2.fromOffset(96, 96), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0)})
 		if entry.Count > 1 then
 			local countTag = UIKit.panel(card, {Size = UDim2.fromOffset(44, 28), Position = UDim2.fromOffset(8, 8), Color = C.Violet, Radius = 14, Stroke = 2})
@@ -112,7 +126,8 @@ local function toggle()
 	end
 end
 
-bagButton.MouseButton1Click:Connect(toggle)
+local UIBus = require(ReplicatedStorage:WaitForChild("UIBus"))
+UIBus.On("Inventory", toggle) -- the BAG button on the HUD
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if not gameProcessed and input.KeyCode == Enum.KeyCode.B then
 		toggle()
@@ -120,6 +135,4 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 inventoryChangedRemote.OnClientEvent:Connect(function()
 	if window.Visible then refresh() end
-	-- little bounce on the bag so players notice the new item
-	UIKit.pop(bagButton, 1.3)
 end)

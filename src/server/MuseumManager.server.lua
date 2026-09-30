@@ -32,6 +32,7 @@ local sellRemote = getRemote("SellArtifacts")         -- client -> server: (arti
 local floorRemote = getRemote("ChangeFloor")          -- client -> server: (+1 up / -1 down)
 local messageRemote = getRemote("ShopMessage")        -- server -> client: (text, success) toast
 local inventoryChangedRemote = getRemote("InventoryChanged")
+local placeAllRemote = getRemote("PlaceAll")          -- client -> server: fill every empty slot with your best memes
 
 local SLOT_COUNT = #GameConfig.SlotPrices
 local LOCKED_COLOR = Color3.fromRGB(150, 150, 170)
@@ -306,6 +307,44 @@ placeRemote.OnServerEvent:Connect(function(player, index, artifactId)
 	inventoryChangedRemote:FireClient(player)
 	local artifact = ArtifactData.GetArtifact(artifactId)
 	messageRemote:FireClient(player, artifact.Name .. " is on display! +" .. ArtifactData.FormatMoney(ArtifactData.GetIncome(artifact)) .. "/s", true)
+end)
+
+-- PLACE ALL (inventory window): every empty, unlocked slot gets your best-earning meme
+local lastPlaceAll = {}
+placeAllRemote.OnServerEvent:Connect(function(player)
+	if os.clock() - (lastPlaceAll[player] or 0) < 1 then return end
+	lastPlaceAll[player] = os.clock()
+	local data = PlayerData.Get(player)
+	local museum = museums[player]
+	if not data or not museum then return end
+	-- the bag's memes, best earners first
+	local memes = {}
+	for _, id in pairs(data.Inventory) do
+		local artifact = ArtifactData.GetArtifact(id)
+		if artifact then table.insert(memes, artifact) end
+	end
+	table.sort(memes, function(a, b) return ArtifactData.GetIncome(a) > ArtifactData.GetIncome(b) end)
+	local placed, nextMeme = 0, 1
+	for index = 1, SLOT_COUNT do
+		if nextMeme > #memes then break end
+		if PlayerData.IsSlotUnlocked(player, index) and not data.Displayed[tostring(index)] then
+			local artifact = memes[nextMeme]
+			nextMeme += 1
+			if takeFromInventory(player, artifact.Id) then
+				PlayerData.SetDisplayed(player, index, artifact.Id)
+				refreshSlot(player, museum, index)
+				placed += 1
+			end
+		end
+	end
+	inventoryChangedRemote:FireClient(player)
+	if placed > 0 then
+		messageRemote:FireClient(player, "🏛️ Placed " .. placed .. " meme" .. (placed == 1 and "" or "s") .. " in your museum! Now earning " .. ArtifactData.FormatMoney(PlayerData.GetIncome(player)) .. "/s", true)
+	elseif #memes == 0 then
+		messageRemote:FireClient(player, "Your bag is empty. Go dig up some memes!", false)
+	else
+		messageRemote:FireClient(player, "No empty display slots! Unlock more slots in your museum.", false)
+	end
 end)
 
 takeRemote.OnServerEvent:Connect(function(player, index)

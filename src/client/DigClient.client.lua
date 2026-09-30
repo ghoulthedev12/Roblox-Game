@@ -168,8 +168,8 @@ local function textLine(y, size)
 	l.Visible = false
 	return l, l:FindFirstChildOfClass("UIStroke")
 end
-local foundText, foundStroke = textLine(150, 30)
-local hintText, hintStroke = textLine(186, 20)
+local foundText, foundStroke = textLine(262, 30)
+local hintText, hintStroke = textLine(298, 20)
 
 local tokens = {}
 local function say(label, stroke, text, color, duration)
@@ -225,16 +225,9 @@ if findsFolder then
 	for _, d in ipairs(findsFolder:GetDescendants()) do check(d) end
 end
 
+local Audio = require(ReplicatedStorage:WaitForChild("Audio"))
 local function playFindSound()
-	local sound = GameConfig.Sounds and GameConfig.Sounds.Find
-	if sound and sound ~= "" then
-		local s = Instance.new("Sound")
-		s.SoundId = sound
-		s.Volume = 0.7
-		s.Parent = workspace.CurrentCamera
-		s:Play()
-		game:GetService("Debris"):AddItem(s, 4)
-	end
+	Audio.play(GameConfig.Sounds and GameConfig.Sounds.Find, 0.7)
 end
 
 resultRemote.OnClientEvent:Connect(function(info)
@@ -273,7 +266,7 @@ end)
 ---------------------------------------------------------------------
 -- RARE FIND ANNOUNCEMENTS (whole server)
 ---------------------------------------------------------------------
-local banner = UIKit.panel(gui, {Size = UDim2.fromOffset(640, 54), Position = UDim2.new(0.5, 0, 0, 92), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Radius = 27, Stroke = 3, StrokeColor = C.Sun, ShadeAmount = 0.2})
+local banner = UIKit.panel(gui, {Size = UDim2.fromOffset(640, 54), Position = UDim2.new(0.5, 0, 0, 196), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Radius = 27, Stroke = 3, StrokeColor = C.Sun, ShadeAmount = 0.2})
 banner.BackgroundTransparency = 0.08
 banner.Visible = false
 local bannerStroke = banner:FindFirstChildOfClass("UIStroke")

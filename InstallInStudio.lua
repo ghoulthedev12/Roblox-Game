@@ -1219,6 +1219,41 @@ ArtifactsWorlds.Artifacts = {
 
 return ArtifactsWorlds
 ]=])
+install(game:GetService("ReplicatedStorage"), "Audio", "ModuleScript", [=[
+-- Audio (ModuleScript in ReplicatedStorage)
+-- One place to play sound effects on a player's screen. Every effect goes through the "SFX"
+-- SoundGroup, and music through the "Music" SoundGroup, so the settings window (AudioClient)
+-- can set each one's volume or mute it. Audio.play(id, volume, pitch)
+
+local SoundService = game:GetService("SoundService")
+
+local Audio = {}
+
+function Audio.group(name)
+	local group = SoundService:FindFirstChild(name)
+	if not group then
+		group = Instance.new("SoundGroup")
+		group.Name = name
+		group.Parent = SoundService
+	end
+	return group
+end
+
+function Audio.play(id, volume, pitch)
+	if not id or id == "" then return end
+	local sound = Instance.new("Sound")
+	sound.SoundId = id
+	sound.Volume = volume or 0.6
+	sound.PlaybackSpeed = pitch or 1
+	sound.SoundGroup = Audio.group("SFX")
+	sound.Parent = SoundService
+	sound:Play()
+	sound.Ended:Once(function() sound:Destroy() end)
+	task.delay(6, function() if sound.Parent then sound:Destroy() end end)
+end
+
+return Audio
+]=])
 install(game:GetService("ReplicatedStorage"), "GameConfig", "ModuleScript", [=[
 -- GameConfig (ModuleScript in ReplicatedStorage)
 -- All the numbers you might want to tweak, in one place.
@@ -1273,13 +1308,51 @@ end
 ---------------------------------------------------------------------
 -- Optional sound effects. Paste a sound's id from the Toolbox (e.g. "rbxassetid://123456")
 -- and it plays; leave "" for silence.
+-- Sound effects. These use sounds that come built into Roblox, so they work right away; to
+-- use your own, paste "rbxassetid://<id>" of any audio from the Creator Store instead.
 GameConfig.Sounds = {
-	Dig = "",    -- every time the pickaxe hits the dirt
-	Clang = "",  -- pickaxe bounces off a zone that's too hard
-	Find = "",   -- an artifact pops out of the ground
-	Combo = "",  -- combo goes up
+	Dig = "rbxasset://sounds/collide.wav",                -- every time the pickaxe hits the dirt
+	Clang = "rbxasset://sounds/swordslash.wav",           -- pickaxe bounces off a zone that's too hard
+	Find = "rbxasset://sounds/electronicpingshort.wav",   -- an artifact pops out of the ground
+	Combo = "rbxasset://sounds/clickfast.wav",            -- combo goes up
+	Click = "rbxasset://sounds/button.wav",               -- any UI button
 }
 
+-- BACKGROUND MUSIC per world (AudioClient crossfades to the world you're in).
+-- Paste a track for each world: in Studio open the Toolbox > Creator Store > Audio, search a
+-- mood (e.g. "chill", "synthwave", "spooky"), right-click a track > Copy Asset ID, and put it
+-- here as "rbxassetid://123456". Empty = that world plays the default track (or silence).
+GameConfig.Music = {
+	Default = "",
+	[1] = "",  -- The Meme Dig Site: chill beats
+	[2] = "",  -- Neon Sakura Grove: calm lo-fi / koto
+	[3] = "",  -- Galaxy Drift: dreamy space ambient
+	[4] = "",  -- Frostbyte Tundra: icy ambient
+	[5] = "",  -- Chrome Dunes: desert adventure
+	[6] = "",  -- Coral Circuit: underwater ambient
+	[7] = "",  -- Candy Mainframe: bubbly pop
+	[8] = "",  -- Volcano Forge: heavy drums
+	[9] = "",  -- Glitch Nexus: synthwave
+}
+GameConfig.MusicVolume = 0.35 -- how loud music plays at 100% on the Music slider
+
+
+-- REBIRTH: trade in your cash for a permanent boost. Cost = RebirthBaseCost x RebirthCostGrowth ^ rebirths.
+-- Each rebirth adds RebirthIncomeBonus (0.25 = +25%) to all museum income forever and gives gems.
+-- Gems buy the Lucky Charm upgrade: +GemLuckPerLevel luck per level (cost = level x GemLuckCost gems).
+GameConfig.RebirthBaseCost = 10e6
+GameConfig.RebirthCostGrowth = 5
+GameConfig.RebirthIncomeBonus = 0.25
+GameConfig.RebirthGems = 10       -- gems for rebirth #1; each later rebirth gives 5 more
+GameConfig.GemLuckPerLevel = 0.1
+GameConfig.GemLuckCost = 5
+GameConfig.GemLuckMaxLevel = 20
+function GameConfig.RebirthCost(rebirths)
+	return GameConfig.RebirthBaseCost * GameConfig.RebirthCostGrowth ^ rebirths
+end
+function GameConfig.RebirthGemReward(rebirths)
+	return GameConfig.RebirthGems + 5 * rebirths
+end
 
 -- Chance that a find becomes a "Lucky Dig" with the bonus minigame (0.1 = 1 in 10)
 GameConfig.MinigameChance = 0.1
@@ -2155,6 +2228,31 @@ return function(def)
 	return tool
 end
 ]=])
+install(game:GetService("ReplicatedStorage"), "UIBus", "ModuleScript", [=[
+-- UIBus (ModuleScript in ReplicatedStorage)
+-- Lets one LocalScript ask another to open a window (every LocalScript on a player's screen
+-- gets the same copy of this module). For example, the HUD's buttons do UIBus.Fire("Shop")
+-- and the pickaxe shop listens with UIBus.On("Shop", function() ... end).
+-- Names used: Shop, Museum, Teleport, Rebirth, Settings, Inventory, ToggleSound
+
+local UIBus = {}
+local events = {}
+
+local function event(name)
+	events[name] = events[name] or Instance.new("BindableEvent")
+	return events[name]
+end
+
+function UIBus.Fire(name, ...)
+	event(name):Fire(...)
+end
+
+function UIBus.On(name, callback)
+	return event(name).Event:Connect(callback)
+end
+
+return UIBus
+]=])
 install(game:GetService("ReplicatedStorage"), "UIKit", "ModuleScript", [=[
 -- UIKit (ModuleScript in ReplicatedStorage)
 -- One cartoony 2050 look for every screen in the game:
@@ -2213,6 +2311,31 @@ UIKit.autoOutline = autoOutline
 ---------------------------------------------------------------------
 -- BASICS
 ---------------------------------------------------------------------
+-- RESPONSIVE SIZE: every top-level panel on every screen gets a UIScale set from the screen
+-- size (1 on a 1280x760 screen, smaller on phones, a bit bigger on big monitors), so the whole
+-- UI fits PC, mobile and console alike. It updates when the window is resized or rotated.
+function UIKit.screenScale()
+	local camera = workspace.CurrentCamera
+	local v = camera and camera.ViewportSize or Vector2.new(1280, 760)
+	return math.clamp(math.min(v.X / 1280, v.Y / 760), 0.55, 1.25)
+end
+local responsive = setmetatable({}, {__mode = "k"}) -- the UIScales we manage
+local function makeResponsive(scale)
+	scale:SetAttribute("Responsive", true)
+	scale.Scale = UIKit.screenScale()
+	responsive[scale] = true
+end
+task.spawn(function()
+	local camera = workspace.CurrentCamera
+	if not camera then return end
+	camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+		local k = UIKit.screenScale()
+		for scale in pairs(responsive) do
+			if scale.Parent then scale.Scale = k end
+		end
+	end)
+end)
+
 function UIKit.screen(player, name, order)
 	local gui = Instance.new("ScreenGui")
 	gui.Name = name
@@ -2221,6 +2344,16 @@ function UIKit.screen(player, name, order)
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.DisplayOrder = order or 0
 	gui.Parent = player:WaitForChild("PlayerGui")
+	-- scale every top-level panel to the screen (panels that manage their own UIScale are left alone)
+	gui.ChildAdded:Connect(function(child)
+		task.defer(function()
+			if child.Parent == gui and child:IsA("GuiObject") and not child:FindFirstChildOfClass("UIScale") then
+				local scale = Instance.new("UIScale")
+				makeResponsive(scale)
+				scale.Parent = child
+			end
+		end)
+	end)
 	return gui
 end
 
@@ -2369,6 +2502,13 @@ function UIKit.button(parent, text, props)
 	b.MouseEnter:Connect(function() to(1.05) end)
 	b.MouseLeave:Connect(function() to(1) end)
 	b.MouseButton1Down:Connect(function() to(0.92, 0.06) end)
+	b.MouseButton1Click:Connect(function()
+		-- a soft click on every button (through the SFX group, so it follows the SFX setting)
+		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+		local Audio = require(ReplicatedStorage:WaitForChild("Audio"))
+		local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+		Audio.play(GameConfig.Sounds.Click, 0.35)
+	end)
 	b.MouseButton1Up:Connect(function() to(1.05) end)
 	return b, label
 end
@@ -2381,10 +2521,16 @@ end
 
 -- Pops a frame in with a bouncy scale
 function UIKit.pop(frame, from)
-	local scale = frame:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
-	scale.Parent = frame
-	scale.Scale = from or 0.6
-	TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+	local scale = frame:FindFirstChildOfClass("UIScale")
+	if not scale then
+		scale = Instance.new("UIScale")
+		if frame.Parent and frame.Parent:IsA("ScreenGui") then makeResponsive(scale) end
+		scale.Parent = frame
+	end
+	-- pop relative to the panel's screen-size scale
+	local base = scale:GetAttribute("Responsive") and UIKit.screenScale() or 1
+	scale.Scale = (from or 0.6) * base
+	TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = base}):Play()
 end
 
 -- A round colored badge with an emoji (or short text) in it
@@ -4678,6 +4824,17 @@ local function travel(player, world)
 	giveShovel(player)
 	character:PivotTo(arrivalSpots[world.Id] or (CFrame.new(world.Origin + Vector3.new(0, 6, SURFACE_RING))))
 end
+
+-- the HUD's MUSEUM button: back to World 1 and in front of your museum
+local goHomeRemote = getRemote("GoHome")
+local lastHome = {}
+goHomeRemote.OnServerEvent:Connect(function(player)
+	if os.clock() - (lastHome[player] or 0) < 2 then return end
+	lastHome[player] = os.clock()
+	if getWorld(player).Id ~= 1 then travel(player, GameConfig.Worlds[1]) end
+	local sendHome = script.Parent:FindFirstChild("SendHome")
+	if sendHome then sendHome:Fire(player) end
+end)
 
 travelRemote.OnServerEvent:Connect(function(player, worldId)
 	local data = PlayerData.Get(player)
@@ -7292,6 +7449,7 @@ local sellRemote = getRemote("SellArtifacts")         -- client -> server: (arti
 local floorRemote = getRemote("ChangeFloor")          -- client -> server: (+1 up / -1 down)
 local messageRemote = getRemote("ShopMessage")        -- server -> client: (text, success) toast
 local inventoryChangedRemote = getRemote("InventoryChanged")
+local placeAllRemote = getRemote("PlaceAll")          -- client -> server: fill every empty slot with your best memes
 
 local SLOT_COUNT = #GameConfig.SlotPrices
 local LOCKED_COLOR = Color3.fromRGB(150, 150, 170)
@@ -7568,6 +7726,44 @@ placeRemote.OnServerEvent:Connect(function(player, index, artifactId)
 	messageRemote:FireClient(player, artifact.Name .. " is on display! +" .. ArtifactData.FormatMoney(ArtifactData.GetIncome(artifact)) .. "/s", true)
 end)
 
+-- PLACE ALL (inventory window): every empty, unlocked slot gets your best-earning meme
+local lastPlaceAll = {}
+placeAllRemote.OnServerEvent:Connect(function(player)
+	if os.clock() - (lastPlaceAll[player] or 0) < 1 then return end
+	lastPlaceAll[player] = os.clock()
+	local data = PlayerData.Get(player)
+	local museum = museums[player]
+	if not data or not museum then return end
+	-- the bag's memes, best earners first
+	local memes = {}
+	for _, id in pairs(data.Inventory) do
+		local artifact = ArtifactData.GetArtifact(id)
+		if artifact then table.insert(memes, artifact) end
+	end
+	table.sort(memes, function(a, b) return ArtifactData.GetIncome(a) > ArtifactData.GetIncome(b) end)
+	local placed, nextMeme = 0, 1
+	for index = 1, SLOT_COUNT do
+		if nextMeme > #memes then break end
+		if PlayerData.IsSlotUnlocked(player, index) and not data.Displayed[tostring(index)] then
+			local artifact = memes[nextMeme]
+			nextMeme += 1
+			if takeFromInventory(player, artifact.Id) then
+				PlayerData.SetDisplayed(player, index, artifact.Id)
+				refreshSlot(player, museum, index)
+				placed += 1
+			end
+		end
+	end
+	inventoryChangedRemote:FireClient(player)
+	if placed > 0 then
+		messageRemote:FireClient(player, "🏛️ Placed " .. placed .. " meme" .. (placed == 1 and "" or "s") .. " in your museum! Now earning " .. ArtifactData.FormatMoney(PlayerData.GetIncome(player)) .. "/s", true)
+	elseif #memes == 0 then
+		messageRemote:FireClient(player, "Your bag is empty. Go dig up some memes!", false)
+	else
+		messageRemote:FireClient(player, "No empty display slots! Unlock more slots in your museum.", false)
+	end
+end)
+
 takeRemote.OnServerEvent:Connect(function(player, index)
 	if not validSlot(player, index) then return end
 	local data = PlayerData.Get(player)
@@ -7688,6 +7884,12 @@ local function defaultData()
 		LastOnline = os.time(),
 		Stats = {TotalEarned = 0, TotalDigs = 0},
 		TutorialDone = false, -- the first-join walkthrough (TutorialManager)
+		-- audio settings (SettingsManager / AudioClient), saved so they stick between visits
+		Settings = {MusicVolume = 0.6, SfxVolume = 0.8, MusicMuted = false, SfxMuted = false},
+		-- rebirths (RebirthManager): each one adds GameConfig.RebirthIncomeBonus to all museum income
+		Rebirths = 0,
+		Gems = 0,
+		GemLuckLevel = 0, -- the Lucky Charm gem upgrade (+10% luck per level)
 	}
 end
 
@@ -7728,7 +7930,8 @@ local function computeIncome(data)
 			total += ArtifactData.GetIncome(artifact)
 		end
 	end
-	return total
+	-- every rebirth adds a permanent income bonus
+	return total * (1 + GameConfig.RebirthIncomeBonus * (data.Rebirths or 0))
 end
 
 local function refresh(player)
@@ -7737,6 +7940,10 @@ local function refresh(player)
 	local income = computeIncome(data)
 	player:SetAttribute("Money", data.Money)
 	player:SetAttribute("Income", income)
+	player:SetAttribute("Gems", data.Gems or 0)
+	player:SetAttribute("Rebirths", data.Rebirths or 0)
+	player:SetAttribute("GemLuckLevel", data.GemLuckLevel or 0)
+	player:SetAttribute("GemLuck", 1 + GameConfig.GemLuckPerLevel * (data.GemLuckLevel or 0))
 
 	local stats = player:FindFirstChild("leaderstats")
 	if stats then
@@ -7894,6 +8101,11 @@ function PlayerData.AddMoney(player, amount)
 	end
 	refresh(player)
 	return true
+end
+
+-- updates the player's attributes (money, income, gems...) after a change made directly on data
+function PlayerData.Refresh(player)
+	refresh(player)
 end
 
 -- Returns true if the player could afford it (and takes the money)
@@ -8054,6 +8266,12 @@ local function sendHome(player)
 		character:PivotTo(getSpawnCFrame(plot, ownedMuseums[player]))
 	end
 end
+
+-- other scripts (the HUD's MUSEUM button, via DigManager) can send a player home
+local sendHomeEvent = script.Parent:FindFirstChild("SendHome") or Instance.new("BindableEvent")
+sendHomeEvent.Name = "SendHome"
+sendHomeEvent.Parent = script.Parent
+sendHomeEvent.Event:Connect(sendHome)
 
 local function onCharacterAdded(player, character)
 	character:WaitForChild("HumanoidRootPart")
@@ -10536,6 +10754,123 @@ task.spawn(function()
 end)
 
 return ProfileService]=])
+install(game:GetService("ServerScriptService"), "RebirthManager", "Script", [=[
+-- RebirthManager (Script in ServerScriptService)
+-- REBIRTH: once you have enough cash you can rebirth. Your cash goes back to the starting
+-- amount, but you keep everything else (memes, museum, pickaxes, worlds) and get:
+--   * +25% income on all your museum memes, forever (stacks with every rebirth)
+--   * gems (10 for the first rebirth, 5 more for each one after)
+-- Gems buy the LUCKY CHARM: +10% luck on every dig per level.
+-- The numbers are in GameConfig (RebirthBaseCost, RebirthIncomeBonus, GemLuck...).
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+local function getRemote(name)
+	local r = remotes:FindFirstChild(name) or Instance.new("RemoteEvent")
+	r.Name = name
+	r.Parent = remotes
+	return r
+end
+local rebirthRemote = getRemote("Rebirth")
+local gemUpgradeRemote = getRemote("BuyGemUpgrade")
+local messageRemote = getRemote("ShopMessage")
+local announceRemote = getRemote("Announcement")
+
+local busy = {}
+
+rebirthRemote.OnServerEvent:Connect(function(player)
+	if busy[player] then return end
+	busy[player] = true
+	local data = PlayerData.Get(player)
+	if data then
+		local cost = GameConfig.RebirthCost(data.Rebirths)
+		if data.Money < cost then
+			messageRemote:FireClient(player, "You need " .. ArtifactData.FormatMoney(cost) .. " to rebirth!", false)
+		else
+			local gems = GameConfig.RebirthGemReward(data.Rebirths)
+			data.Rebirths += 1
+			data.Gems += gems
+			data.Money = GameConfig.StartingMoney
+			PlayerData.Refresh(player)
+			messageRemote:FireClient(player, "♻️ REBIRTH " .. data.Rebirths .. "! +" .. math.floor(GameConfig.RebirthIncomeBonus * 100) .. "% income forever and +" .. gems .. " 💎", true)
+			announceRemote:FireAllClients(player.DisplayName .. " reached Rebirth " .. data.Rebirths .. "!", Color3.fromRGB(255, 130, 150))
+		end
+	end
+	task.wait(0.5)
+	busy[player] = nil
+end)
+
+gemUpgradeRemote.OnServerEvent:Connect(function(player)
+	local data = PlayerData.Get(player)
+	if not data then return end
+	if data.GemLuckLevel >= GameConfig.GemLuckMaxLevel then
+		messageRemote:FireClient(player, "Your Lucky Charm is maxed out!", false)
+		return
+	end
+	local cost = (data.GemLuckLevel + 1) * GameConfig.GemLuckCost
+	if data.Gems < cost then
+		messageRemote:FireClient(player, "You need " .. cost .. " 💎 for the next Lucky Charm level.", false)
+		return
+	end
+	data.Gems -= cost
+	data.GemLuckLevel += 1
+	PlayerData.Refresh(player)
+	messageRemote:FireClient(player, "🍀 Lucky Charm level " .. data.GemLuckLevel .. "! +" .. math.floor(GameConfig.GemLuckPerLevel * 100 * data.GemLuckLevel) .. "% luck", true)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	busy[player] = nil
+end)
+]=])
+install(game:GetService("ServerScriptService"), "SettingsManager", "Script", [=[
+-- SettingsManager (Script in ServerScriptService)
+-- Keeps each player's audio settings in their saved data (ProfileService / DataStore), so
+-- music and sound volumes stick between visits. The settings go to the client as the
+-- "AudioSettings" attribute (JSON) and come back through the SaveAudioSettings remote.
+
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+local saveRemote = remotes:FindFirstChild("SaveAudioSettings") or Instance.new("RemoteEvent")
+saveRemote.Name = "SaveAudioSettings"
+saveRemote.Parent = remotes
+
+local function publish(player, settings)
+	player:SetAttribute("AudioSettings", HttpService:JSONEncode(settings))
+end
+
+local function onPlayer(player)
+	local data = PlayerData.WaitForData(player)
+	if data and player.Parent then publish(player, data.Settings) end
+end
+Players.PlayerAdded:Connect(onPlayer)
+for _, player in ipairs(Players:GetPlayers()) do task.spawn(onPlayer, player) end
+
+saveRemote.OnServerEvent:Connect(function(player, settings)
+	local data = PlayerData.Get(player)
+	if not data or typeof(settings) ~= "table" then return end
+	local function volume(v, fallback)
+		return typeof(v) == "number" and v == v and math.clamp(v, 0, 1) or fallback
+	end
+	data.Settings = {
+		MusicVolume = volume(settings.MusicVolume, data.Settings.MusicVolume),
+		SfxVolume = volume(settings.SfxVolume, data.Settings.SfxVolume),
+		MusicMuted = settings.MusicMuted == true,
+		SfxMuted = settings.SfxMuted == true,
+	}
+	publish(player, data.Settings)
+end)
+]=])
 install(game:GetService("ServerScriptService"), "ShopBuilder", "ModuleScript", [=[
 -- ShopBuilder (ModuleScript in ServerScriptService)
 -- Builds a world's Pickaxe Shop: a cartoony 2050 pavilion on a round tiered platform,
@@ -12525,6 +12860,190 @@ Players.PlayerRemoving:Connect(function(player)
 	notify(before, "OnLeave", player)
 end)
 ]=])
+install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "AudioClient", "LocalScript", [=[
+-- AudioClient (LocalScript in StarterPlayer > StarterPlayerScripts)
+-- Background music and the audio settings.
+--   * Music: GameConfig.Music has a track per world; when you travel it crossfades to the
+--     new world's track (or GameConfig.Music.Default).
+--   * Two SoundGroups: "Music" and "SFX" (every sound effect plays through SFX, see Audio).
+--   * SETTINGS window (UIBus "Settings"): a volume slider and a mute button for each group.
+--   * The speaker button on the HUD (UIBus "ToggleSound") mutes / unmutes everything at once.
+--   Settings are saved in your data (SettingsManager) so they stick between visits.
+
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local Audio = require(ReplicatedStorage:WaitForChild("Audio"))
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local UIBus = require(ReplicatedStorage:WaitForChild("UIBus"))
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local C = UIKit.Colors
+local saveRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("SaveAudioSettings")
+
+local player = Players.LocalPlayer
+local musicGroup, sfxGroup = Audio.group("Music"), Audio.group("SFX")
+
+local settings = {MusicVolume = 0.6, SfxVolume = 0.8, MusicMuted = false, SfxMuted = false}
+
+local function apply()
+	musicGroup.Volume = settings.MusicMuted and 0 or settings.MusicVolume
+	sfxGroup.Volume = settings.SfxMuted and 0 or settings.SfxVolume
+	player:SetAttribute("SoundMuted", settings.MusicMuted and settings.SfxMuted) -- the HUD speaker icon reads this
+end
+
+-- saving is throttled (sliders fire a lot while dragging)
+local saveQueued = false
+local function save()
+	apply()
+	if saveQueued then return end
+	saveQueued = true
+	task.delay(1, function()
+		saveQueued = false
+		saveRemote:FireServer(settings)
+	end)
+end
+
+---------------------------------------------------------------------
+-- MUSIC: one track per world, crossfading when you travel
+---------------------------------------------------------------------
+local current -- the Sound playing now
+local function trackFor(worldId)
+	local id = GameConfig.Music[worldId]
+	if not id or id == "" then id = GameConfig.Music.Default end
+	return id ~= "" and id or nil
+end
+local function playMusic(worldId)
+	local id = trackFor(worldId)
+	if current and current.SoundId == id then return end
+	local old = current
+	current = nil
+	if old then
+		TweenService:Create(old, TweenInfo.new(1.5), {Volume = 0}):Play()
+		task.delay(1.6, function() old:Destroy() end)
+	end
+	if not id then return end
+	local sound = Instance.new("Sound")
+	sound.Name = "BackgroundMusic"
+	sound.SoundId = id
+	sound.Looped = true
+	sound.Volume = 0
+	sound.SoundGroup = musicGroup
+	sound.Parent = SoundService
+	sound:Play()
+	TweenService:Create(sound, TweenInfo.new(2), {Volume = GameConfig.MusicVolume}):Play()
+	current = sound
+end
+player:GetAttributeChangedSignal("CurrentWorld"):Connect(function()
+	playMusic(player:GetAttribute("CurrentWorld") or 1)
+end)
+playMusic(player:GetAttribute("CurrentWorld") or 1)
+
+---------------------------------------------------------------------
+-- SETTINGS WINDOW
+---------------------------------------------------------------------
+local gui = UIKit.screen(player, "SettingsGui", 8)
+local window, content = UIKit.window(gui, "SETTINGS", UDim2.fromOffset(460, 330), C.Sky, "⚙️")
+
+-- one row: icon + name, a mute button, and a slider underneath
+local function audioRow(y, icon, title, volumeKey, mutedKey)
+	UIKit.label(content, icon .. "  " .. title, {Size = UDim2.new(0.6, 0, 0, 30), Position = UDim2.fromOffset(8, y), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
+	local mute = UIKit.button(content, "", {Size = UDim2.fromOffset(120, 38), Position = UDim2.new(1, -8, 0, y - 4), AnchorPoint = Vector2.new(1, 0), Radius = 19, MaxText = 16})
+	local track = UIKit.panel(content, {Size = UDim2.new(1, -90, 0, 14), Position = UDim2.fromOffset(8, y + 50), Color = C.PanelTint, Radius = 7, Stroke = 2, StrokeColor = C.Lilac, Shade = false})
+	local fill = UIKit.panel(track, {Size = UDim2.fromScale(1, 1), Color = C.Sky, Radius = 7, Stroke = false, Shade = false})
+	local knob = UIKit.panel(track, {Size = UDim2.fromOffset(26, 26), Position = UDim2.fromScale(1, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Radius = 13, Stroke = 3, StrokeColor = C.Sky, Shade = false})
+	local percent = UIKit.label(content, "", {Size = UDim2.fromOffset(64, 24), Position = UDim2.new(1, -8, 0, y + 45), AnchorPoint = Vector2.new(1, 0), Color = C.Grey, Stroke = 0, MaxText = 18})
+	local function refresh()
+		local v = settings[volumeKey]
+		fill.Size = UDim2.fromScale(v, 1)
+		knob.Position = UDim2.fromScale(v, 0.5)
+		percent.Text = math.floor(v * 100 + 0.5) .. "%"
+		local muted = settings[mutedKey]
+		UIKit.setButton(mute, muted and "🔇 MUTED" or "🔊 ON", muted and C.Coral or C.Mint)
+		fill.BackgroundColor3 = muted and C.Grey or C.Sky
+	end
+	mute.MouseButton1Click:Connect(function()
+		settings[mutedKey] = not settings[mutedKey]
+		refresh()
+		save()
+	end)
+	-- dragging the slider (mouse or touch)
+	local dragging = false
+	local function setFrom(x)
+		local v = math.clamp((x - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+		settings[volumeKey] = math.floor(v * 100 + 0.5) / 100
+		if settings[volumeKey] > 0 then settings[mutedKey] = false end
+		refresh()
+		save()
+	end
+	track.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			setFrom(input.Position.X)
+		end
+	end)
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			setFrom(input.Position.X)
+		end
+	end)
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = false
+		end
+	end)
+	return refresh
+end
+
+local refreshMusic = audioRow(14, "🎵", "Music", "MusicVolume", "MusicMuted")
+local refreshSfx = audioRow(118, "🔔", "Sound Effects", "SfxVolume", "SfxMuted")
+UIKit.label(content, "Your settings are saved and stick between visits.", {Size = UDim2.new(1, -16, 0, 20), Position = UDim2.new(0.5, 0, 1, -30), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, MaxText = 15})
+
+local function refreshAll()
+	refreshMusic()
+	refreshSfx()
+	apply()
+end
+
+UIBus.On("Settings", function()
+	if window.Visible then
+		window.Visible = false
+	else
+		refreshAll()
+		UIKit.open(window)
+	end
+end)
+-- the HUD's speaker button: everything off, or back to how it was
+UIBus.On("ToggleSound", function()
+	local allMuted = settings.MusicMuted and settings.SfxMuted
+	settings.MusicMuted = not allMuted
+	settings.SfxMuted = not allMuted
+	refreshAll()
+	save()
+end)
+
+-- load the saved settings
+local function load()
+	local raw = player:GetAttribute("AudioSettings")
+	if typeof(raw) ~= "string" then return end
+	local ok, saved = pcall(function() return HttpService:JSONDecode(raw) end)
+	if ok and typeof(saved) == "table" then
+		for key in pairs(settings) do
+			if saved[key] ~= nil then settings[key] = saved[key] end
+		end
+		refreshAll()
+	end
+end
+player:GetAttributeChangedSignal("AudioSettings"):Connect(function()
+	if not saveQueued then load() end
+end)
+load()
+refreshAll()
+]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "BackgroundWeather", "LocalScript", [=[
 -- BackgroundWeather (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- Bizarre background weather: giant plain cubes, spheres and cones tumble out of the sky
@@ -12812,8 +13331,8 @@ local function textLine(y, size)
 	l.Visible = false
 	return l, l:FindFirstChildOfClass("UIStroke")
 end
-local foundText, foundStroke = textLine(150, 30)
-local hintText, hintStroke = textLine(186, 20)
+local foundText, foundStroke = textLine(262, 30)
+local hintText, hintStroke = textLine(298, 20)
 
 local tokens = {}
 local function say(label, stroke, text, color, duration)
@@ -12869,16 +13388,9 @@ if findsFolder then
 	for _, d in ipairs(findsFolder:GetDescendants()) do check(d) end
 end
 
+local Audio = require(ReplicatedStorage:WaitForChild("Audio"))
 local function playFindSound()
-	local sound = GameConfig.Sounds and GameConfig.Sounds.Find
-	if sound and sound ~= "" then
-		local s = Instance.new("Sound")
-		s.SoundId = sound
-		s.Volume = 0.7
-		s.Parent = workspace.CurrentCamera
-		s:Play()
-		game:GetService("Debris"):AddItem(s, 4)
-	end
+	Audio.play(GameConfig.Sounds and GameConfig.Sounds.Find, 0.7)
 end
 
 resultRemote.OnClientEvent:Connect(function(info)
@@ -12917,7 +13429,7 @@ end)
 ---------------------------------------------------------------------
 -- RARE FIND ANNOUNCEMENTS (whole server)
 ---------------------------------------------------------------------
-local banner = UIKit.panel(gui, {Size = UDim2.fromOffset(640, 54), Position = UDim2.new(0.5, 0, 0, 92), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Radius = 27, Stroke = 3, StrokeColor = C.Sun, ShadeAmount = 0.2})
+local banner = UIKit.panel(gui, {Size = UDim2.fromOffset(640, 54), Position = UDim2.new(0.5, 0, 0, 196), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Radius = 27, Stroke = 3, StrokeColor = C.Sun, ShadeAmount = 0.2})
 banner.BackgroundTransparency = 0.08
 banner.Visible = false
 local bannerStroke = banner:FindFirstChildOfClass("UIStroke")
@@ -13286,8 +13798,9 @@ end)
 ]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "HUD", "LocalScript", [=[
 -- HUD (LocalScript in StarterPlayer > StarterPlayerScripts)
--- The always-on screen: money and income counters, which world you're in, and a
--- custom hotbar that shows your shovel as a 3D icon (replaces Roblox's default backpack bar).
+-- The always-on screen: money, gems and income counters at the top center (with the world
+-- you're in), a column of menu buttons on the left (Shop, Museum, Worlds, Rebirth, Bag,
+-- Settings, Sound), and a custom hotbar that shows your pickaxe as a 3D icon.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13312,34 +13825,46 @@ task.spawn(function()
 end)
 
 ---------------------------------------------------------------------
--- MONEY / INCOME / WORLD (top left)
+-- CURRENCIES (top center): money, gems and museum income, with the world name under them
 ---------------------------------------------------------------------
-local stats = Instance.new("Frame")
-stats.BackgroundTransparency = 1
-stats.Size = UDim2.fromOffset(260, 150)
-stats.Position = UDim2.fromOffset(14, 12)
-stats.Parent = gui
-local statsLayout = Instance.new("UIListLayout")
-statsLayout.Padding = UDim.new(0, 8)
-statsLayout.Parent = stats
+local topBar = Instance.new("Frame")
+topBar.BackgroundTransparency = 1
+topBar.Size = UDim2.fromOffset(640, 76)
+topBar.Position = UDim2.new(0.5, 0, 0, 8)
+topBar.AnchorPoint = Vector2.new(0.5, 0)
+topBar.Parent = gui
+local counters = Instance.new("Frame")
+counters.BackgroundTransparency = 1
+counters.Size = UDim2.new(1, 0, 0, 46)
+counters.Parent = topBar
+local counterLayout = Instance.new("UIListLayout")
+counterLayout.FillDirection = Enum.FillDirection.Horizontal
+counterLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+counterLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+counterLayout.Padding = UDim.new(0, 14)
+counterLayout.SortOrder = Enum.SortOrder.LayoutOrder
+counterLayout.Parent = counters
 
--- a glossy colored pill with a round emoji badge poking out on the left
-local function pill(color, badgeColor, iconText, width, height, order)
+-- a glossy colored pill with a round icon badge poking out on the left
+local function pill(color, badgeColor, iconText, width, order)
+	local height = 42
 	local holder = Instance.new("Frame")
 	holder.BackgroundTransparency = 1
-	holder.Size = UDim2.fromOffset(width + 14, height)
+	holder.Size = UDim2.fromOffset(width + 12, height)
 	holder.LayoutOrder = order
-	holder.Parent = stats
-	local p = UIKit.panel(holder, {Size = UDim2.new(1, -14, 1, 0), Position = UDim2.fromOffset(14, 0), Color = color, Radius = height / 2, ShadeAmount = 0.16})
-	UIKit.badge(holder, iconText, badgeColor, {Diameter = height + 8, Position = UDim2.new(0, -2, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
-	local text = UIKit.label(p, "", {Size = UDim2.new(1, -height - 10, 1, -12), Position = UDim2.new(0, height - 2, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
-		Align = "Left", Stroke = 2.5, StrokeColor = UIKit.shadeColor(color, 0.6), MaxText = 30})
+	holder.Parent = counters
+	local p = UIKit.panel(holder, {Size = UDim2.new(1, -12, 1, 0), Position = UDim2.fromOffset(12, 0), Color = color, Radius = height / 2, ShadeAmount = 0.16})
+	UIKit.badge(holder, iconText, badgeColor, {Diameter = height + 6, Position = UDim2.new(0, -4, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+	local text = UIKit.label(p, "", {Size = UDim2.new(1, -height - 6, 1, -12), Position = UDim2.new(0, height - 4, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+		Align = "Left", Stroke = 2.5, StrokeColor = UIKit.shadeColor(color, 0.6), MaxText = 26})
 	return holder, text
 end
 
-local moneyPill, moneyText = pill(C.Money, C.Sun, "💵", 230, 50, 1)
-local _, incomeText = pill(C.Sun, C.White, "⚡", 190, 38, 2)
-local _, worldText = pill(C.Violet, C.Lilac, "🌍", 210, 34, 3)
+local moneyPill, moneyText = pill(C.Money, C.Sun, "💵", 190, 1)
+local _, gemText = pill(C.Violet, C.Lilac, "💎", 120, 2)
+local _, incomeText = pill(C.Sun, C.White, "⚡", 170, 3)
+local worldText = UIKit.label(topBar, "", {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.new(0.5, 0, 0, 52), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.White, Stroke = 2, MaxText = 17})
 
 local shownMoney = 0
 local moneyScale = Instance.new("UIScale")
@@ -13357,16 +13882,85 @@ end
 local function refreshIncome()
 	incomeText.Text = "+" .. ArtifactData.FormatMoney(player:GetAttribute("Income") or 0) .. "/s"
 end
+local function refreshGems()
+	gemText.Text = tostring(player:GetAttribute("Gems") or 0)
+end
 local function refreshWorld()
 	local world = GameConfig.GetWorld(player:GetAttribute("CurrentWorld") or 1)
-	worldText.Text = world and world.Name or ""
+	local rebirths = player:GetAttribute("Rebirths") or 0
+	worldText.Text = "🌍 " .. (world and world.Name or "") .. (rebirths > 0 and ("   ♻️ Rebirth " .. rebirths) or "")
 end
 player:GetAttributeChangedSignal("Money"):Connect(refreshMoney)
 player:GetAttributeChangedSignal("Income"):Connect(refreshIncome)
+player:GetAttributeChangedSignal("Gems"):Connect(refreshGems)
 player:GetAttributeChangedSignal("CurrentWorld"):Connect(refreshWorld)
+player:GetAttributeChangedSignal("Rebirths"):Connect(refreshWorld)
 refreshMoney()
 refreshIncome()
+refreshGems()
 refreshWorld()
+
+---------------------------------------------------------------------
+-- MENU BUTTONS (left side): compact icon buttons with a label
+---------------------------------------------------------------------
+local UIBus = require(ReplicatedStorage:WaitForChild("UIBus"))
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+
+local menu = Instance.new("Frame")
+menu.BackgroundTransparency = 1
+menu.Size = UDim2.fromOffset(76, 520)
+menu.Position = UDim2.new(0, 12, 0.5, 10)
+menu.AnchorPoint = Vector2.new(0, 0.5)
+menu.Parent = gui
+local menuLayout = Instance.new("UIListLayout")
+menuLayout.Padding = UDim.new(0, 8)
+menuLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+menuLayout.SortOrder = Enum.SortOrder.LayoutOrder
+menuLayout.Parent = menu
+
+local menuButtons = {}
+local function menuButton(order, icon, label, color, onClick, key)
+	local b = UIKit.button(menu, "", {Size = UDim2.fromOffset(66, 64), Color = color, Radius = 18})
+	b.LayoutOrder = order
+	local emoji = Instance.new("TextLabel")
+	emoji.Name = "Icon"
+	emoji.BackgroundTransparency = 1
+	emoji.Size = UDim2.new(1, 0, 0, 34)
+	emoji.Position = UDim2.fromOffset(0, 6)
+	emoji.Text = icon
+	emoji.TextScaled = true
+	emoji.Font = Enum.Font.GothamBold
+	emoji.Parent = b
+	UIKit.label(b, label .. (key and (" [" .. key .. "]") or ""), {Size = UDim2.new(1, -6, 0, 14), Position = UDim2.new(0.5, 0, 1, -18), AnchorPoint = Vector2.new(0.5, 0),
+		Stroke = 1.5, StrokeColor = UIKit.shadeColor(color, 0.6), MaxText = 12})
+	b.MouseButton1Click:Connect(onClick)
+	menuButtons[label] = b
+	return b
+end
+
+menuButton(1, "🛒", "SHOP", C.Mint, function() UIBus.Fire("Shop") end)
+menuButton(2, "🏛️", "MUSEUM", C.Violet, function()
+	local goHome = remotes:FindFirstChild("GoHome")
+	if goHome then goHome:FireServer() end
+end)
+menuButton(3, "🌍", "WORLDS", C.Sky, function() UIBus.Fire("Teleport") end)
+menuButton(4, "♻️", "REBIRTH", C.Coral, function() UIBus.Fire("Rebirth") end)
+local bagButton = menuButton(5, "🎒", "BAG", C.Sun, function() UIBus.Fire("Inventory") end, "B")
+menuButton(6, "⚙️", "SETTINGS", C.Grey, function() UIBus.Fire("Settings") end)
+local soundButton = menuButton(7, "🔊", "SOUND", C.Lilac, function() UIBus.Fire("ToggleSound") end)
+local function refreshSound()
+	local icon = soundButton:FindFirstChild("Icon")
+	if icon then icon.Text = player:GetAttribute("SoundMuted") and "🔇" or "🔊" end
+end
+player:GetAttributeChangedSignal("SoundMuted"):Connect(refreshSound)
+refreshSound()
+-- the bag bounces when something new goes in it
+task.spawn(function()
+	local changed = remotes:WaitForChild("InventoryChanged", 30)
+	if changed then
+		changed.OnClientEvent:Connect(function() UIKit.pop(bagButton, 1.3) end)
+	end
+end)
 
 ---------------------------------------------------------------------
 -- HOTBAR (bottom center): one slot per tool, 3D icon for shovels
@@ -13497,7 +14091,7 @@ install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "
 -- InventoryClient (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- The Inventory window: every meme you've picked up, as icon tiles sorted from rarest to
 -- most common, with how many you have and how much each one earns on display.
--- Open it with the bag button on the left or the B key.
+-- Open it with the BAG button on the HUD or the B key.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13514,25 +14108,15 @@ local player = Players.LocalPlayer
 local gui = UIKit.screen(player, "InventoryGui", 3)
 
 ---------------------------------------------------------------------
--- BAG BUTTON (left side, under the money pills)
----------------------------------------------------------------------
-local bagButton = UIKit.button(gui, "", {Size = UDim2.fromOffset(66, 66), Position = UDim2.new(0, 18, 0, 170), Color = C.Sun, Radius = 20})
-local bagEmoji = Instance.new("TextLabel")
-bagEmoji.BackgroundTransparency = 1
-bagEmoji.Size = UDim2.fromScale(0.62, 0.62)
-bagEmoji.Position = UDim2.fromScale(0.5, 0.45)
-bagEmoji.AnchorPoint = Vector2.new(0.5, 0.5)
-bagEmoji.Text = "🎒"
-bagEmoji.TextScaled = true
-bagEmoji.Parent = bagButton
-local bagTag = UIKit.panel(bagButton, {Size = UDim2.fromOffset(62, 22), Position = UDim2.new(0.5, 0, 1, 2), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Radius = 11, StrokeColor = C.Sun})
-UIKit.label(bagTag, "BAG [B]", {Size = UDim2.new(1, -10, 1, -6), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 0, MaxText = 14})
-
----------------------------------------------------------------------
 -- WINDOW
 ---------------------------------------------------------------------
 local window, content = UIKit.window(gui, "INVENTORY", UDim2.fromOffset(740, 560), C.Sun, "🎒")
-local countLabel = UIKit.label(content, "", {Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 22})
+local countLabel = UIKit.label(content, "", {Size = UDim2.new(1, -260, 0, 26), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 22})
+-- fills every empty display slot in your museum with your best-earning memes
+local placeAllButton = UIKit.button(content, "🏛️ PLACE ALL IN MUSEUM", {Size = UDim2.fromOffset(250, 38), Position = UDim2.new(1, -4, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Violet, Radius = 19, MaxText = 16})
+placeAllButton.MouseButton1Click:Connect(function()
+	remotes:WaitForChild("PlaceAll"):FireServer()
+end)
 
 local gridHolder = Instance.new("ScrollingFrame")
 gridHolder.BackgroundTransparency = 1
@@ -13559,12 +14143,26 @@ local emptyLabel = UIKit.label(content, "Nothing here yet... go dig up some meme
 	Size = UDim2.new(0.9, 0, 0, 30), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Grey, Stroke = 0,
 })
 
+-- rainbow borders spin slowly
+local RAINBOW = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)), ColorSequenceKeypoint.new(0.2, Color3.fromRGB(255, 200, 60)),
+	ColorSequenceKeypoint.new(0.4, Color3.fromRGB(90, 230, 110)), ColorSequenceKeypoint.new(0.6, Color3.fromRGB(70, 170, 255)),
+	ColorSequenceKeypoint.new(0.8, Color3.fromRGB(180, 90, 255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80)),
+})
+local rainbows = {}
+game:GetService("RunService").RenderStepped:Connect(function()
+	if not window.Visible then return end
+	local r = (os.clock() * 90) % 360
+	for _, gradient in ipairs(rainbows) do gradient.Rotation = r end
+end)
+
 local function refresh()
 	local ok, list = pcall(function() return getInventory:InvokeServer() end)
 	if not ok or type(list) ~= "table" then return end
 	for _, child in ipairs(gridHolder:GetChildren()) do
 		if child:IsA("GuiObject") then child:Destroy() end
 	end
+	rainbows = {}
 	-- rarest first, then by name
 	local entries, total = {}, 0
 	for _, item in ipairs(list) do
@@ -13585,8 +14183,18 @@ local function refresh()
 	for i, entry in ipairs(entries) do
 		local artifact = entry.Artifact
 		local rarity = ArtifactData.GetRarity(artifact.Rarity)
-		local card = UIKit.panel(gridHolder, {Size = UDim2.fromOffset(150, 186), Color = C.White, Radius = 20, ShadeAmount = 0.06})
+		-- the card's border shows the rarity (Mythic and better get an animated rainbow border)
+		local rarityIndex = ArtifactData.GetRarityIndex(artifact.Rarity)
+		local card = UIKit.panel(gridHolder, {Size = UDim2.fromOffset(150, 186), Color = C.White, Radius = 20, Stroke = 4, StrokeColor = rarity.Color, ShadeAmount = 0.06})
 		card.LayoutOrder = i
+		if rarityIndex >= ArtifactData.GetRarityIndex("Mythic") then
+			local border = card:FindFirstChildOfClass("UIStroke")
+			border.Color = Color3.new(1, 1, 1)
+			local rainbow = Instance.new("UIGradient")
+			rainbow.Color = RAINBOW
+			rainbow.Parent = border
+			table.insert(rainbows, rainbow)
+		end
 		UIKit.artifactIcon(card, artifact, {Size = UDim2.fromOffset(96, 96), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0)})
 		if entry.Count > 1 then
 			local countTag = UIKit.panel(card, {Size = UDim2.fromOffset(44, 28), Position = UDim2.fromOffset(8, 8), Color = C.Violet, Radius = 14, Stroke = 2})
@@ -13608,7 +14216,8 @@ local function toggle()
 	end
 end
 
-bagButton.MouseButton1Click:Connect(toggle)
+local UIBus = require(ReplicatedStorage:WaitForChild("UIBus"))
+UIBus.On("Inventory", toggle) -- the BAG button on the HUD
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if not gameProcessed and input.KeyCode == Enum.KeyCode.B then
 		toggle()
@@ -13616,8 +14225,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 inventoryChangedRemote.OnClientEvent:Connect(function()
 	if window.Visible then refresh() end
-	-- little bounce on the bag so players notice the new item
-	UIKit.pop(bagButton, 1.3)
 end)
 ]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "MuseumClient", "LocalScript", [=[
@@ -13969,7 +14576,7 @@ end)
 ---------------------------------------------------------------------
 -- a bright elevator bar pinned to the top center of the screen:  [▼ DOWN]  🛗 FLOOR 2/3  [UP ▲]
 -- (flat pills with no shading strips, so there are no stray lines)
-local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(360, 62), Position = UDim2.new(0.5, 0, 0, 8), AnchorPoint = Vector2.new(0.5, 0),
+local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(360, 62), Position = UDim2.new(0.5, 0, 0, 90), AnchorPoint = Vector2.new(0.5, 0),
 	Color = C.Panel, Radius = 31, StrokeColor = C.Violet, Stroke = 4, Shade = false})
 floorPanel.Visible = false
 
@@ -14067,6 +14674,86 @@ task.spawn(function()
 	end
 end)
 ]=])
+install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "RebirthClient", "LocalScript", [=[
+-- RebirthClient (LocalScript in StarterPlayer > StarterPlayerScripts)
+-- The REBIRTH window (the ♻️ button on the HUD): how close you are to your next rebirth,
+-- what it gives you, the rebirth button, and the gem shop's Lucky Charm upgrade.
+-- The server side is RebirthManager.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local UIBus = require(ReplicatedStorage:WaitForChild("UIBus"))
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local C = UIKit.Colors
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+
+local player = Players.LocalPlayer
+local gui = UIKit.screen(player, "RebirthGui", 3)
+local window, content = UIKit.window(gui, "REBIRTH", UDim2.fromOffset(560, 470), C.Coral, "♻️")
+
+-- REBIRTH card
+local card = UIKit.panel(content, {Size = UDim2.new(1, -8, 0, 236), Position = UDim2.fromOffset(4, 4), Color = C.White, Radius = 20, Shade = false})
+local title = UIKit.label(card, "", {Size = UDim2.new(1, -30, 0, 30), Position = UDim2.fromOffset(16, 12), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 26})
+local perks = UIKit.label(card, "", {Size = UDim2.new(1, -30, 0, 46), Position = UDim2.fromOffset(16, 46), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 15})
+local track = UIKit.panel(card, {Size = UDim2.new(1, -32, 0, 26), Position = UDim2.fromOffset(16, 104), Color = C.PanelTint, Radius = 13, Stroke = 2, StrokeColor = C.Lilac, Shade = false})
+local fill = UIKit.panel(track, {Size = UDim2.fromScale(0, 1), Color = C.Money, Radius = 13, Stroke = false, Shade = false})
+local progress = UIKit.label(track, "", {Size = UDim2.new(1, -16, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 16})
+progress.ZIndex = 3
+UIKit.label(card, "You keep your memes, museum, pickaxes and worlds. Only your cash resets.", {Size = UDim2.new(1, -30, 0, 18), Position = UDim2.fromOffset(16, 138),
+	Align = "Left", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, MaxText = 14})
+local rebirthButton = UIKit.button(card, "REBIRTH", {Size = UDim2.new(1, -32, 0, 56), Position = UDim2.new(0.5, 0, 1, -70), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, MaxText = 26})
+
+-- GEM SHOP card
+local gemCard = UIKit.panel(content, {Size = UDim2.new(1, -8, 0, 130), Position = UDim2.fromOffset(4, 252), Color = C.White, Radius = 20, Shade = false})
+UIKit.badge(gemCard, "🍀", C.Mint, {Diameter = 56, Position = UDim2.new(0, 14, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+local charmTitle = UIKit.label(gemCard, "", {Size = UDim2.new(0.6, -80, 0, 28), Position = UDim2.fromOffset(84, 22), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 22})
+local charmText = UIKit.label(gemCard, "", {Size = UDim2.new(0.6, -80, 0, 40), Position = UDim2.fromOffset(84, 54), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 14})
+local charmButton = UIKit.button(gemCard, "", {Size = UDim2.new(0.36, 0, 0, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Color = C.Violet, MaxText = 20})
+
+local function refresh()
+	local rebirths = player:GetAttribute("Rebirths") or 0
+	local money = player:GetAttribute("Money") or 0
+	local gems = player:GetAttribute("Gems") or 0
+	local cost = GameConfig.RebirthCost(rebirths)
+	local bonus = math.floor(GameConfig.RebirthIncomeBonus * 100)
+	title.Text = "♻️ Rebirth " .. rebirths .. "  →  " .. (rebirths + 1)
+	perks.Text = "Now: +" .. bonus * rebirths .. "% income.   After rebirthing: +" .. bonus * (rebirths + 1) .. "% income and +"
+		.. GameConfig.RebirthGemReward(rebirths) .. " 💎 gems."
+	fill.Size = UDim2.fromScale(math.clamp(money / cost, 0, 1), 1)
+	progress.Text = ArtifactData.FormatMoney(money) .. " / " .. ArtifactData.FormatMoney(cost)
+	UIKit.setButton(rebirthButton, money >= cost and "♻️ REBIRTH NOW" or "🔒 NEED " .. ArtifactData.FormatMoney(cost), money >= cost and C.Coral or C.Grey)
+
+	local level = player:GetAttribute("GemLuckLevel") or 0
+	local maxed = level >= GameConfig.GemLuckMaxLevel
+	local charmCost = (level + 1) * GameConfig.GemLuckCost
+	charmTitle.Text = "Lucky Charm  ·  Lv " .. level
+	charmText.Text = "+" .. math.floor(GameConfig.GemLuckPerLevel * 100 * level) .. "% luck on every dig. Each level adds +" .. math.floor(GameConfig.GemLuckPerLevel * 100) .. "%. You have " .. gems .. " 💎."
+	UIKit.setButton(charmButton, maxed and "MAXED" or ("💎 " .. charmCost), (not maxed and gems >= charmCost) and C.Violet or C.Grey)
+end
+
+rebirthButton.MouseButton1Click:Connect(function()
+	remotes:WaitForChild("Rebirth"):FireServer()
+end)
+charmButton.MouseButton1Click:Connect(function()
+	remotes:WaitForChild("BuyGemUpgrade"):FireServer()
+end)
+for _, attribute in ipairs({"Money", "Gems", "Rebirths", "GemLuckLevel"}) do
+	player:GetAttributeChangedSignal(attribute):Connect(function()
+		if window.Visible then refresh() end
+	end)
+end
+UIBus.On("Rebirth", function()
+	if window.Visible then
+		window.Visible = false
+	else
+		refresh()
+		UIKit.open(window)
+	end
+end)
+]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "ShovelClient", "LocalScript", [=[
 -- ShovelClient (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- Shovel swing + dig animation, depth + zone meter, underground light,
@@ -14127,9 +14814,9 @@ end
 -- "JUMP INTO THE PIT" PROMPT: shows while you hold a pickaxe outside the pit and vanishes the
 -- instant your character enters the pit volume (GameConfig.IsInPit uses GetPartBoundsInBox)
 ---------------------------------------------------------------------
--- a small pill on the left, under the money counters, out of the way
+-- a small pill in the top-left corner, out of the way
 local pitPrompt = UIKit.panel(gui, {
-	Size = UDim2.fromOffset(250, 36), Position = UDim2.fromOffset(14, 172),
+	Size = UDim2.fromOffset(250, 36), Position = UDim2.fromOffset(14, 12),
 	Color = C.Ink, Radius = 18, Stroke = 2.5, StrokeColor = C.Sky, ShadeAmount = 0.2,
 })
 pitPrompt.BackgroundTransparency = 0.12
@@ -14940,15 +15627,9 @@ end)
 ---------------------------------------------------------------------
 local digHitRemote = remotes:WaitForChild("DigHit")
 
+local Audio = require(ReplicatedStorage:WaitForChild("Audio"))
 local function playSound(id, volume, pitch)
-	if not id or id == "" then return end
-	local sound = Instance.new("Sound")
-	sound.SoundId = id
-	sound.Volume = volume or 0.6
-	sound.PlaybackSpeed = pitch or 1
-	sound.Parent = camera
-	sound:Play()
-	Debris:AddItem(sound, 3)
+	Audio.play(id, volume, pitch) -- through the SFX group (volume/mute in Settings)
 end
 
 -- short, punchy camera shake (strength in studs)
@@ -15177,7 +15858,7 @@ for _, attribute in ipairs({"Money", "OwnedShovels", "EquippedShovel"}) do
 	end)
 end
 
-openShopRemote.OnClientEvent:Connect(function(worldId)
+local function openShop(worldId)
 	local world = GameConfig.GetWorld(worldId) or GameConfig.Worlds[1]
 	if world ~= shopWorld or next(cards) == nil then
 		shopWorld = world
@@ -15185,6 +15866,15 @@ openShopRemote.OnClientEvent:Connect(function(worldId)
 	end
 	refreshShop()
 	UIKit.open(window)
+end
+openShopRemote.OnClientEvent:Connect(openShop)
+-- the SHOP button on the HUD opens the shop of the world you're in, from anywhere
+require(ReplicatedStorage:WaitForChild("UIBus")).On("Shop", function()
+	if window.Visible then
+		window.Visible = false
+	else
+		openShop(player:GetAttribute("CurrentWorld") or 1)
+	end
 end)
 
 shopMessageRemote.OnClientEvent:Connect(function(message, success)
@@ -15385,7 +16075,7 @@ UIKit.label(splash, "It's 2050. The old internet is buried under your feet.\nLet
 ---------------------------------------------------------------------
 -- STEP CARD
 ---------------------------------------------------------------------
-local card = UIKit.panel(gui, {Size = UDim2.fromOffset(330, 178), Position = UDim2.new(0, 16, 0.3, 0), Color = C.Ink, Radius = 22, Stroke = 3, StrokeColor = C.Sky, ShadeAmount = 0.2})
+local card = UIKit.panel(gui, {Size = UDim2.fromOffset(330, 178), Position = UDim2.fromOffset(100, 96), Color = C.Ink, Radius = 22, Stroke = 3, StrokeColor = C.Sky, ShadeAmount = 0.2})
 card.BackgroundTransparency = 0.08
 card.Visible = false
 local cardStroke = card:FindFirstChildOfClass("UIStroke")
@@ -15577,6 +16267,7 @@ local TweenService = game:GetService("TweenService")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local WorldGimmicks = require(ReplicatedStorage:WaitForChild("WorldGimmicks"))
 local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
 local C = UIKit.Colors
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -15604,16 +16295,27 @@ local PLANET_COLORS = {C.Mint, C.Sun, C.Coral, C.Sky, C.Lilac, C.Violet, C.Money
 local buttons = {} -- [worldId] = button
 
 for _, world in ipairs(GameConfig.Worlds) do
-	local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 88), Color = world.Enabled and C.White or C.PanelTint, Radius = 20, ShadeAmount = 0.06})
+	local planetColor = world.Look and world.Look.Main or PLANET_COLORS[world.Id] or C.Lilac
+	local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 108), Color = world.Enabled and C.White or C.PanelTint, Radius = 20, Stroke = 3, StrokeColor = planetColor, ShadeAmount = 0.06})
+	-- a soft wash of the world's color across the card (a little preview of its look)
+	local wash = Instance.new("UIGradient")
+	wash.Color = ColorSequence.new(planetColor:Lerp(Color3.new(1, 1, 1), 0.55), Color3.new(1, 1, 1))
+	wash.Transparency = NumberSequence.new(0, 0)
+	wash.Parent = card
 	card.LayoutOrder = world.Id
 	-- little planet badge with the world number
-	local planetColor = world.Look and world.Look.Main or PLANET_COLORS[world.Id] or C.Lilac
 	local planet = UIKit.panel(card, {Size = UDim2.fromOffset(62, 62), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = planetColor, Radius = 31, ShadeAmount = 0.25})
 	UIKit.label(planet, tostring(world.Id), {Size = UDim2.fromScale(0.56, 0.56), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3, StrokeColor = UIKit.shadeColor(planetColor, 0.6), MaxText = 30})
-	UIKit.label(card, world.Name, {Size = UDim2.new(0.62, -90, 0, 28), Position = UDim2.fromOffset(88, 12), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
+	UIKit.label(card, world.Name, {Size = UDim2.new(0.62, -90, 0, 28), Position = UDim2.fromOffset(88, 10), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
+	-- the world's unique mechanic, as a tag
+	local info = WorldGimmicks[world.Id]
+	if info then
+		local tag = UIKit.panel(card, {Size = UDim2.fromOffset(170, 24), Position = UDim2.fromOffset(88, 40), Color = C.Ink, Radius = 12, Stroke = 2, StrokeColor = planetColor, Shade = false})
+		UIKit.label(tag, info.Icon .. " " .. string.upper(info.Tag), {Size = UDim2.new(1, -14, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 0, MaxText = 14})
+	end
 	local sub = world.Enabled and (world.Tagline or (#world.Shovels .. " pickaxes  •  digs down to " .. -world.Zones[#world.Zones].Bottom .. "m  •  your museum is here"))
 		or "Still being excavated... coming soon!"
-	UIKit.label(card, sub, {Size = UDim2.new(0.62, -90, 0, 34), Position = UDim2.fromOffset(88, 42), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
+	UIKit.label(card, sub, {Size = UDim2.new(0.62, -90, 0, 34), Position = UDim2.fromOffset(88, 70), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
 
 	local b = UIKit.button(card, "", {Size = UDim2.new(0.3, 0, 0, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), MaxText = 20})
 	buttons[world.Id] = b
@@ -15660,6 +16362,15 @@ end
 openWorldMapRemote.OnClientEvent:Connect(function()
 	refresh()
 	UIKit.open(window)
+end)
+-- the WORLDS button on the HUD opens the map from anywhere
+require(ReplicatedStorage:WaitForChild("UIBus")).On("Teleport", function()
+	if window.Visible then
+		window.Visible = false
+	else
+		refresh()
+		UIKit.open(window)
+	end
 end)
 
 ---------------------------------------------------------------------
@@ -15801,26 +16512,26 @@ local VENT_RANGE = 14    -- how close to a vent refills your air
 
 local gui = UIKit.screen(player, "WorldGimmickGui", 4)
 
--- intro line (left side, under the money counters)
-local intro = UIKit.panel(gui, {Size = UDim2.fromOffset(330, 64), Position = UDim2.fromOffset(14, 214), Color = C.Ink, Radius = 18, Stroke = 2.5, StrokeColor = C.Lilac, ShadeAmount = 0.2})
+-- intro line (top right)
+local intro = UIKit.panel(gui, {Size = UDim2.fromOffset(330, 64), Position = UDim2.new(1, -14, 0, 12), AnchorPoint = Vector2.new(1, 0), Color = C.Ink, Radius = 18, Stroke = 2.5, StrokeColor = C.Lilac, ShadeAmount = 0.2})
 intro.BackgroundTransparency = 0.1
 intro.Visible = false
 local introTitle = UIKit.label(intro, "", {Size = UDim2.new(1, -20, 0, 22), Position = UDim2.fromOffset(12, 6), Align = "Left", Color = C.Sun, Stroke = 0, MaxText = 18})
 local introText = UIKit.label(intro, "", {Size = UDim2.new(1, -20, 0, 32), Position = UDim2.fromOffset(12, 28), Align = "Left", VAlign = "Top",
 	Color = C.White, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
 
--- event + boost timers (left side, small pills)
+-- event + boost timers (top right, small pills under the intro)
 local function pill(y, color)
-	local p = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 32), Position = UDim2.fromOffset(14, y), Color = color, Radius = 16, Stroke = 2})
+	local p = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 32), Position = UDim2.new(1, -14, 0, y), AnchorPoint = Vector2.new(1, 0), Color = color, Radius = 16, Stroke = 2})
 	p.Visible = false
 	local l = UIKit.label(p, "", {Size = UDim2.new(1, -20, 1, -10), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
 	return p, l
 end
-local eventPill, eventLabel = pill(286, C.Violet)
-local boostPill, boostLabel = pill(324, C.Coral)
+local eventPill, eventLabel = pill(84, C.Violet)
+local boostPill, boostLabel = pill(122, C.Coral)
 
--- air meter (right under the event pills)
-local airPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 40), Position = UDim2.fromOffset(14, 362), Color = C.Ink, Radius = 20, Stroke = 2.5, StrokeColor = C.Sky})
+-- air meter (bottom right, above the flare button's spot)
+local airPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 40), Position = UDim2.new(1, -16, 1, -196), AnchorPoint = Vector2.new(1, 1), Color = C.Ink, Radius = 20, Stroke = 2.5, StrokeColor = C.Sky})
 airPanel.Visible = false
 UIKit.label(airPanel, "🫧 AIR", {Size = UDim2.fromOffset(60, 22), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Align = "Left", Color = C.White, Stroke = 0, MaxText = 16})
 local airTrack = UIKit.panel(airPanel, {Size = UDim2.new(1, -90, 0, 14), Position = UDim2.new(0, 76, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.PanelTint, Radius = 7, Stroke = false, Shade = false})

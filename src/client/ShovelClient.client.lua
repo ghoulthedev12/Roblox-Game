@@ -57,9 +57,9 @@ end
 -- "JUMP INTO THE PIT" PROMPT: shows while you hold a pickaxe outside the pit and vanishes the
 -- instant your character enters the pit volume (GameConfig.IsInPit uses GetPartBoundsInBox)
 ---------------------------------------------------------------------
--- a small pill on the left, under the money counters, out of the way
+-- a small pill in the top-left corner, out of the way
 local pitPrompt = UIKit.panel(gui, {
-	Size = UDim2.fromOffset(250, 36), Position = UDim2.fromOffset(14, 172),
+	Size = UDim2.fromOffset(250, 36), Position = UDim2.fromOffset(14, 12),
 	Color = C.Ink, Radius = 18, Stroke = 2.5, StrokeColor = C.Sky, ShadeAmount = 0.2,
 })
 pitPrompt.BackgroundTransparency = 0.12
@@ -870,15 +870,9 @@ end)
 ---------------------------------------------------------------------
 local digHitRemote = remotes:WaitForChild("DigHit")
 
+local Audio = require(ReplicatedStorage:WaitForChild("Audio"))
 local function playSound(id, volume, pitch)
-	if not id or id == "" then return end
-	local sound = Instance.new("Sound")
-	sound.SoundId = id
-	sound.Volume = volume or 0.6
-	sound.PlaybackSpeed = pitch or 1
-	sound.Parent = camera
-	sound:Play()
-	Debris:AddItem(sound, 3)
+	Audio.play(id, volume, pitch) -- through the SFX group (volume/mute in Settings)
 end
 
 -- short, punchy camera shake (strength in studs)
@@ -1107,7 +1101,7 @@ for _, attribute in ipairs({"Money", "OwnedShovels", "EquippedShovel"}) do
 	end)
 end
 
-openShopRemote.OnClientEvent:Connect(function(worldId)
+local function openShop(worldId)
 	local world = GameConfig.GetWorld(worldId) or GameConfig.Worlds[1]
 	if world ~= shopWorld or next(cards) == nil then
 		shopWorld = world
@@ -1115,6 +1109,15 @@ openShopRemote.OnClientEvent:Connect(function(worldId)
 	end
 	refreshShop()
 	UIKit.open(window)
+end
+openShopRemote.OnClientEvent:Connect(openShop)
+-- the SHOP button on the HUD opens the shop of the world you're in, from anywhere
+require(ReplicatedStorage:WaitForChild("UIBus")).On("Shop", function()
+	if window.Visible then
+		window.Visible = false
+	else
+		openShop(player:GetAttribute("CurrentWorld") or 1)
+	end
 end)
 
 shopMessageRemote.OnClientEvent:Connect(function(message, success)

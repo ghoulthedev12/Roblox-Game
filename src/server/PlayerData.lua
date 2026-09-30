@@ -50,6 +50,12 @@ local function defaultData()
 		LastOnline = os.time(),
 		Stats = {TotalEarned = 0, TotalDigs = 0},
 		TutorialDone = false, -- the first-join walkthrough (TutorialManager)
+		-- audio settings (SettingsManager / AudioClient), saved so they stick between visits
+		Settings = {MusicVolume = 0.6, SfxVolume = 0.8, MusicMuted = false, SfxMuted = false},
+		-- rebirths (RebirthManager): each one adds GameConfig.RebirthIncomeBonus to all museum income
+		Rebirths = 0,
+		Gems = 0,
+		GemLuckLevel = 0, -- the Lucky Charm gem upgrade (+10% luck per level)
 	}
 end
 
@@ -90,7 +96,8 @@ local function computeIncome(data)
 			total += ArtifactData.GetIncome(artifact)
 		end
 	end
-	return total
+	-- every rebirth adds a permanent income bonus
+	return total * (1 + GameConfig.RebirthIncomeBonus * (data.Rebirths or 0))
 end
 
 local function refresh(player)
@@ -99,6 +106,10 @@ local function refresh(player)
 	local income = computeIncome(data)
 	player:SetAttribute("Money", data.Money)
 	player:SetAttribute("Income", income)
+	player:SetAttribute("Gems", data.Gems or 0)
+	player:SetAttribute("Rebirths", data.Rebirths or 0)
+	player:SetAttribute("GemLuckLevel", data.GemLuckLevel or 0)
+	player:SetAttribute("GemLuck", 1 + GameConfig.GemLuckPerLevel * (data.GemLuckLevel or 0))
 
 	local stats = player:FindFirstChild("leaderstats")
 	if stats then
@@ -256,6 +267,11 @@ function PlayerData.AddMoney(player, amount)
 	end
 	refresh(player)
 	return true
+end
+
+-- updates the player's attributes (money, income, gems...) after a change made directly on data
+function PlayerData.Refresh(player)
+	refresh(player)
 end
 
 -- Returns true if the player could afford it (and takes the money)

@@ -10,6 +10,7 @@ local TweenService = game:GetService("TweenService")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local WorldGimmicks = require(ReplicatedStorage:WaitForChild("WorldGimmicks"))
 local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
 local C = UIKit.Colors
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -37,16 +38,27 @@ local PLANET_COLORS = {C.Mint, C.Sun, C.Coral, C.Sky, C.Lilac, C.Violet, C.Money
 local buttons = {} -- [worldId] = button
 
 for _, world in ipairs(GameConfig.Worlds) do
-	local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 88), Color = world.Enabled and C.White or C.PanelTint, Radius = 20, ShadeAmount = 0.06})
+	local planetColor = world.Look and world.Look.Main or PLANET_COLORS[world.Id] or C.Lilac
+	local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 108), Color = world.Enabled and C.White or C.PanelTint, Radius = 20, Stroke = 3, StrokeColor = planetColor, ShadeAmount = 0.06})
+	-- a soft wash of the world's color across the card (a little preview of its look)
+	local wash = Instance.new("UIGradient")
+	wash.Color = ColorSequence.new(planetColor:Lerp(Color3.new(1, 1, 1), 0.55), Color3.new(1, 1, 1))
+	wash.Transparency = NumberSequence.new(0, 0)
+	wash.Parent = card
 	card.LayoutOrder = world.Id
 	-- little planet badge with the world number
-	local planetColor = world.Look and world.Look.Main or PLANET_COLORS[world.Id] or C.Lilac
 	local planet = UIKit.panel(card, {Size = UDim2.fromOffset(62, 62), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = planetColor, Radius = 31, ShadeAmount = 0.25})
 	UIKit.label(planet, tostring(world.Id), {Size = UDim2.fromScale(0.56, 0.56), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3, StrokeColor = UIKit.shadeColor(planetColor, 0.6), MaxText = 30})
-	UIKit.label(card, world.Name, {Size = UDim2.new(0.62, -90, 0, 28), Position = UDim2.fromOffset(88, 12), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
+	UIKit.label(card, world.Name, {Size = UDim2.new(0.62, -90, 0, 28), Position = UDim2.fromOffset(88, 10), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
+	-- the world's unique mechanic, as a tag
+	local info = WorldGimmicks[world.Id]
+	if info then
+		local tag = UIKit.panel(card, {Size = UDim2.fromOffset(170, 24), Position = UDim2.fromOffset(88, 40), Color = C.Ink, Radius = 12, Stroke = 2, StrokeColor = planetColor, Shade = false})
+		UIKit.label(tag, info.Icon .. " " .. string.upper(info.Tag), {Size = UDim2.new(1, -14, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 0, MaxText = 14})
+	end
 	local sub = world.Enabled and (world.Tagline or (#world.Shovels .. " pickaxes  •  digs down to " .. -world.Zones[#world.Zones].Bottom .. "m  •  your museum is here"))
 		or "Still being excavated... coming soon!"
-	UIKit.label(card, sub, {Size = UDim2.new(0.62, -90, 0, 34), Position = UDim2.fromOffset(88, 42), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
+	UIKit.label(card, sub, {Size = UDim2.new(0.62, -90, 0, 34), Position = UDim2.fromOffset(88, 70), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
 
 	local b = UIKit.button(card, "", {Size = UDim2.new(0.3, 0, 0, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), MaxText = 20})
 	buttons[world.Id] = b
@@ -93,6 +105,15 @@ end
 openWorldMapRemote.OnClientEvent:Connect(function()
 	refresh()
 	UIKit.open(window)
+end)
+-- the WORLDS button on the HUD opens the map from anywhere
+require(ReplicatedStorage:WaitForChild("UIBus")).On("Teleport", function()
+	if window.Visible then
+		window.Visible = false
+	else
+		refresh()
+		UIKit.open(window)
+	end
 end)
 
 ---------------------------------------------------------------------

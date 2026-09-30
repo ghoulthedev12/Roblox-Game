@@ -51,13 +51,51 @@ end
 ---------------------------------------------------------------------
 -- Optional sound effects. Paste a sound's id from the Toolbox (e.g. "rbxassetid://123456")
 -- and it plays; leave "" for silence.
+-- Sound effects. These use sounds that come built into Roblox, so they work right away; to
+-- use your own, paste "rbxassetid://<id>" of any audio from the Creator Store instead.
 GameConfig.Sounds = {
-	Dig = "",    -- every time the pickaxe hits the dirt
-	Clang = "",  -- pickaxe bounces off a zone that's too hard
-	Find = "",   -- an artifact pops out of the ground
-	Combo = "",  -- combo goes up
+	Dig = "rbxasset://sounds/collide.wav",                -- every time the pickaxe hits the dirt
+	Clang = "rbxasset://sounds/swordslash.wav",           -- pickaxe bounces off a zone that's too hard
+	Find = "rbxasset://sounds/electronicpingshort.wav",   -- an artifact pops out of the ground
+	Combo = "rbxasset://sounds/clickfast.wav",            -- combo goes up
+	Click = "rbxasset://sounds/button.wav",               -- any UI button
 }
 
+-- BACKGROUND MUSIC per world (AudioClient crossfades to the world you're in).
+-- Paste a track for each world: in Studio open the Toolbox > Creator Store > Audio, search a
+-- mood (e.g. "chill", "synthwave", "spooky"), right-click a track > Copy Asset ID, and put it
+-- here as "rbxassetid://123456". Empty = that world plays the default track (or silence).
+GameConfig.Music = {
+	Default = "",
+	[1] = "",  -- The Meme Dig Site: chill beats
+	[2] = "",  -- Neon Sakura Grove: calm lo-fi / koto
+	[3] = "",  -- Galaxy Drift: dreamy space ambient
+	[4] = "",  -- Frostbyte Tundra: icy ambient
+	[5] = "",  -- Chrome Dunes: desert adventure
+	[6] = "",  -- Coral Circuit: underwater ambient
+	[7] = "",  -- Candy Mainframe: bubbly pop
+	[8] = "",  -- Volcano Forge: heavy drums
+	[9] = "",  -- Glitch Nexus: synthwave
+}
+GameConfig.MusicVolume = 0.35 -- how loud music plays at 100% on the Music slider
+
+
+-- REBIRTH: trade in your cash for a permanent boost. Cost = RebirthBaseCost x RebirthCostGrowth ^ rebirths.
+-- Each rebirth adds RebirthIncomeBonus (0.25 = +25%) to all museum income forever and gives gems.
+-- Gems buy the Lucky Charm upgrade: +GemLuckPerLevel luck per level (cost = level x GemLuckCost gems).
+GameConfig.RebirthBaseCost = 10e6
+GameConfig.RebirthCostGrowth = 5
+GameConfig.RebirthIncomeBonus = 0.25
+GameConfig.RebirthGems = 10       -- gems for rebirth #1; each later rebirth gives 5 more
+GameConfig.GemLuckPerLevel = 0.1
+GameConfig.GemLuckCost = 5
+GameConfig.GemLuckMaxLevel = 20
+function GameConfig.RebirthCost(rebirths)
+	return GameConfig.RebirthBaseCost * GameConfig.RebirthCostGrowth ^ rebirths
+end
+function GameConfig.RebirthGemReward(rebirths)
+	return GameConfig.RebirthGems + 5 * rebirths
+end
 
 -- Chance that a find becomes a "Lucky Dig" with the bonus minigame (0.1 = 1 in 10)
 GameConfig.MinigameChance = 0.1

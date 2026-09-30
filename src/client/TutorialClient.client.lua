@@ -40,7 +40,7 @@ UIKit.label(splash, "It's 2050. The old internet is buried under your feet.\nLet
 ---------------------------------------------------------------------
 -- STEP CARD
 ---------------------------------------------------------------------
-local card = UIKit.panel(gui, {Size = UDim2.fromOffset(330, 178), Position = UDim2.new(0, 16, 0.3, 0), Color = C.Ink, Radius = 22, Stroke = 3, StrokeColor = C.Sky, ShadeAmount = 0.2})
+local card = UIKit.panel(gui, {Size = UDim2.fromOffset(330, 178), Position = UDim2.fromOffset(100, 96), Color = C.Ink, Radius = 22, Stroke = 3, StrokeColor = C.Sky, ShadeAmount = 0.2})
 card.BackgroundTransparency = 0.08
 card.Visible = false
 local cardStroke = card:FindFirstChildOfClass("UIStroke")

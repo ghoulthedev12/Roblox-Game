@@ -61,6 +61,12 @@ local function sendHome(player)
 	end
 end
 
+-- other scripts (the HUD's MUSEUM button, via DigManager) can send a player home
+local sendHomeEvent = script.Parent:FindFirstChild("SendHome") or Instance.new("BindableEvent")
+sendHomeEvent.Name = "SendHome"
+sendHomeEvent.Parent = script.Parent
+sendHomeEvent.Event:Connect(sendHome)
+
 local function onCharacterAdded(player, character)
 	character:WaitForChild("HumanoidRootPart")
 	-- wait two frames so Roblox finishes its own spawning first

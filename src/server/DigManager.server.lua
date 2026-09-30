@@ -687,6 +687,17 @@ local function travel(player, world)
 	character:PivotTo(arrivalSpots[world.Id] or (CFrame.new(world.Origin + Vector3.new(0, 6, SURFACE_RING))))
 end
 
+-- the HUD's MUSEUM button: back to World 1 and in front of your museum
+local goHomeRemote = getRemote("GoHome")
+local lastHome = {}
+goHomeRemote.OnServerEvent:Connect(function(player)
+	if os.clock() - (lastHome[player] or 0) < 2 then return end
+	lastHome[player] = os.clock()
+	if getWorld(player).Id ~= 1 then travel(player, GameConfig.Worlds[1]) end
+	local sendHome = script.Parent:FindFirstChild("SendHome")
+	if sendHome then sendHome:Fire(player) end
+end)
+
 travelRemote.OnServerEvent:Connect(function(player, worldId)
 	local data = PlayerData.Get(player)
 	local world = typeof(worldId) == "number" and GameConfig.GetWorld(worldId)

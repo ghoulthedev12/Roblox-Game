@@ -55,6 +55,31 @@ UIKit.autoOutline = autoOutline
 ---------------------------------------------------------------------
 -- BASICS
 ---------------------------------------------------------------------
+-- RESPONSIVE SIZE: every top-level panel on every screen gets a UIScale set from the screen
+-- size (1 on a 1280x760 screen, smaller on phones, a bit bigger on big monitors), so the whole
+-- UI fits PC, mobile and console alike. It updates when the window is resized or rotated.
+function UIKit.screenScale()
+	local camera = workspace.CurrentCamera
+	local v = camera and camera.ViewportSize or Vector2.new(1280, 760)
+	return math.clamp(math.min(v.X / 1280, v.Y / 760), 0.55, 1.25)
+end
+local responsive = setmetatable({}, {__mode = "k"}) -- the UIScales we manage
+local function makeResponsive(scale)
+	scale:SetAttribute("Responsive", true)
+	scale.Scale = UIKit.screenScale()
+	responsive[scale] = true
+end
+task.spawn(function()
+	local camera = workspace.CurrentCamera
+	if not camera then return end
+	camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+		local k = UIKit.screenScale()
+		for scale in pairs(responsive) do
+			if scale.Parent then scale.Scale = k end
+		end
+	end)
+end)
+
 function UIKit.screen(player, name, order)
 	local gui = Instance.new("ScreenGui")
 	gui.Name = name
@@ -63,6 +88,16 @@ function UIKit.screen(player, name, order)
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.DisplayOrder = order or 0
 	gui.Parent = player:WaitForChild("PlayerGui")
+	-- scale every top-level panel to the screen (panels that manage their own UIScale are left alone)
+	gui.ChildAdded:Connect(function(child)
+		task.defer(function()
+			if child.Parent == gui and child:IsA("GuiObject") and not child:FindFirstChildOfClass("UIScale") then
+				local scale = Instance.new("UIScale")
+				makeResponsive(scale)
+				scale.Parent = child
+			end
+		end)
+	end)
 	return gui
 end
 
@@ -211,6 +246,13 @@ function UIKit.button(parent, text, props)
 	b.MouseEnter:Connect(function() to(1.05) end)
 	b.MouseLeave:Connect(function() to(1) end)
 	b.MouseButton1Down:Connect(function() to(0.92, 0.06) end)
+	b.MouseButton1Click:Connect(function()
+		-- a soft click on every button (through the SFX group, so it follows the SFX setting)
+		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+		local Audio = require(ReplicatedStorage:WaitForChild("Audio"))
+		local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+		Audio.play(GameConfig.Sounds.Click, 0.35)
+	end)
 	b.MouseButton1Up:Connect(function() to(1.05) end)
 	return b, label
 end
@@ -223,10 +265,16 @@ end
 
 -- Pops a frame in with a bouncy scale
 function UIKit.pop(frame, from)
-	local scale = frame:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
-	scale.Parent = frame
-	scale.Scale = from or 0.6
-	TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+	local scale = frame:FindFirstChildOfClass("UIScale")
+	if not scale then
+		scale = Instance.new("UIScale")
+		if frame.Parent and frame.Parent:IsA("ScreenGui") then makeResponsive(scale) end
+		scale.Parent = frame
+	end
+	-- pop relative to the panel's screen-size scale
+	local base = scale:GetAttribute("Responsive") and UIKit.screenScale() or 1
+	scale.Scale = (from or 0.6) * base
+	TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = base}):Play()
 end
 
 -- A round colored badge with an emoji (or short text) in it

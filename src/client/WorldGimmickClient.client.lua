@@ -26,26 +26,26 @@ local VENT_RANGE = 14    -- how close to a vent refills your air
 
 local gui = UIKit.screen(player, "WorldGimmickGui", 4)
 
--- intro line (left side, under the money counters)
-local intro = UIKit.panel(gui, {Size = UDim2.fromOffset(330, 64), Position = UDim2.fromOffset(14, 214), Color = C.Ink, Radius = 18, Stroke = 2.5, StrokeColor = C.Lilac, ShadeAmount = 0.2})
+-- intro line (top right)
+local intro = UIKit.panel(gui, {Size = UDim2.fromOffset(330, 64), Position = UDim2.new(1, -14, 0, 12), AnchorPoint = Vector2.new(1, 0), Color = C.Ink, Radius = 18, Stroke = 2.5, StrokeColor = C.Lilac, ShadeAmount = 0.2})
 intro.BackgroundTransparency = 0.1
 intro.Visible = false
 local introTitle = UIKit.label(intro, "", {Size = UDim2.new(1, -20, 0, 22), Position = UDim2.fromOffset(12, 6), Align = "Left", Color = C.Sun, Stroke = 0, MaxText = 18})
 local introText = UIKit.label(intro, "", {Size = UDim2.new(1, -20, 0, 32), Position = UDim2.fromOffset(12, 28), Align = "Left", VAlign = "Top",
 	Color = C.White, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
 
--- event + boost timers (left side, small pills)
+-- event + boost timers (top right, small pills under the intro)
 local function pill(y, color)
-	local p = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 32), Position = UDim2.fromOffset(14, y), Color = color, Radius = 16, Stroke = 2})
+	local p = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 32), Position = UDim2.new(1, -14, 0, y), AnchorPoint = Vector2.new(1, 0), Color = color, Radius = 16, Stroke = 2})
 	p.Visible = false
 	local l = UIKit.label(p, "", {Size = UDim2.new(1, -20, 1, -10), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
 	return p, l
 end
-local eventPill, eventLabel = pill(286, C.Violet)
-local boostPill, boostLabel = pill(324, C.Coral)
+local eventPill, eventLabel = pill(84, C.Violet)
+local boostPill, boostLabel = pill(122, C.Coral)
 
--- air meter (right under the event pills)
-local airPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 40), Position = UDim2.fromOffset(14, 362), Color = C.Ink, Radius = 20, Stroke = 2.5, StrokeColor = C.Sky})
+-- air meter (bottom right, above the flare button's spot)
+local airPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 40), Position = UDim2.new(1, -16, 1, -196), AnchorPoint = Vector2.new(1, 1), Color = C.Ink, Radius = 20, Stroke = 2.5, StrokeColor = C.Sky})
 airPanel.Visible = false
 UIKit.label(airPanel, "🫧 AIR", {Size = UDim2.fromOffset(60, 22), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Align = "Left", Color = C.White, Stroke = 0, MaxText = 16})
 local airTrack = UIKit.panel(airPanel, {Size = UDim2.new(1, -90, 0, 14), Position = UDim2.new(0, 76, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.PanelTint, Radius = 7, Stroke = false, Shade = false})
