@@ -24,7 +24,7 @@ local saveRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("SaveA
 local player = Players.LocalPlayer
 local musicGroup, sfxGroup = Audio.group("Music"), Audio.group("SFX")
 
-local settings = {MusicVolume = 0.6, SfxVolume = 0.8, MusicMuted = false, SfxMuted = false}
+local settings = table.clone(GameConfig.DefaultAudio) -- Music 30%, SFX 20% until your saved settings load
 
 local function apply()
 	musicGroup.Volume = settings.MusicMuted and 0 or settings.MusicVolume
@@ -59,8 +59,8 @@ local function playMusic(worldId)
 	local old = current
 	current = nil
 	if old then
-		TweenService:Create(old, TweenInfo.new(1.5), {Volume = 0}):Play()
-		task.delay(1.6, function() old:Destroy() end)
+		TweenService:Create(old, TweenInfo.new(GameConfig.MusicCrossfade), {Volume = 0}):Play()
+		task.delay(GameConfig.MusicCrossfade + 0.1, function() old:Destroy() end)
 	end
 	if not id then return end
 	local sound = Instance.new("Sound")
@@ -71,7 +71,7 @@ local function playMusic(worldId)
 	sound.SoundGroup = musicGroup
 	sound.Parent = SoundService
 	sound:Play()
-	TweenService:Create(sound, TweenInfo.new(2), {Volume = GameConfig.MusicVolume}):Play()
+	TweenService:Create(sound, TweenInfo.new(GameConfig.MusicCrossfade), {Volume = GameConfig.MusicVolume}):Play()
 	current = sound
 end
 player:GetAttributeChangedSignal("CurrentWorld"):Connect(function()
@@ -170,7 +170,7 @@ local function load()
 	local ok, saved = pcall(function() return HttpService:JSONDecode(raw) end)
 	if ok and typeof(saved) == "table" then
 		for key in pairs(settings) do
-			if saved[key] ~= nil then settings[key] = saved[key] end
+			if saved[key] ~= nil and key ~= "Version" then settings[key] = saved[key] end
 		end
 		refreshAll()
 	end

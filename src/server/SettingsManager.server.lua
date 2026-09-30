@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local saveRemote = remotes:FindFirstChild("SaveAudioSettings") or Instance.new("RemoteEvent")
@@ -20,7 +21,14 @@ end
 
 local function onPlayer(player)
 	local data = PlayerData.WaitForData(player)
-	if data and player.Parent then publish(player, data.Settings) end
+	if not data or not player.Parent then return end
+	-- settings saved before the audio fix were far too loud: start those players on the new defaults
+	-- (the version is only ever written here, never by the data template, so old saves don't get it for free)
+	if data.Settings.Version ~= GameConfig.AudioSettingsVersion then
+		data.Settings = table.clone(GameConfig.DefaultAudio)
+		data.Settings.Version = GameConfig.AudioSettingsVersion
+	end
+	publish(player, data.Settings)
 end
 Players.PlayerAdded:Connect(onPlayer)
 for _, player in ipairs(Players:GetPlayers()) do task.spawn(onPlayer, player) end
@@ -36,6 +44,7 @@ saveRemote.OnServerEvent:Connect(function(player, settings)
 		SfxVolume = volume(settings.SfxVolume, data.Settings.SfxVolume),
 		MusicMuted = settings.MusicMuted == true,
 		SfxMuted = settings.SfxMuted == true,
+		Version = GameConfig.AudioSettingsVersion,
 	}
 	publish(player, data.Settings)
 end)

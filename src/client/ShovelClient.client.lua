@@ -871,9 +871,7 @@ end)
 local digHitRemote = remotes:WaitForChild("DigHit")
 
 local Audio = require(ReplicatedStorage:WaitForChild("Audio"))
-local function playSound(id, volume, pitch)
-	Audio.play(id, volume, pitch) -- through the SFX group (volume/mute in Settings)
-end
+
 
 -- short, punchy camera shake (strength in studs)
 local shakeUntil, shakeStrength = 0, 0
@@ -909,13 +907,13 @@ digHitRemote.OnClientEvent:Connect(function(info)
 	if typeof(info) ~= "table" then return end
 	if info.Bounced then
 		shake(0.35, 0.18)
-		playSound(GameConfig.Sounds.Clang, 0.7)
+		Audio.sfx("Clang")
 		comboLabel.Visible = false
 		return
 	end
 	local combo = tonumber(info.Combo) or 1
 	shake(0.05 + combo * 0.01, 0.1) -- the strike already shook; big combos shake a bit more
-	playSound(GameConfig.Sounds.Dig, 0.5, 0.9 + math.random() * 0.2 + combo * 0.02)
+	Audio.sfx("Dig") -- rate-limited (max ~4 a second) with a random 0.95-1.05 pitch
 	if typeof(info.Position) == "Vector3" and typeof(info.Color) == "Color3" then
 		tossDirt(info.Position + Vector3.new(0, 1.5, 0), info.Color)
 	end
@@ -926,7 +924,7 @@ digHitRemote.OnClientEvent:Connect(function(info)
 		comboLabel.TextColor3 = COMBO_COLORS[math.clamp(combo, 1, #COMBO_COLORS)]
 		comboLabel.Visible = true
 		UIKit.pop(comboLabel, 1.35)
-		playSound(GameConfig.Sounds.Combo, 0.35, 0.8 + combo * 0.06)
+		Audio.sfx("Combo", 0.9 + math.min(combo, 10) * 0.03)
 		task.delay(1.5, function()
 			if comboToken == myToken then comboLabel.Visible = false end
 		end)

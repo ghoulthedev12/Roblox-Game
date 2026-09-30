@@ -1221,13 +1221,22 @@ return ArtifactsWorlds
 ]=])
 install(game:GetService("ReplicatedStorage"), "Audio", "ModuleScript", [=[
 -- Audio (ModuleScript in ReplicatedStorage)
--- One place to play sound effects on a player's screen. Every effect goes through the "SFX"
--- SoundGroup, and music through the "Music" SoundGroup, so the settings window (AudioClient)
--- can set each one's volume or mute it. Audio.play(id, volume, pitch)
+-- One place to play sound effects on a player's screen.
+--   Audio.sfx("Dig")   plays a sound from GameConfig.Sounds, with:
+--     * a pool per sound: at most MaxVoices copies ring at once (the rest are skipped), and
+--       the same Sound objects are reused instead of making new ones every time
+--     * a rate limit: the same sound can't play again within MinGap seconds (fast digging
+--       plays at most ~4 dig sounds a second instead of stacking into noise)
+--     * a small random pitch change (Jitter) so repeats sound organic
+-- Every effect goes through the "SFX" SoundGroup and music through "Music", so the Settings
+-- window (AudioClient) sets each one's volume or mutes it. The SFX group also has a gentle
+-- treble cut (softer, less harsh) and a compressor (many sounds at once never get loud).
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 
 local Audio = {}
+local GameConfig -- loaded on first use (GameConfig loads AudioAssets, which is fine either way)
 
 function Audio.group(name)
 	local group = SoundService:FindFirstChild(name)
@@ -1235,15 +1244,73 @@ function Audio.group(name)
 		group = Instance.new("SoundGroup")
 		group.Name = name
 		group.Parent = SoundService
+		if name == "SFX" then
+			local eq = Instance.new("EqualizerSoundEffect")
+			eq.HighGain = -6 -- take the edge off
+			eq.MidGain = -1
+			eq.LowGain = 0
+			eq.Parent = group
+			local comp = Instance.new("CompressorSoundEffect")
+			comp.Threshold = -22
+			comp.Ratio = 4
+			comp.Attack = 0.005
+			comp.Release = 0.2
+			comp.Parent = group
+		end
 	end
 	return group
 end
 
+local pools = {}     -- [name] = {Sound, ...}
+local lastPlay = {}  -- [name] = os.clock() of the last play
+local rng = Random.new()
+
+local function pool(name, def)
+	local list = pools[name]
+	if not list then
+		list = {}
+		for i = 1, def.MaxVoices or 1 do
+			local sound = Instance.new("Sound")
+			sound.Name = "SFX_" .. name .. i
+			sound.SoundId = def.Id
+			sound.SoundGroup = Audio.group("SFX")
+			sound.Parent = SoundService
+			table.insert(list, sound)
+		end
+		pools[name] = list
+	end
+	return list
+end
+
+-- plays GameConfig.Sounds[name]; pitch multiplies the sound's own (jittered) pitch
+function Audio.sfx(name, pitch)
+	GameConfig = GameConfig or require(ReplicatedStorage:WaitForChild("GameConfig"))
+	local def = GameConfig.Sounds[name]
+	if not def or not def.Id or def.Id == "" then return end
+	local now = os.clock()
+	if now - (lastPlay[name] or 0) < (def.MinGap or 0.05) then return end -- rate limit
+	local free
+	for _, sound in ipairs(pool(name, def)) do
+		if not sound.IsPlaying then
+			free = sound
+			break
+		end
+	end
+	if not free then return end -- every voice is busy: skip rather than stack
+	lastPlay[name] = now
+	local jitter = def.Jitter or 0
+	free.Volume = def.Mix or 1
+	free.PlaybackSpeed = (1 + rng:NextNumber(-jitter, jitter)) * (pitch or 1)
+	free.TimePosition = 0
+	free:Play()
+end
+
+-- a one-off sound by id (kept for anything not in GameConfig.Sounds); quiet by default
 function Audio.play(id, volume, pitch)
 	if not id or id == "" then return end
 	local sound = Instance.new("Sound")
 	sound.SoundId = id
-	sound.Volume = volume or 0.6
+	sound.Volume = math.min(volume or 0.2, 1)
 	sound.PlaybackSpeed = pitch or 1
 	sound.SoundGroup = Audio.group("SFX")
 	sound.Parent = SoundService
@@ -1253,6 +1320,15 @@ function Audio.play(id, volume, pitch)
 end
 
 return Audio
+]=])
+install(game:GetService("ReplicatedStorage"), "AudioAssets", "ModuleScript", [=[
+-- AudioAssets (ModuleScript in ReplicatedStorage)
+-- Written by tools/upload_audio.py: the uploaded id of every music track and sound effect.
+-- GameConfig uses these; anything missing falls back to Roblox's built-in sounds (or no music).
+-- (Empty until you run: python3 tools/upload_audio.py --user-id <your id>)
+
+return {
+}
 ]=])
 install(game:GetService("ReplicatedStorage"), "GameConfig", "ModuleScript", [=[
 -- GameConfig (ModuleScript in ReplicatedStorage)
@@ -1308,33 +1384,46 @@ end
 ---------------------------------------------------------------------
 -- Optional sound effects. Paste a sound's id from the Toolbox (e.g. "rbxassetid://123456")
 -- and it plays; leave "" for silence.
--- Sound effects. These use sounds that come built into Roblox, so they work right away; to
--- use your own, paste "rbxassetid://<id>" of any audio from the Creator Store instead.
+-- AUDIO. The game's own sounds and music are made by tools/make_audio.py and uploaded with
+-- tools/upload_audio.py, which fills in AudioAssets. Until then, effects use sounds built
+-- into Roblox and there's no music.
+local AudioAssets = require(script.Parent:WaitForChild("AudioAssets"))
+local function asset(name, fallback)
+	local id = AudioAssets[name]
+	return (id and id ~= "") and id or fallback
+end
+
+-- Sound effects. Mix = its level inside the SFX channel (the Settings slider sets the channel;
+-- at the default 20% every effect plays at an effective 0.15-0.2 volume).
+-- MinGap = seconds before the same sound can play again, MaxVoices = how many copies may ring
+-- at once (so fast digging can't stack into noise), Jitter = random pitch +/- (organic, not robotic).
 GameConfig.Sounds = {
-	Dig = "rbxasset://sounds/collide.wav",                -- every time the pickaxe hits the dirt
-	Clang = "rbxasset://sounds/swordslash.wav",           -- pickaxe bounces off a zone that's too hard
-	Find = "rbxasset://sounds/electronicpingshort.wav",   -- an artifact pops out of the ground
-	Combo = "rbxasset://sounds/clickfast.wav",            -- combo goes up
-	Click = "rbxasset://sounds/button.wav",               -- any UI button
+	Dig = {Id = asset("sfx_dig", "rbxasset://sounds/collide.wav"), Mix = 0.95, MinGap = 0.25, MaxVoices = 2, Jitter = 0.05},
+	Clang = {Id = asset("sfx_clang", "rbxasset://sounds/swordslash.wav"), Mix = 0.8, MinGap = 0.45, MaxVoices = 1, Jitter = 0.03},
+	Find = {Id = asset("sfx_find", "rbxasset://sounds/electronicpingshort.wav"), Mix = 1, MinGap = 0.8, MaxVoices = 1, Jitter = 0},
+	Combo = {Id = asset("sfx_combo", "rbxasset://sounds/clickfast.wav"), Mix = 0.6, MinGap = 0.5, MaxVoices = 1, Jitter = 0.02},
+	Click = {Id = asset("sfx_click", "rbxasset://sounds/button.wav"), Mix = 0.8, MinGap = 0.06, MaxVoices = 2, Jitter = 0.03},
 }
 
--- BACKGROUND MUSIC per world (AudioClient crossfades to the world you're in).
--- Paste a track for each world: in Studio open the Toolbox > Creator Store > Audio, search a
--- mood (e.g. "chill", "synthwave", "spooky"), right-click a track > Copy Asset ID, and put it
--- here as "rbxassetid://123456". Empty = that world plays the default track (or silence).
+-- BACKGROUND MUSIC per world (AudioClient loops it and crossfades when you travel).
+-- To use your own track instead, paste "rbxassetid://<id>" of any audio you can use.
 GameConfig.Music = {
 	Default = "",
-	[1] = "",  -- The Meme Dig Site: chill beats
-	[2] = "",  -- Neon Sakura Grove: calm lo-fi / koto
-	[3] = "",  -- Galaxy Drift: dreamy space ambient
-	[4] = "",  -- Frostbyte Tundra: icy ambient
-	[5] = "",  -- Chrome Dunes: desert adventure
-	[6] = "",  -- Coral Circuit: underwater ambient
-	[7] = "",  -- Candy Mainframe: bubbly pop
-	[8] = "",  -- Volcano Forge: heavy drums
-	[9] = "",  -- Glitch Nexus: synthwave
+	[1] = asset("music_world1", ""),  -- The Meme Dig Site: lo-fi chill beats
+	[2] = asset("music_world2", ""),  -- Neon Sakura Grove: koto plucks over soft pads
+	[3] = asset("music_world3", ""),  -- Galaxy Drift: dreamy space ambient
+	[4] = asset("music_world4", ""),  -- Frostbyte Tundra: icy bells and wind
+	[5] = asset("music_world5", ""),  -- Chrome Dunes: desert hand drums and oud
+	[6] = asset("music_world6", ""),  -- Coral Circuit: muffled underwater chill
+	[7] = asset("music_world7", ""),  -- Candy Mainframe: bubbly pop
+	[8] = asset("music_world8", ""),  -- Volcano Forge: heavy drums
+	[9] = asset("music_world9", ""),  -- Glitch Nexus: synthwave
 }
-GameConfig.MusicVolume = 0.35 -- how loud music plays at 100% on the Music slider
+GameConfig.MusicVolume = 1        -- track level inside the Music channel (the slider sets the channel)
+GameConfig.MusicCrossfade = 1.5   -- seconds to fade between worlds' tracks
+-- default settings for new players (and players from before the audio fix)
+GameConfig.DefaultAudio = {MusicVolume = 0.3, SfxVolume = 0.2, MusicMuted = false, SfxMuted = false}
+GameConfig.AudioSettingsVersion = 2 -- saved settings older than this are reset to DefaultAudio
 
 
 -- REBIRTH: trade in your cash for a permanent boost. Cost = RebirthBaseCost x RebirthCostGrowth ^ rebirths.
@@ -2506,8 +2595,7 @@ function UIKit.button(parent, text, props)
 		-- a soft click on every button (through the SFX group, so it follows the SFX setting)
 		local ReplicatedStorage = game:GetService("ReplicatedStorage")
 		local Audio = require(ReplicatedStorage:WaitForChild("Audio"))
-		local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
-		Audio.play(GameConfig.Sounds.Click, 0.35)
+		Audio.sfx("Click")
 	end)
 	b.MouseButton1Up:Connect(function() to(1.05) end)
 	return b, label
@@ -7885,7 +7973,7 @@ local function defaultData()
 		Stats = {TotalEarned = 0, TotalDigs = 0},
 		TutorialDone = false, -- the first-join walkthrough (TutorialManager)
 		-- audio settings (SettingsManager / AudioClient), saved so they stick between visits
-		Settings = {MusicVolume = 0.6, SfxVolume = 0.8, MusicMuted = false, SfxMuted = false},
+		Settings = table.clone(GameConfig.DefaultAudio), -- Music 30%, SFX 20%
 		-- rebirths (RebirthManager): each one adds GameConfig.RebirthIncomeBonus to all museum income
 		Rebirths = 0,
 		Gems = 0,
@@ -10839,6 +10927,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local saveRemote = remotes:FindFirstChild("SaveAudioSettings") or Instance.new("RemoteEvent")
@@ -10851,7 +10940,14 @@ end
 
 local function onPlayer(player)
 	local data = PlayerData.WaitForData(player)
-	if data and player.Parent then publish(player, data.Settings) end
+	if not data or not player.Parent then return end
+	-- settings saved before the audio fix were far too loud: start those players on the new defaults
+	-- (the version is only ever written here, never by the data template, so old saves don't get it for free)
+	if data.Settings.Version ~= GameConfig.AudioSettingsVersion then
+		data.Settings = table.clone(GameConfig.DefaultAudio)
+		data.Settings.Version = GameConfig.AudioSettingsVersion
+	end
+	publish(player, data.Settings)
 end
 Players.PlayerAdded:Connect(onPlayer)
 for _, player in ipairs(Players:GetPlayers()) do task.spawn(onPlayer, player) end
@@ -10867,6 +10963,7 @@ saveRemote.OnServerEvent:Connect(function(player, settings)
 		SfxVolume = volume(settings.SfxVolume, data.Settings.SfxVolume),
 		MusicMuted = settings.MusicMuted == true,
 		SfxMuted = settings.SfxMuted == true,
+		Version = GameConfig.AudioSettingsVersion,
 	}
 	publish(player, data.Settings)
 end)
@@ -12887,7 +12984,7 @@ local saveRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("SaveA
 local player = Players.LocalPlayer
 local musicGroup, sfxGroup = Audio.group("Music"), Audio.group("SFX")
 
-local settings = {MusicVolume = 0.6, SfxVolume = 0.8, MusicMuted = false, SfxMuted = false}
+local settings = table.clone(GameConfig.DefaultAudio) -- Music 30%, SFX 20% until your saved settings load
 
 local function apply()
 	musicGroup.Volume = settings.MusicMuted and 0 or settings.MusicVolume
@@ -12922,8 +13019,8 @@ local function playMusic(worldId)
 	local old = current
 	current = nil
 	if old then
-		TweenService:Create(old, TweenInfo.new(1.5), {Volume = 0}):Play()
-		task.delay(1.6, function() old:Destroy() end)
+		TweenService:Create(old, TweenInfo.new(GameConfig.MusicCrossfade), {Volume = 0}):Play()
+		task.delay(GameConfig.MusicCrossfade + 0.1, function() old:Destroy() end)
 	end
 	if not id then return end
 	local sound = Instance.new("Sound")
@@ -12934,7 +13031,7 @@ local function playMusic(worldId)
 	sound.SoundGroup = musicGroup
 	sound.Parent = SoundService
 	sound:Play()
-	TweenService:Create(sound, TweenInfo.new(2), {Volume = GameConfig.MusicVolume}):Play()
+	TweenService:Create(sound, TweenInfo.new(GameConfig.MusicCrossfade), {Volume = GameConfig.MusicVolume}):Play()
 	current = sound
 end
 player:GetAttributeChangedSignal("CurrentWorld"):Connect(function()
@@ -13033,7 +13130,7 @@ local function load()
 	local ok, saved = pcall(function() return HttpService:JSONDecode(raw) end)
 	if ok and typeof(saved) == "table" then
 		for key in pairs(settings) do
-			if saved[key] ~= nil then settings[key] = saved[key] end
+			if saved[key] ~= nil and key ~= "Version" then settings[key] = saved[key] end
 		end
 		refreshAll()
 	end
@@ -13322,7 +13419,6 @@ minigameRemote.OnClientEvent:Connect(startMinigame)
 ---------------------------------------------------------------------
 -- FIND MESSAGES: just a line of text near the top of the screen that fades away
 ---------------------------------------------------------------------
-local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local pullRemote = remotes:WaitForChild("PullFind")
 
 local function textLine(y, size)
@@ -13390,7 +13486,7 @@ end
 
 local Audio = require(ReplicatedStorage:WaitForChild("Audio"))
 local function playFindSound()
-	Audio.play(GameConfig.Sounds and GameConfig.Sounds.Find, 0.7)
+	Audio.sfx("Find")
 end
 
 resultRemote.OnClientEvent:Connect(function(info)
@@ -15628,9 +15724,7 @@ end)
 local digHitRemote = remotes:WaitForChild("DigHit")
 
 local Audio = require(ReplicatedStorage:WaitForChild("Audio"))
-local function playSound(id, volume, pitch)
-	Audio.play(id, volume, pitch) -- through the SFX group (volume/mute in Settings)
-end
+
 
 -- short, punchy camera shake (strength in studs)
 local shakeUntil, shakeStrength = 0, 0
@@ -15666,13 +15760,13 @@ digHitRemote.OnClientEvent:Connect(function(info)
 	if typeof(info) ~= "table" then return end
 	if info.Bounced then
 		shake(0.35, 0.18)
-		playSound(GameConfig.Sounds.Clang, 0.7)
+		Audio.sfx("Clang")
 		comboLabel.Visible = false
 		return
 	end
 	local combo = tonumber(info.Combo) or 1
 	shake(0.05 + combo * 0.01, 0.1) -- the strike already shook; big combos shake a bit more
-	playSound(GameConfig.Sounds.Dig, 0.5, 0.9 + math.random() * 0.2 + combo * 0.02)
+	Audio.sfx("Dig") -- rate-limited (max ~4 a second) with a random 0.95-1.05 pitch
 	if typeof(info.Position) == "Vector3" and typeof(info.Color) == "Color3" then
 		tossDirt(info.Position + Vector3.new(0, 1.5, 0), info.Color)
 	end
@@ -15683,7 +15777,7 @@ digHitRemote.OnClientEvent:Connect(function(info)
 		comboLabel.TextColor3 = COMBO_COLORS[math.clamp(combo, 1, #COMBO_COLORS)]
 		comboLabel.Visible = true
 		UIKit.pop(comboLabel, 1.35)
-		playSound(GameConfig.Sounds.Combo, 0.35, 0.8 + combo * 0.06)
+		Audio.sfx("Combo", 0.9 + math.min(combo, 10) * 0.03)
 		task.delay(1.5, function()
 			if comboToken == myToken then comboLabel.Visible = false end
 		end)

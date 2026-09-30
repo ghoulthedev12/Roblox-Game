@@ -51,33 +51,46 @@ end
 ---------------------------------------------------------------------
 -- Optional sound effects. Paste a sound's id from the Toolbox (e.g. "rbxassetid://123456")
 -- and it plays; leave "" for silence.
--- Sound effects. These use sounds that come built into Roblox, so they work right away; to
--- use your own, paste "rbxassetid://<id>" of any audio from the Creator Store instead.
+-- AUDIO. The game's own sounds and music are made by tools/make_audio.py and uploaded with
+-- tools/upload_audio.py, which fills in AudioAssets. Until then, effects use sounds built
+-- into Roblox and there's no music.
+local AudioAssets = require(script.Parent:WaitForChild("AudioAssets"))
+local function asset(name, fallback)
+	local id = AudioAssets[name]
+	return (id and id ~= "") and id or fallback
+end
+
+-- Sound effects. Mix = its level inside the SFX channel (the Settings slider sets the channel;
+-- at the default 20% every effect plays at an effective 0.15-0.2 volume).
+-- MinGap = seconds before the same sound can play again, MaxVoices = how many copies may ring
+-- at once (so fast digging can't stack into noise), Jitter = random pitch +/- (organic, not robotic).
 GameConfig.Sounds = {
-	Dig = "rbxasset://sounds/collide.wav",                -- every time the pickaxe hits the dirt
-	Clang = "rbxasset://sounds/swordslash.wav",           -- pickaxe bounces off a zone that's too hard
-	Find = "rbxasset://sounds/electronicpingshort.wav",   -- an artifact pops out of the ground
-	Combo = "rbxasset://sounds/clickfast.wav",            -- combo goes up
-	Click = "rbxasset://sounds/button.wav",               -- any UI button
+	Dig = {Id = asset("sfx_dig", "rbxasset://sounds/collide.wav"), Mix = 0.95, MinGap = 0.25, MaxVoices = 2, Jitter = 0.05},
+	Clang = {Id = asset("sfx_clang", "rbxasset://sounds/swordslash.wav"), Mix = 0.8, MinGap = 0.45, MaxVoices = 1, Jitter = 0.03},
+	Find = {Id = asset("sfx_find", "rbxasset://sounds/electronicpingshort.wav"), Mix = 1, MinGap = 0.8, MaxVoices = 1, Jitter = 0},
+	Combo = {Id = asset("sfx_combo", "rbxasset://sounds/clickfast.wav"), Mix = 0.6, MinGap = 0.5, MaxVoices = 1, Jitter = 0.02},
+	Click = {Id = asset("sfx_click", "rbxasset://sounds/button.wav"), Mix = 0.8, MinGap = 0.06, MaxVoices = 2, Jitter = 0.03},
 }
 
--- BACKGROUND MUSIC per world (AudioClient crossfades to the world you're in).
--- Paste a track for each world: in Studio open the Toolbox > Creator Store > Audio, search a
--- mood (e.g. "chill", "synthwave", "spooky"), right-click a track > Copy Asset ID, and put it
--- here as "rbxassetid://123456". Empty = that world plays the default track (or silence).
+-- BACKGROUND MUSIC per world (AudioClient loops it and crossfades when you travel).
+-- To use your own track instead, paste "rbxassetid://<id>" of any audio you can use.
 GameConfig.Music = {
 	Default = "",
-	[1] = "",  -- The Meme Dig Site: chill beats
-	[2] = "",  -- Neon Sakura Grove: calm lo-fi / koto
-	[3] = "",  -- Galaxy Drift: dreamy space ambient
-	[4] = "",  -- Frostbyte Tundra: icy ambient
-	[5] = "",  -- Chrome Dunes: desert adventure
-	[6] = "",  -- Coral Circuit: underwater ambient
-	[7] = "",  -- Candy Mainframe: bubbly pop
-	[8] = "",  -- Volcano Forge: heavy drums
-	[9] = "",  -- Glitch Nexus: synthwave
+	[1] = asset("music_world1", ""),  -- The Meme Dig Site: lo-fi chill beats
+	[2] = asset("music_world2", ""),  -- Neon Sakura Grove: koto plucks over soft pads
+	[3] = asset("music_world3", ""),  -- Galaxy Drift: dreamy space ambient
+	[4] = asset("music_world4", ""),  -- Frostbyte Tundra: icy bells and wind
+	[5] = asset("music_world5", ""),  -- Chrome Dunes: desert hand drums and oud
+	[6] = asset("music_world6", ""),  -- Coral Circuit: muffled underwater chill
+	[7] = asset("music_world7", ""),  -- Candy Mainframe: bubbly pop
+	[8] = asset("music_world8", ""),  -- Volcano Forge: heavy drums
+	[9] = asset("music_world9", ""),  -- Glitch Nexus: synthwave
 }
-GameConfig.MusicVolume = 0.35 -- how loud music plays at 100% on the Music slider
+GameConfig.MusicVolume = 1        -- track level inside the Music channel (the slider sets the channel)
+GameConfig.MusicCrossfade = 1.5   -- seconds to fade between worlds' tracks
+-- default settings for new players (and players from before the audio fix)
+GameConfig.DefaultAudio = {MusicVolume = 0.3, SfxVolume = 0.2, MusicMuted = false, SfxMuted = false}
+GameConfig.AudioSettingsVersion = 2 -- saved settings older than this are reset to DefaultAudio
 
 
 -- REBIRTH: trade in your cash for a permanent boost. Cost = RebirthBaseCost x RebirthCostGrowth ^ rebirths.

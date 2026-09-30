@@ -51,7 +51,7 @@ local function defaultData()
 		Stats = {TotalEarned = 0, TotalDigs = 0},
 		TutorialDone = false, -- the first-join walkthrough (TutorialManager)
 		-- audio settings (SettingsManager / AudioClient), saved so they stick between visits
-		Settings = {MusicVolume = 0.6, SfxVolume = 0.8, MusicMuted = false, SfxMuted = false},
+		Settings = table.clone(GameConfig.DefaultAudio), -- Music 30%, SFX 20%
 		-- rebirths (RebirthManager): each one adds GameConfig.RebirthIncomeBonus to all museum income
 		Rebirths = 0,
 		Gems = 0,

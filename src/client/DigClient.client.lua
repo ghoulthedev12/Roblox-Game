@@ -159,7 +159,6 @@ minigameRemote.OnClientEvent:Connect(startMinigame)
 ---------------------------------------------------------------------
 -- FIND MESSAGES: just a line of text near the top of the screen that fades away
 ---------------------------------------------------------------------
-local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local pullRemote = remotes:WaitForChild("PullFind")
 
 local function textLine(y, size)
@@ -227,7 +226,7 @@ end
 
 local Audio = require(ReplicatedStorage:WaitForChild("Audio"))
 local function playFindSound()
-	Audio.play(GameConfig.Sounds and GameConfig.Sounds.Find, 0.7)
+	Audio.sfx("Find")
 end
 
 resultRemote.OnClientEvent:Connect(function(info)
