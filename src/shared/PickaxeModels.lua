@@ -32,16 +32,18 @@ end
 local LOOKS = {
 	RustyShovel = {Head = "Crescent", Main = rgb(150, 96, 62), Edge = rgb(112, 70, 46), Frame = rgb(120, 110, 104), Gem = rgb(255, 150, 70), Handle = rgb(84, 58, 40), Wrap = rgb(150, 150, 156)},
 	PlasticShovel = {Head = "Wide", Main = rgb(150, 156, 160), Edge = rgb(104, 110, 116), Frame = rgb(132, 136, 142), Gem = rgb(235, 240, 250), Handle = rgb(70, 52, 40), Wrap = rgb(196, 110, 60)},
-	GardenSpade = {Head = "Crescent", Main = rgb(214, 124, 72), Edge = rgb(170, 86, 50), Frame = rgb(190, 150, 110), Gem = rgb(70, 230, 210), Handle = rgb(60, 42, 34), Wrap = rgb(90, 190, 170)},
+	GardenSpade = {Head = "Bone", Main = rgb(236, 228, 206), Edge = rgb(196, 184, 160), Frame = rgb(120, 104, 90), Gem = rgb(120, 255, 170), Handle = rgb(60, 42, 34), Wrap = rgb(150, 60, 50)},
 	IronShovel = {Head = "Spiked", Main = rgb(196, 200, 210), Edge = rgb(140, 146, 160), Frame = rgb(170, 174, 184), Gem = rgb(255, 70, 90), Handle = rgb(48, 40, 38), Wrap = rgb(150, 40, 50)},
-	SteelSpade = {Head = "Crescent", Main = rgb(150, 160, 156), Edge = rgb(110, 200, 60), Frame = rgb(150, 160, 156), Gem = rgb(60, 255, 120), Handle = rgb(56, 36, 36), Wrap = rgb(214, 120, 80)},
+	SteelSpade = {Head = "Drill", Main = rgb(150, 160, 156), Edge = rgb(110, 200, 60), Frame = rgb(150, 160, 156), Gem = rgb(60, 255, 120), Handle = rgb(56, 36, 36), Wrap = rgb(214, 120, 80)},
 	GoldenShovel = {Head = "Hammer", Main = rgb(255, 208, 72), Edge = rgb(226, 158, 40), Frame = rgb(255, 224, 140), Gem = rgb(255, 60, 110), Handle = rgb(60, 40, 30), Wrap = rgb(150, 30, 50)},
 	GamerShovel = {Head = "Crystal", Main = rgb(110, 230, 255), Edge = rgb(180, 246, 255), Frame = rgb(170, 240, 255), Gem = rgb(90, 220, 255), Handle = rgb(40, 44, 64), Wrap = rgb(70, 80, 110)},
-	TectonicAuger = {Head = "Spiked", Main = rgb(64, 62, 74), Edge = rgb(255, 120, 40), Frame = rgb(90, 88, 100), Gem = rgb(255, 140, 50), Handle = rgb(30, 28, 34), Wrap = rgb(255, 120, 40)},
-	SingularitySpade = {Head = "Crystal", Main = rgb(58, 34, 96), Edge = rgb(190, 120, 255), Frame = rgb(90, 70, 140), Gem = rgb(235, 220, 255), Handle = rgb(20, 16, 30), Wrap = rgb(150, 90, 255)},
+	TectonicAuger = {Head = "Plasma", Main = rgb(64, 62, 74), Edge = rgb(255, 120, 40), Frame = rgb(90, 88, 100), Gem = rgb(255, 110, 60), Handle = rgb(30, 28, 34), Wrap = rgb(255, 120, 40)},
+	SingularitySpade = {Head = "Quantum", Main = rgb(58, 34, 96), Edge = rgb(190, 120, 255), Frame = rgb(90, 70, 140), Gem = rgb(235, 220, 255), Handle = rgb(20, 16, 30), Wrap = rgb(150, 90, 255)},
 }
 -- worlds 2-9: head shape per tier, colors from the world's theme
-local WORLD_HEADS = {"Crescent", "Wide", "Spiked", "Crescent", "Crystal", "Hammer", "Crystal"}
+-- the silhouette changes completely as you go up: pick -> wide pick -> bone excavator ->
+-- mechanical drill -> crystal pick -> plasma laser pick -> quantum anti-gravity digger
+local WORLD_HEADS = {"Crescent", "Wide", "Bone", "Drill", "Crystal", "Plasma", "Quantum"}
 
 local function lookFor(def)
 	if LOOKS[def.Id] then return LOOKS[def.Id] end
@@ -91,6 +93,12 @@ local DIAMOND = CFrame.Angles(math.rad(45), 0, 0) -- a cube seen along X becomes
 
 -- particle trails by tier (off the tips of the head)
 local TRAILS = {
+	Dust = {Name = "Dust", Colors = {rgb(255, 240, 210), rgb(170, 130, 90)}, Rate = 4, Light = 0.2, Size = 0.18, EndSize = 0.3,
+		Lifetime = NumberRange.new(0.3, 0.5), Speed = NumberRange.new(0.2, 0.6)},
+	Ice = {Name = "Ice", Colors = {Color3.new(1, 1, 1), rgb(170, 235, 255), rgb(90, 170, 255)}, Rate = 12, Light = 0.8, Size = 0.2, EndSize = 0.02,
+		Lifetime = NumberRange.new(0.35, 0.6), Speed = NumberRange.new(0.5, 1.5), Acceleration = Vector3.new(0, -10, 0), RotSpeed = NumberRange.new(-300, 300)},
+	Glitch = {Name = "Glitch", Colors = {rgb(255, 60, 200), rgb(60, 255, 230), rgb(140, 255, 90)}, Rate = 16, Light = 1, Size = 0.22, EndSize = 0.22,
+		Lifetime = NumberRange.new(0.08, 0.2), Speed = NumberRange.new(2, 6)},
 	Sparks = {Name = "Sparks", Colors = {Color3.new(1, 1, 1), NEON_EDGE}, Rate = 6, Light = 0.85, Size = 0.12,
 		Lifetime = NumberRange.new(0.25, 0.45), Speed = NumberRange.new(0.2, 0.8)},
 	Electric = {Name = "Electric", Colors = {Color3.new(1, 1, 1), rgb(140, 220, 255), rgb(60, 120, 255)}, Rate = 10, Light = 1, Size = 0.1,
@@ -163,6 +171,11 @@ local function arm(tool, H, side, look, opts)
 	local tipPos = center + Vector3.new(0, side * math.sin(phiEnd), -math.cos(phiEnd)) * R
 	local tip = newPart(tool, "HeadTip", Vector3.new(opts.Size * 0.36, opts.Size * 0.4, opts.Size * 0.4), CFrame.new(tipPos) * CFrame.Angles(side * phiEnd, 0, 0) * DIAMOND, NEON_EDGE, Enum.Material.Neon)
 	return parts, tip
+end
+
+-- a point on the arc a pick arm follows (same curve as arm() uses)
+local function arcPoint(H, side, R, phi)
+	return H + Vector3.new(0, 0, R) + Vector3.new(0, side * math.sin(phi), -math.cos(phi)) * R
 end
 
 -- a chunky hammer block made of voxels (the other side of a "Hammer" head)
@@ -278,6 +291,92 @@ return function(def)
 	elseif style == "Hammer" then
 		arm(tool, H, 1, look, {Radius = 2.3, Reach = 1.15, Count = 7, Rows = 2, Size = 0.66})
 		hammer(tool, H, -1, look)
+	elseif style == "Bone" then
+		-- BONE EXCAVATOR: each arm is a curved bone of knuckled segments ending in a claw,
+		-- with a little skull holding it all on the shaft
+		local R = 2.3
+		for _, s in ipairs({-1, 1}) do
+			local points = {}
+			for k, phi in ipairs({0.28, 0.62, 0.96, 1.3}) do
+				points[k] = arcPoint(H, s, R, phi)
+			end
+			for k = 1, 3 do
+				bar(tool, "BoneShaft", points[k], points[k + 1], 0.38 - k * 0.03, shade(look.Main, k))
+			end
+			for k = 1, 4 do
+				newPart(tool, "BoneKnuckle", Vector3.one * (0.62 - k * 0.05), CFrame.new(points[k]), look.Main, nil, Enum.PartType.Ball)
+			end
+			local dir = (points[4] - points[3]).Unit
+			local clawPos = points[4] + dir * 0.4
+			table.insert(tips, newPart(tool, "HeadTip", Vector3.new(0.26, 0.26, 0.9), CFrame.lookAt(clawPos, clawPos + dir), NEON_EDGE, Enum.Material.Neon))
+		end
+		local skull = newPart(tool, "Skull", Vector3.one * 1.15, CFrame.new(H + Vector3.new(0, 0, -0.15)), look.Main, nil, Enum.PartType.Ball)
+		for _, sy in ipairs({-1, 1}) do
+			for _, sx in ipairs({-1, 1}) do
+				newPart(tool, "SkullEye", Vector3.one * 0.26, CFrame.new(skull.CFrame.Position + Vector3.new(sx * 0.5, sy * 0.2, -0.15)), look.Gem, Enum.Material.Neon, Enum.PartType.Ball)
+			end
+		end
+	elseif style == "Drill" then
+		-- MECHANICAL DRILL: a motor block with a spiralled drill bit sticking out of each side
+		-- and a spinning turbine around the shaft
+		newPart(tool, "DrillMotor", Vector3.new(0.95, 1.4, 1.4), CFrame.new(H), look.Frame, Enum.Material.Metal)
+		newPart(tool, "MotorStripe", Vector3.new(1, 0.16, 1.44), CFrame.new(H + Vector3.new(0, 0.35, 0)), NEON_EDGE, Enum.Material.Neon)
+		newPart(tool, "MotorStripe", Vector3.new(1, 0.16, 1.44), CFrame.new(H - Vector3.new(0, 0.35, 0)), NEON_EDGE, Enum.Material.Neon)
+		for _, s in ipairs({-1, 1}) do
+			for k = 0, 4 do
+				local d = 1.15 - k * 0.2
+				local seg = newPart(tool, "DrillBit", Vector3.new(0.44, d, d), CFrame.new(H + Vector3.new(0, s * (0.95 + k * 0.42), 0)) * CFrame.Angles(0, 0, math.rad(90)),
+					shade(k % 2 == 0 and look.Main or look.Edge, k), Enum.Material.Metal)
+				seg.Shape = Enum.PartType.Cylinder
+				-- the spiral ridge winding around the bit
+				for r = 0, 2 do
+					local a = k * 1.3 + r * math.pi * 2 / 3
+					newPart(tool, "DrillRidge", Vector3.new(0.12, 0.34, 0.12),
+						CFrame.new(H + Vector3.new(math.cos(a) * d / 2, s * (0.95 + k * 0.42), math.sin(a) * d / 2)) * CFrame.Angles(0, -a, math.rad(30)), look.Edge, Enum.Material.Metal)
+				end
+			end
+			table.insert(tips, newPart(tool, "HeadTip", Vector3.new(0.3, 0.3, 0.3), CFrame.new(H + Vector3.new(0, s * 3.1, 0)) * DIAMOND, NEON_EDGE, Enum.Material.Neon))
+		end
+		for i = 1, 6 do
+			local a = i * math.pi / 3
+			local blade = newPart(tool, "TurbineBlade", Vector3.new(0.12, 0.5, 0.2), CFrame.new(H + Vector3.new(math.cos(a) * 0.95, math.sin(a) * 0.95, 0.9)) * CFrame.Angles(0, 0, a),
+				look.Edge, Enum.Material.Metal)
+			blade:SetAttribute("OrbitCenter", H + Vector3.new(0, 0, 0.9))
+			blade:SetAttribute("OrbitSpeed", 9)
+		end
+	elseif style == "Plasma" then
+		-- PLASMA LASER PICK: dark emitter prongs firing a curved blade of glowing plasma
+		for _, s in ipairs({-1, 1}) do
+			arm(tool, H, s, {Main = look.Handle:Lerp(Color3.new(0, 0, 0), 0.3), Edge = look.Frame}, {Radius = 2.3, Reach = 0.35, Count = 3, Rows = 2, Size = 0.62, Material = Enum.Material.Metal})
+			arm(tool, H, s, {Main = look.Gem, Edge = Color3.new(1, 1, 1), Frame = look.Gem}, {Radius = 2.35, Reach = 1.3, Count = 12, Rows = 1, Size = 0.42, Material = Enum.Material.Neon})
+			for k = 1, 3 do
+				local ring = newPart(tool, "PlasmaCoil", Vector3.new(0.3, 0.9 - k * 0.1, 0.9 - k * 0.1), CFrame.new(arcPoint(H, s, 2.35, 0.25 + k * 0.08)) * CFrame.Angles(s * (0.25 + k * 0.08), 0, math.rad(90)),
+					NEON_EDGE, Enum.Material.Neon)
+				ring.Shape = Enum.PartType.Cylinder
+				ring.Transparency = 0.3
+			end
+		end
+	elseif style == "Quantum" then
+		-- QUANTUM ANTI-GRAVITY DIGGER: the head floats free of the shaft; a glowing core holds
+		-- two glassy blades in place while halo rings and shards orbit around it
+		local F = H + Vector3.new(0, 0, -0.45)
+		newPart(tool, "QuantumCore", Vector3.one * 0.95, CFrame.new(F), look.Gem, Enum.Material.Neon, Enum.PartType.Ball)
+		for _, s in ipairs({-1, 1}) do
+			arm(tool, F, s, {Main = look.Main, Edge = look.Gem, Frame = look.Frame}, {Radius = 2.5, Reach = 1.2, Count = 7, Rows = 2, Size = 0.46, Material = Enum.Material.Glass, Glass = true})
+		end
+		for i = 1, 18 do
+			local a = i / 18 * math.pi * 2
+			local seg = newPart(tool, "QuantumHalo", Vector3.new(0.1, 0.4, 0.1), CFrame.new(F + Vector3.new(math.cos(a) * 1.35, math.sin(a) * 1.35, 0)) * CFrame.Angles(0, 0, a), NEON_EDGE, Enum.Material.Neon)
+			seg:SetAttribute("OrbitCenter", F)
+			seg:SetAttribute("OrbitSpeed", 2.4)
+		end
+		for i = 1, 5 do
+			local a = i / 5 * math.pi * 2
+			local shard = newPart(tool, "QuantumShard", Vector3.new(0.18, 0.18, 0.5), CFrame.new(F + Vector3.new(math.cos(a) * 0.9, math.sin(a) * 0.9, 0.9)) * CFrame.Angles(0.6, 0.4, a),
+				look.Gem, Enum.Material.Neon)
+			shard:SetAttribute("OrbitCenter", F + Vector3.new(0, 0, 0.9))
+			shard:SetAttribute("OrbitSpeed", -3.5)
+		end
 	else -- Crescent
 		for _, s in ipairs({-1, 1}) do
 			arm(tool, H, s, look, {Radius = 2.3, Reach = 1.15, Count = 7, Rows = tier >= 5 and 3 or 2, Size = 0.66})
@@ -289,7 +388,8 @@ return function(def)
 	end
 
 	-- DUAL BLADE (tier 7+): a second, thinner blade of pure energy on each side of the head
-	if tier >= 7 then
+	local classicHead = style ~= "Bone" and style ~= "Drill" and style ~= "Plasma" and style ~= "Quantum"
+	if tier >= 7 and classicHead then
 		for _, sx in ipairs({-1, 1}) do
 			local offset = H + Vector3.new(sx * 0.5, 0, 0.1)
 			for _, s in ipairs({-1, 1}) do
@@ -350,7 +450,9 @@ return function(def)
 	-- SPARK TRAIL: cyan sparks stream off both tips; they're left behind in the air while the
 	-- pickaxe moves, so every swing draws a glittering arc (denser on better pickaxes)
 	-- the trail's style depends on the tier: sparks -> electricity -> fire -> galaxy
-	local trail = TRAILS[tier >= 8 and "Galaxy" or (tier >= 6 and "Fire" or (tier >= 4 and "Electric" or "Sparks"))]
+	-- trail (and impact) style by tier: dust -> sparks -> electricity -> ice shards -> fire -> galaxy -> glitch
+	local TRAIL_BY_TIER = {"Dust", "Dust", "Sparks", "Sparks", "Electric", "Ice", "Fire", "Galaxy", "Glitch"}
+	local trail = TRAILS[TRAIL_BY_TIER[math.clamp(tier, 1, #TRAIL_BY_TIER)]]
 	tool:SetAttribute("TrailStyle", trail.Name)
 	tool:SetAttribute("TrailColorA", trail.Colors[1])
 	tool:SetAttribute("TrailColorB", trail.Colors[#trail.Colors])
@@ -382,6 +484,12 @@ return function(def)
 			zap.Lifetime = NumberRange.new(0.05, 0.12)
 			zap.Speed = NumberRange.new(4, 8)
 			zap.Parent = tip
+		elseif trail.Name == "Glitch" then
+			-- square pixels that blink in and out
+			sparks.Shape = Enum.ParticleEmitterShape.Box
+			sparks.Rotation = NumberRange.new(0)
+			sparks.RotSpeed = NumberRange.new(0)
+			sparks.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.5, 0.9), NumberSequenceKeypoint.new(0.6, 0), NumberSequenceKeypoint.new(1, 1)})
 		elseif trail.Name == "Galaxy" then
 			-- tiny white stars twinkling in the purple dust
 			local stars = sparks:Clone()

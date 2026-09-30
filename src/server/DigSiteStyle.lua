@@ -131,6 +131,93 @@ local function crystalVeins(folder, world, rng)
 	end
 end
 
+-- features that make each deep layer look different when you dig past it:
+--   the crystal layer (zone 3) gets big glowing crystal clusters growing out of the walls,
+--   the magma core (zone 4) gets glowing cracks of lava with embers drifting up out of them
+local function layerFeatures(folder, world, rng)
+	local origin = world.Origin
+	local crystalZone, magmaZone = world.Zones[3], world.Zones[4]
+	local function wallCFrame(angle, depth, inset)
+		local r = world.PitRadius + (inset or 3)
+		local pos = origin + Vector3.new(math.cos(angle) * r, -depth, math.sin(angle) * r)
+		return CFrame.lookAt(pos, Vector3.new(origin.X, pos.Y, origin.Z))
+	end
+	local function glow(parent, name, size, cf, color, material, transparency)
+		local p = Instance.new("Part")
+		p.Name = name
+		p.Anchored = true
+		p.CanCollide = false
+		p.CanQuery = false
+		p.CanTouch = false
+		p.CastShadow = false
+		p.Size = size
+		p.CFrame = cf
+		p.Color = color
+		p.Material = material or Enum.Material.Neon
+		p.Transparency = transparency or 0
+		p.Parent = parent
+		return p
+	end
+	if crystalZone then
+		local color = crystalZone.Color:Lerp(Color3.new(1, 1, 1), 0.15)
+		for i = 1, 12 do
+			local base = wallCFrame(i / 12 * math.pi * 2 + rng:NextNumber(-0.2, 0.2), rng:NextNumber(-crystalZone.Top + 10, -crystalZone.Bottom - 10))
+			local cluster = Instance.new("Model")
+			cluster.Name = "CrystalCluster"
+			cluster.Parent = folder
+			for k = 1, 6 do
+				local length = rng:NextNumber(2, 5)
+				local cf = base * CFrame.Angles(math.rad(-90) + rng:NextNumber(-0.7, 0.7), 0, rng:NextNumber(-0.7, 0.7)) * CFrame.new(0, length * 0.35, 0)
+				glow(cluster, "Crystal", Vector3.new(length * 0.28, length, length * 0.28), cf * CFrame.Angles(0, math.rad(45), 0),
+					color:Lerp(Color3.new(1, 1, 1), 0.3), Enum.Material.Glass, 0.2)
+				glow(cluster, "CrystalCore", Vector3.new(length * 0.12, length * 0.85, length * 0.12), cf, color)
+			end
+			local light = Instance.new("PointLight")
+			light.Color = color
+			light.Range = 16
+			light.Brightness = 1
+			light.Parent = cluster:FindFirstChild("CrystalCore")
+		end
+	end
+	if magmaZone then
+		local hot = Color3.fromRGB(255, 120, 40)
+		for i = 1, 14 do
+			local angle = i / 14 * math.pi * 2 + rng:NextNumber(-0.15, 0.15)
+			local depth = rng:NextNumber(-magmaZone.Top + 8, -magmaZone.Bottom - 8)
+			local crack = Instance.new("Model")
+			crack.Name = "MagmaCrack"
+			crack.Parent = folder
+			-- a zig-zag glowing seam running down the wall
+			local y = depth
+			local a = angle
+			local last
+			for _ = 1, 7 do
+				local nextY, nextA = y + rng:NextNumber(2, 4), a + rng:NextNumber(-0.04, 0.04)
+				local p0 = wallCFrame(a, y, 1.2).Position
+				local p1 = wallCFrame(nextA, nextY, 1.2).Position
+				last = glow(crack, "MagmaSeam", Vector3.new(0.35, 0.35, (p1 - p0).Magnitude + 0.3), CFrame.lookAt((p0 + p1) / 2, p1), hot)
+				y, a = nextY, nextA
+			end
+			local light = Instance.new("PointLight")
+			light.Color = hot
+			light.Range = 18
+			light.Brightness = 1.4
+			light.Parent = last
+			local embers = Instance.new("ParticleEmitter")
+			embers.Color = ColorSequence.new(Color3.fromRGB(255, 220, 120), Color3.fromRGB(255, 60, 20))
+			embers.LightEmission = 1
+			embers.Size = NumberSequence.new(0.18, 0)
+			embers.Lifetime = NumberRange.new(2, 3.5)
+			embers.Rate = 5
+			embers.Speed = NumberRange.new(1, 3)
+			embers.Acceleration = Vector3.new(0, 3, 0)
+			embers.SpreadAngle = Vector2.new(40, 40)
+			embers.EmissionDirection = Enum.NormalId.Top
+			embers.Parent = last
+		end
+	end
+end
+
 local function floatingDust(folder, world)
 	local origin = world.Origin
 	local width = world.PitRadius * 2
@@ -266,6 +353,7 @@ return function(digSite, world)
 	atmosphere.Name = "PitAtmosphere"
 	atmosphere.Parent = folder
 	crystalVeins(atmosphere, world, Random.new(world.Id * 104729))
+	layerFeatures(atmosphere, world, Random.new(world.Id * 7907))
 	floatingDust(atmosphere, world)
 	rimLighting(atmosphere, world)
 

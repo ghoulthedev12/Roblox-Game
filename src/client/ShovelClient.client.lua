@@ -143,6 +143,64 @@ local headlamp -- PointLight on our character when underground
 local equippedDef -- the shovel currently in hand
 local gaugeWorld -- world the bands were drawn for
 
+---------------------------------------------------------------------
+-- PIT AMBIENCE: the deeper you dig, the more the air inside the pit takes on the color of
+-- the layer you're in (warm dust in the topsoil, orange clay, cold crystal blue, magma red):
+-- a soft haze of drifting particles around you, a color grade, and your headlamp's tint
+---------------------------------------------------------------------
+local Lighting = game:GetService("Lighting")
+local LAYER_AIR = { -- by zone index; worlds 2-9 mix in their own zone colors
+	Color3.fromRGB(255, 226, 180), -- topsoil: warm dusty light
+	Color3.fromRGB(255, 176, 120), -- dense clay: orange
+	Color3.fromRGB(140, 220, 255), -- crystal substratum: cold blue
+	Color3.fromRGB(255, 110, 60),  -- magma core: red-hot
+}
+local pitGrade = Instance.new("ColorCorrectionEffect")
+pitGrade.Name = "PitDepthGrade"
+pitGrade.Enabled = false
+pitGrade.Parent = Lighting
+local hazePart = Instance.new("Part")
+hazePart.Name = "PitHaze"
+hazePart.Anchored = true
+hazePart.CanCollide = false
+hazePart.CanQuery = false
+hazePart.CanTouch = false
+hazePart.Transparency = 1
+hazePart.Size = Vector3.new(40, 20, 40)
+local haze = Instance.new("ParticleEmitter")
+haze.Shape = Enum.ParticleEmitterShape.Box
+haze.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+haze.LightEmission = 0.3
+haze.LightInfluence = 0.2
+haze.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 1.5), NumberSequenceKeypoint.new(1, 4)})
+haze.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.4, 0.86), NumberSequenceKeypoint.new(1, 1)})
+haze.Lifetime = NumberRange.new(4, 6)
+haze.Speed = NumberRange.new(0.2, 0.6)
+haze.RotSpeed = NumberRange.new(-15, 15)
+haze.Rate = 0
+haze.Parent = hazePart
+local airColor = LAYER_AIR[1]
+
+local function updatePitAir(world, depth, zoneIndex, zoneColor)
+	local strength = math.clamp((depth - 6) / 40, 0, 1) -- fades in over the first 40 studs down
+	if strength <= 0 then
+		pitGrade.Enabled = false
+		haze.Rate = 0
+		return
+	end
+	local target = LAYER_AIR[zoneIndex or 1] or LAYER_AIR[1]
+	if world.Id ~= 1 and zoneColor then target = target:Lerp(zoneColor, 0.6) end
+	airColor = airColor:Lerp(target, 0.15) -- blend smoothly as you cross into a new layer
+	pitGrade.Enabled = true
+	pitGrade.TintColor = Color3.new(1, 1, 1):Lerp(airColor, 0.22 * strength)
+	pitGrade.Contrast = 0.05 * strength
+	pitGrade.Saturation = 0.08 * strength
+	haze.Color = ColorSequence.new(airColor)
+	haze.Rate = 22 * strength
+	hazePart.CFrame = CFrame.new(camera.CFrame.Position)
+	hazePart.Parent = camera
+end
+
 local function currentWorld()
 	return GameConfig.GetWorld(player:GetAttribute("CurrentWorld") or 1) or GameConfig.Worlds[1]
 end
@@ -200,8 +258,9 @@ task.spawn(function()
 			local depth = math.max(0, math.floor(world.Origin.Y - feetY + 0.5))
 			local inPit = insidePit
 
-			local _, zone = GameConfig.GetZoneAt(world, feetY)
+			local zoneIndex, zone = GameConfig.GetZoneAt(world, feetY)
 			zone = zone or {Name = "Bedrock", Color = Color3.fromRGB(150, 150, 160)}
+			updatePitAir(world, inPit and depth or 0, zoneIndex or #world.Zones, zone.Color)
 			depthLabel.Text = depth .. "m"
 			zoneLabel.Text = string.upper(zone.Name)
 			zoneDot.BackgroundColor3 = zone.Color
@@ -238,6 +297,7 @@ task.spawn(function()
 					headlamp.Parent = root
 				end
 				headlamp.Enabled = true
+				headlamp.Color = Color3.fromRGB(255, 240, 220):Lerp(airColor, 0.35)
 			elseif headlamp then
 				headlamp.Enabled = false
 			end
@@ -524,16 +584,18 @@ end
 -- throws a few little dirt clumps off the blade
 local function tossDirt(position, color)
 	for i = 1, 7 do
+		-- chunky little clods with random sizes and spins (stylized, not round balls)
 		local clump = Instance.new("Part")
-		clump.Shape = Enum.PartType.Ball
-		clump.Size = Vector3.one * (0.35 + math.random() * 0.3)
+		clump.Size = Vector3.new(0.3 + math.random() * 0.35, 0.22 + math.random() * 0.25, 0.3 + math.random() * 0.3)
+		clump.CFrame = CFrame.Angles(math.random() * 6, math.random() * 6, math.random() * 6)
 		clump.Color = color
 		clump.Material = Enum.Material.SmoothPlastic
 		clump.CanCollide = false
 		clump.CanQuery = false
 		clump.CanTouch = false
 		clump.CastShadow = false
-		clump.CFrame = CFrame.new(position + Vector3.new(math.random() - 0.5, 0, math.random() - 0.5) * 0.6)
+		clump.CFrame = CFrame.new(position + Vector3.new(math.random() - 0.5, 0, math.random() - 0.5) * 0.6) * clump.CFrame.Rotation
+		clump.AssemblyAngularVelocity = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 20
 		clump.AssemblyLinearVelocity = Vector3.new(math.random() * 12 - 6, 12 + math.random() * 10, math.random() * 12 - 6)
 		clump.Parent = puppetFolder
 		Debris:AddItem(clump, 1.1 + i * 0.05)
@@ -544,7 +606,37 @@ end
 -- ring of dust rolling out across the ground (plus camera shake for our own swings)
 local TweenService = game:GetService("TweenService")
 local impactShake -- set further down, once the camera shake exists
-local function impactBurst(position, color)
+-- extra impact particles in the tool's style (see PickaxeModels TRAILS), and glowing sparks
+-- in the deep layers (crystal sparkles in the crystal layer, embers in the magma core)
+local STYLE_IMPACT = {
+	Sparks = {Colors = {Color3.new(1, 1, 1), Color3.fromRGB(90, 235, 255)}, Count = 14, Speed = 18, Size = 0.14, Life = 0.35, Gravity = -40},
+	Electric = {Colors = {Color3.new(1, 1, 1), Color3.fromRGB(120, 200, 255)}, Count = 18, Speed = 26, Size = 0.12, Life = 0.2, Gravity = 0},
+	Ice = {Colors = {Color3.new(1, 1, 1), Color3.fromRGB(150, 225, 255)}, Count = 16, Speed = 14, Size = 0.3, Life = 0.6, Gravity = -50},
+	Fire = {Colors = {Color3.fromRGB(255, 240, 150), Color3.fromRGB(255, 90, 20)}, Count = 18, Speed = 10, Size = 0.4, Life = 0.5, Gravity = 12},
+	Galaxy = {Colors = {Color3.fromRGB(255, 150, 240), Color3.fromRGB(90, 110, 255)}, Count = 20, Speed = 8, Size = 0.3, Life = 0.9, Gravity = 0},
+	Glitch = {Colors = {Color3.fromRGB(255, 60, 200), Color3.fromRGB(60, 255, 230)}, Count = 22, Speed = 20, Size = 0.28, Life = 0.18, Gravity = 0},
+}
+local LAYER_SPARKS = { -- by depth zone index (3 = crystal layer, 4 = magma core)
+	[3] = {Colors = {Color3.new(1, 1, 1), Color3.fromRGB(120, 230, 255)}, Count = 12, Speed = 9, Size = 0.18, Life = 0.7, Gravity = -6},
+	[4] = {Colors = {Color3.fromRGB(255, 220, 120), Color3.fromRGB(255, 70, 20)}, Count = 16, Speed = 12, Size = 0.2, Life = 0.8, Gravity = 10},
+}
+local function sparkBurst(anchor, spec)
+	local e = Instance.new("ParticleEmitter")
+	e.Enabled = false
+	e.Color = ColorSequence.new(spec.Colors[1], spec.Colors[2])
+	e.LightEmission = 1
+	e.Size = NumberSequence.new(spec.Size, 0)
+	e.Lifetime = NumberRange.new(spec.Life * 0.6, spec.Life)
+	e.Speed = NumberRange.new(spec.Speed * 0.5, spec.Speed)
+	e.SpreadAngle = Vector2.new(70, 70)
+	e.EmissionDirection = Enum.NormalId.Top
+	e.Acceleration = Vector3.new(0, spec.Gravity, 0)
+	e.RotSpeed = NumberRange.new(-200, 200)
+	e.Parent = anchor
+	e:Emit(spec.Count)
+end
+
+local function impactBurst(position, color, toolStyle, zoneIndex)
 	local anchor = Instance.new("Part")
 	anchor.Anchored = true
 	anchor.CanCollide = false
@@ -579,6 +671,8 @@ local function impactBurst(position, color)
 	puff.Drag = 4
 	puff.Parent = anchor
 	puff:Emit(8)
+	if toolStyle and STYLE_IMPACT[toolStyle] then sparkBurst(anchor, STYLE_IMPACT[toolStyle]) end
+	if zoneIndex and LAYER_SPARKS[zoneIndex] then sparkBurst(anchor, LAYER_SPARKS[zoneIndex]) end
 	Debris:AddItem(anchor, 1.2)
 
 	local ring = Instance.new("Part")
@@ -635,8 +729,10 @@ local function poseRig(character, rig, clock, dt)
 				rig.ImpactAt = clock
 				if rig.Blade then
 					local color = dirtColorAt(rig.Root.Position)
+					local world = GameConfig.GetWorldAt(rig.Root.Position)
+					local zoneIndex = GameConfig.GetZoneAt(world, rig.Root.Position.Y - 3)
 					tossDirt(rig.Blade.Position, color)
-					impactBurst(rig.Blade.Position, color)
+					impactBurst(rig.Blade.Position, color, rig.Tool:GetAttribute("TrailStyle"), zoneIndex)
 				end
 				if character == player.Character and impactShake then
 					impactShake()

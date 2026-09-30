@@ -55,6 +55,9 @@ out.append('pcall(function() game:GetService("Lighting").Technology = Enum.Techn
 # the Abyss is ~580 studs deep; the default void (-500) would kill diggers at the bottom.
 # Only Studio can change this property, so the installer sets it (saved with the place).
 out.append('pcall(function() workspace.FallenPartsDestroyHeight = -3000 end)')
+# Roblox's modern (2022) terrain materials: real PBR textures instead of the old flat ones.
+# It's a Studio-only setting, so the installer turns it on (saved with the place).
+out.append('pcall(function() game:GetService("MaterialService").Use2022Materials = true end)')
 for parent, name in DELETE:
     out.append(f'do local old = {parent}:FindFirstChild("{name}") if old then old:Destroy() print("Removed {name}") end end')
 for folder, parent in TARGETS:

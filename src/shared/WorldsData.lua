@@ -35,8 +35,9 @@ WorldsData.ShovelTiers = {
 -- everywhere), so every world uses its own mix of materials. MapStyle applies these.
 WorldsData.TerrainColors = {
 	-- World 1
-	Grass = rgb(112, 204, 108), Slate = rgb(150, 146, 172), Ground = rgb(176, 124, 84),
-	Sandstone = rgb(222, 180, 120), CrackedLava = rgb(214, 110, 70), Glacier = rgb(150, 210, 240),
+	-- topsoil, dense clay, rocky crust (the wall/strata rock), crystal substratum, magma core
+	Grass = rgb(112, 204, 108), Slate = rgb(118, 112, 128), Ground = rgb(128, 88, 60),
+	Sandstone = rgb(176, 104, 74), CrackedLava = rgb(200, 70, 36), Glacier = rgb(120, 205, 240),
 	Basalt = rgb(70, 64, 96),
 	-- Worlds 2-9
 	LeafyGrass = rgb(255, 176, 208), Mud = rgb(150, 78, 110), Brick = rgb(236, 130, 140),

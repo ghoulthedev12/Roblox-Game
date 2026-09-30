@@ -99,14 +99,16 @@ GameConfig.Worlds = {
 		CenterNoDigRadius = 9,   -- keeps the giant hard drive standing
 		HubPaths = true,         -- world 1 has the 6 walkways around the pit
 		Zones = zones({
+			-- the layers you dig through: Topsoil -> Dense Clay -> (rocky crust bands) ->
+			-- Crystal-Infused Substratum -> Magma Core (see also the rock strata in FillDigTerrain)
 			{Name = "Shallow Zone", Era = "Brainrot", Areas = {1}, Rarities = SHALLOW,
-				Material = "Ground", Color = Color3.fromRGB(176, 138, 96)},
+				Material = "Ground", Color = Color3.fromRGB(150, 104, 70)},     -- topsoil
 			{Name = "Mid Zone", Era = "GoldenAge", Areas = {8}, Rarities = MID,
-				Material = "Sandstone", Color = Color3.fromRGB(214, 186, 128)},
+				Material = "Sandstone", Color = Color3.fromRGB(188, 112, 78)},  -- dense clay
 			{Name = "Deep Zone", Era = "Paleolithic", Areas = {15}, Rarities = DEEP,
-				Material = "CrackedLava", Color = Color3.fromRGB(214, 110, 70)},
+				Material = "Glacier", Color = Color3.fromRGB(120, 200, 235)},   -- crystal-infused substratum
 			{Name = "The Abyss", Era = "Abyss", Areas = {15, 21}, Rarities = ABYSS,
-				Material = "Glacier", Color = Color3.fromRGB(150, 196, 214)},
+				Material = "CrackedLava", Color = Color3.fromRGB(235, 96, 50)}, -- magma core
 		}),
 		-- PICKAXES (shop order; the table is still called Shovels and the ids are the old save ids). MaxZone: 1 = Shallow, 2 = Mid, 3 = Deep, 4 = Abyss.
 		-- Power = how big a crater each swing carves (radius = GameConfig.DigRadiusForPower), FindChance = chance per swing to find something (0.02 = 1 in 50),
@@ -120,18 +122,18 @@ GameConfig.Worlds = {
 				Power = 2, FindChance = 0.013, Luck = 1.1, Cooldown = 0.47,
 				Color = Color3.fromRGB(255, 200, 40), Material = "SmoothPlastic",
 				Description = "Two slabs of rock tied to a stick. A true classic."},
-			{Id = "GardenSpade", Name = "Copper Pickaxe", Price = 3000, MaxZone = 2,
+			{Id = "GardenSpade", Name = "Bone Excavator", Price = 3000, MaxZone = 2,
 				Power = 3, FindChance = 0.015, Luck = 1.2, Cooldown = 0.45,
 				Color = Color3.fromRGB(90, 170, 80), Material = "Metal",
-				Description = "Shiny orange, and a little green around the edges."},
+				Description = "Dinosaur bones with a skull for a socket. Surprisingly sharp."},
 			{Id = "IronShovel", Name = "Iron Spikebreaker", Price = 15000, MaxZone = 2,
 				Power = 4, FindChance = 0.017, Luck = 1.35, Cooldown = 0.42,
 				Color = Color3.fromRGB(175, 180, 190), Material = "Metal",
 				Description = "A spiky iron head. Cracks ancient comment sections."},
-			{Id = "SteelSpade", Name = "Emerald Pickaxe", Price = 60000, MaxZone = 3,
+			{Id = "SteelSpade", Name = "Mechanical Drill", Price = 60000, MaxZone = 3,
 				Power = 5, FindChance = 0.018, Luck = 1.5, Cooldown = 0.39,
 				Color = Color3.fromRGB(120, 140, 170), Material = "Metal",
-				Description = "Mossy stone with a glowing emerald heart."},
+				Description = "Twin spiral drill bits and a spinning turbine. Bzzzzt."},
 			{Id = "GoldenShovel", Name = "Golden Pick-Hammer", Price = 200000, MaxZone = 3,
 				Power = 6, FindChance = 0.02, Luck = 1.7, Cooldown = 0.37,
 				Color = Color3.fromRGB(255, 200, 60), Material = "Metal",
@@ -140,14 +142,14 @@ GameConfig.Worlds = {
 				Power = 7, FindChance = 0.022, Luck = 2, Cooldown = 0.35,
 				Color = Color3.fromRGB(255, 60, 200), Material = "Neon",
 				Description = "Pure cyan crystal. The one everybody wants."},
-			{Id = "TectonicAuger", Name = "Magma Pickaxe", Price = 3000000, MaxZone = 4,
+			{Id = "TectonicAuger", Name = "Plasma Laser Pick", Price = 3000000, MaxZone = 4,
 				Power = 8, FindChance = 0.024, Luck = 2.4, Cooldown = 0.33,
 				Color = Color3.fromRGB(128, 132, 138), Material = "Foil",
-				Description = "Legendary. Forged in the Deep Zone and still glowing hot."},
-			{Id = "SingularitySpade", Name = "Singularity Pickaxe", Price = 10000000, MaxZone = 4,
+				Description = "Legendary. Its blade is pure plasma, hot enough to melt the Abyss."},
+			{Id = "SingularitySpade", Name = "Quantum Digger", Price = 10000000, MaxZone = 4,
 				Power = 9, FindChance = 0.027, Luck = 3, Cooldown = 0.31,
 				Color = Color3.fromRGB(62, 64, 70), Material = "Foil",
-				Description = "Mythic. Folds the Abyss around its crystals."},
+				Description = "Mythic. An anti-gravity head that floats free of the handle."},
 		},
 	},
 }

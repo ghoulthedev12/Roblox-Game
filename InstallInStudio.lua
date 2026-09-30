@@ -14,6 +14,7 @@ local function install(parent, name, className, source)
 end
 pcall(function() game:GetService("Lighting").Technology = Enum.Technology.Future end)
 pcall(function() workspace.FallenPartsDestroyHeight = -3000 end)
+pcall(function() game:GetService("MaterialService").Use2022Materials = true end)
 do local old = game:GetService("ServerScriptService"):FindFirstChild("DataManager") if old then old:Destroy() print("Removed DataManager") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
 do local old = game:GetService("ReplicatedStorage"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
@@ -719,14 +720,20 @@ local function cylinder(model, name, diameter, length, cf, color, material, prop
 	return p
 end
 
--- the meme (uploaded picture, or its emoji) on a face of a part
+-- the meme (uploaded picture, or its emoji) put ONTO the surface of a part, in one of three styles:
+--   Painted   on a canvas: soft varnish sheen and a dark inner edge where it meets the frame
+--   Engraved  cut into stone: lit like the stone, see-through, with a carved shadow edge
+--   Embossed  stamped into metal: tinted to the metal, with a raised highlight edge
+-- opts: Style, Tint (the material's color), Background, Gradient, Round, EmojiSize, EmojiY
 local function art(target, artifact, face, opts)
 	opts = opts or {}
+	local style = opts.Style or "Painted"
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = face or Enum.NormalId.Front
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	gui.PixelsPerStud = 60
-	gui.LightInfluence = opts.Light or 0.5
+	-- engraved/embossed memes take the scene's light exactly like the material around them
+	gui.LightInfluence = style == "Painted" and 0.8 or 1
 	gui.Parent = target
 	local holder = Instance.new("Frame")
 	holder.Size = UDim2.fromScale(1, 1)
@@ -746,29 +753,75 @@ local function art(target, artifact, face, opts)
 		grad.Rotation = 60
 		grad.Parent = holder
 	end
+	-- the carved / stamped border (an inset line just inside the edge)
+	if style ~= "Painted" then
+		local inset = Instance.new("Frame")
+		inset.BackgroundTransparency = 1
+		inset.Size = UDim2.fromScale(0.9, 0.9)
+		inset.Position = UDim2.fromScale(0.5, 0.5)
+		inset.AnchorPoint = Vector2.new(0.5, 0.5)
+		inset.Parent = holder
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(opts.Round and 0.5 or 0.08, 0)
+		corner.Parent = inset
+		local line = Instance.new("UIStroke")
+		line.Thickness = 3
+		line.Color = (opts.Tint or rgb(120, 110, 100)):Lerp(Color3.new(0, 0, 0), style == "Engraved" and 0.55 or 0.35)
+		line.Transparency = 0.2
+		line.Parent = inset
+	end
+
+	local size, y = opts.EmojiSize or 0.7, opts.EmojiY or 0.5
 	local image = ArtifactImages[artifact.Id]
-	if image and not opts.EmojiOnly then
-		local picture = Instance.new("ImageLabel")
-		picture.BackgroundTransparency = 1
-		picture.Size = UDim2.fromScale(1, 1)
-		picture.Image = image
-		picture.ScaleType = Enum.ScaleType.Crop
-		picture.ImageTransparency = opts.Engraved and 0.35 or 0
-		picture.Parent = holder
-	else
-		local emoji = Instance.new("TextLabel")
-		emoji.BackgroundTransparency = 1
-		emoji.Size = UDim2.fromScale(opts.EmojiSize or 0.7, opts.EmojiSize or 0.7)
-		emoji.Position = UDim2.fromScale(0.5, opts.EmojiY or 0.5)
-		emoji.AnchorPoint = Vector2.new(0.5, 0.5)
-		emoji.Text = ArtifactIcons[artifact.Id] or "🗿"
-		emoji.TextScaled = true
-		emoji.Font = Enum.Font.GothamBold
-		if opts.Engraved then
-			-- carved into the stone: a dark, slightly see-through silhouette
-			emoji.TextColor3 = rgb(40, 34, 30)
+	local function meme(offset, transparency, tint)
+		local item
+		if image then
+			item = Instance.new("ImageLabel")
+			item.Image = image
+			item.ScaleType = Enum.ScaleType.Fit
+			item.ImageTransparency = transparency
+			if tint then item.ImageColor3 = tint end
+		else
+			item = Instance.new("TextLabel")
+			item.Text = ArtifactIcons[artifact.Id] or "🗿"
+			item.TextScaled = true
+			item.Font = Enum.Font.GothamBold
+			item.TextTransparency = transparency
 		end
-		emoji.Parent = holder
+		item.BackgroundTransparency = 1
+		item.Size = UDim2.fromScale(size, size)
+		item.Position = UDim2.new(0.5, offset, y, offset)
+		item.AnchorPoint = Vector2.new(0.5, 0.5)
+		item.Parent = holder
+		return item
+	end
+	if style == "Engraved" then
+		-- a faint copy shifted down-right is the shadow inside the cut, the meme itself is
+		-- worn and see-through so the stone shows through it
+		meme(3, 0.82, opts.Tint and opts.Tint:Lerp(Color3.new(0, 0, 0), 0.6))
+		meme(0, 0.38, opts.Tint)
+	elseif style == "Embossed" then
+		-- a faint copy shifted up-left is the light catching the raised edge
+		meme(-2, 0.8, Color3.new(1, 1, 1))
+		meme(0, 0.2, opts.Tint)
+	else
+		meme(0, 0)
+		-- a thin varnish sheen across the canvas and a dark inner edge under the frame
+		local sheen = Instance.new("Frame")
+		sheen.Size = UDim2.fromScale(1, 1)
+		sheen.BackgroundColor3 = Color3.new(1, 1, 1)
+		sheen.BorderSizePixel = 0
+		sheen.Parent = holder
+		local fade = Instance.new("UIGradient")
+		fade.Rotation = 35
+		fade.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.82), NumberSequenceKeypoint.new(0.4, 1), NumberSequenceKeypoint.new(1, 1)})
+		fade.Parent = sheen
+		local edge = Instance.new("UIStroke")
+		edge.Thickness = 5
+		edge.Color = rgb(30, 20, 14)
+		edge.Transparency = 0.35
+		edge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		edge.Parent = holder
 	end
 	return holder
 end
@@ -831,7 +884,9 @@ function FORMS.Statue(model, artifact, color, rarityIndex)
 	part(model, "Sash", Vector3.new(0.35, 2.3, 1.25), CFrame.new(0.1, -0.2, 0) * CFrame.Angles(0, 0, math.rad(35)), color, Enum.Material.SmoothPlastic)
 	part(model, "Neck", Vector3.new(0.6, 0.35, 0.6), CFrame.new(0, 1.05, 0), stone, material)
 	local head = part(model, "Head", Vector3.new(1.5, 1.5, 1.4), CFrame.new(0, 1.9, 0), stone, material)
-	art(head, artifact, Enum.NormalId.Front, {EmojiSize = 0.9, Light = 0.8})
+	art(head, artifact, Enum.NormalId.Front, {Style = material == Enum.Material.Marble and "Engraved" or "Embossed", Tint = stone, EmojiSize = 0.86})
+	-- the meme is carved into the plinth too, like a museum inscription
+	art(model:FindFirstChild("Plinth"), artifact, Enum.NormalId.Front, {Style = "Engraved", Tint = MARBLE:Lerp(STONE, 0.3), EmojiSize = 0.9})
 	return Vector3.new(2.9, 5, 2.3)
 end
 
@@ -845,7 +900,7 @@ function FORMS.Coin(model, artifact, color, rarityIndex)
 	cylinder(model, "CoinGlow", D - 0.5, T + 0.04, face, color, Enum.Material.Neon, {Transparency = 0.6})
 	-- a stamped face on both sides (Right = local +X of the cylinder = world -Z here)
 	for _, normal in ipairs({Enum.NormalId.Right, Enum.NormalId.Left}) do
-		art(coin, artifact, normal, {Round = true, Background = metal:Lerp(Color3.new(1, 1, 1), 0.1), EmojiSize = 0.62, Light = 0.8})
+		art(coin, artifact, normal, {Style = "Embossed", Round = true, Tint = metal, EmojiSize = 0.62})
 	end
 	-- a little cradle it stands in
 	part(model, "Cradle", Vector3.new(2.2, 0.35, 1), CFrame.new(0, -D / 2 - 0.05, 0), rgb(70, 50, 36), Enum.Material.Wood)
@@ -860,7 +915,7 @@ function FORMS.Tablet(model, artifact, color, rarityIndex)
 	-- a chipped corner and a couple of cracks
 	part(model, "Chip", Vector3.new(0.9, 0.9, T + 0.1), CFrame.new(W / 2 - 0.1, -H / 2 + 0.3, 0) * CFrame.Angles(0, 0, math.rad(45)), STONE:Lerp(Color3.new(0, 0, 0), 0.2), Enum.Material.Slate)
 	part(model, "Crack", Vector3.new(0.06, 1.2, 0.05), CFrame.new(-0.9, -0.6, -T / 2 - 0.01) * CFrame.Angles(0, 0, math.rad(20)), rgb(50, 44, 40))
-	art(slab, artifact, Enum.NormalId.Front, {Engraved = true, EmojiSize = 0.8, Light = 1})
+	art(slab, artifact, Enum.NormalId.Front, {Style = "Engraved", Tint = STONE, EmojiSize = 0.8})
 	-- glowing runes carved around the edge for the rare ones
 	local glow = rarityIndex >= 4 and color or rgb(90, 80, 72)
 	part(model, "RuneLine", Vector3.new(W - 0.5, 0.08, 0.05), CFrame.new(0, H / 2 - W / 2 + 0.2, -T / 2 - 0.01), glow, rarityIndex >= 4 and Enum.Material.Neon or Enum.Material.Slate)
@@ -888,9 +943,9 @@ function FORMS.Crystal(model, artifact, color)
 			light.Parent = model:FindFirstChild("ShardCore")
 		end
 	end
-	-- the meme on a small plaque on the rock's front
-	local tag = part(model, "Plaque", Vector3.new(1.3, 0.8, 0.12), CFrame.new(0, -1.25, -1.05) * CFrame.Angles(math.rad(-15), 0, 0), GOLD, Enum.Material.Metal)
-	art(tag, artifact, Enum.NormalId.Front, {Background = rgb(30, 26, 40), EmojiSize = 0.8})
+	-- the meme is carved in relief into a flat face cut into the rock's front
+	local relief = part(model, "Relief", Vector3.new(1.6, 1.1, 0.3), CFrame.new(0, -1.25, -0.95) * CFrame.Angles(math.rad(-12), 0, 0), STONE:Lerp(Color3.new(1, 1, 1), 0.08), Enum.Material.Slate)
+	art(relief, artifact, Enum.NormalId.Front, {Style = "Engraved", Tint = STONE, EmojiSize = 0.85})
 	return Vector3.new(3, 4.4, 2.2)
 end
 
@@ -1234,14 +1289,16 @@ GameConfig.Worlds = {
 		CenterNoDigRadius = 9,   -- keeps the giant hard drive standing
 		HubPaths = true,         -- world 1 has the 6 walkways around the pit
 		Zones = zones({
+			-- the layers you dig through: Topsoil -> Dense Clay -> (rocky crust bands) ->
+			-- Crystal-Infused Substratum -> Magma Core (see also the rock strata in FillDigTerrain)
 			{Name = "Shallow Zone", Era = "Brainrot", Areas = {1}, Rarities = SHALLOW,
-				Material = "Ground", Color = Color3.fromRGB(176, 138, 96)},
+				Material = "Ground", Color = Color3.fromRGB(150, 104, 70)},     -- topsoil
 			{Name = "Mid Zone", Era = "GoldenAge", Areas = {8}, Rarities = MID,
-				Material = "Sandstone", Color = Color3.fromRGB(214, 186, 128)},
+				Material = "Sandstone", Color = Color3.fromRGB(188, 112, 78)},  -- dense clay
 			{Name = "Deep Zone", Era = "Paleolithic", Areas = {15}, Rarities = DEEP,
-				Material = "CrackedLava", Color = Color3.fromRGB(214, 110, 70)},
+				Material = "Glacier", Color = Color3.fromRGB(120, 200, 235)},   -- crystal-infused substratum
 			{Name = "The Abyss", Era = "Abyss", Areas = {15, 21}, Rarities = ABYSS,
-				Material = "Glacier", Color = Color3.fromRGB(150, 196, 214)},
+				Material = "CrackedLava", Color = Color3.fromRGB(235, 96, 50)}, -- magma core
 		}),
 		-- PICKAXES (shop order; the table is still called Shovels and the ids are the old save ids). MaxZone: 1 = Shallow, 2 = Mid, 3 = Deep, 4 = Abyss.
 		-- Power = how big a crater each swing carves (radius = GameConfig.DigRadiusForPower), FindChance = chance per swing to find something (0.02 = 1 in 50),
@@ -1255,18 +1312,18 @@ GameConfig.Worlds = {
 				Power = 2, FindChance = 0.013, Luck = 1.1, Cooldown = 0.47,
 				Color = Color3.fromRGB(255, 200, 40), Material = "SmoothPlastic",
 				Description = "Two slabs of rock tied to a stick. A true classic."},
-			{Id = "GardenSpade", Name = "Copper Pickaxe", Price = 3000, MaxZone = 2,
+			{Id = "GardenSpade", Name = "Bone Excavator", Price = 3000, MaxZone = 2,
 				Power = 3, FindChance = 0.015, Luck = 1.2, Cooldown = 0.45,
 				Color = Color3.fromRGB(90, 170, 80), Material = "Metal",
-				Description = "Shiny orange, and a little green around the edges."},
+				Description = "Dinosaur bones with a skull for a socket. Surprisingly sharp."},
 			{Id = "IronShovel", Name = "Iron Spikebreaker", Price = 15000, MaxZone = 2,
 				Power = 4, FindChance = 0.017, Luck = 1.35, Cooldown = 0.42,
 				Color = Color3.fromRGB(175, 180, 190), Material = "Metal",
 				Description = "A spiky iron head. Cracks ancient comment sections."},
-			{Id = "SteelSpade", Name = "Emerald Pickaxe", Price = 60000, MaxZone = 3,
+			{Id = "SteelSpade", Name = "Mechanical Drill", Price = 60000, MaxZone = 3,
 				Power = 5, FindChance = 0.018, Luck = 1.5, Cooldown = 0.39,
 				Color = Color3.fromRGB(120, 140, 170), Material = "Metal",
-				Description = "Mossy stone with a glowing emerald heart."},
+				Description = "Twin spiral drill bits and a spinning turbine. Bzzzzt."},
 			{Id = "GoldenShovel", Name = "Golden Pick-Hammer", Price = 200000, MaxZone = 3,
 				Power = 6, FindChance = 0.02, Luck = 1.7, Cooldown = 0.37,
 				Color = Color3.fromRGB(255, 200, 60), Material = "Metal",
@@ -1275,14 +1332,14 @@ GameConfig.Worlds = {
 				Power = 7, FindChance = 0.022, Luck = 2, Cooldown = 0.35,
 				Color = Color3.fromRGB(255, 60, 200), Material = "Neon",
 				Description = "Pure cyan crystal. The one everybody wants."},
-			{Id = "TectonicAuger", Name = "Magma Pickaxe", Price = 3000000, MaxZone = 4,
+			{Id = "TectonicAuger", Name = "Plasma Laser Pick", Price = 3000000, MaxZone = 4,
 				Power = 8, FindChance = 0.024, Luck = 2.4, Cooldown = 0.33,
 				Color = Color3.fromRGB(128, 132, 138), Material = "Foil",
-				Description = "Legendary. Forged in the Deep Zone and still glowing hot."},
-			{Id = "SingularitySpade", Name = "Singularity Pickaxe", Price = 10000000, MaxZone = 4,
+				Description = "Legendary. Its blade is pure plasma, hot enough to melt the Abyss."},
+			{Id = "SingularitySpade", Name = "Quantum Digger", Price = 10000000, MaxZone = 4,
 				Power = 9, FindChance = 0.027, Luck = 3, Cooldown = 0.31,
 				Color = Color3.fromRGB(62, 64, 70), Material = "Foil",
-				Description = "Mythic. Folds the Abyss around its crystals."},
+				Description = "Mythic. An anti-gravity head that floats free of the handle."},
 		},
 	},
 }
@@ -1528,16 +1585,18 @@ end
 local LOOKS = {
 	RustyShovel = {Head = "Crescent", Main = rgb(150, 96, 62), Edge = rgb(112, 70, 46), Frame = rgb(120, 110, 104), Gem = rgb(255, 150, 70), Handle = rgb(84, 58, 40), Wrap = rgb(150, 150, 156)},
 	PlasticShovel = {Head = "Wide", Main = rgb(150, 156, 160), Edge = rgb(104, 110, 116), Frame = rgb(132, 136, 142), Gem = rgb(235, 240, 250), Handle = rgb(70, 52, 40), Wrap = rgb(196, 110, 60)},
-	GardenSpade = {Head = "Crescent", Main = rgb(214, 124, 72), Edge = rgb(170, 86, 50), Frame = rgb(190, 150, 110), Gem = rgb(70, 230, 210), Handle = rgb(60, 42, 34), Wrap = rgb(90, 190, 170)},
+	GardenSpade = {Head = "Bone", Main = rgb(236, 228, 206), Edge = rgb(196, 184, 160), Frame = rgb(120, 104, 90), Gem = rgb(120, 255, 170), Handle = rgb(60, 42, 34), Wrap = rgb(150, 60, 50)},
 	IronShovel = {Head = "Spiked", Main = rgb(196, 200, 210), Edge = rgb(140, 146, 160), Frame = rgb(170, 174, 184), Gem = rgb(255, 70, 90), Handle = rgb(48, 40, 38), Wrap = rgb(150, 40, 50)},
-	SteelSpade = {Head = "Crescent", Main = rgb(150, 160, 156), Edge = rgb(110, 200, 60), Frame = rgb(150, 160, 156), Gem = rgb(60, 255, 120), Handle = rgb(56, 36, 36), Wrap = rgb(214, 120, 80)},
+	SteelSpade = {Head = "Drill", Main = rgb(150, 160, 156), Edge = rgb(110, 200, 60), Frame = rgb(150, 160, 156), Gem = rgb(60, 255, 120), Handle = rgb(56, 36, 36), Wrap = rgb(214, 120, 80)},
 	GoldenShovel = {Head = "Hammer", Main = rgb(255, 208, 72), Edge = rgb(226, 158, 40), Frame = rgb(255, 224, 140), Gem = rgb(255, 60, 110), Handle = rgb(60, 40, 30), Wrap = rgb(150, 30, 50)},
 	GamerShovel = {Head = "Crystal", Main = rgb(110, 230, 255), Edge = rgb(180, 246, 255), Frame = rgb(170, 240, 255), Gem = rgb(90, 220, 255), Handle = rgb(40, 44, 64), Wrap = rgb(70, 80, 110)},
-	TectonicAuger = {Head = "Spiked", Main = rgb(64, 62, 74), Edge = rgb(255, 120, 40), Frame = rgb(90, 88, 100), Gem = rgb(255, 140, 50), Handle = rgb(30, 28, 34), Wrap = rgb(255, 120, 40)},
-	SingularitySpade = {Head = "Crystal", Main = rgb(58, 34, 96), Edge = rgb(190, 120, 255), Frame = rgb(90, 70, 140), Gem = rgb(235, 220, 255), Handle = rgb(20, 16, 30), Wrap = rgb(150, 90, 255)},
+	TectonicAuger = {Head = "Plasma", Main = rgb(64, 62, 74), Edge = rgb(255, 120, 40), Frame = rgb(90, 88, 100), Gem = rgb(255, 110, 60), Handle = rgb(30, 28, 34), Wrap = rgb(255, 120, 40)},
+	SingularitySpade = {Head = "Quantum", Main = rgb(58, 34, 96), Edge = rgb(190, 120, 255), Frame = rgb(90, 70, 140), Gem = rgb(235, 220, 255), Handle = rgb(20, 16, 30), Wrap = rgb(150, 90, 255)},
 }
 -- worlds 2-9: head shape per tier, colors from the world's theme
-local WORLD_HEADS = {"Crescent", "Wide", "Spiked", "Crescent", "Crystal", "Hammer", "Crystal"}
+-- the silhouette changes completely as you go up: pick -> wide pick -> bone excavator ->
+-- mechanical drill -> crystal pick -> plasma laser pick -> quantum anti-gravity digger
+local WORLD_HEADS = {"Crescent", "Wide", "Bone", "Drill", "Crystal", "Plasma", "Quantum"}
 
 local function lookFor(def)
 	if LOOKS[def.Id] then return LOOKS[def.Id] end
@@ -1587,6 +1646,12 @@ local DIAMOND = CFrame.Angles(math.rad(45), 0, 0) -- a cube seen along X becomes
 
 -- particle trails by tier (off the tips of the head)
 local TRAILS = {
+	Dust = {Name = "Dust", Colors = {rgb(255, 240, 210), rgb(170, 130, 90)}, Rate = 4, Light = 0.2, Size = 0.18, EndSize = 0.3,
+		Lifetime = NumberRange.new(0.3, 0.5), Speed = NumberRange.new(0.2, 0.6)},
+	Ice = {Name = "Ice", Colors = {Color3.new(1, 1, 1), rgb(170, 235, 255), rgb(90, 170, 255)}, Rate = 12, Light = 0.8, Size = 0.2, EndSize = 0.02,
+		Lifetime = NumberRange.new(0.35, 0.6), Speed = NumberRange.new(0.5, 1.5), Acceleration = Vector3.new(0, -10, 0), RotSpeed = NumberRange.new(-300, 300)},
+	Glitch = {Name = "Glitch", Colors = {rgb(255, 60, 200), rgb(60, 255, 230), rgb(140, 255, 90)}, Rate = 16, Light = 1, Size = 0.22, EndSize = 0.22,
+		Lifetime = NumberRange.new(0.08, 0.2), Speed = NumberRange.new(2, 6)},
 	Sparks = {Name = "Sparks", Colors = {Color3.new(1, 1, 1), NEON_EDGE}, Rate = 6, Light = 0.85, Size = 0.12,
 		Lifetime = NumberRange.new(0.25, 0.45), Speed = NumberRange.new(0.2, 0.8)},
 	Electric = {Name = "Electric", Colors = {Color3.new(1, 1, 1), rgb(140, 220, 255), rgb(60, 120, 255)}, Rate = 10, Light = 1, Size = 0.1,
@@ -1659,6 +1724,11 @@ local function arm(tool, H, side, look, opts)
 	local tipPos = center + Vector3.new(0, side * math.sin(phiEnd), -math.cos(phiEnd)) * R
 	local tip = newPart(tool, "HeadTip", Vector3.new(opts.Size * 0.36, opts.Size * 0.4, opts.Size * 0.4), CFrame.new(tipPos) * CFrame.Angles(side * phiEnd, 0, 0) * DIAMOND, NEON_EDGE, Enum.Material.Neon)
 	return parts, tip
+end
+
+-- a point on the arc a pick arm follows (same curve as arm() uses)
+local function arcPoint(H, side, R, phi)
+	return H + Vector3.new(0, 0, R) + Vector3.new(0, side * math.sin(phi), -math.cos(phi)) * R
 end
 
 -- a chunky hammer block made of voxels (the other side of a "Hammer" head)
@@ -1774,6 +1844,92 @@ return function(def)
 	elseif style == "Hammer" then
 		arm(tool, H, 1, look, {Radius = 2.3, Reach = 1.15, Count = 7, Rows = 2, Size = 0.66})
 		hammer(tool, H, -1, look)
+	elseif style == "Bone" then
+		-- BONE EXCAVATOR: each arm is a curved bone of knuckled segments ending in a claw,
+		-- with a little skull holding it all on the shaft
+		local R = 2.3
+		for _, s in ipairs({-1, 1}) do
+			local points = {}
+			for k, phi in ipairs({0.28, 0.62, 0.96, 1.3}) do
+				points[k] = arcPoint(H, s, R, phi)
+			end
+			for k = 1, 3 do
+				bar(tool, "BoneShaft", points[k], points[k + 1], 0.38 - k * 0.03, shade(look.Main, k))
+			end
+			for k = 1, 4 do
+				newPart(tool, "BoneKnuckle", Vector3.one * (0.62 - k * 0.05), CFrame.new(points[k]), look.Main, nil, Enum.PartType.Ball)
+			end
+			local dir = (points[4] - points[3]).Unit
+			local clawPos = points[4] + dir * 0.4
+			table.insert(tips, newPart(tool, "HeadTip", Vector3.new(0.26, 0.26, 0.9), CFrame.lookAt(clawPos, clawPos + dir), NEON_EDGE, Enum.Material.Neon))
+		end
+		local skull = newPart(tool, "Skull", Vector3.one * 1.15, CFrame.new(H + Vector3.new(0, 0, -0.15)), look.Main, nil, Enum.PartType.Ball)
+		for _, sy in ipairs({-1, 1}) do
+			for _, sx in ipairs({-1, 1}) do
+				newPart(tool, "SkullEye", Vector3.one * 0.26, CFrame.new(skull.CFrame.Position + Vector3.new(sx * 0.5, sy * 0.2, -0.15)), look.Gem, Enum.Material.Neon, Enum.PartType.Ball)
+			end
+		end
+	elseif style == "Drill" then
+		-- MECHANICAL DRILL: a motor block with a spiralled drill bit sticking out of each side
+		-- and a spinning turbine around the shaft
+		newPart(tool, "DrillMotor", Vector3.new(0.95, 1.4, 1.4), CFrame.new(H), look.Frame, Enum.Material.Metal)
+		newPart(tool, "MotorStripe", Vector3.new(1, 0.16, 1.44), CFrame.new(H + Vector3.new(0, 0.35, 0)), NEON_EDGE, Enum.Material.Neon)
+		newPart(tool, "MotorStripe", Vector3.new(1, 0.16, 1.44), CFrame.new(H - Vector3.new(0, 0.35, 0)), NEON_EDGE, Enum.Material.Neon)
+		for _, s in ipairs({-1, 1}) do
+			for k = 0, 4 do
+				local d = 1.15 - k * 0.2
+				local seg = newPart(tool, "DrillBit", Vector3.new(0.44, d, d), CFrame.new(H + Vector3.new(0, s * (0.95 + k * 0.42), 0)) * CFrame.Angles(0, 0, math.rad(90)),
+					shade(k % 2 == 0 and look.Main or look.Edge, k), Enum.Material.Metal)
+				seg.Shape = Enum.PartType.Cylinder
+				-- the spiral ridge winding around the bit
+				for r = 0, 2 do
+					local a = k * 1.3 + r * math.pi * 2 / 3
+					newPart(tool, "DrillRidge", Vector3.new(0.12, 0.34, 0.12),
+						CFrame.new(H + Vector3.new(math.cos(a) * d / 2, s * (0.95 + k * 0.42), math.sin(a) * d / 2)) * CFrame.Angles(0, -a, math.rad(30)), look.Edge, Enum.Material.Metal)
+				end
+			end
+			table.insert(tips, newPart(tool, "HeadTip", Vector3.new(0.3, 0.3, 0.3), CFrame.new(H + Vector3.new(0, s * 3.1, 0)) * DIAMOND, NEON_EDGE, Enum.Material.Neon))
+		end
+		for i = 1, 6 do
+			local a = i * math.pi / 3
+			local blade = newPart(tool, "TurbineBlade", Vector3.new(0.12, 0.5, 0.2), CFrame.new(H + Vector3.new(math.cos(a) * 0.95, math.sin(a) * 0.95, 0.9)) * CFrame.Angles(0, 0, a),
+				look.Edge, Enum.Material.Metal)
+			blade:SetAttribute("OrbitCenter", H + Vector3.new(0, 0, 0.9))
+			blade:SetAttribute("OrbitSpeed", 9)
+		end
+	elseif style == "Plasma" then
+		-- PLASMA LASER PICK: dark emitter prongs firing a curved blade of glowing plasma
+		for _, s in ipairs({-1, 1}) do
+			arm(tool, H, s, {Main = look.Handle:Lerp(Color3.new(0, 0, 0), 0.3), Edge = look.Frame}, {Radius = 2.3, Reach = 0.35, Count = 3, Rows = 2, Size = 0.62, Material = Enum.Material.Metal})
+			arm(tool, H, s, {Main = look.Gem, Edge = Color3.new(1, 1, 1), Frame = look.Gem}, {Radius = 2.35, Reach = 1.3, Count = 12, Rows = 1, Size = 0.42, Material = Enum.Material.Neon})
+			for k = 1, 3 do
+				local ring = newPart(tool, "PlasmaCoil", Vector3.new(0.3, 0.9 - k * 0.1, 0.9 - k * 0.1), CFrame.new(arcPoint(H, s, 2.35, 0.25 + k * 0.08)) * CFrame.Angles(s * (0.25 + k * 0.08), 0, math.rad(90)),
+					NEON_EDGE, Enum.Material.Neon)
+				ring.Shape = Enum.PartType.Cylinder
+				ring.Transparency = 0.3
+			end
+		end
+	elseif style == "Quantum" then
+		-- QUANTUM ANTI-GRAVITY DIGGER: the head floats free of the shaft; a glowing core holds
+		-- two glassy blades in place while halo rings and shards orbit around it
+		local F = H + Vector3.new(0, 0, -0.45)
+		newPart(tool, "QuantumCore", Vector3.one * 0.95, CFrame.new(F), look.Gem, Enum.Material.Neon, Enum.PartType.Ball)
+		for _, s in ipairs({-1, 1}) do
+			arm(tool, F, s, {Main = look.Main, Edge = look.Gem, Frame = look.Frame}, {Radius = 2.5, Reach = 1.2, Count = 7, Rows = 2, Size = 0.46, Material = Enum.Material.Glass, Glass = true})
+		end
+		for i = 1, 18 do
+			local a = i / 18 * math.pi * 2
+			local seg = newPart(tool, "QuantumHalo", Vector3.new(0.1, 0.4, 0.1), CFrame.new(F + Vector3.new(math.cos(a) * 1.35, math.sin(a) * 1.35, 0)) * CFrame.Angles(0, 0, a), NEON_EDGE, Enum.Material.Neon)
+			seg:SetAttribute("OrbitCenter", F)
+			seg:SetAttribute("OrbitSpeed", 2.4)
+		end
+		for i = 1, 5 do
+			local a = i / 5 * math.pi * 2
+			local shard = newPart(tool, "QuantumShard", Vector3.new(0.18, 0.18, 0.5), CFrame.new(F + Vector3.new(math.cos(a) * 0.9, math.sin(a) * 0.9, 0.9)) * CFrame.Angles(0.6, 0.4, a),
+				look.Gem, Enum.Material.Neon)
+			shard:SetAttribute("OrbitCenter", F + Vector3.new(0, 0, 0.9))
+			shard:SetAttribute("OrbitSpeed", -3.5)
+		end
 	else -- Crescent
 		for _, s in ipairs({-1, 1}) do
 			arm(tool, H, s, look, {Radius = 2.3, Reach = 1.15, Count = 7, Rows = tier >= 5 and 3 or 2, Size = 0.66})
@@ -1785,7 +1941,8 @@ return function(def)
 	end
 
 	-- DUAL BLADE (tier 7+): a second, thinner blade of pure energy on each side of the head
-	if tier >= 7 then
+	local classicHead = style ~= "Bone" and style ~= "Drill" and style ~= "Plasma" and style ~= "Quantum"
+	if tier >= 7 and classicHead then
 		for _, sx in ipairs({-1, 1}) do
 			local offset = H + Vector3.new(sx * 0.5, 0, 0.1)
 			for _, s in ipairs({-1, 1}) do
@@ -1846,7 +2003,9 @@ return function(def)
 	-- SPARK TRAIL: cyan sparks stream off both tips; they're left behind in the air while the
 	-- pickaxe moves, so every swing draws a glittering arc (denser on better pickaxes)
 	-- the trail's style depends on the tier: sparks -> electricity -> fire -> galaxy
-	local trail = TRAILS[tier >= 8 and "Galaxy" or (tier >= 6 and "Fire" or (tier >= 4 and "Electric" or "Sparks"))]
+	-- trail (and impact) style by tier: dust -> sparks -> electricity -> ice shards -> fire -> galaxy -> glitch
+	local TRAIL_BY_TIER = {"Dust", "Dust", "Sparks", "Sparks", "Electric", "Ice", "Fire", "Galaxy", "Glitch"}
+	local trail = TRAILS[TRAIL_BY_TIER[math.clamp(tier, 1, #TRAIL_BY_TIER)]]
 	tool:SetAttribute("TrailStyle", trail.Name)
 	tool:SetAttribute("TrailColorA", trail.Colors[1])
 	tool:SetAttribute("TrailColorB", trail.Colors[#trail.Colors])
@@ -1878,6 +2037,12 @@ return function(def)
 			zap.Lifetime = NumberRange.new(0.05, 0.12)
 			zap.Speed = NumberRange.new(4, 8)
 			zap.Parent = tip
+		elseif trail.Name == "Glitch" then
+			-- square pixels that blink in and out
+			sparks.Shape = Enum.ParticleEmitterShape.Box
+			sparks.Rotation = NumberRange.new(0)
+			sparks.RotSpeed = NumberRange.new(0)
+			sparks.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.5, 0.9), NumberSequenceKeypoint.new(0.6, 0), NumberSequenceKeypoint.new(1, 1)})
 		elseif trail.Name == "Galaxy" then
 			-- tiny white stars twinkling in the purple dust
 			local stars = sparks:Clone()
@@ -2639,8 +2804,9 @@ WorldsData.ShovelTiers = {
 -- everywhere), so every world uses its own mix of materials. MapStyle applies these.
 WorldsData.TerrainColors = {
 	-- World 1
-	Grass = rgb(112, 204, 108), Slate = rgb(150, 146, 172), Ground = rgb(176, 124, 84),
-	Sandstone = rgb(222, 180, 120), CrackedLava = rgb(214, 110, 70), Glacier = rgb(150, 210, 240),
+	-- topsoil, dense clay, rocky crust (the wall/strata rock), crystal substratum, magma core
+	Grass = rgb(112, 204, 108), Slate = rgb(118, 112, 128), Ground = rgb(128, 88, 60),
+	Sandstone = rgb(176, 104, 74), CrackedLava = rgb(200, 70, 36), Glacier = rgb(120, 205, 240),
 	Basalt = rgb(70, 64, 96),
 	-- Worlds 2-9
 	LeafyGrass = rgb(255, 176, 208), Mud = rgb(150, 78, 110), Brick = rgb(236, 130, 140),
@@ -4798,6 +4964,93 @@ local function crystalVeins(folder, world, rng)
 	end
 end
 
+-- features that make each deep layer look different when you dig past it:
+--   the crystal layer (zone 3) gets big glowing crystal clusters growing out of the walls,
+--   the magma core (zone 4) gets glowing cracks of lava with embers drifting up out of them
+local function layerFeatures(folder, world, rng)
+	local origin = world.Origin
+	local crystalZone, magmaZone = world.Zones[3], world.Zones[4]
+	local function wallCFrame(angle, depth, inset)
+		local r = world.PitRadius + (inset or 3)
+		local pos = origin + Vector3.new(math.cos(angle) * r, -depth, math.sin(angle) * r)
+		return CFrame.lookAt(pos, Vector3.new(origin.X, pos.Y, origin.Z))
+	end
+	local function glow(parent, name, size, cf, color, material, transparency)
+		local p = Instance.new("Part")
+		p.Name = name
+		p.Anchored = true
+		p.CanCollide = false
+		p.CanQuery = false
+		p.CanTouch = false
+		p.CastShadow = false
+		p.Size = size
+		p.CFrame = cf
+		p.Color = color
+		p.Material = material or Enum.Material.Neon
+		p.Transparency = transparency or 0
+		p.Parent = parent
+		return p
+	end
+	if crystalZone then
+		local color = crystalZone.Color:Lerp(Color3.new(1, 1, 1), 0.15)
+		for i = 1, 12 do
+			local base = wallCFrame(i / 12 * math.pi * 2 + rng:NextNumber(-0.2, 0.2), rng:NextNumber(-crystalZone.Top + 10, -crystalZone.Bottom - 10))
+			local cluster = Instance.new("Model")
+			cluster.Name = "CrystalCluster"
+			cluster.Parent = folder
+			for k = 1, 6 do
+				local length = rng:NextNumber(2, 5)
+				local cf = base * CFrame.Angles(math.rad(-90) + rng:NextNumber(-0.7, 0.7), 0, rng:NextNumber(-0.7, 0.7)) * CFrame.new(0, length * 0.35, 0)
+				glow(cluster, "Crystal", Vector3.new(length * 0.28, length, length * 0.28), cf * CFrame.Angles(0, math.rad(45), 0),
+					color:Lerp(Color3.new(1, 1, 1), 0.3), Enum.Material.Glass, 0.2)
+				glow(cluster, "CrystalCore", Vector3.new(length * 0.12, length * 0.85, length * 0.12), cf, color)
+			end
+			local light = Instance.new("PointLight")
+			light.Color = color
+			light.Range = 16
+			light.Brightness = 1
+			light.Parent = cluster:FindFirstChild("CrystalCore")
+		end
+	end
+	if magmaZone then
+		local hot = Color3.fromRGB(255, 120, 40)
+		for i = 1, 14 do
+			local angle = i / 14 * math.pi * 2 + rng:NextNumber(-0.15, 0.15)
+			local depth = rng:NextNumber(-magmaZone.Top + 8, -magmaZone.Bottom - 8)
+			local crack = Instance.new("Model")
+			crack.Name = "MagmaCrack"
+			crack.Parent = folder
+			-- a zig-zag glowing seam running down the wall
+			local y = depth
+			local a = angle
+			local last
+			for _ = 1, 7 do
+				local nextY, nextA = y + rng:NextNumber(2, 4), a + rng:NextNumber(-0.04, 0.04)
+				local p0 = wallCFrame(a, y, 1.2).Position
+				local p1 = wallCFrame(nextA, nextY, 1.2).Position
+				last = glow(crack, "MagmaSeam", Vector3.new(0.35, 0.35, (p1 - p0).Magnitude + 0.3), CFrame.lookAt((p0 + p1) / 2, p1), hot)
+				y, a = nextY, nextA
+			end
+			local light = Instance.new("PointLight")
+			light.Color = hot
+			light.Range = 18
+			light.Brightness = 1.4
+			light.Parent = last
+			local embers = Instance.new("ParticleEmitter")
+			embers.Color = ColorSequence.new(Color3.fromRGB(255, 220, 120), Color3.fromRGB(255, 60, 20))
+			embers.LightEmission = 1
+			embers.Size = NumberSequence.new(0.18, 0)
+			embers.Lifetime = NumberRange.new(2, 3.5)
+			embers.Rate = 5
+			embers.Speed = NumberRange.new(1, 3)
+			embers.Acceleration = Vector3.new(0, 3, 0)
+			embers.SpreadAngle = Vector2.new(40, 40)
+			embers.EmissionDirection = Enum.NormalId.Top
+			embers.Parent = last
+		end
+	end
+end
+
 local function floatingDust(folder, world)
 	local origin = world.Origin
 	local width = world.PitRadius * 2
@@ -4933,6 +5186,7 @@ return function(digSite, world)
 	atmosphere.Name = "PitAtmosphere"
 	atmosphere.Parent = folder
 	crystalVeins(atmosphere, world, Random.new(world.Id * 104729))
+	layerFeatures(atmosphere, world, Random.new(world.Id * 7907))
 	floatingDust(atmosphere, world)
 	rimLighting(atmosphere, world)
 
@@ -12742,8 +12996,8 @@ local function updateCard(slot)
 	if fit < 1 then object:ScaleTo(fit) end
 	local half = (object:GetAttribute("HalfHeight") or 2) * fit
 	object:PivotTo(baseCF * CFrame.new(0, 0.35 + half, 0))
-	-- its emoji floats just above the glass case, and the name tag moves up to make room
-	ArtifactModels.addEmojiTag(object, artifact, CASE.Y + 1.2 - 0.35 - half)
+	-- only the physical artifact is shown (its meme is carved/printed on it); the name tag
+	-- floats above the glass case
 	local info = spot:FindFirstChild("InfoGui")
 	if info and info:IsA("BillboardGui") then info.StudsOffset = Vector3.new(0, 8.4, 0) end
 	object.Parent = display
@@ -13233,6 +13487,64 @@ local headlamp -- PointLight on our character when underground
 local equippedDef -- the shovel currently in hand
 local gaugeWorld -- world the bands were drawn for
 
+---------------------------------------------------------------------
+-- PIT AMBIENCE: the deeper you dig, the more the air inside the pit takes on the color of
+-- the layer you're in (warm dust in the topsoil, orange clay, cold crystal blue, magma red):
+-- a soft haze of drifting particles around you, a color grade, and your headlamp's tint
+---------------------------------------------------------------------
+local Lighting = game:GetService("Lighting")
+local LAYER_AIR = { -- by zone index; worlds 2-9 mix in their own zone colors
+	Color3.fromRGB(255, 226, 180), -- topsoil: warm dusty light
+	Color3.fromRGB(255, 176, 120), -- dense clay: orange
+	Color3.fromRGB(140, 220, 255), -- crystal substratum: cold blue
+	Color3.fromRGB(255, 110, 60),  -- magma core: red-hot
+}
+local pitGrade = Instance.new("ColorCorrectionEffect")
+pitGrade.Name = "PitDepthGrade"
+pitGrade.Enabled = false
+pitGrade.Parent = Lighting
+local hazePart = Instance.new("Part")
+hazePart.Name = "PitHaze"
+hazePart.Anchored = true
+hazePart.CanCollide = false
+hazePart.CanQuery = false
+hazePart.CanTouch = false
+hazePart.Transparency = 1
+hazePart.Size = Vector3.new(40, 20, 40)
+local haze = Instance.new("ParticleEmitter")
+haze.Shape = Enum.ParticleEmitterShape.Box
+haze.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+haze.LightEmission = 0.3
+haze.LightInfluence = 0.2
+haze.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 1.5), NumberSequenceKeypoint.new(1, 4)})
+haze.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.4, 0.86), NumberSequenceKeypoint.new(1, 1)})
+haze.Lifetime = NumberRange.new(4, 6)
+haze.Speed = NumberRange.new(0.2, 0.6)
+haze.RotSpeed = NumberRange.new(-15, 15)
+haze.Rate = 0
+haze.Parent = hazePart
+local airColor = LAYER_AIR[1]
+
+local function updatePitAir(world, depth, zoneIndex, zoneColor)
+	local strength = math.clamp((depth - 6) / 40, 0, 1) -- fades in over the first 40 studs down
+	if strength <= 0 then
+		pitGrade.Enabled = false
+		haze.Rate = 0
+		return
+	end
+	local target = LAYER_AIR[zoneIndex or 1] or LAYER_AIR[1]
+	if world.Id ~= 1 and zoneColor then target = target:Lerp(zoneColor, 0.6) end
+	airColor = airColor:Lerp(target, 0.15) -- blend smoothly as you cross into a new layer
+	pitGrade.Enabled = true
+	pitGrade.TintColor = Color3.new(1, 1, 1):Lerp(airColor, 0.22 * strength)
+	pitGrade.Contrast = 0.05 * strength
+	pitGrade.Saturation = 0.08 * strength
+	haze.Color = ColorSequence.new(airColor)
+	haze.Rate = 22 * strength
+	hazePart.CFrame = CFrame.new(camera.CFrame.Position)
+	hazePart.Parent = camera
+end
+
 local function currentWorld()
 	return GameConfig.GetWorld(player:GetAttribute("CurrentWorld") or 1) or GameConfig.Worlds[1]
 end
@@ -13290,8 +13602,9 @@ task.spawn(function()
 			local depth = math.max(0, math.floor(world.Origin.Y - feetY + 0.5))
 			local inPit = insidePit
 
-			local _, zone = GameConfig.GetZoneAt(world, feetY)
+			local zoneIndex, zone = GameConfig.GetZoneAt(world, feetY)
 			zone = zone or {Name = "Bedrock", Color = Color3.fromRGB(150, 150, 160)}
+			updatePitAir(world, inPit and depth or 0, zoneIndex or #world.Zones, zone.Color)
 			depthLabel.Text = depth .. "m"
 			zoneLabel.Text = string.upper(zone.Name)
 			zoneDot.BackgroundColor3 = zone.Color
@@ -13328,6 +13641,7 @@ task.spawn(function()
 					headlamp.Parent = root
 				end
 				headlamp.Enabled = true
+				headlamp.Color = Color3.fromRGB(255, 240, 220):Lerp(airColor, 0.35)
 			elseif headlamp then
 				headlamp.Enabled = false
 			end
@@ -13614,16 +13928,18 @@ end
 -- throws a few little dirt clumps off the blade
 local function tossDirt(position, color)
 	for i = 1, 7 do
+		-- chunky little clods with random sizes and spins (stylized, not round balls)
 		local clump = Instance.new("Part")
-		clump.Shape = Enum.PartType.Ball
-		clump.Size = Vector3.one * (0.35 + math.random() * 0.3)
+		clump.Size = Vector3.new(0.3 + math.random() * 0.35, 0.22 + math.random() * 0.25, 0.3 + math.random() * 0.3)
+		clump.CFrame = CFrame.Angles(math.random() * 6, math.random() * 6, math.random() * 6)
 		clump.Color = color
 		clump.Material = Enum.Material.SmoothPlastic
 		clump.CanCollide = false
 		clump.CanQuery = false
 		clump.CanTouch = false
 		clump.CastShadow = false
-		clump.CFrame = CFrame.new(position + Vector3.new(math.random() - 0.5, 0, math.random() - 0.5) * 0.6)
+		clump.CFrame = CFrame.new(position + Vector3.new(math.random() - 0.5, 0, math.random() - 0.5) * 0.6) * clump.CFrame.Rotation
+		clump.AssemblyAngularVelocity = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 20
 		clump.AssemblyLinearVelocity = Vector3.new(math.random() * 12 - 6, 12 + math.random() * 10, math.random() * 12 - 6)
 		clump.Parent = puppetFolder
 		Debris:AddItem(clump, 1.1 + i * 0.05)
@@ -13634,7 +13950,37 @@ end
 -- ring of dust rolling out across the ground (plus camera shake for our own swings)
 local TweenService = game:GetService("TweenService")
 local impactShake -- set further down, once the camera shake exists
-local function impactBurst(position, color)
+-- extra impact particles in the tool's style (see PickaxeModels TRAILS), and glowing sparks
+-- in the deep layers (crystal sparkles in the crystal layer, embers in the magma core)
+local STYLE_IMPACT = {
+	Sparks = {Colors = {Color3.new(1, 1, 1), Color3.fromRGB(90, 235, 255)}, Count = 14, Speed = 18, Size = 0.14, Life = 0.35, Gravity = -40},
+	Electric = {Colors = {Color3.new(1, 1, 1), Color3.fromRGB(120, 200, 255)}, Count = 18, Speed = 26, Size = 0.12, Life = 0.2, Gravity = 0},
+	Ice = {Colors = {Color3.new(1, 1, 1), Color3.fromRGB(150, 225, 255)}, Count = 16, Speed = 14, Size = 0.3, Life = 0.6, Gravity = -50},
+	Fire = {Colors = {Color3.fromRGB(255, 240, 150), Color3.fromRGB(255, 90, 20)}, Count = 18, Speed = 10, Size = 0.4, Life = 0.5, Gravity = 12},
+	Galaxy = {Colors = {Color3.fromRGB(255, 150, 240), Color3.fromRGB(90, 110, 255)}, Count = 20, Speed = 8, Size = 0.3, Life = 0.9, Gravity = 0},
+	Glitch = {Colors = {Color3.fromRGB(255, 60, 200), Color3.fromRGB(60, 255, 230)}, Count = 22, Speed = 20, Size = 0.28, Life = 0.18, Gravity = 0},
+}
+local LAYER_SPARKS = { -- by depth zone index (3 = crystal layer, 4 = magma core)
+	[3] = {Colors = {Color3.new(1, 1, 1), Color3.fromRGB(120, 230, 255)}, Count = 12, Speed = 9, Size = 0.18, Life = 0.7, Gravity = -6},
+	[4] = {Colors = {Color3.fromRGB(255, 220, 120), Color3.fromRGB(255, 70, 20)}, Count = 16, Speed = 12, Size = 0.2, Life = 0.8, Gravity = 10},
+}
+local function sparkBurst(anchor, spec)
+	local e = Instance.new("ParticleEmitter")
+	e.Enabled = false
+	e.Color = ColorSequence.new(spec.Colors[1], spec.Colors[2])
+	e.LightEmission = 1
+	e.Size = NumberSequence.new(spec.Size, 0)
+	e.Lifetime = NumberRange.new(spec.Life * 0.6, spec.Life)
+	e.Speed = NumberRange.new(spec.Speed * 0.5, spec.Speed)
+	e.SpreadAngle = Vector2.new(70, 70)
+	e.EmissionDirection = Enum.NormalId.Top
+	e.Acceleration = Vector3.new(0, spec.Gravity, 0)
+	e.RotSpeed = NumberRange.new(-200, 200)
+	e.Parent = anchor
+	e:Emit(spec.Count)
+end
+
+local function impactBurst(position, color, toolStyle, zoneIndex)
 	local anchor = Instance.new("Part")
 	anchor.Anchored = true
 	anchor.CanCollide = false
@@ -13669,6 +14015,8 @@ local function impactBurst(position, color)
 	puff.Drag = 4
 	puff.Parent = anchor
 	puff:Emit(8)
+	if toolStyle and STYLE_IMPACT[toolStyle] then sparkBurst(anchor, STYLE_IMPACT[toolStyle]) end
+	if zoneIndex and LAYER_SPARKS[zoneIndex] then sparkBurst(anchor, LAYER_SPARKS[zoneIndex]) end
 	Debris:AddItem(anchor, 1.2)
 
 	local ring = Instance.new("Part")
@@ -13725,8 +14073,10 @@ local function poseRig(character, rig, clock, dt)
 				rig.ImpactAt = clock
 				if rig.Blade then
 					local color = dirtColorAt(rig.Root.Position)
+					local world = GameConfig.GetWorldAt(rig.Root.Position)
+					local zoneIndex = GameConfig.GetZoneAt(world, rig.Root.Position.Y - 3)
 					tossDirt(rig.Blade.Position, color)
-					impactBurst(rig.Blade.Position, color)
+					impactBurst(rig.Blade.Position, color, rig.Tool:GetAttribute("TrailStyle"), zoneIndex)
 				end
 				if character == player.Character and impactShake then
 					impactShake()

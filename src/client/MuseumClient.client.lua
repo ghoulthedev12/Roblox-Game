@@ -99,8 +99,8 @@ local function updateCard(slot)
 	if fit < 1 then object:ScaleTo(fit) end
 	local half = (object:GetAttribute("HalfHeight") or 2) * fit
 	object:PivotTo(baseCF * CFrame.new(0, 0.35 + half, 0))
-	-- its emoji floats just above the glass case, and the name tag moves up to make room
-	ArtifactModels.addEmojiTag(object, artifact, CASE.Y + 1.2 - 0.35 - half)
+	-- only the physical artifact is shown (its meme is carved/printed on it); the name tag
+	-- floats above the glass case
 	local info = spot:FindFirstChild("InfoGui")
 	if info and info:IsA("BillboardGui") then info.StudsOffset = Vector3.new(0, 8.4, 0) end
 	object.Parent = display
