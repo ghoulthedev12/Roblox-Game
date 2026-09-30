@@ -15,6 +15,7 @@ local ShopBuilder = require(script.Parent:WaitForChild("ShopBuilder"))
 local WorldGate = require(script.Parent:WaitForChild("WorldGate"))
 local WorldBuilder = require(script.Parent:WaitForChild("WorldBuilder"))
 local BuriedPainting = require(script.Parent:WaitForChild("BuriedPainting"))
+local DigBoosts = require(script.Parent:WaitForChild("DigBoosts"))
 local TweenService = game:GetService("TweenService")
 
 local terrain = workspace.Terrain
@@ -382,9 +383,9 @@ local function finishLuckyDig(player, grade)
 	giveArtifact(player, session.Zone, session.ShovelLuck * (MINIGAME_LUCK[grade] or 1), grade, session.Position)
 end
 
-local function onFind(player, def, zone, position)
+local function onFind(player, def, zone, position, luck)
 	if rng:NextNumber() < GameConfig.MinigameChance then
-		local session = {Started = os.clock(), ShovelLuck = def.Luck, Zone = zone, Position = position}
+		local session = {Started = os.clock(), ShovelLuck = luck, Zone = zone, Position = position}
 		sessions[player] = session
 		minigameRemote:FireClient(player)
 		task.delay(MINIGAME_TIMEOUT, function()
@@ -393,7 +394,7 @@ local function onFind(player, def, zone, position)
 			end
 		end)
 	else
-		giveArtifact(player, zone, def.Luck, nil, position)
+		giveArtifact(player, zone, luck, nil, position)
 	end
 end
 
@@ -426,7 +427,8 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	local def = getEquippedDef(player, world)
 	if not def or tool:GetAttribute("ShovelId") ~= def.Id then return end
 	local now = os.clock()
-	if now - (lastSwing[player] or 0) < def.Cooldown * 0.85 then return end
+	local boost = DigBoosts.Get(player, world) -- world gimmicks: events and the merchant's boosts
+	if now - (lastSwing[player] or 0) < def.Cooldown * boost.Cooldown * 0.85 then return end
 	lastSwing[player] = now
 	-- let everyone else see this player's dig animation
 	local length = typeof(swingLength) == "number" and math.clamp(swingLength, 0.3, 1) or 0.6
@@ -454,8 +456,7 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 			target = diggable(inFront) and inFront or root.Position - Vector3.new(0, 3.5, 0)
 			if not diggable(target) then return end
 		else
-			digMessageRemote:FireClient(player, "Jump into the pit to dig!")
-			return
+			return -- outside the pit: the "Jump into the pit" pill on screen already says so
 		end
 	end
 
@@ -497,6 +498,12 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	local radius = (GameConfig.DigRadiusForPower(def.Power) + 2) / 2 + 0.75
 	local centerY = math.max(carveAt.Y + radius * 0.35, floorY + radius)
 	terrain:FillBall(Vector3.new(carveAt.X, centerY, carveAt.Z), radius, Enum.Material.Air)
+	-- the bedrock can never be dug: if the crater reached down to it, put back any bedrock
+	-- the smooth carving nibbled at (nobody digs past the floor or out of the pit)
+	local bedrockTop = origin.Y + world.Zones[#world.Zones].Bottom
+	if centerY - radius < bedrockTop + 3 then
+		terrain:FillCylinder(CFrame.new(carveAt.X, bedrockTop - GameConfig.BedrockThickness / 2, carveAt.Z), GameConfig.BedrockThickness, radius + 2, Enum.Material.Basalt)
+	end
 	burst(target, zone.Color, 28, 14)
 
 	-- Combo: keep digging without long pauses to build it up (more luck per dig)
@@ -519,8 +526,8 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 			return
 		end
 	end
-	if rng:NextNumber() < def.FindChance * (1 + COMBO_LUCK * (combo - 1)) then
-		onFind(player, def, zone, carveAt + Vector3.new(0, 2, 0))
+	if rng:NextNumber() < def.FindChance * boost.Find * (1 + COMBO_LUCK * (combo - 1)) then
+		onFind(player, def, zone, carveAt + Vector3.new(0, 2, 0), def.Luck * boost.Luck)
 	end
 end)
 
@@ -737,6 +744,84 @@ for _, world in ipairs(enabledWorlds()) do
 	end
 end
 worldsBuilt = true
+
+---------------------------------------------------------------------
+-- PIT SAFETY: invisible walls around every pit, a solid floor inside the bedrock, a lower
+-- void, and a rescue for anyone who still manages to fall out of the world
+---------------------------------------------------------------------
+-- the Abyss goes 560 studs down; Roblox's default kill height would kill diggers down there
+workspace.FallenPartsDestroyHeight = -3000
+
+local safetyFolder = workspace:FindFirstChild("PitSafety")
+if safetyFolder then safetyFolder:Destroy() end
+safetyFolder = Instance.new("Folder")
+safetyFolder.Name = "PitSafety"
+safetyFolder.Parent = workspace
+
+local function barrier(name, size, cf, shape)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Anchored = true
+	p.CanCollide = true
+	p.CanQuery = false -- clicks and raycasts go straight through
+	p.CanTouch = false
+	p.Transparency = 1
+	p.CastShadow = false
+	p.Size = size
+	p.CFrame = cf
+	if shape then p.Shape = shape end
+	p.Parent = safetyFolder
+	return p
+end
+
+local WALL_SEGMENTS = 48
+for _, world in ipairs(enabledWorlds()) do
+	local origin = world.Origin
+	local bedrockTop = origin.Y + world.Zones[#world.Zones].Bottom
+	-- walls: a ring just outside the widest crater a pickaxe can carve, from a few studs
+	-- under the surface (so you can still jump in from the top) down to the bedrock
+	local wallRadius = world.PitRadius + 7
+	local top, bottom = origin.Y - 4, bedrockTop - 4
+	local height = top - bottom
+	local length = 2 * math.pi * wallRadius / WALL_SEGMENTS + 1
+	for i = 0, WALL_SEGMENTS - 1 do
+		local a = (i + 0.5) / WALL_SEGMENTS * math.pi * 2
+		local pos = origin + Vector3.new(math.cos(a) * (wallRadius + 1), 0, math.sin(a) * (wallRadius + 1))
+		pos = Vector3.new(pos.X, (top + bottom) / 2, pos.Z)
+		barrier("PitWall", Vector3.new(length, height, 2), CFrame.lookAt(pos, Vector3.new(origin.X, pos.Y, origin.Z)))
+	end
+	-- a solid floor hidden inside the bedrock, under the whole pit
+	barrier("BedrockFloor", Vector3.new(2, (wallRadius + 2) * 2, (wallRadius + 2) * 2),
+		CFrame.new(origin.X, bedrockTop - 3, origin.Z) * CFrame.Angles(0, 0, math.rad(90)), Enum.PartType.Cylinder)
+end
+
+-- anyone below the bedrock, or who fell off a floating island, is put back safely
+task.spawn(function()
+	while true do
+		task.wait(1)
+		for _, player in ipairs(Players:GetPlayers()) do
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart")
+			local world = currentWorld[player]
+			if root and world then
+				local offset = root.Position - world.Origin
+				local flat = Vector3.new(offset.X, 0, offset.Z).Magnitude
+				local floor = world.Zones[#world.Zones].Bottom - GameConfig.BedrockThickness
+				local belowBedrock = offset.Y < floor - 10
+				local offTheIsland = offset.Y < -30 and flat > world.PitRadius + 10
+				if belowBedrock or offTheIsland then
+					root.AssemblyLinearVelocity = Vector3.zero
+					if flat <= world.PitRadius + 10 then
+						character:PivotTo(surfaceCFrame(world, root.Position))
+					else
+						character:PivotTo(arrivalSpots[world.Id] or CFrame.new(world.Origin + Vector3.new(0, 6, SURFACE_RING)))
+					end
+					digMessageRemote:FireClient(player, "Whoa! You slipped out of the world. Back to safety!", Color3.fromRGB(120, 230, 255))
+				end
+			end
+		end
+	end
+end)
 
 ---------------------------------------------------------------------
 -- PLAYERS

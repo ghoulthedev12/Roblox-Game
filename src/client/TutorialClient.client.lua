@@ -18,7 +18,7 @@ local player = Players.LocalPlayer
 local STEPS = {
 	{Icon = "⛏", Title = "Equip your pickaxe", Text = "Press 1, or click the pickaxe in your hotbar at the bottom of the screen."},
 	{Icon = "🕳", Title = "Jump into the pit", Text = "Follow the glowing trail to the dig site and hop down into the dirt!"},
-	{Icon = "🖼", Title = "Dig up a framed artifact", Text = "Click the ground to swing. Keep digging until a painting appears, then hold E to pull it out!"},
+	{Icon = "🖼", Title = "Dig up a framed artifact", Text = "Click the ground to swing. Keep digging until an artifact appears, then hold E to pull it out!"},
 	{Icon = "🏛", Title = "Display it in your museum", Text = "Follow the trail home and press E at a glowing pedestal to put your meme on show."},
 }
 local STEP_COLORS = {C.Sun, C.Mint, C.Coral, C.Violet}

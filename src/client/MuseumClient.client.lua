@@ -1,7 +1,7 @@
 -- MuseumClient (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- The museum side of the UI (World 1 only):
---   * a spinning, floating meme card over every pedestal that has a meme on it (in every
---     player's museum, so visitors can see your collection too)
+--   * the real artifact (painting, statue, coin, tablet or crystal) under a glass case on
+--     every pedestal that has a meme on it (in every museum, so visitors see your collection)
 --   * the Display window: pick a meme from your inventory to put on a slot, or take it back
 --   * the Alien Art Dealer window: sell memes for cash
 --   * small up/down arrows at the top center while you're inside a museum, to change floors
@@ -10,7 +10,6 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
@@ -30,68 +29,96 @@ local player = Players.LocalPlayer
 local museumsFolder = workspace:WaitForChild("Museums")
 
 ---------------------------------------------------------------------
--- SPINNING MEME CARDS ON THE PEDESTALS
+-- DISPLAYS: the real artifact (painting, statue, coin, tablet or crystal, see
+-- ArtifactModels) standing still on its pedestal under a glass case
 ---------------------------------------------------------------------
-local cards = {} -- [slot model] = {Part, Base CFrame, Phase}
+local ArtifactModels = require(ReplicatedStorage:WaitForChild("ArtifactModels"))
+local cards = {} -- [slot model] = the display model
 
 local function removeCard(slot)
-	local card = cards[slot]
-	if card then
-		card.Part:Destroy()
+	local display = cards[slot]
+	if display then
+		display:Destroy()
 		cards[slot] = nil
 	end
 end
 
-local function cardFace(part, face, artifact)
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = face
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 50
-	gui.LightInfluence = 0
-	gui.Parent = part
-	UIKit.artifactIcon(gui, artifact, {Size = UDim2.fromScale(1, 1), Radius = 28, Stroke = 6})
+local CASE = Vector3.new(5, 6, 5) -- inside size of the glass case
+
+local function casePart(parent, name, size, cf, color, material, transparency)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	p.Size = size
+	p.CFrame = cf
+	p.Color = color
+	p.Material = material
+	p.Transparency = transparency or 0
+	p.Parent = parent
+	return p
+end
+
+-- a glass box with a dark metal frame and a thin glowing line at the base
+local function glassCase(parent, baseCF, color)
+	local glass = Color3.fromRGB(200, 235, 255)
+	local frame = Color3.fromRGB(40, 38, 64)
+	local w, h = CASE.X, CASE.Y
+	casePart(parent, "CaseGlass", Vector3.new(w, h, w), baseCF * CFrame.new(0, h / 2, 0), glass, Enum.Material.Glass, 0.82).Reflectance = 0.25
+	casePart(parent, "CaseLid", Vector3.new(w + 0.3, 0.3, w + 0.3), baseCF * CFrame.new(0, h + 0.15, 0), frame, Enum.Material.Metal)
+	casePart(parent, "CaseBase", Vector3.new(w + 0.3, 0.3, w + 0.3), baseCF * CFrame.new(0, 0.15, 0), frame, Enum.Material.Metal)
+	casePart(parent, "CaseGlow", Vector3.new(w + 0.34, 0.08, w + 0.34), baseCF * CFrame.new(0, 0.32, 0), color, Enum.Material.Neon)
+	for _, sx in ipairs({-1, 1}) do
+		for _, sz in ipairs({-1, 1}) do
+			casePart(parent, "CaseEdge", Vector3.new(0.18, h, 0.18), baseCF * CFrame.new(sx * w / 2, h / 2, sz * w / 2), frame, Enum.Material.Metal)
+		end
+	end
 end
 
 local function updateCard(slot)
 	removeCard(slot)
 	local artifact = ArtifactData.GetArtifact(slot:GetAttribute("ArtifactId") or "")
 	local spot = slot:FindFirstChild("DisplaySpot")
+	local cap = slot:FindFirstChild("Cap")
 	if not artifact or not spot then return end
 	local rarity = ArtifactData.GetRarity(artifact.Rarity)
 
-	local part = Instance.new("Part")
-	part.Name = "MemeCard"
-	part.Anchored = true
-	part.CanCollide = false
-	part.CanQuery = false
-	part.CanTouch = false
-	part.CastShadow = false
-	part.Size = Vector3.new(4.4, 4.4, 0.35)
-	part.Color = rarity.Color
-	part.Material = Enum.Material.SmoothPlastic
-	cardFace(part, Enum.NormalId.Front, artifact)
-	cardFace(part, Enum.NormalId.Back, artifact)
+	local display = Instance.new("Model")
+	display.Name = "Display"
+	-- the pedestal's top, facing into the room like the slot does
+	local topY = cap and (cap.Position.Y + cap.Size.X / 2) or (spot.Position.Y - 1.8)
+	local baseCF = CFrame.new(spot.Position.X, topY, spot.Position.Z) * spot.CFrame.Rotation
+	glassCase(display, baseCF, rarity.Color)
+
+	local object = ArtifactModels.build(artifact)
+	-- shrink big objects so they fit inside the case
+	local fit = math.min(1, (CASE.X - 0.8) / (object:GetAttribute("Width") or 4), (CASE.Y - 0.8) / ((object:GetAttribute("HalfHeight") or 2) * 2))
+	if fit < 1 then object:ScaleTo(fit) end
+	local half = (object:GetAttribute("HalfHeight") or 2) * fit
+	object:PivotTo(baseCF * CFrame.new(0, 0.35 + half, 0))
+	object.Parent = display
+	-- a soft spotlight in the rarity's color, and sparkles for the fancy ones
 	local light = Instance.new("PointLight")
 	light.Color = rarity.Color
 	light.Range = 10
 	light.Brightness = 0.7
-	light.Parent = part
-	-- fancier memes sparkle
+	light.Parent = object.PrimaryPart
 	if ArtifactData.GetRarityIndex(artifact.Rarity) >= 5 then
 		local sparkles = Instance.new("ParticleEmitter")
-		sparkles.Rate = 4
+		sparkles.Rate = 3
 		sparkles.Lifetime = NumberRange.new(0.8, 1.4)
-		sparkles.Speed = NumberRange.new(0.5, 1.2)
+		sparkles.Speed = NumberRange.new(0.3, 0.8)
 		sparkles.SpreadAngle = Vector2.new(180, 180)
-		sparkles.Size = NumberSequence.new(0.25, 0)
+		sparkles.Size = NumberSequence.new(0.2, 0)
 		sparkles.LightEmission = 0.8
 		sparkles.Color = ColorSequence.new(rarity.Color)
-		sparkles.Parent = part
+		sparkles.Parent = object.PrimaryPart
 	end
-	local base = CFrame.new(spot.Position + Vector3.new(0, 1, 0))
-	part.CFrame = base
-	part.Parent = slot
-	cards[slot] = {Part = part, Base = base, Phase = (slot:GetAttribute("SlotIndex") or 1) * 0.7}
+	display.Parent = slot
+	cards[slot] = display
 end
 
 local function watchSlot(slot, owned)
@@ -126,13 +153,6 @@ for _, museum in ipairs(museumsFolder:GetChildren()) do
 	task.spawn(watchMuseum, museum)
 end
 
-RunService.RenderStepped:Connect(function()
-	local t = os.clock()
-	for _, card in pairs(cards) do
-		local bob = math.sin(t * 1.6 + card.Phase) * 0.3
-		card.Part.CFrame = card.Base * CFrame.new(0, bob, 0) * CFrame.Angles(0, t * 0.9 + card.Phase, 0)
-	end
-end)
 
 ---------------------------------------------------------------------
 -- SHARED: an inventory grid with a button on every meme
@@ -320,25 +340,31 @@ end)
 ---------------------------------------------------------------------
 -- FLOOR ARROWS (only while you're inside a museum)
 ---------------------------------------------------------------------
--- a slim bar pinned to the top center of the screen:  [▼]  FLOOR 2/3  [▲]
-local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(212, 44), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0),
-	Color = C.Ink, Radius = 22, StrokeColor = C.Sky, Stroke = 2, ShadeAmount = 0.2})
-floorPanel.BackgroundTransparency = 0.1
+-- a bright elevator bar pinned to the top center of the screen:  [▼ DOWN]  🛗 FLOOR 2/3  [UP ▲]
+local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(360, 62), Position = UDim2.new(0.5, 0, 0, 8), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Panel, Radius = 31, StrokeColor = C.Violet, Stroke = 4, ShadeAmount = 0.12})
 floorPanel.Visible = false
-local downButton = UIKit.button(floorPanel, "▼", {Size = UDim2.fromOffset(36, 36), Position = UDim2.new(0, 4, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Violet, Radius = 18, MaxText = 16})
-local upButton = UIKit.button(floorPanel, "▲", {Size = UDim2.fromOffset(36, 36), Position = UDim2.new(1, -4, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Color = C.Sky, Radius = 18, MaxText = 16})
-local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -96, 0, 20), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 0, MaxText = 17})
+local downButton = UIKit.button(floorPanel, "▼ DOWN", {Size = UDim2.fromOffset(104, 48), Position = UDim2.new(0, 7, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Violet, Radius = 24, MaxText = 18})
+local upButton = UIKit.button(floorPanel, "UP ▲", {Size = UDim2.fromOffset(104, 48), Position = UDim2.new(1, -7, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Color = C.Sky, Radius = 24, MaxText = 18})
+local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -236, 0, 30), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0, MaxText = 22})
 -- the price of the next floor hangs under the bar when it's still locked
-local pricePill = UIKit.panel(floorPanel, {Size = UDim2.fromOffset(150, 24), Position = UDim2.new(0.5, 0, 1, 6), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Radius = 12, Stroke = 2})
-local upPrice = UIKit.label(pricePill, "", {Size = UDim2.new(1, -14, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 1.5, MaxText = 13})
+local pricePill = UIKit.panel(floorPanel, {Size = UDim2.fromOffset(190, 28), Position = UDim2.new(0.5, 0, 1, 6), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Radius = 14, Stroke = 2.5})
+local upPrice = UIKit.label(pricePill, "", {Size = UDim2.new(1, -16, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
 pricePill.Visible = false
 for _, b in ipairs({upButton, downButton}) do
 	local arrow = b:FindFirstChild("Label")
-	if arrow then
-		arrow.Font = Enum.Font.GothamBlack
-		arrow.Size = UDim2.new(1, -10, 1, -12)
-	end
+	if arrow then arrow.Font = Enum.Font.GothamBlack end
 end
+-- a soft glow pulsing around the bar so it's easy to spot
+local barStroke = floorPanel:FindFirstChildOfClass("UIStroke")
+task.spawn(function()
+	while true do
+		if floorPanel.Visible and barStroke then
+			barStroke.Color = C.Violet:Lerp(C.Sky, 0.5 + 0.5 * math.sin(os.clock() * 3))
+		end
+		task.wait(0.05)
+	end
+end)
 
 local function currentMuseumFloor()
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -362,7 +388,7 @@ task.spawn(function()
 			local opened = string.split(museum:GetAttribute("UnlockedFloors") or "1", ",")
 			local owned = museum:GetAttribute("OwnerUserId") == player.UserId
 			local nextOpen = table.find(opened, tostring(floor + 1)) ~= nil
-			floorLabel.Text = "FLOOR " .. floor .. "/" .. topFloor
+			floorLabel.Text = "🛗 FLOOR " .. floor .. "/" .. topFloor
 			upButton.Visible = floor < topFloor and (nextOpen or owned)
 			downButton.Visible = floor > 1
 			if upButton.Visible and not nextOpen then

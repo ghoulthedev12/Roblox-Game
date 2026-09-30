@@ -57,14 +57,15 @@ end
 -- "JUMP INTO THE PIT" PROMPT: shows while you hold a pickaxe outside the pit and vanishes the
 -- instant your character enters the pit volume (GameConfig.IsInPit uses GetPartBoundsInBox)
 ---------------------------------------------------------------------
+-- a small pill on the left, under the money counters, out of the way
 local pitPrompt = UIKit.panel(gui, {
-	Size = UDim2.fromOffset(330, 44), Position = UDim2.new(0.5, 0, 1, -250), AnchorPoint = Vector2.new(0.5, 0),
-	Color = C.Ink, Radius = 22, Stroke = 2.5, StrokeColor = C.Sky, ShadeAmount = 0.2,
+	Size = UDim2.fromOffset(250, 36), Position = UDim2.fromOffset(14, 172),
+	Color = C.Ink, Radius = 18, Stroke = 2.5, StrokeColor = C.Sky, ShadeAmount = 0.2,
 })
 pitPrompt.BackgroundTransparency = 0.12
 pitPrompt.Visible = false
-UIKit.label(pitPrompt, "⛏  Jump into the pit to dig!", {Size = UDim2.new(1, -28, 1, -14), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
-	Color = C.White, Stroke = 0, MaxText = 20})
+UIKit.label(pitPrompt, "⛏  Jump into the pit to dig!", {Size = UDim2.new(1, -24, 1, -12), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+	Color = C.White, Stroke = 0, MaxText = 17})
 local insidePit = false
 
 digMessageRemote.OnClientEvent:Connect(function(message, color)
@@ -471,7 +472,13 @@ local function createRig(character, tool)
 		trail.MinLength = 0.05
 		trail.FaceCamera = true
 		trail.LightEmission = 0.5
-		trail.Color = ColorSequence.new(Color3.new(1, 1, 1), glow)
+		-- the swoosh matches the pickaxe's trail style (sparks, electricity, fire or galaxy)
+		local colorA, colorB = tool:GetAttribute("TrailColorA"), tool:GetAttribute("TrailColorB")
+		if typeof(colorA) == "Color3" and typeof(colorB) == "Color3" then
+			trail.Color = ColorSequence.new(colorA, colorB)
+		else
+			trail.Color = ColorSequence.new(Color3.new(1, 1, 1), glow)
+		end
 		trail.Transparency = NumberSequence.new(0.35, 1)
 		trail.WidthScale = NumberSequence.new(1, 0.3)
 		trail.Enabled = false
@@ -830,10 +837,12 @@ local holding = false
 
 local function trySwing(def)
 	local now = os.clock()
-	if now - lastSwing < def.Cooldown then return end
+	-- world events and boosts (Gold Rush, Sugar Rush, Glitch Surge...) make swings faster
+	local cooldown = def.Cooldown * (player:GetAttribute("DigSpeedMult") or 1)
+	if now - lastSwing < cooldown then return end
 	lastSwing = now
 
-	local length = math.clamp(def.Cooldown, 0.3, 0.5) -- overhead two-handed swing
+	local length = math.clamp(cooldown, 0.3, 0.5) -- overhead two-handed swing
 	startSwing(player.Character, length)
 
 	-- the dig happens exactly when the blade hits the ground

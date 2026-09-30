@@ -89,6 +89,18 @@ end
 
 local DIAMOND = CFrame.Angles(math.rad(45), 0, 0) -- a cube seen along X becomes a diamond
 
+-- particle trails by tier (off the tips of the head)
+local TRAILS = {
+	Sparks = {Name = "Sparks", Colors = {Color3.new(1, 1, 1), NEON_EDGE}, Rate = 6, Light = 0.85, Size = 0.12,
+		Lifetime = NumberRange.new(0.25, 0.45), Speed = NumberRange.new(0.2, 0.8)},
+	Electric = {Name = "Electric", Colors = {Color3.new(1, 1, 1), rgb(140, 220, 255), rgb(60, 120, 255)}, Rate = 10, Light = 1, Size = 0.1,
+		Lifetime = NumberRange.new(0.12, 0.25), Speed = NumberRange.new(1.5, 3.5)},
+	Fire = {Name = "Fire", Colors = {rgb(255, 240, 150), rgb(255, 150, 40), rgb(220, 40, 20)}, Rate = 14, Light = 0.9, Size = 0.28, EndSize = 0.05,
+		Lifetime = NumberRange.new(0.3, 0.55), Speed = NumberRange.new(0.5, 1.5), Acceleration = Vector3.new(0, 6, 0), RotSpeed = NumberRange.new(-120, 120)},
+	Galaxy = {Name = "Galaxy", Colors = {rgb(255, 140, 230), rgb(160, 90, 255), rgb(70, 110, 255)}, Rate = 14, Light = 0.9, Size = 0.24, EndSize = 0.08,
+		Lifetime = NumberRange.new(0.6, 1), Speed = NumberRange.new(0.2, 0.6), RotSpeed = NumberRange.new(-60, 60)},
+}
+
 -- a diamond frame with a glowing gem poking through both faces
 local function gemNode(tool, name, z, size, look, glowing)
 	local frame = newPart(tool, name, Vector3.new(size * 0.8, size, size), CFrame.new(0, 0, z) * DIAMOND, look.Frame)
@@ -134,6 +146,12 @@ local function arm(tool, H, side, look, opts)
 		-- cyan neon cutting edge along the outside of the arm
 		local outer = R + ((rows - 1) / 2) * size * 0.85
 		newPart(tool, "BladeEdge", Vector3.new(size * 0.7, size * 0.9, 0.09), CFrame.new(center + radial * (outer + size / 2 + 0.02)) * rot, NEON_EDGE, Enum.Material.Neon)
+		-- jagged energy blade: neon shards along the edge, alternating long and short
+		if opts.Jagged then
+			local len = (i % 2 == 0) and size * 1.1 or size * 0.55
+			newPart(tool, "EnergySpike", Vector3.new(size * 0.22, size * 0.22, len),
+				CFrame.new(center + radial * (outer + size / 2 + len / 2 - 0.05)) * rot * CFrame.Angles(0, 0, math.rad(45)), opts.Jagged, Enum.Material.Neon)
+		end
 		-- spikes sticking out of the outer row
 		if opts.Spikes and i % 2 == 0 then
 			local pos = center + radial * (R + size * 1.2)
@@ -231,9 +249,14 @@ return function(def)
 	local gem = newPart(tool, "HeadGem", Vector3.new(0.86, 0.5, 0.5), CFrame.new(H) * DIAMOND, look.Gem, glowing and Enum.Material.Neon or Enum.Material.Glass)
 	newPart(tool, "Crown", Vector3.new(0.4, 0.42, 0.42), CFrame.new(H + Vector3.new(0, 0, -0.78)) * DIAMOND, look.Edge)
 	local style = look.Head
-	local arm = function(...)
-		local parts, tip = arm(...)
-		if (select(4, ...)).Frame then -- not the glowing core inside a crystal head
+	local jagged = tier >= 5 and (tier >= 8 and look.Gem or NEON_EDGE) or nil
+	local arm = function(t, h, side, lk, opts)
+		if lk.Frame and jagged then
+			opts = table.clone(opts)
+			opts.Jagged = jagged
+		end
+		local parts, tip = arm(t, h, side, lk, opts)
+		if lk.Frame then -- not the glowing core inside a crystal head, or the second blade
 			table.insert(tips, tip)
 		end
 		return parts, tip
@@ -263,6 +286,37 @@ return function(def)
 	-- side plates that hold the head on the shaft
 	for _, s in ipairs({-1, 1}) do
 		newPart(tool, "HeadBracket", Vector3.new(0.5, 0.3, 0.7), CFrame.new(H + Vector3.new(0, s * 0.42, 0.55)), look.Handle)
+	end
+
+	-- DUAL BLADE (tier 7+): a second, thinner blade of pure energy on each side of the head
+	if tier >= 7 then
+		for _, sx in ipairs({-1, 1}) do
+			local offset = H + Vector3.new(sx * 0.5, 0, 0.1)
+			for _, s in ipairs({-1, 1}) do
+				arm(tool, offset, s, {Main = look.Gem, Edge = NEON_EDGE}, {Radius = 2.1, Reach = 1, Count = 6, Rows = 1, Size = 0.32, Material = Enum.Material.Neon})
+			end
+		end
+	end
+
+	-- ROTATING CORE (tier 3+): glowing bits circling the head's gem, faster on better pickaxes
+	if tier >= 3 then
+		local n = tier >= 6 and 6 or 4
+		for i = 1, n do
+			local a = math.pi * 2 * i / n
+			local bit = newPart(tool, "CoreBit", Vector3.new(0.18, 0.18, 0.18), CFrame.new(H + Vector3.new(math.cos(a) * 0.95, math.sin(a) * 0.95, 0)) * DIAMOND,
+				i % 2 == 0 and look.Gem or NEON_EDGE, Enum.Material.Neon)
+			bit:SetAttribute("OrbitCenter", H)
+			bit:SetAttribute("OrbitSpeed", 2 + tier * 0.4)
+		end
+		-- a spinning ring around the socket
+		local ringCount = 10
+		for i = 1, ringCount do
+			local a = math.pi * 2 * i / ringCount
+			local seg = newPart(tool, "CoreRing", Vector3.new(0.08, 0.34, 0.08), CFrame.new(H + Vector3.new(math.cos(a) * 1.2, math.sin(a) * 1.2, 0)) * CFrame.Angles(0, 0, a),
+				NEON_EDGE, Enum.Material.Neon)
+			seg:SetAttribute("OrbitCenter", H)
+			seg:SetAttribute("OrbitSpeed", -(1.2 + tier * 0.2))
+		end
 	end
 
 	-- ORBITING CUBES around the handle below the head (tier 6+), spun by the client
@@ -295,19 +349,49 @@ return function(def)
 
 	-- SPARK TRAIL: cyan sparks stream off both tips; they're left behind in the air while the
 	-- pickaxe moves, so every swing draws a glittering arc (denser on better pickaxes)
+	-- the trail's style depends on the tier: sparks -> electricity -> fire -> galaxy
+	local trail = TRAILS[tier >= 8 and "Galaxy" or (tier >= 6 and "Fire" or (tier >= 4 and "Electric" or "Sparks"))]
+	tool:SetAttribute("TrailStyle", trail.Name)
+	tool:SetAttribute("TrailColorA", trail.Colors[1])
+	tool:SetAttribute("TrailColorB", trail.Colors[#trail.Colors])
 	for _, tip in ipairs(tips) do
 		local sparks = Instance.new("ParticleEmitter")
 		sparks.Name = "TipSparks"
-		sparks.Rate = 6 + tier * 2
-		sparks.LightEmission = 0.85
-		sparks.Color = ColorSequence.new(Color3.new(1, 1, 1), NEON_EDGE)
-		sparks.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.12), NumberSequenceKeypoint.new(1, 0)})
+		sparks.Rate = trail.Rate + tier * 2
+		sparks.LightEmission = trail.Light
+		local keys = {}
+		for k, c in ipairs(trail.Colors) do
+			table.insert(keys, ColorSequenceKeypoint.new((k - 1) / (#trail.Colors - 1), c))
+		end
+		sparks.Color = ColorSequence.new(keys)
+		sparks.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, trail.Size), NumberSequenceKeypoint.new(1, trail.EndSize or 0)})
 		sparks.Transparency = NumberSequence.new(0, 1)
-		sparks.Lifetime = NumberRange.new(0.25, 0.45)
-		sparks.Speed = NumberRange.new(0.2, 0.8)
+		sparks.Lifetime = trail.Lifetime
+		sparks.Speed = trail.Speed
 		sparks.SpreadAngle = Vector2.new(180, 180)
+		sparks.Acceleration = trail.Acceleration or Vector3.zero
+		sparks.RotSpeed = trail.RotSpeed or NumberRange.new(0)
 		sparks.Drag = 3
 		sparks.Parent = tip
+		if trail.Name == "Electric" then
+			-- crackling: little bright zaps flicker around the tip
+			local zap = sparks:Clone()
+			zap.Name = "TipZaps"
+			zap.Rate = 12
+			zap.Size = NumberSequence.new(0.22, 0.05)
+			zap.Lifetime = NumberRange.new(0.05, 0.12)
+			zap.Speed = NumberRange.new(4, 8)
+			zap.Parent = tip
+		elseif trail.Name == "Galaxy" then
+			-- tiny white stars twinkling in the purple dust
+			local stars = sparks:Clone()
+			stars.Name = "TipStars"
+			stars.Rate = 8
+			stars.Color = ColorSequence.new(Color3.new(1, 1, 1))
+			stars.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.5, 0.14), NumberSequenceKeypoint.new(1, 0)})
+			stars.Lifetime = NumberRange.new(0.6, 1)
+			stars.Parent = tip
+		end
 	end
 
 	-- VFX: gem light and sparkles that grow with the tier

@@ -10,16 +10,19 @@ local ArtifactData = {}
 -- Every later world multiplies this by its WorldMultipliers entry (below), so only the
 -- best of the best (Divine and up, in the late worlds) ever pass $50M/s.
 ---------------------------------------------------------------------
+-- The curve is smooth (each rarity is worth about 3-4x the one below it) instead of a huge
+-- jump at the top, so the early zones stay worth digging and the Abyss is a step up, not a
+-- sudden spike.
 ArtifactData.Rarities = {
-	{Name = "Common",       Code = "C",  Income = 5,         Chance = 60,    Color = Color3.fromRGB(190, 190, 190)},
-	{Name = "Uncommon",     Code = "U",  Income = 20,        Chance = 25,    Color = Color3.fromRGB(85, 200, 85)},
-	{Name = "Rare",         Code = "R",  Income = 80,        Chance = 10,    Color = Color3.fromRGB(60, 140, 255)},
-	{Name = "Epic",         Code = "E",  Income = 400,       Chance = 3.5,   Color = Color3.fromRGB(170, 80, 255)},
-	{Name = "Legendary",    Code = "L",  Income = 2000,      Chance = 1.1,   Color = Color3.fromRGB(255, 170, 0)},
-	{Name = "Mythic",       Code = "M",  Income = 12000,     Chance = 0.3,   Color = Color3.fromRGB(255, 60, 90)},
-	{Name = "Divine",       Code = "D",  Income = 60000,     Chance = 0.07,  Color = Color3.fromRGB(255, 240, 150)},
-	{Name = "Celestial",    Code = "CE", Income = 300000,    Chance = 0.025, Color = Color3.fromRGB(120, 255, 255)},
-	{Name = "Transcendent", Code = "T",  Income = 1500000,   Chance = 0.005, Color = Color3.fromRGB(255, 255, 255)},
+	{Name = "Common",       Code = "C",  Income = 10,        Chance = 60,    Color = Color3.fromRGB(190, 190, 190)},
+	{Name = "Uncommon",     Code = "U",  Income = 35,        Chance = 25,    Color = Color3.fromRGB(85, 200, 85)},
+	{Name = "Rare",         Code = "R",  Income = 120,       Chance = 10,    Color = Color3.fromRGB(60, 140, 255)},
+	{Name = "Epic",         Code = "E",  Income = 450,       Chance = 3.5,   Color = Color3.fromRGB(170, 80, 255)},
+	{Name = "Legendary",    Code = "L",  Income = 1500,      Chance = 1.1,   Color = Color3.fromRGB(255, 170, 0)},
+	{Name = "Mythic",       Code = "M",  Income = 5000,      Chance = 0.3,   Color = Color3.fromRGB(255, 60, 90)},
+	{Name = "Divine",       Code = "D",  Income = 20000,     Chance = 0.07,  Color = Color3.fromRGB(255, 240, 150)},
+	{Name = "Celestial",    Code = "CE", Income = 60000,     Chance = 0.025, Color = Color3.fromRGB(120, 255, 255)},
+	{Name = "Transcendent", Code = "T",  Income = 150000,    Chance = 0.005, Color = Color3.fromRGB(255, 255, 255)},
 }
 
 -- Sell value = income per second x this number

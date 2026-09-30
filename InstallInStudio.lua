@@ -31,16 +31,19 @@ local ArtifactData = {}
 -- Every later world multiplies this by its WorldMultipliers entry (below), so only the
 -- best of the best (Divine and up, in the late worlds) ever pass $50M/s.
 ---------------------------------------------------------------------
+-- The curve is smooth (each rarity is worth about 3-4x the one below it) instead of a huge
+-- jump at the top, so the early zones stay worth digging and the Abyss is a step up, not a
+-- sudden spike.
 ArtifactData.Rarities = {
-	{Name = "Common",       Code = "C",  Income = 5,         Chance = 60,    Color = Color3.fromRGB(190, 190, 190)},
-	{Name = "Uncommon",     Code = "U",  Income = 20,        Chance = 25,    Color = Color3.fromRGB(85, 200, 85)},
-	{Name = "Rare",         Code = "R",  Income = 80,        Chance = 10,    Color = Color3.fromRGB(60, 140, 255)},
-	{Name = "Epic",         Code = "E",  Income = 400,       Chance = 3.5,   Color = Color3.fromRGB(170, 80, 255)},
-	{Name = "Legendary",    Code = "L",  Income = 2000,      Chance = 1.1,   Color = Color3.fromRGB(255, 170, 0)},
-	{Name = "Mythic",       Code = "M",  Income = 12000,     Chance = 0.3,   Color = Color3.fromRGB(255, 60, 90)},
-	{Name = "Divine",       Code = "D",  Income = 60000,     Chance = 0.07,  Color = Color3.fromRGB(255, 240, 150)},
-	{Name = "Celestial",    Code = "CE", Income = 300000,    Chance = 0.025, Color = Color3.fromRGB(120, 255, 255)},
-	{Name = "Transcendent", Code = "T",  Income = 1500000,   Chance = 0.005, Color = Color3.fromRGB(255, 255, 255)},
+	{Name = "Common",       Code = "C",  Income = 10,        Chance = 60,    Color = Color3.fromRGB(190, 190, 190)},
+	{Name = "Uncommon",     Code = "U",  Income = 35,        Chance = 25,    Color = Color3.fromRGB(85, 200, 85)},
+	{Name = "Rare",         Code = "R",  Income = 120,       Chance = 10,    Color = Color3.fromRGB(60, 140, 255)},
+	{Name = "Epic",         Code = "E",  Income = 450,       Chance = 3.5,   Color = Color3.fromRGB(170, 80, 255)},
+	{Name = "Legendary",    Code = "L",  Income = 1500,      Chance = 1.1,   Color = Color3.fromRGB(255, 170, 0)},
+	{Name = "Mythic",       Code = "M",  Income = 5000,      Chance = 0.3,   Color = Color3.fromRGB(255, 60, 90)},
+	{Name = "Divine",       Code = "D",  Income = 20000,     Chance = 0.07,  Color = Color3.fromRGB(255, 240, 150)},
+	{Name = "Celestial",    Code = "CE", Income = 60000,     Chance = 0.025, Color = Color3.fromRGB(120, 255, 255)},
+	{Name = "Transcendent", Code = "T",  Income = 150000,    Chance = 0.005, Color = Color3.fromRGB(255, 255, 255)},
 }
 
 -- Sell value = income per second x this number
@@ -634,6 +637,289 @@ install(game:GetService("ReplicatedStorage"), "ArtifactImages", "ModuleScript", 
 return {
 }
 ]=])
+install(game:GetService("ReplicatedStorage"), "ArtifactModels", "ModuleScript", [=[
+-- ArtifactModels (ModuleScript in ReplicatedStorage)
+-- Turns a meme artifact into a real 3D museum object instead of a flat card. Each artifact
+-- gets one of five forms (picked from words in its name, otherwise from its id):
+--   Painting  an old gold frame with the meme on the canvas and a name plate
+--   Statue    a marble (or gold, for the rarest) figure on a plinth with the meme as its face
+--   Coin      a big bronze / silver / gold coin with the meme stamped on both faces
+--   Tablet    a carved stone tablet with the meme engraved into it
+--   Crystal   a rough geode with glowing crystals in the rarity's color
+-- Used for finds lying in the crater (BuriedPainting) and for the displays in the museum
+-- (MuseumClient puts them on the pedestals, under glass).
+--
+-- ArtifactModels.build(artifact) -> Model. The object stands upright, centered on the
+-- origin, its front facing -Z. PrimaryPart "Core" is the center; attachments GripLeft (+X)
+-- and GripRight (-X) are where hands hold it; attribute HalfHeight = half its height.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local ArtifactIcons = require(ReplicatedStorage:WaitForChild("ArtifactIcons"))
+local ArtifactImages = require(ReplicatedStorage:WaitForChild("ArtifactImages"))
+
+local ArtifactModels = {}
+local rgb = Color3.fromRGB
+
+local GOLD = rgb(214, 170, 76)
+local SILVER = rgb(196, 202, 214)
+local BRONZE = rgb(176, 112, 62)
+local MARBLE = rgb(236, 234, 228)
+local STONE = rgb(128, 118, 110)
+
+local KEYWORDS = {
+	{"Coin", {"coin", "token", "badge", "medal", "coupon", "pin", "ring", "cassette", "disc", "plaque", "button"}},
+	{"Statue", {"statue", "idol", "mannequin", "bust", "throne", "trophy", "crown", "mask", "boss", "sigma", "thumb", "figure", "head", "king", "queen", "cat", "doge"}},
+	{"Tablet", {"tablet", "stone", "fossil", "scroll", "codex", "rune", "relic", "sign", "plank", "keyboard", "meteor", "slab", "ruin"}},
+	{"Crystal", {"crystal", "prism", "gem", "orb", "eye", "nebula", "aurora", "star", "moon", "constellation", "aura", "diamond", "core"}},
+	{"Painting", {"portrait", "selfie", "painting", "poster", "panel", "comic", "photo", "picture", "image", "screen", "doodle", "banner", "card", "frame"}},
+}
+local FALLBACK = {"Painting", "Painting", "Painting", "Statue", "Statue", "Coin", "Tablet", "Tablet", "Crystal"}
+
+-- which form an artifact takes (always the same for the same artifact)
+function ArtifactModels.formOf(artifact)
+	local name = string.lower(artifact.Name or "")
+	for _, entry in ipairs(KEYWORDS) do
+		for _, word in ipairs(entry[2]) do
+			if string.find(name, word, 1, true) then return entry[1] end
+		end
+	end
+	local hash = 0
+	for i = 1, #(artifact.Id or "") do
+		hash = (hash * 31 + string.byte(artifact.Id, i)) % 100003
+	end
+	return FALLBACK[hash % #FALLBACK + 1]
+end
+
+---------------------------------------------------------------------
+-- HELPERS
+---------------------------------------------------------------------
+local function part(model, name, size, cf, color, material, props)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Size = size
+	p.CFrame = cf
+	p.Color = color
+	p.Material = material or Enum.Material.SmoothPlastic
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	for k, v in pairs(props or {}) do p[k] = v end
+	p.Parent = model
+	return p
+end
+
+local function cylinder(model, name, diameter, length, cf, color, material, props)
+	local p = part(model, name, Vector3.new(length, diameter, diameter), cf, color, material, props)
+	p.Shape = Enum.PartType.Cylinder
+	return p
+end
+
+-- the meme (uploaded picture, or its emoji) on a face of a part
+local function art(target, artifact, face, opts)
+	opts = opts or {}
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = face or Enum.NormalId.Front
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 60
+	gui.LightInfluence = opts.Light or 0.5
+	gui.Parent = target
+	local holder = Instance.new("Frame")
+	holder.Size = UDim2.fromScale(1, 1)
+	holder.BorderSizePixel = 0
+	holder.BackgroundColor3 = opts.Background or Color3.new(0, 0, 0)
+	holder.BackgroundTransparency = opts.Background and 0 or 1
+	holder.Parent = gui
+	if opts.Round then
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.5, 0)
+		corner.Parent = holder
+		holder.ClipsDescendants = true
+	end
+	if opts.Gradient then
+		local grad = Instance.new("UIGradient")
+		grad.Color = ColorSequence.new(opts.Gradient:Lerp(Color3.new(1, 1, 1), 0.35), opts.Gradient:Lerp(Color3.new(0, 0, 0), 0.45))
+		grad.Rotation = 60
+		grad.Parent = holder
+	end
+	local image = ArtifactImages[artifact.Id]
+	if image and not opts.EmojiOnly then
+		local picture = Instance.new("ImageLabel")
+		picture.BackgroundTransparency = 1
+		picture.Size = UDim2.fromScale(1, 1)
+		picture.Image = image
+		picture.ScaleType = Enum.ScaleType.Crop
+		picture.ImageTransparency = opts.Engraved and 0.35 or 0
+		picture.Parent = holder
+	else
+		local emoji = Instance.new("TextLabel")
+		emoji.BackgroundTransparency = 1
+		emoji.Size = UDim2.fromScale(opts.EmojiSize or 0.7, opts.EmojiSize or 0.7)
+		emoji.Position = UDim2.fromScale(0.5, opts.EmojiY or 0.5)
+		emoji.AnchorPoint = Vector2.new(0.5, 0.5)
+		emoji.Text = ArtifactIcons[artifact.Id] or "🗿"
+		emoji.TextScaled = true
+		emoji.Font = Enum.Font.GothamBold
+		if opts.Engraved then
+			-- carved into the stone: a dark, slightly see-through silhouette
+			emoji.TextColor3 = rgb(40, 34, 30)
+			emoji.TextTransparency = 0.25
+		end
+		emoji.Parent = holder
+	end
+	return holder
+end
+
+local function plate(parent, artifact)
+	local label = Instance.new("TextLabel")
+	label.BackgroundColor3 = rgb(30, 26, 40)
+	label.BackgroundTransparency = 0.25
+	label.Size = UDim2.fromScale(0.86, 0.16)
+	label.Position = UDim2.fromScale(0.5, 0.95)
+	label.AnchorPoint = Vector2.new(0.5, 1)
+	label.Text = string.upper(artifact.Name)
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBlack
+	label.TextColor3 = rgb(255, 232, 170)
+	label.Parent = parent
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.3, 0)
+	corner.Parent = label
+end
+
+---------------------------------------------------------------------
+-- THE FIVE FORMS (each returns its outer size)
+---------------------------------------------------------------------
+local FORMS = {}
+
+function FORMS.Painting(model, artifact, color)
+	local W, H, BAR = 4.4, 3.4, 0.45
+	local canvas = part(model, "Canvas", Vector3.new(W - BAR * 2 + 0.1, H - BAR * 2 + 0.1, 0.12), CFrame.new(), rgb(40, 34, 30))
+	plate(art(canvas, artifact, Enum.NormalId.Front, {Gradient = color, Background = color, EmojiY = 0.44, EmojiSize = 0.62}), artifact)
+	part(model, "Backboard", Vector3.new(W - 0.3, H - 0.3, 0.14), CFrame.new(0, 0, 0.16), rgb(84, 58, 40), Enum.Material.Wood)
+	for _, sy in ipairs({-1, 1}) do
+		part(model, "Frame", Vector3.new(W, BAR, 0.5), CFrame.new(0, sy * (H - BAR) / 2, 0), GOLD, Enum.Material.Metal, {Reflectance = 0.05})
+		part(model, "FrameLip", Vector3.new(W - BAR * 2, 0.1, 0.1), CFrame.new(0, sy * (H / 2 - BAR - 0.02), -0.2), color, Enum.Material.Neon)
+	end
+	for _, sx in ipairs({-1, 1}) do
+		part(model, "Frame", Vector3.new(BAR, H - BAR * 2, 0.5), CFrame.new(sx * (W - BAR) / 2, 0, 0), GOLD, Enum.Material.Metal, {Reflectance = 0.05})
+		part(model, "FrameLip", Vector3.new(0.1, H - BAR * 2, 0.1), CFrame.new(sx * (W / 2 - BAR - 0.02), 0, -0.2), color, Enum.Material.Neon)
+		for _, sy in ipairs({-1, 1}) do
+			part(model, "Corner", Vector3.one * 0.72, CFrame.new(sx * (W / 2 - BAR / 2), sy * (H / 2 - BAR / 2), -0.08), GOLD:Lerp(Color3.new(1, 1, 1), 0.15),
+				Enum.Material.Metal, {Shape = Enum.PartType.Ball})
+		end
+	end
+	part(model, "Crest", Vector3.new(0.9, 0.7, 0.35), CFrame.new(0, H / 2 - 0.05, -0.12), color, Enum.Material.Neon)
+	return Vector3.new(W, H, 0.6)
+end
+
+function FORMS.Statue(model, artifact, color, rarityIndex)
+	local stone = rarityIndex >= 7 and GOLD or (rarityIndex >= 5 and SILVER or MARBLE)
+	local material = rarityIndex >= 5 and Enum.Material.Metal or Enum.Material.Marble
+	-- plinth, robed body, shoulders, arms, neck and a big block head with the meme as its face
+	part(model, "Plinth", Vector3.new(2.8, 0.6, 2.2), CFrame.new(0, -2.2, 0), MARBLE:Lerp(STONE, 0.3), Enum.Material.Marble)
+	part(model, "PlinthTrim", Vector3.new(2.9, 0.14, 2.3), CFrame.new(0, -1.86, 0), color, Enum.Material.Neon)
+	part(model, "Robe", Vector3.new(1.9, 1.9, 1.2), CFrame.new(0, -0.95, 0), stone, material)
+	part(model, "Chest", Vector3.new(1.7, 0.9, 1), CFrame.new(0, 0.45, 0), stone, material)
+	for _, sx in ipairs({-1, 1}) do
+		part(model, "Shoulder", Vector3.new(0.8, 0.8, 0.8), CFrame.new(sx * 1.05, 0.55, 0), stone, material, {Shape = Enum.PartType.Ball})
+		part(model, "Arm", Vector3.new(0.5, 1.5, 0.55), CFrame.new(sx * 1.1, -0.35, -0.1) * CFrame.Angles(math.rad(-12), 0, sx * math.rad(-6)), stone, material)
+	end
+	part(model, "Sash", Vector3.new(0.35, 2.3, 1.25), CFrame.new(0.1, -0.2, 0) * CFrame.Angles(0, 0, math.rad(35)), color, Enum.Material.SmoothPlastic)
+	part(model, "Neck", Vector3.new(0.6, 0.35, 0.6), CFrame.new(0, 1.05, 0), stone, material)
+	local head = part(model, "Head", Vector3.new(1.5, 1.5, 1.4), CFrame.new(0, 1.9, 0), stone, material)
+	art(head, artifact, Enum.NormalId.Front, {EmojiSize = 0.9, Light = 0.8})
+	return Vector3.new(2.9, 5, 2.3)
+end
+
+function FORMS.Coin(model, artifact, color, rarityIndex)
+	local metal = rarityIndex >= 5 and GOLD or (rarityIndex >= 3 and SILVER or BRONZE)
+	if rarityIndex >= 8 then metal = color:Lerp(Color3.new(1, 1, 1), 0.4) end
+	local D, T = 3.6, 0.45
+	local face = CFrame.Angles(0, math.rad(90), 0) -- the cylinder's round faces point along Z
+	local coin = cylinder(model, "Coin", D, T, face, metal, Enum.Material.Metal, {Reflectance = 0.15})
+	cylinder(model, "CoinRim", D + 0.2, T * 0.7, face, metal:Lerp(Color3.new(0, 0, 0), 0.25), Enum.Material.Metal)
+	cylinder(model, "CoinGlow", D - 0.5, T + 0.04, face, color, Enum.Material.Neon, {Transparency = 0.6})
+	-- a stamped face on both sides (Right = local +X of the cylinder = world -Z here)
+	for _, normal in ipairs({Enum.NormalId.Right, Enum.NormalId.Left}) do
+		art(coin, artifact, normal, {Round = true, Background = metal:Lerp(Color3.new(1, 1, 1), 0.1), EmojiSize = 0.62, Light = 0.8})
+	end
+	-- a little cradle it stands in
+	part(model, "Cradle", Vector3.new(2.2, 0.35, 1), CFrame.new(0, -D / 2 - 0.05, 0), rgb(70, 50, 36), Enum.Material.Wood)
+	return Vector3.new(D + 0.2, D + 0.4, 1)
+end
+
+function FORMS.Tablet(model, artifact, color, rarityIndex)
+	local W, H, T = 3.2, 3.6, 0.6
+	local slab = part(model, "Slab", Vector3.new(W, H - W / 2, T), CFrame.new(0, -W / 4, 0), STONE, Enum.Material.Slate)
+	-- rounded top
+	cylinder(model, "SlabTop", W, T, CFrame.new(0, H / 2 - W / 2, 0) * CFrame.Angles(0, math.rad(90), 0), STONE, Enum.Material.Slate)
+	-- a chipped corner and a couple of cracks
+	part(model, "Chip", Vector3.new(0.9, 0.9, T + 0.1), CFrame.new(W / 2 - 0.1, -H / 2 + 0.3, 0) * CFrame.Angles(0, 0, math.rad(45)), STONE:Lerp(Color3.new(0, 0, 0), 0.2), Enum.Material.Slate)
+	part(model, "Crack", Vector3.new(0.06, 1.2, 0.05), CFrame.new(-0.9, -0.6, -T / 2 - 0.01) * CFrame.Angles(0, 0, math.rad(20)), rgb(50, 44, 40))
+	art(slab, artifact, Enum.NormalId.Front, {Engraved = true, EmojiSize = 0.8, Light = 1})
+	-- glowing runes carved around the edge for the rare ones
+	local glow = rarityIndex >= 4 and color or rgb(90, 80, 72)
+	part(model, "RuneLine", Vector3.new(W - 0.5, 0.08, 0.05), CFrame.new(0, H / 2 - W / 2 + 0.2, -T / 2 - 0.01), glow, rarityIndex >= 4 and Enum.Material.Neon or Enum.Material.Slate)
+	part(model, "RuneLine", Vector3.new(W - 0.5, 0.08, 0.05), CFrame.new(0, -H / 2 + 0.3, -T / 2 - 0.01), glow, rarityIndex >= 4 and Enum.Material.Neon or Enum.Material.Slate)
+	part(model, "Base", Vector3.new(W + 0.4, 0.3, 1.4), CFrame.new(0, -H / 2 - 0.05, 0), STONE:Lerp(Color3.new(0, 0, 0), 0.3), Enum.Material.Slate)
+	return Vector3.new(W + 0.4, H + 0.3, 1.4)
+end
+
+function FORMS.Crystal(model, artifact, color)
+	-- a rough rock with a cluster of glowing shards growing out of it
+	local rock = part(model, "Rock", Vector3.new(3, 1.6, 2.2), CFrame.new(0, -1.3, 0), STONE, Enum.Material.Slate)
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Sphere
+	mesh.Parent = rock
+	local shards = {{0, 0.3, 0, 0.9, 2.8, 0}, {-0.8, -0.1, 0.2, 0.6, 1.8, 25}, {0.8, -0.2, -0.1, 0.65, 2, -22}, {0.3, -0.4, 0.6, 0.5, 1.3, -10}, {-0.4, -0.4, -0.6, 0.45, 1.2, 14}}
+	for i, s in ipairs(shards) do
+		local cf = CFrame.new(s[1], s[2], s[3]) * CFrame.Angles(math.rad(s[6] * 0.4), math.rad(45), math.rad(s[6]))
+		part(model, "Shard", Vector3.new(s[4], s[5], s[4]), cf, color:Lerp(Color3.new(1, 1, 1), 0.25), Enum.Material.Glass, {Transparency = 0.25, Reflectance = 0.3})
+		part(model, "ShardCore", Vector3.new(s[4] * 0.45, s[5] * 0.85, s[4] * 0.45), cf, color, Enum.Material.Neon)
+		if i == 1 then
+			local light = Instance.new("PointLight")
+			light.Color = color
+			light.Range = 8
+			light.Brightness = 1
+			light.Parent = model:FindFirstChild("ShardCore")
+		end
+	end
+	-- the meme on a small plaque on the rock's front
+	local tag = part(model, "Plaque", Vector3.new(1.3, 0.8, 0.12), CFrame.new(0, -1.25, -1.05) * CFrame.Angles(math.rad(-15), 0, 0), GOLD, Enum.Material.Metal)
+	art(tag, artifact, Enum.NormalId.Front, {Background = rgb(30, 26, 40), EmojiSize = 0.8})
+	return Vector3.new(3, 4.4, 2.2)
+end
+
+---------------------------------------------------------------------
+function ArtifactModels.build(artifact)
+	local rarity = ArtifactData.GetRarity(artifact.Rarity)
+	local color = rarity and rarity.Color or rgb(200, 200, 200)
+	local rarityIndex = ArtifactData.GetRarityIndex(artifact.Rarity)
+	local form = ArtifactModels.formOf(artifact)
+	local model = Instance.new("Model")
+	model.Name = "Artifact_" .. artifact.Id
+	local size = FORMS[form](model, artifact, color, rarityIndex)
+
+	local core = part(model, "Core", Vector3.one * 0.5, CFrame.new(), color, Enum.Material.SmoothPlastic, {Transparency = 1})
+	model.PrimaryPart = core
+	for name, x in pairs({GripLeft = size.X / 2, GripRight = -size.X / 2}) do
+		local a = Instance.new("Attachment")
+		a.Name = name
+		a.Position = Vector3.new(x, -0.2, 0)
+		a.Parent = core
+	end
+	model:SetAttribute("Form", form)
+	model:SetAttribute("HalfHeight", size.Y / 2)
+	model:SetAttribute("Width", math.max(size.X, size.Z))
+	return model
+end
+
+return ArtifactModels
+]=])
 install(game:GetService("ReplicatedStorage"), "ArtifactsWorlds", "ModuleScript", [=[
 -- ArtifactsWorlds (ModuleScript in ReplicatedStorage)
 -- The memes for worlds 2-9. ArtifactData merges these in: each world has one area (22-29)
@@ -971,8 +1257,19 @@ local ZONE_INFO = {
 	{Name = "Deep Zone", Rarities = DEEP},
 	{Name = "The Abyss", Rarities = ABYSS},
 }
+-- World prices after Neon Sakura Grove (world 2) follow a steep curve so nobody rushes
+-- through every world: Cost = BaseCost x Multiplier ^ (world number - 3)
+-- (world 3 = $500M, 4 = $2.5B, 5 = $12.5B, 6 = $62.5B, 7 = $312.5B, 8 = $1.56T, 9 = $7.8T)
+GameConfig.WorldPriceCurve = {BaseCost = 500e6, Multiplier = 5, FromWorld = 3}
+local function worldPrice(id, info)
+	local curve = GameConfig.WorldPriceCurve
+	if id < curve.FromWorld then return info.Price end
+	return curve.BaseCost * curve.Multiplier ^ (id - curve.FromWorld)
+end
+
 for i, info in ipairs(WorldsData.Worlds) do
 	local id = i + 1
+	local price = worldPrice(id, info)
 	local area = 21 + i -- this world's memes (ArtifactData areas 22-29)
 	local zoneList = {}
 	for z, material in ipairs(info.Zones) do
@@ -984,7 +1281,7 @@ for i, info in ipairs(WorldsData.Worlds) do
 		local tier = WorldsData.ShovelTiers[t]
 		table.insert(shovels, {
 			Id = entry.Id or (entry[1]:gsub("[^%w]", "")), Name = entry[1], Description = entry[2],
-			Price = tier.PriceFactor * info.Price, MaxZone = tier.MaxZone,
+			Price = tier.PriceFactor * price, MaxZone = tier.MaxZone,
 			Power = tier.Power, FindChance = tier.FindChance, Luck = tier.Luck, Cooldown = tier.Cooldown,
 			Color = t % 2 == 1 and info.Look.Main or info.Look.Second, Material = "SmoothPlastic",
 			-- PickaxeModels builds these from the world's colors (the tier picks the head shape)
@@ -992,7 +1289,7 @@ for i, info in ipairs(WorldsData.Worlds) do
 		})
 	end
 	table.insert(GameConfig.Worlds, {
-		Id = id, Name = info.Name, Enabled = true, Price = info.Price, Theme = info.Theme, Tagline = info.Tagline,
+		Id = id, Name = info.Name, Enabled = true, Price = price, Theme = info.Theme, Tagline = info.Tagline,
 		-- on a huge ring far from World 1 and from each other (~9000 studs apart), so no
 		-- island can see another one
 		Origin = Vector3.new(math.cos(math.rad(i * 45)) * 12000, 0, math.sin(math.rad(i * 45)) * 12000),
@@ -1005,7 +1302,7 @@ for i, info in ipairs(WorldsData.Worlds) do
 	})
 end
 
-GameConfig.BedrockThickness = 8
+GameConfig.BedrockThickness = 16 -- the indestructible floor under every pit
 -- rock strata in the pit: a layer this thick every Gap studs, reaching this far into the walls
 local STRATA = {First = 14, Gap = 18, Thickness = 4, IntoWall = 8}
 
@@ -1248,6 +1545,18 @@ end
 
 local DIAMOND = CFrame.Angles(math.rad(45), 0, 0) -- a cube seen along X becomes a diamond
 
+-- particle trails by tier (off the tips of the head)
+local TRAILS = {
+	Sparks = {Name = "Sparks", Colors = {Color3.new(1, 1, 1), NEON_EDGE}, Rate = 6, Light = 0.85, Size = 0.12,
+		Lifetime = NumberRange.new(0.25, 0.45), Speed = NumberRange.new(0.2, 0.8)},
+	Electric = {Name = "Electric", Colors = {Color3.new(1, 1, 1), rgb(140, 220, 255), rgb(60, 120, 255)}, Rate = 10, Light = 1, Size = 0.1,
+		Lifetime = NumberRange.new(0.12, 0.25), Speed = NumberRange.new(1.5, 3.5)},
+	Fire = {Name = "Fire", Colors = {rgb(255, 240, 150), rgb(255, 150, 40), rgb(220, 40, 20)}, Rate = 14, Light = 0.9, Size = 0.28, EndSize = 0.05,
+		Lifetime = NumberRange.new(0.3, 0.55), Speed = NumberRange.new(0.5, 1.5), Acceleration = Vector3.new(0, 6, 0), RotSpeed = NumberRange.new(-120, 120)},
+	Galaxy = {Name = "Galaxy", Colors = {rgb(255, 140, 230), rgb(160, 90, 255), rgb(70, 110, 255)}, Rate = 14, Light = 0.9, Size = 0.24, EndSize = 0.08,
+		Lifetime = NumberRange.new(0.6, 1), Speed = NumberRange.new(0.2, 0.6), RotSpeed = NumberRange.new(-60, 60)},
+}
+
 -- a diamond frame with a glowing gem poking through both faces
 local function gemNode(tool, name, z, size, look, glowing)
 	local frame = newPart(tool, name, Vector3.new(size * 0.8, size, size), CFrame.new(0, 0, z) * DIAMOND, look.Frame)
@@ -1293,6 +1602,12 @@ local function arm(tool, H, side, look, opts)
 		-- cyan neon cutting edge along the outside of the arm
 		local outer = R + ((rows - 1) / 2) * size * 0.85
 		newPart(tool, "BladeEdge", Vector3.new(size * 0.7, size * 0.9, 0.09), CFrame.new(center + radial * (outer + size / 2 + 0.02)) * rot, NEON_EDGE, Enum.Material.Neon)
+		-- jagged energy blade: neon shards along the edge, alternating long and short
+		if opts.Jagged then
+			local len = (i % 2 == 0) and size * 1.1 or size * 0.55
+			newPart(tool, "EnergySpike", Vector3.new(size * 0.22, size * 0.22, len),
+				CFrame.new(center + radial * (outer + size / 2 + len / 2 - 0.05)) * rot * CFrame.Angles(0, 0, math.rad(45)), opts.Jagged, Enum.Material.Neon)
+		end
 		-- spikes sticking out of the outer row
 		if opts.Spikes and i % 2 == 0 then
 			local pos = center + radial * (R + size * 1.2)
@@ -1390,9 +1705,14 @@ return function(def)
 	local gem = newPart(tool, "HeadGem", Vector3.new(0.86, 0.5, 0.5), CFrame.new(H) * DIAMOND, look.Gem, glowing and Enum.Material.Neon or Enum.Material.Glass)
 	newPart(tool, "Crown", Vector3.new(0.4, 0.42, 0.42), CFrame.new(H + Vector3.new(0, 0, -0.78)) * DIAMOND, look.Edge)
 	local style = look.Head
-	local arm = function(...)
-		local parts, tip = arm(...)
-		if (select(4, ...)).Frame then -- not the glowing core inside a crystal head
+	local jagged = tier >= 5 and (tier >= 8 and look.Gem or NEON_EDGE) or nil
+	local arm = function(t, h, side, lk, opts)
+		if lk.Frame and jagged then
+			opts = table.clone(opts)
+			opts.Jagged = jagged
+		end
+		local parts, tip = arm(t, h, side, lk, opts)
+		if lk.Frame then -- not the glowing core inside a crystal head, or the second blade
 			table.insert(tips, tip)
 		end
 		return parts, tip
@@ -1422,6 +1742,37 @@ return function(def)
 	-- side plates that hold the head on the shaft
 	for _, s in ipairs({-1, 1}) do
 		newPart(tool, "HeadBracket", Vector3.new(0.5, 0.3, 0.7), CFrame.new(H + Vector3.new(0, s * 0.42, 0.55)), look.Handle)
+	end
+
+	-- DUAL BLADE (tier 7+): a second, thinner blade of pure energy on each side of the head
+	if tier >= 7 then
+		for _, sx in ipairs({-1, 1}) do
+			local offset = H + Vector3.new(sx * 0.5, 0, 0.1)
+			for _, s in ipairs({-1, 1}) do
+				arm(tool, offset, s, {Main = look.Gem, Edge = NEON_EDGE}, {Radius = 2.1, Reach = 1, Count = 6, Rows = 1, Size = 0.32, Material = Enum.Material.Neon})
+			end
+		end
+	end
+
+	-- ROTATING CORE (tier 3+): glowing bits circling the head's gem, faster on better pickaxes
+	if tier >= 3 then
+		local n = tier >= 6 and 6 or 4
+		for i = 1, n do
+			local a = math.pi * 2 * i / n
+			local bit = newPart(tool, "CoreBit", Vector3.new(0.18, 0.18, 0.18), CFrame.new(H + Vector3.new(math.cos(a) * 0.95, math.sin(a) * 0.95, 0)) * DIAMOND,
+				i % 2 == 0 and look.Gem or NEON_EDGE, Enum.Material.Neon)
+			bit:SetAttribute("OrbitCenter", H)
+			bit:SetAttribute("OrbitSpeed", 2 + tier * 0.4)
+		end
+		-- a spinning ring around the socket
+		local ringCount = 10
+		for i = 1, ringCount do
+			local a = math.pi * 2 * i / ringCount
+			local seg = newPart(tool, "CoreRing", Vector3.new(0.08, 0.34, 0.08), CFrame.new(H + Vector3.new(math.cos(a) * 1.2, math.sin(a) * 1.2, 0)) * CFrame.Angles(0, 0, a),
+				NEON_EDGE, Enum.Material.Neon)
+			seg:SetAttribute("OrbitCenter", H)
+			seg:SetAttribute("OrbitSpeed", -(1.2 + tier * 0.2))
+		end
 	end
 
 	-- ORBITING CUBES around the handle below the head (tier 6+), spun by the client
@@ -1454,19 +1805,49 @@ return function(def)
 
 	-- SPARK TRAIL: cyan sparks stream off both tips; they're left behind in the air while the
 	-- pickaxe moves, so every swing draws a glittering arc (denser on better pickaxes)
+	-- the trail's style depends on the tier: sparks -> electricity -> fire -> galaxy
+	local trail = TRAILS[tier >= 8 and "Galaxy" or (tier >= 6 and "Fire" or (tier >= 4 and "Electric" or "Sparks"))]
+	tool:SetAttribute("TrailStyle", trail.Name)
+	tool:SetAttribute("TrailColorA", trail.Colors[1])
+	tool:SetAttribute("TrailColorB", trail.Colors[#trail.Colors])
 	for _, tip in ipairs(tips) do
 		local sparks = Instance.new("ParticleEmitter")
 		sparks.Name = "TipSparks"
-		sparks.Rate = 6 + tier * 2
-		sparks.LightEmission = 0.85
-		sparks.Color = ColorSequence.new(Color3.new(1, 1, 1), NEON_EDGE)
-		sparks.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.12), NumberSequenceKeypoint.new(1, 0)})
+		sparks.Rate = trail.Rate + tier * 2
+		sparks.LightEmission = trail.Light
+		local keys = {}
+		for k, c in ipairs(trail.Colors) do
+			table.insert(keys, ColorSequenceKeypoint.new((k - 1) / (#trail.Colors - 1), c))
+		end
+		sparks.Color = ColorSequence.new(keys)
+		sparks.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, trail.Size), NumberSequenceKeypoint.new(1, trail.EndSize or 0)})
 		sparks.Transparency = NumberSequence.new(0, 1)
-		sparks.Lifetime = NumberRange.new(0.25, 0.45)
-		sparks.Speed = NumberRange.new(0.2, 0.8)
+		sparks.Lifetime = trail.Lifetime
+		sparks.Speed = trail.Speed
 		sparks.SpreadAngle = Vector2.new(180, 180)
+		sparks.Acceleration = trail.Acceleration or Vector3.zero
+		sparks.RotSpeed = trail.RotSpeed or NumberRange.new(0)
 		sparks.Drag = 3
 		sparks.Parent = tip
+		if trail.Name == "Electric" then
+			-- crackling: little bright zaps flicker around the tip
+			local zap = sparks:Clone()
+			zap.Name = "TipZaps"
+			zap.Rate = 12
+			zap.Size = NumberSequence.new(0.22, 0.05)
+			zap.Lifetime = NumberRange.new(0.05, 0.12)
+			zap.Speed = NumberRange.new(4, 8)
+			zap.Parent = tip
+		elseif trail.Name == "Galaxy" then
+			-- tiny white stars twinkling in the purple dust
+			local stars = sparks:Clone()
+			stars.Name = "TipStars"
+			stars.Rate = 8
+			stars.Color = ColorSequence.new(Color3.new(1, 1, 1))
+			stars.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.5, 0.14), NumberSequenceKeypoint.new(1, 0)})
+			stars.Lifetime = NumberRange.new(0.6, 1)
+			stars.Parent = tip
+		end
 	end
 
 	-- VFX: gem light and sparkles that grow with the tier
@@ -2184,6 +2565,30 @@ end
 
 return VehicleModels
 ]=])
+install(game:GetService("ReplicatedStorage"), "WorldGimmicks", "ModuleScript", [=[
+-- WorldGimmicks (ModuleScript in ReplicatedStorage)
+-- Every world from World 3 on has its own twist, so the later worlds never feel the same.
+-- Module = which Gimmick_<Module> script in ServerScriptService runs it (WorldGimmickManager
+-- starts it and tells it when players come and go); the rest is shown to players by
+-- WorldGimmickClient when they arrive.
+
+return {
+	[3] = {Module = "LowGravity", Icon = "🌌", Title = "LOW GRAVITY",
+		Text = "Galaxy Drift barely holds you down. Jump way higher and float down into the pit!"},
+	[4] = {Module = "Blizzard", Icon = "❄️", Title = "BLIZZARDS",
+		Text = "Every few minutes a blizzard rolls in. The storm stirs up relics: 2x luck while it lasts!"},
+	[5] = {Module = "GoldRush", Icon = "🪙", Title = "GOLD RUSH",
+		Text = "Golden sandstorms sweep the dunes. During a Gold Rush you find things 3x as often!"},
+	[6] = {Module = "Oxygen", Icon = "🫧", Title = "LOW OXYGEN",
+		Text = "The deep pit is flooded with toxic fumes. Watch your air meter and refill it at the bubbling air vents!"},
+	[7] = {Module = "Merchant", Icon = "👽", Title = "ALIEN MERCHANT",
+		Text = "A candy-loving alien wanders the rim selling Sugar Rush: dig 1.5x faster for 3 minutes!"},
+	[8] = {Module = "Eruption", Icon = "🌋", Title = "ERUPTIONS",
+		Text = "The volcano erupts every few minutes, raining lava bombs. Grab the glowing Forge Nuggets for cash!"},
+	[9] = {Module = "GlitchSurge", Icon = "👾", Title = "GLITCH SURGES",
+		Text = "Reality glitches out every few minutes: swing 2x faster with 1.5x luck during a Glitch Surge!"},
+}
+]=])
 install(game:GetService("ReplicatedStorage"), "WorldsData", "ModuleScript", [=[
 -- WorldsData (ModuleScript in ReplicatedStorage)
 -- The 8 worlds you travel to through the World Gate (worlds 2-9). GameConfig turns each entry
@@ -2834,145 +3239,52 @@ return Architecture
 ]=])
 install(game:GetService("ServerScriptService"), "BuriedPainting", "ModuleScript", [=[
 -- BuriedPainting (ModuleScript in ServerScriptService)
--- Every meme you dig up is an ancient framed painting: a crusty gold frame with a glowing
--- trim in the meme's rarity color, the meme on the canvas, and clumps of dirt stuck to it.
--- DigManager lays it in the fresh crater, half sunk into the ground. Its ProximityPrompt
--- lets the finder pull it out (DigClient plays the pull-out animation for everyone).
+-- A dug-up find lying in the crater: the artifact's real 3D object (painting, statue, coin,
+-- stone tablet or crystal, see ArtifactModels) with crumbs of dirt stuck to its front and a
+-- soft glow in its rarity color. DigManager lays it face-up in the fresh crater, half sunk
+-- into the soil; its ProximityPrompt lets the finder pull it out (FindPullClient animates it).
 --
--- Model layout (for the animation): PrimaryPart "Canvas" is the painting's center; the
--- picture faces the Canvas's -Z; attachments GripLeft (+X edge) and GripRight (-X edge) are
--- where the hands hold it; parts named "Dirt" fall off when it's pulled out.
+-- Model layout (for the animation): PrimaryPart "Core" is the center; the front faces the
+-- Core's -Z; attachments GripLeft (+X) and GripRight (-X) are where the hands hold it; parts
+-- named "Dirt" fall off when it's pulled out.
+-- Usage: BuriedPainting(artifact, rarityColor, cframe, rng) -> Model (not parented)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ArtifactIcons = require(ReplicatedStorage:WaitForChild("ArtifactIcons"))
-local ArtifactImages = require(ReplicatedStorage:WaitForChild("ArtifactImages"))
+local ArtifactModels = require(ReplicatedStorage:WaitForChild("ArtifactModels"))
 
 local rgb = Color3.fromRGB
-local W, H = 4.4, 3.4 -- outer size of the frame
-local BAR = 0.45       -- frame bar width
-local GOLD = rgb(196, 152, 76)
 local DIRT = {rgb(122, 88, 60), rgb(98, 70, 48), rgb(140, 104, 72)}
 
-local function part(model, name, size, cf, color, material, props)
-	local p = Instance.new("Part")
-	p.Name = name
-	p.Size = size
-	p.CFrame = cf
-	p.Color = color
-	p.Material = material or Enum.Material.SmoothPlastic
-	p.Anchored = true
-	p.CanCollide = false
-	p.CanQuery = false
-	p.CanTouch = false
-	p.TopSurface = Enum.SurfaceType.Smooth
-	p.BottomSurface = Enum.SurfaceType.Smooth
-	for k, v in pairs(props or {}) do p[k] = v end
-	p.Parent = model
-	return p
-end
-
-local function canvasArt(canvas, artifact, color)
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Front
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 70
-	gui.LightInfluence = 0.4
-	gui.Parent = canvas
-
-	local bg = Instance.new("Frame")
-	bg.Size = UDim2.fromScale(1, 1)
-	bg.BorderSizePixel = 0
-	bg.BackgroundColor3 = color
-	bg.Parent = gui
-	local grad = Instance.new("UIGradient")
-	grad.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.35), color:Lerp(Color3.new(0, 0, 0), 0.45))
-	grad.Rotation = 60
-	grad.Parent = bg
-
-	local image = ArtifactImages[artifact.Id]
-	if image then
-		local picture = Instance.new("ImageLabel")
-		picture.BackgroundTransparency = 1
-		picture.Size = UDim2.fromScale(1, 1)
-		picture.Image = image
-		picture.ScaleType = Enum.ScaleType.Crop
-		picture.Parent = bg
-	else
-		local emoji = Instance.new("TextLabel")
-		emoji.BackgroundTransparency = 1
-		emoji.Size = UDim2.fromScale(0.62, 0.62)
-		emoji.Position = UDim2.fromScale(0.5, 0.44)
-		emoji.AnchorPoint = Vector2.new(0.5, 0.5)
-		emoji.Text = ArtifactIcons[artifact.Id] or "🖼️"
-		emoji.TextScaled = true
-		emoji.Font = Enum.Font.GothamBold
-		emoji.Parent = bg
-	end
-	local plate = Instance.new("TextLabel")
-	plate.BackgroundColor3 = rgb(30, 26, 40)
-	plate.BackgroundTransparency = 0.25
-	plate.Size = UDim2.fromScale(0.86, 0.16)
-	plate.Position = UDim2.fromScale(0.5, 0.95)
-	plate.AnchorPoint = Vector2.new(0.5, 1)
-	plate.Text = string.upper(artifact.Name)
-	plate.TextScaled = true
-	plate.Font = Enum.Font.GothamBlack
-	plate.TextColor3 = rgb(255, 232, 170)
-	plate.Parent = bg
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0.3, 0)
-	corner.Parent = plate
-end
-
--- Builds the painting at `cf` (the canvas center; the picture faces cf's -Z)
 return function(artifact, rarityColor, cf, rng)
 	rng = rng or Random.new()
-	local model = Instance.new("Model")
-	model.Name = "BuriedPainting"
+	local model = ArtifactModels.build(artifact)
+	model.Name = "BuriedFind"
+	local width = model:GetAttribute("Width") or 3
+	local half = model:GetAttribute("HalfHeight") or 2
 
-	local canvas = part(model, "Canvas", Vector3.new(W - BAR * 2 + 0.1, H - BAR * 2 + 0.1, 0.12), cf, rgb(40, 34, 30))
-	model.PrimaryPart = canvas
-	canvasArt(canvas, artifact, rarityColor)
-	part(model, "Backboard", Vector3.new(W - 0.3, H - 0.3, 0.14), cf * CFrame.new(0, 0, 0.16), rgb(84, 58, 40), Enum.Material.Wood)
-
-	-- chunky antique frame, a little worn
-	for _, sy in ipairs({-1, 1}) do
-		part(model, "Frame", Vector3.new(W, BAR, 0.5), cf * CFrame.new(0, sy * (H - BAR) / 2, 0), GOLD, Enum.Material.Metal, {Reflectance = 0.05})
-		part(model, "FrameLip", Vector3.new(W - BAR * 2, 0.1, 0.1), cf * CFrame.new(0, sy * (H / 2 - BAR - 0.02), -0.2), rarityColor, Enum.Material.Neon)
+	-- crumbs of soil stuck to the front
+	for i = 1, 8 do
+		local x = rng:NextNumber(-width / 2 + 0.3, width / 2 - 0.3)
+		local y = rng:NextNumber(-half + 0.3, half - 0.3)
+		local crumb = Instance.new("Part")
+		crumb.Name = "Dirt"
+		crumb.Size = Vector3.new(rng:NextNumber(0.3, 0.7), rng:NextNumber(0.22, 0.45), 0.16)
+		crumb.CFrame = CFrame.new(x, y, -0.45 - (i % 3) * 0.1) * CFrame.Angles(rng:NextNumber(-0.3, 0.3), rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, 6))
+		crumb.Color = DIRT[rng:NextInteger(1, #DIRT)]
+		crumb.Material = Enum.Material.Ground
+		crumb.Anchored = true
+		crumb.CanCollide = false
+		crumb.CanQuery = false
+		crumb.CanTouch = false
+		crumb.Parent = model
 	end
-	for _, sx in ipairs({-1, 1}) do
-		part(model, "Frame", Vector3.new(BAR, H - BAR * 2, 0.5), cf * CFrame.new(sx * (W - BAR) / 2, 0, 0), GOLD, Enum.Material.Metal, {Reflectance = 0.05})
-		part(model, "FrameLip", Vector3.new(0.1, H - BAR * 2, 0.1), cf * CFrame.new(sx * (W / 2 - BAR - 0.02), 0, -0.2), rarityColor, Enum.Material.Neon)
-		for _, sy in ipairs({-1, 1}) do
-			part(model, "Corner", Vector3.one * 0.72, cf * CFrame.new(sx * (W / 2 - BAR / 2), sy * (H / 2 - BAR / 2), -0.08), GOLD:Lerp(Color3.new(1, 1, 1), 0.15),
-				Enum.Material.Metal, {Shape = Enum.PartType.Ball})
-		end
-	end
-	local crest = part(model, "Crest", Vector3.new(0.9, 0.7, 0.35), cf * CFrame.new(0, H / 2 - 0.05, -0.12), rarityColor, Enum.Material.Neon)
 	local glow = Instance.new("PointLight")
 	glow.Color = rarityColor
 	glow.Range = 9
 	glow.Brightness = 1.2
-	glow.Parent = crest
+	glow.Parent = model.PrimaryPart
 
-	-- clumps of dirt stuck to the frame and canvas
-	for i = 1, 7 do
-		local x = rng:NextNumber(-W / 2 + 0.2, W / 2 - 0.2)
-		local y = rng:NextNumber(-H / 2 + 0.2, H / 2 - 0.2)
-		if i <= 4 then y = (i % 2 == 0 and 1 or -1) * (H / 2 - 0.25) end -- mostly on the frame edges
-		-- flat crumbs of soil, a little tilted
-		part(model, "Dirt", Vector3.new(rng:NextNumber(0.3, 0.7), rng:NextNumber(0.22, 0.45), 0.16),
-			cf * CFrame.new(x, y, -0.3) * CFrame.Angles(rng:NextNumber(-0.3, 0.3), rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, 6)),
-			DIRT[rng:NextInteger(1, #DIRT)], Enum.Material.Ground)
-	end
-
-	-- where the hands hold it
-	for name, x in pairs({GripLeft = W / 2, GripRight = -W / 2}) do
-		local a = Instance.new("Attachment")
-		a.Name = name
-		a.Position = Vector3.new(x, -0.2, 0)
-		a.Parent = canvas
-	end
+	model:PivotTo(cf)
 	return model
 end
 ]=])
@@ -3363,6 +3675,93 @@ end
 
 return CityBuilder
 ]=])
+install(game:GetService("ServerScriptService"), "DigBoosts", "ModuleScript", [=[
+-- DigBoosts (ModuleScript in ServerScriptService)
+-- Temporary digging bonuses from the world gimmicks: world-wide events (Gold Rush, Blizzard
+-- luck, Glitch Surge) and personal boosts (the Candy merchant's Sugar Rush).
+-- DigManager asks DigBoosts.Get(player, world) on every swing. Each player's attributes
+-- "DigSpeedMult" (swing cooldown multiplier), "WorldEvent" and "WorldEventEnds" and
+-- "PersonalBoost"/"PersonalBoostEnds" are kept up to date so the client can show them.
+
+local Players = game:GetService("Players")
+
+local DigBoosts = {}
+
+local worldEvents = {}    -- [worldId] = {Name, FindMult, LuckMult, CooldownMult, EndsAt}
+local personal = {}       -- [player] = {Name, CooldownMult, LuckMult, EndsAt}
+
+local function active(boost)
+	return boost and os.clock() < boost.EndsAt
+end
+
+-- a world-wide event, e.g. DigBoosts.StartWorldEvent(5, {Name = "GOLD RUSH", FindMult = 3}, 40)
+function DigBoosts.StartWorldEvent(worldId, boost, seconds)
+	boost.EndsAt = os.clock() + seconds
+	worldEvents[worldId] = boost
+end
+
+function DigBoosts.EndWorldEvent(worldId)
+	worldEvents[worldId] = nil
+end
+
+function DigBoosts.GetWorldEvent(worldId)
+	local e = worldEvents[worldId]
+	return active(e) and e or nil
+end
+
+function DigBoosts.GivePersonal(player, boost, seconds)
+	boost.EndsAt = os.clock() + seconds
+	personal[player] = boost
+end
+
+function DigBoosts.GetPersonal(player)
+	local p = personal[player]
+	return active(p) and p or nil
+end
+
+-- the multipliers for this player's next swing in this world
+function DigBoosts.Get(player, world)
+	local find, luck, cooldown = 1, 1, 1
+	local e = DigBoosts.GetWorldEvent(world.Id)
+	if e then
+		find *= e.FindMult or 1
+		luck *= e.LuckMult or 1
+		cooldown *= e.CooldownMult or 1
+	end
+	local p = DigBoosts.GetPersonal(player)
+	if p then
+		find *= p.FindMult or 1
+		luck *= p.LuckMult or 1
+		cooldown *= p.CooldownMult or 1
+	end
+	return {Find = find, Luck = luck, Cooldown = cooldown}
+end
+
+-- keep every player's attributes in sync (the client times its swings and shows timers from them)
+task.spawn(function()
+	while true do
+		for _, player in ipairs(Players:GetPlayers()) do
+			local worldId = player:GetAttribute("CurrentWorld") or 1
+			local e = DigBoosts.GetWorldEvent(worldId)
+			local p = DigBoosts.GetPersonal(player)
+			local now = os.clock()
+			local cooldown = (e and e.CooldownMult or 1) * (p and p.CooldownMult or 1)
+			player:SetAttribute("DigSpeedMult", cooldown)
+			player:SetAttribute("WorldEvent", e and e.Name or "")
+			player:SetAttribute("WorldEventLeft", e and math.ceil(e.EndsAt - now) or 0)
+			player:SetAttribute("PersonalBoost", p and p.Name or "")
+			player:SetAttribute("PersonalBoostLeft", p and math.ceil(p.EndsAt - now) or 0)
+		end
+		task.wait(0.5)
+	end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	personal[player] = nil
+end)
+
+return DigBoosts
+]=])
 install(game:GetService("ServerScriptService"), "DigManager", "Script", [=[
 -- DigManager (Script in ServerScriptService)
 -- Real terrain digging with shovels across every world: carves holes in a 560-stud pit,
@@ -3381,6 +3780,7 @@ local ShopBuilder = require(script.Parent:WaitForChild("ShopBuilder"))
 local WorldGate = require(script.Parent:WaitForChild("WorldGate"))
 local WorldBuilder = require(script.Parent:WaitForChild("WorldBuilder"))
 local BuriedPainting = require(script.Parent:WaitForChild("BuriedPainting"))
+local DigBoosts = require(script.Parent:WaitForChild("DigBoosts"))
 local TweenService = game:GetService("TweenService")
 
 local terrain = workspace.Terrain
@@ -3748,9 +4148,9 @@ local function finishLuckyDig(player, grade)
 	giveArtifact(player, session.Zone, session.ShovelLuck * (MINIGAME_LUCK[grade] or 1), grade, session.Position)
 end
 
-local function onFind(player, def, zone, position)
+local function onFind(player, def, zone, position, luck)
 	if rng:NextNumber() < GameConfig.MinigameChance then
-		local session = {Started = os.clock(), ShovelLuck = def.Luck, Zone = zone, Position = position}
+		local session = {Started = os.clock(), ShovelLuck = luck, Zone = zone, Position = position}
 		sessions[player] = session
 		minigameRemote:FireClient(player)
 		task.delay(MINIGAME_TIMEOUT, function()
@@ -3759,7 +4159,7 @@ local function onFind(player, def, zone, position)
 			end
 		end)
 	else
-		giveArtifact(player, zone, def.Luck, nil, position)
+		giveArtifact(player, zone, luck, nil, position)
 	end
 end
 
@@ -3792,7 +4192,8 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	local def = getEquippedDef(player, world)
 	if not def or tool:GetAttribute("ShovelId") ~= def.Id then return end
 	local now = os.clock()
-	if now - (lastSwing[player] or 0) < def.Cooldown * 0.85 then return end
+	local boost = DigBoosts.Get(player, world) -- world gimmicks: events and the merchant's boosts
+	if now - (lastSwing[player] or 0) < def.Cooldown * boost.Cooldown * 0.85 then return end
 	lastSwing[player] = now
 	-- let everyone else see this player's dig animation
 	local length = typeof(swingLength) == "number" and math.clamp(swingLength, 0.3, 1) or 0.6
@@ -3820,8 +4221,7 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 			target = diggable(inFront) and inFront or root.Position - Vector3.new(0, 3.5, 0)
 			if not diggable(target) then return end
 		else
-			digMessageRemote:FireClient(player, "Jump into the pit to dig!")
-			return
+			return -- outside the pit: the "Jump into the pit" pill on screen already says so
 		end
 	end
 
@@ -3863,6 +4263,12 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	local radius = (GameConfig.DigRadiusForPower(def.Power) + 2) / 2 + 0.75
 	local centerY = math.max(carveAt.Y + radius * 0.35, floorY + radius)
 	terrain:FillBall(Vector3.new(carveAt.X, centerY, carveAt.Z), radius, Enum.Material.Air)
+	-- the bedrock can never be dug: if the crater reached down to it, put back any bedrock
+	-- the smooth carving nibbled at (nobody digs past the floor or out of the pit)
+	local bedrockTop = origin.Y + world.Zones[#world.Zones].Bottom
+	if centerY - radius < bedrockTop + 3 then
+		terrain:FillCylinder(CFrame.new(carveAt.X, bedrockTop - GameConfig.BedrockThickness / 2, carveAt.Z), GameConfig.BedrockThickness, radius + 2, Enum.Material.Basalt)
+	end
 	burst(target, zone.Color, 28, 14)
 
 	-- Combo: keep digging without long pauses to build it up (more luck per dig)
@@ -3885,8 +4291,8 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 			return
 		end
 	end
-	if rng:NextNumber() < def.FindChance * (1 + COMBO_LUCK * (combo - 1)) then
-		onFind(player, def, zone, carveAt + Vector3.new(0, 2, 0))
+	if rng:NextNumber() < def.FindChance * boost.Find * (1 + COMBO_LUCK * (combo - 1)) then
+		onFind(player, def, zone, carveAt + Vector3.new(0, 2, 0), def.Luck * boost.Luck)
 	end
 end)
 
@@ -4103,6 +4509,84 @@ for _, world in ipairs(enabledWorlds()) do
 	end
 end
 worldsBuilt = true
+
+---------------------------------------------------------------------
+-- PIT SAFETY: invisible walls around every pit, a solid floor inside the bedrock, a lower
+-- void, and a rescue for anyone who still manages to fall out of the world
+---------------------------------------------------------------------
+-- the Abyss goes 560 studs down; Roblox's default kill height would kill diggers down there
+workspace.FallenPartsDestroyHeight = -3000
+
+local safetyFolder = workspace:FindFirstChild("PitSafety")
+if safetyFolder then safetyFolder:Destroy() end
+safetyFolder = Instance.new("Folder")
+safetyFolder.Name = "PitSafety"
+safetyFolder.Parent = workspace
+
+local function barrier(name, size, cf, shape)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Anchored = true
+	p.CanCollide = true
+	p.CanQuery = false -- clicks and raycasts go straight through
+	p.CanTouch = false
+	p.Transparency = 1
+	p.CastShadow = false
+	p.Size = size
+	p.CFrame = cf
+	if shape then p.Shape = shape end
+	p.Parent = safetyFolder
+	return p
+end
+
+local WALL_SEGMENTS = 48
+for _, world in ipairs(enabledWorlds()) do
+	local origin = world.Origin
+	local bedrockTop = origin.Y + world.Zones[#world.Zones].Bottom
+	-- walls: a ring just outside the widest crater a pickaxe can carve, from a few studs
+	-- under the surface (so you can still jump in from the top) down to the bedrock
+	local wallRadius = world.PitRadius + 7
+	local top, bottom = origin.Y - 4, bedrockTop - 4
+	local height = top - bottom
+	local length = 2 * math.pi * wallRadius / WALL_SEGMENTS + 1
+	for i = 0, WALL_SEGMENTS - 1 do
+		local a = (i + 0.5) / WALL_SEGMENTS * math.pi * 2
+		local pos = origin + Vector3.new(math.cos(a) * (wallRadius + 1), 0, math.sin(a) * (wallRadius + 1))
+		pos = Vector3.new(pos.X, (top + bottom) / 2, pos.Z)
+		barrier("PitWall", Vector3.new(length, height, 2), CFrame.lookAt(pos, Vector3.new(origin.X, pos.Y, origin.Z)))
+	end
+	-- a solid floor hidden inside the bedrock, under the whole pit
+	barrier("BedrockFloor", Vector3.new(2, (wallRadius + 2) * 2, (wallRadius + 2) * 2),
+		CFrame.new(origin.X, bedrockTop - 3, origin.Z) * CFrame.Angles(0, 0, math.rad(90)), Enum.PartType.Cylinder)
+end
+
+-- anyone below the bedrock, or who fell off a floating island, is put back safely
+task.spawn(function()
+	while true do
+		task.wait(1)
+		for _, player in ipairs(Players:GetPlayers()) do
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart")
+			local world = currentWorld[player]
+			if root and world then
+				local offset = root.Position - world.Origin
+				local flat = Vector3.new(offset.X, 0, offset.Z).Magnitude
+				local floor = world.Zones[#world.Zones].Bottom - GameConfig.BedrockThickness
+				local belowBedrock = offset.Y < floor - 10
+				local offTheIsland = offset.Y < -30 and flat > world.PitRadius + 10
+				if belowBedrock or offTheIsland then
+					root.AssemblyLinearVelocity = Vector3.zero
+					if flat <= world.PitRadius + 10 then
+						character:PivotTo(surfaceCFrame(world, root.Position))
+					else
+						character:PivotTo(arrivalSpots[world.Id] or CFrame.new(world.Origin + Vector3.new(0, 6, SURFACE_RING)))
+					end
+					digMessageRemote:FireClient(player, "Whoa! You slipped out of the world. Back to safety!", Color3.fromRGB(120, 230, 255))
+				end
+			end
+		end
+	end
+end)
 
 ---------------------------------------------------------------------
 -- PLAYERS
@@ -4441,6 +4925,448 @@ return function(digSite, world)
 	folder.Parent = digSite
 	digSite:SetAttribute("Cartoon2050", true)
 end
+]=])
+install(game:GetService("ServerScriptService"), "Gimmick_Blizzard", "ModuleScript", [=[
+-- Gimmick_Blizzard (ModuleScript in ServerScriptService) - World 4, Frostbyte Tundra
+-- Every few minutes a blizzard rolls in for 40 seconds: snow and fog on everyone's screen
+-- (WorldGimmickClient, from the world's "Event" attribute) and 2x luck while it lasts.
+
+local Gimmick = {}
+
+function Gimmick.Start(ctx)
+	ctx.EventLoop({
+		Every = 170, Duration = 40, Name = "BLIZZARD",
+		Boost = {LuckMult = 2},
+		Message = "❄️ A BLIZZARD rolls in! The storm stirs up relics: 2x luck for 40 seconds!",
+		Color = Color3.fromRGB(170, 230, 255),
+	})
+end
+
+return Gimmick
+]=])
+install(game:GetService("ServerScriptService"), "Gimmick_Eruption", "ModuleScript", [=[
+-- Gimmick_Eruption (ModuleScript in ServerScriptService) - World 8, Volcano Forge
+-- Every few minutes the volcano erupts: glowing lava bombs arc down into the pit, and each
+-- one leaves a Forge Nugget where it lands. Grab a nugget (walk up and press E) for cash,
+-- about a minute of a Rare meme's income in this world. Nuggets cool down after a while.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
+
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+
+local Gimmick = {}
+local BOMBS = 10
+local NUGGET_SECONDS = 45
+
+local function glowPart(parent, name, size, cf, color, shape)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	p.Size = size
+	p.CFrame = cf
+	p.Color = color
+	p.Material = Enum.Material.Neon
+	if shape then p.Shape = shape end
+	p.Parent = parent
+	return p
+end
+
+local function burst(parent, position, color, count)
+	local anchor = glowPart(parent, "Burst", Vector3.one, CFrame.new(position), color)
+	anchor.Transparency = 1
+	local e = Instance.new("ParticleEmitter")
+	e.Enabled = false
+	e.Color = ColorSequence.new(Color3.fromRGB(255, 230, 120), color)
+	e.LightEmission = 1
+	e.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.8), NumberSequenceKeypoint.new(1, 0)})
+	e.Lifetime = NumberRange.new(0.5, 1)
+	e.Speed = NumberRange.new(10, 22)
+	e.SpreadAngle = Vector2.new(70, 70)
+	e.Acceleration = Vector3.new(0, -40, 0)
+	e.EmissionDirection = Enum.NormalId.Top
+	e.Parent = anchor
+	e:Emit(count)
+	Debris:AddItem(anchor, 1.5)
+end
+
+function Gimmick.Start(ctx)
+	local world = ctx.World
+	local origin = world.Origin
+	local multiplier = ArtifactData.WorldMultipliers[world.Id - 1] or 1
+	local reward = math.floor(ArtifactData.Rarities[3].Income * multiplier * 60)
+	local rng = Random.new()
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = {workspace.Terrain}
+
+	local function nugget(position)
+		local rock = glowPart(ctx.Folder, "ForgeNugget", Vector3.new(1.6, 1.3, 1.5), CFrame.new(position + Vector3.new(0, 0.6, 0)) * CFrame.Angles(rng:NextNumber(0, 6), rng:NextNumber(0, 6), 0),
+			Color3.fromRGB(255, 150, 40))
+		local light = Instance.new("PointLight")
+		light.Color = Color3.fromRGB(255, 140, 40)
+		light.Range = 12
+		light.Brightness = 2
+		light.Parent = rock
+		local smoke = Instance.new("ParticleEmitter")
+		smoke.Color = ColorSequence.new(Color3.fromRGB(255, 180, 90), Color3.fromRGB(90, 70, 70))
+		smoke.Size = NumberSequence.new(0.4, 1.4)
+		smoke.Transparency = NumberSequence.new(0.3, 1)
+		smoke.Lifetime = NumberRange.new(1, 1.6)
+		smoke.Rate = 6
+		smoke.Speed = NumberRange.new(1, 2)
+		smoke.EmissionDirection = Enum.NormalId.Top
+		smoke.Parent = rock
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.ActionText = "Grab (" .. ArtifactData.FormatMoney(reward) .. ")"
+		prompt.ObjectText = "Forge Nugget"
+		prompt.MaxActivationDistance = 12
+		prompt.RequiresLineOfSight = false
+		prompt.Parent = rock
+		prompt.Triggered:Connect(function(player)
+			if not rock.Parent or rock:GetAttribute("Taken") then return end
+			rock:SetAttribute("Taken", true)
+			PlayerData.AddMoney(player, reward)
+			ReplicatedStorage.Remotes.DigProgress:FireClient(player, "🌋 Forge Nugget! +" .. ArtifactData.FormatMoney(reward), Color3.fromRGB(255, 170, 70))
+			burst(ctx.Folder, rock.Position, Color3.fromRGB(255, 150, 40), 20)
+			rock:Destroy()
+		end)
+		task.delay(NUGGET_SECONDS, function()
+			if rock.Parent then
+				-- cools down to dull rock and crumbles away
+				TweenService:Create(rock, TweenInfo.new(1.5), {Color = Color3.fromRGB(60, 50, 50), Transparency = 1}):Play()
+				Debris:AddItem(rock, 1.6)
+			end
+		end)
+	end
+
+	local function lavaBomb(delay)
+		task.wait(delay)
+		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(0, world.PitRadius - 4)
+		local x, z = origin.X + math.cos(a) * r, origin.Z + math.sin(a) * r
+		local hit = workspace:Raycast(Vector3.new(x, origin.Y + 20, z), Vector3.new(0, -700, 0), params)
+		if not hit then return end
+		local land = hit.Position
+		local start = land + Vector3.new(rng:NextNumber(-30, 30), 160, rng:NextNumber(-30, 30))
+		local bomb = glowPart(ctx.Folder, "LavaBomb", Vector3.one * 3, CFrame.new(start), Color3.fromRGB(255, 110, 30), Enum.PartType.Ball)
+		local fire = Instance.new("Fire")
+		fire.Size = 8
+		fire.Heat = 12
+		fire.Parent = bomb
+		local fall = TweenService:Create(bomb, TweenInfo.new(1.6, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {CFrame = CFrame.new(land + Vector3.new(0, 1.5, 0))})
+		fall:Play()
+		fall.Completed:Wait()
+		bomb:Destroy()
+		burst(ctx.Folder, land, Color3.fromRGB(255, 90, 20), 40)
+		nugget(land)
+	end
+
+	ctx.EventLoop({
+		Every = 140, Duration = 12, Name = "ERUPTION",
+		Message = "🌋 ERUPTION! Lava bombs are raining into the pit. Grab the glowing Forge Nuggets!",
+		Color = Color3.fromRGB(255, 140, 60),
+		OnStart = function()
+			for i = 1, BOMBS do
+				task.spawn(lavaBomb, (i - 1) * 0.9 + rng:NextNumber(0, 0.5))
+			end
+		end,
+	})
+end
+
+return Gimmick
+]=])
+install(game:GetService("ServerScriptService"), "Gimmick_GlitchSurge", "ModuleScript", [=[
+-- Gimmick_GlitchSurge (ModuleScript in ServerScriptService) - World 9, Glitch Nexus
+-- Every few minutes reality glitches out for 30 seconds: everyone in the world swings twice
+-- as fast with 1.5x luck, and the screen flickers (WorldGimmickClient, from the "Event"
+-- attribute on the world's folder).
+
+local Gimmick = {}
+
+function Gimmick.Start(ctx)
+	ctx.EventLoop({
+		Every = 170, Duration = 30, Name = "GLITCH SURGE",
+		Boost = {CooldownMult = 0.5, LuckMult = 1.5},
+		Message = "👾 GLITCH SURGE! Swing 2x faster with 1.5x luck for 30 seconds!",
+		Color = Color3.fromRGB(190, 120, 255),
+	})
+end
+
+return Gimmick
+]=])
+install(game:GetService("ServerScriptService"), "Gimmick_GoldRush", "ModuleScript", [=[
+-- Gimmick_GoldRush (ModuleScript in ServerScriptService) - World 5, Chrome Dunes
+-- A golden sandstorm sweeps the pit every few minutes: for 45 seconds everyone digging here
+-- finds things 3x as often (with a bit more luck), and golden glitter pours into the pit.
+
+local Gimmick = {}
+
+function Gimmick.Start(ctx)
+	local world = ctx.World
+	local volume = Instance.new("Part")
+	volume.Name = "GoldDust"
+	volume.Anchored = true
+	volume.CanCollide = false
+	volume.CanQuery = false
+	volume.CanTouch = false
+	volume.Transparency = 1
+	volume.Size = Vector3.new(world.PitRadius * 2, 2, world.PitRadius * 2)
+	volume.CFrame = CFrame.new(world.Origin + Vector3.new(0, 30, 0))
+	volume.Parent = ctx.Folder
+	local glitter = Instance.new("ParticleEmitter")
+	glitter.Shape = Enum.ParticleEmitterShape.Box
+	glitter.Color = ColorSequence.new(Color3.fromRGB(255, 240, 150), Color3.fromRGB(255, 180, 40))
+	glitter.LightEmission = 1
+	glitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0.1)})
+	glitter.Lifetime = NumberRange.new(3, 5)
+	glitter.Rate = 60
+	glitter.Speed = NumberRange.new(6, 12)
+	glitter.EmissionDirection = Enum.NormalId.Bottom
+	glitter.SpreadAngle = Vector2.new(15, 15)
+	glitter.RotSpeed = NumberRange.new(-200, 200)
+	glitter.Enabled = false
+	glitter.Parent = volume
+
+	ctx.EventLoop({
+		Every = 150, Duration = 45, Name = "GOLD RUSH",
+		Boost = {FindMult = 3, LuckMult = 1.3},
+		Message = "🪙 GOLD RUSH! You find artifacts 3x as often for 45 seconds!",
+		Color = Color3.fromRGB(255, 214, 90),
+		OnStart = function() glitter.Enabled = true end,
+		OnStop = function() glitter.Enabled = false end,
+	})
+end
+
+return Gimmick
+]=])
+install(game:GetService("ServerScriptService"), "Gimmick_LowGravity", "ModuleScript", [=[
+-- Gimmick_LowGravity (ModuleScript in ServerScriptService) - World 3, Galaxy Drift
+-- Gravity is much weaker here: WorldGimmickClient lowers workspace.Gravity on the player's
+-- screen (gravity is simulated by each player's own computer for their character) while
+-- they're in this world. Drifting star dust floats up out of the pit to sell the feeling.
+
+local Gimmick = {}
+local LOW_GRAVITY = 55 -- Roblox's normal gravity is 196.2
+
+function Gimmick.Start(ctx)
+	ctx.Container:SetAttribute("Gravity", LOW_GRAVITY)
+	local world = ctx.World
+	local volume = Instance.new("Part")
+	volume.Name = "FloatingStarDust"
+	volume.Anchored = true
+	volume.CanCollide = false
+	volume.CanQuery = false
+	volume.CanTouch = false
+	volume.Transparency = 1
+	volume.Size = Vector3.new(world.PitRadius * 2, 4, world.PitRadius * 2)
+	volume.CFrame = CFrame.new(world.Origin + Vector3.new(0, 2, 0))
+	volume.Parent = ctx.Folder
+	local dust = Instance.new("ParticleEmitter")
+	dust.Shape = Enum.ParticleEmitterShape.Box
+	dust.Color = ColorSequence.new(Color3.fromRGB(200, 180, 255), Color3.fromRGB(120, 220, 255))
+	dust.LightEmission = 1
+	dust.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.4, 0.3), NumberSequenceKeypoint.new(1, 0)})
+	dust.Lifetime = NumberRange.new(5, 8)
+	dust.Rate = 20
+	dust.Speed = NumberRange.new(1, 3)
+	dust.EmissionDirection = Enum.NormalId.Top
+	dust.SpreadAngle = Vector2.new(20, 20)
+	dust.Parent = volume
+end
+
+return Gimmick
+]=])
+install(game:GetService("ServerScriptService"), "Gimmick_Merchant", "ModuleScript", [=[
+-- Gimmick_Merchant (ModuleScript in ServerScriptService) - World 7, Candy Mainframe
+-- A candy-loving alien merchant strolls around the rim of the pit. Talk to it (hold E) to
+-- buy a Sugar Rush: you swing 1.5x faster for 3 minutes. The price is about ten minutes of
+-- a Rare meme's income in this world, so it's worth it but not free.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+local buildVisitor = require(script.Parent:WaitForChild("VisitorModels"))
+
+local Gimmick = {}
+local BOOST = {Name = "SUGAR RUSH", CooldownMult = 1 / 1.5}
+local BOOST_SECONDS = 180
+local STOPS = 6          -- places around the rim it walks between
+local WAIT_AT_STOP = 14  -- seconds it stands at each one
+
+local WALK_ANIMATION = "rbxassetid://507777826"
+
+function Gimmick.Start(ctx)
+	local world = ctx.World
+	local origin = world.Origin
+	local multiplier = ArtifactData.WorldMultipliers[world.Id - 1] or 1
+	local price = math.floor(ArtifactData.Rarities[3].Income * multiplier * 600)
+
+	local rng = Random.new()
+	local ok, merchant = pcall(buildVisitor, "Alien", rng)
+	if not ok or not merchant then
+		warn("Alien merchant couldn't be built: " .. tostring(merchant))
+		return
+	end
+	merchant.Name = "AlienMerchant"
+	local humanoid = merchant:FindFirstChildOfClass("Humanoid")
+	local root = merchant:FindFirstChild("HumanoidRootPart")
+	if not humanoid or not root then return end
+	humanoid.WalkSpeed = 8
+	humanoid.DisplayName = "🍭 Alien Merchant"
+	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Viewer
+	humanoid.NameDisplayDistance = 60
+
+	-- a candy-striped backpack full of goods
+	local pack = Instance.new("Part")
+	pack.Name = "CandyPack"
+	pack.Size = Vector3.new(1.6, 1.8, 1)
+	pack.Color = Color3.fromRGB(255, 130, 200)
+	pack.Material = Enum.Material.SmoothPlastic
+	pack.CanCollide = false
+	pack.Massless = true
+	local torso = merchant:FindFirstChild("UpperTorso") or root
+	pack.CFrame = torso.CFrame * CFrame.new(0, 0, 1)
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = torso
+	weld.Part1 = pack
+	weld.Parent = pack
+	pack.Parent = merchant
+
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = "Buy Sugar Rush (" .. ArtifactData.FormatMoney(price) .. ")"
+	prompt.ObjectText = "Alien Merchant · 1.5x dig speed, 3 min"
+	prompt.HoldDuration = 0.4
+	prompt.MaxActivationDistance = 12
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = root
+	prompt.Triggered:Connect(function(player)
+		if not ctx.IsHere(player) then return end
+		if not PlayerData.SpendMoney(player, price) then
+			ReplicatedStorage.Remotes.DigProgress:FireClient(player, "Not enough money for a Sugar Rush (" .. ArtifactData.FormatMoney(price) .. ").", Color3.fromRGB(255, 130, 130))
+			return
+		end
+		ctx.Boosts.GivePersonal(player, table.clone(BOOST), BOOST_SECONDS)
+		ReplicatedStorage.Remotes.DigProgress:FireClient(player, "🍭 SUGAR RUSH! You dig 1.5x faster for 3 minutes!", Color3.fromRGB(255, 150, 220))
+	end)
+
+	local function stop(i)
+		local a = (i / STOPS) * math.pi * 2 + 0.3
+		local r = world.PitRadius + 11
+		return origin + Vector3.new(math.cos(a) * r, 3, math.sin(a) * r)
+	end
+	merchant:PivotTo(CFrame.new(stop(0)))
+	merchant.Parent = ctx.Folder
+	pcall(function() root:SetNetworkOwner(nil) end)
+
+	-- walking animation
+	local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator")
+	animator.Parent = humanoid
+	local animation = Instance.new("Animation")
+	animation.AnimationId = WALK_ANIMATION
+	local okTrack, walk = pcall(function() return animator:LoadAnimation(animation) end)
+	humanoid.Running:Connect(function(speed)
+		if not okTrack or not walk then return end
+		if speed > 0.5 and not walk.IsPlaying then
+			walk:Play(0.2)
+		elseif speed <= 0.5 and walk.IsPlaying then
+			walk:Stop(0.2)
+		end
+	end)
+
+	-- stroll around the rim, one stop at a time
+	task.spawn(function()
+		local i = 0
+		while merchant.Parent do
+			i = (i + 1) % STOPS
+			humanoid:MoveTo(stop(i))
+			humanoid.MoveToFinished:Wait()
+			task.wait(WAIT_AT_STOP)
+		end
+	end)
+end
+
+return Gimmick
+]=])
+install(game:GetService("ServerScriptService"), "Gimmick_Oxygen", "ModuleScript", [=[
+-- Gimmick_Oxygen (ModuleScript in ServerScriptService) - World 6, Coral Circuit
+-- The deep pit is full of toxic fumes. Below OxygenDepth studs your air meter drains
+-- (WorldGimmickClient shows it); bubbling air vents set into the pit walls at every few
+-- depths refill it, and so does climbing back near the surface. Run out and you're pulled
+-- back up to the surface (nobody dies, but you lose your spot).
+-- The vents are tagged "AirVent" so the client can find them.
+
+local CollectionService = game:GetService("CollectionService")
+
+local Gimmick = {}
+local OXYGEN_DEPTH = 20
+local VENT_DEPTHS = {28, 60, 100, 150, 210, 280, 360, 450, 530}
+local VENTS_PER_DEPTH = 4
+
+local function part(parent, name, size, cf, color, material)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Size = size
+	p.CFrame = cf
+	p.Color = color
+	p.Material = material or Enum.Material.Metal
+	p.Parent = parent
+	return p
+end
+
+function Gimmick.Start(ctx)
+	local world = ctx.World
+	local origin = world.Origin
+	ctx.Container:SetAttribute("OxygenDepth", OXYGEN_DEPTH)
+	for d, depth in ipairs(VENT_DEPTHS) do
+		for i = 0, VENTS_PER_DEPTH - 1 do
+			local a = (i + (d % 2) * 0.5) / VENTS_PER_DEPTH * math.pi * 2
+			local r = world.PitRadius + 1.4
+			local pos = origin + Vector3.new(math.cos(a) * r, -depth, math.sin(a) * r)
+			local facing = CFrame.lookAt(pos, Vector3.new(origin.X, pos.Y, origin.Z))
+			local vent = Instance.new("Model")
+			vent.Name = "AirVent"
+			-- a round grate facing into the pit, a glowing rim, and bubbles pouring out
+			local grate = part(vent, "Grate", Vector3.new(1, 4, 4), facing * CFrame.Angles(0, math.rad(90), 0), Color3.fromRGB(60, 70, 90))
+			grate.Shape = Enum.PartType.Cylinder
+			local rim = part(vent, "VentGlow", Vector3.new(1.1, 4.6, 4.6), facing * CFrame.new(0, 0, 0.2) * CFrame.Angles(0, math.rad(90), 0),
+				Color3.fromRGB(90, 230, 255), Enum.Material.Neon)
+			rim.Shape = Enum.PartType.Cylinder
+			local light = Instance.new("PointLight")
+			light.Color = Color3.fromRGB(120, 230, 255)
+			light.Range = 16
+			light.Brightness = 1.2
+			light.Parent = rim
+			local bubbles = Instance.new("ParticleEmitter")
+			bubbles.Color = ColorSequence.new(Color3.fromRGB(200, 245, 255))
+			bubbles.LightEmission = 0.4
+			bubbles.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 0.6)})
+			bubbles.Transparency = NumberSequence.new(0.2, 1)
+			bubbles.Lifetime = NumberRange.new(1.5, 2.5)
+			bubbles.Rate = 18
+			bubbles.Speed = NumberRange.new(2, 4)
+			bubbles.Acceleration = Vector3.new(0, 4, 0)
+			bubbles.EmissionDirection = Enum.NormalId.Left -- out of the grate, into the pit
+			bubbles.SpreadAngle = Vector2.new(25, 25)
+			bubbles.Parent = grate
+			vent.PrimaryPart = grate
+			vent.Parent = ctx.Folder
+			CollectionService:AddTag(grate, "AirVent")
+		end
+	end
+end
+
+return Gimmick
 ]=])
 install(game:GetService("ServerScriptService"), "MainIsland", "ModuleScript", [=[
 -- MainIsland (ModuleScript in ServerScriptService)
@@ -10476,6 +11402,128 @@ return function(parent, base, subtitle)
 	return gate, prompt
 end
 ]=])
+install(game:GetService("ServerScriptService"), "WorldGimmickManager", "Script", [=[
+-- WorldGimmickManager (Script in ServerScriptService)
+-- Attaches each world's gimmick (see ReplicatedStorage.WorldGimmicks) to that world's folder
+-- (workspace.Worlds.WorldN gets a "Gimmick" attribute and a Gimmick folder for its parts),
+-- starts its Gimmick_<Module> script, and tells it when players enter or leave the world.
+--
+-- Each Gimmick_<Module> returns a table with:
+--   Start(ctx)            once, when the world is built
+--   OnEnter(ctx, player)  optional, when a player arrives in the world
+--   OnLeave(ctx, player)  optional, when they leave it (or the game)
+-- ctx has: World, Container, Folder (for the gimmick's parts), Boosts (DigBoosts),
+--   PlayersInWorld(), Announce(text, color), IsHere(player),
+--   EventLoop({Every, Duration, Boost, Name, Color, Message, OnStart, OnStop})
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local WorldGimmicks = require(ReplicatedStorage:WaitForChild("WorldGimmicks"))
+local DigBoosts = require(script.Parent:WaitForChild("DigBoosts"))
+
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+local announceRemote = remotes:WaitForChild("Announcement")
+
+local contexts = {} -- [worldId] = {ctx, module}
+
+local function makeContext(world, container, folder)
+	local ctx = {World = world, Container = container, Folder = folder, Boosts = DigBoosts}
+	function ctx.IsHere(player)
+		return player:GetAttribute("CurrentWorld") == world.Id
+	end
+	function ctx.PlayersInWorld()
+		local list = {}
+		for _, player in ipairs(Players:GetPlayers()) do
+			if ctx.IsHere(player) then table.insert(list, player) end
+		end
+		return list
+	end
+	function ctx.Announce(text, color)
+		for _, player in ipairs(ctx.PlayersInWorld()) do
+			announceRemote:FireClient(player, text, color)
+		end
+	end
+	-- a repeating timed event: a digging boost for everyone in the world while it runs
+	function ctx.EventLoop(event)
+		task.spawn(function()
+			task.wait(event.Every * 0.5)
+			while container.Parent do
+				if #ctx.PlayersInWorld() > 0 then
+					if event.Boost then
+						local boost = table.clone(event.Boost)
+						boost.Name = event.Name
+						DigBoosts.StartWorldEvent(world.Id, boost, event.Duration)
+					end
+					container:SetAttribute("Event", event.Name)
+					ctx.Announce(event.Message, event.Color)
+					if event.OnStart then task.spawn(event.OnStart) end
+					task.wait(event.Duration)
+					container:SetAttribute("Event", "")
+					DigBoosts.EndWorldEvent(world.Id)
+					if event.OnStop then task.spawn(event.OnStop) end
+				end
+				task.wait(event.Every)
+			end
+		end)
+	end
+	return ctx
+end
+
+local function startWorld(world, info)
+	local worldsFolder = workspace:WaitForChild("Worlds", 60)
+	local container = worldsFolder and worldsFolder:WaitForChild("World" .. world.Id, 60)
+	local moduleScript = script.Parent:FindFirstChild("Gimmick_" .. info.Module)
+	if not container or not moduleScript then
+		warn("World gimmick not started for world " .. world.Id)
+		return
+	end
+	container:SetAttribute("Gimmick", info.Module)
+	local folder = container:FindFirstChild("Gimmick")
+	if folder then folder:Destroy() end
+	folder = Instance.new("Folder")
+	folder.Name = "Gimmick"
+	folder.Parent = container
+	local module = require(moduleScript)
+	local ctx = makeContext(world, container, folder)
+	contexts[world.Id] = {Ctx = ctx, Module = module}
+	local ok, err = pcall(module.Start, ctx)
+	if not ok then warn("World gimmick " .. info.Module .. " failed: " .. tostring(err)) end
+end
+
+for worldId, info in pairs(WorldGimmicks) do
+	local world = GameConfig.GetWorld(worldId)
+	if world and world.Enabled then
+		task.spawn(startWorld, world, info)
+	end
+end
+
+-- tell the gimmicks when players come and go
+local where = {} -- [player] = worldId the gimmicks last saw them in
+local function moved(player)
+	local now = player:GetAttribute("CurrentWorld")
+	local before = where[player]
+	if now == before then return end
+	where[player] = now
+	local old = before and contexts[before]
+	if old and old.Module.OnLeave then task.spawn(old.Module.OnLeave, old.Ctx, player) end
+	local new = now and contexts[now]
+	if new and new.Module.OnEnter then task.spawn(new.Module.OnEnter, new.Ctx, player) end
+end
+local function watch(player)
+	player:GetAttributeChangedSignal("CurrentWorld"):Connect(function() moved(player) end)
+	moved(player)
+end
+Players.PlayerAdded:Connect(watch)
+for _, player in ipairs(Players:GetPlayers()) do watch(player) end
+Players.PlayerRemoving:Connect(function(player)
+	local before = where[player]
+	where[player] = nil
+	local old = before and contexts[before]
+	if old and old.Module.OnLeave then task.spawn(old.Module.OnLeave, old.Ctx, player) end
+end)
+]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "BackgroundWeather", "LocalScript", [=[
 -- BackgroundWeather (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- Bizarre background weather: giant plain cubes, spheres and cones tumble out of the sky
@@ -10594,7 +11642,7 @@ end)
 ]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "DigClient", "LocalScript", [=[
 -- DigClient (LocalScript in StarterPlayer > StarterPlayerScripts)
--- Shows the luck minigame, the "you found" popup, and rare-find announcements.
+-- Shows the luck minigame, the short "you found" lines, and rare-find announcements.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10752,76 +11800,61 @@ end
 minigameRemote.OnClientEvent:Connect(startMinigame)
 
 ---------------------------------------------------------------------
--- "YOU FOUND" POPUP
+-- FIND MESSAGES: just a line of text near the top of the screen that fades away
 ---------------------------------------------------------------------
-
-local popup, foundLabel, paintPopupHeader = headerCard(UDim2.fromOffset(460, 368), UDim2.fromScale(0.5, 0.45), C.Violet, "YOU FOUND")
-popup.Visible = false
-local popupStroke = popup:FindFirstChildOfClass("UIStroke")
-local popupScale = Instance.new("UIScale")
-popupScale.Parent = popup
-
-local iconHolder = Instance.new("Frame")
-iconHolder.BackgroundTransparency = 1
-iconHolder.Size = UDim2.fromOffset(112, 112)
-iconHolder.Position = UDim2.fromOffset(22, 66)
-iconHolder.Parent = popup
-local nameLabel = UIKit.label(popup, "", {Size = UDim2.new(1, -170, 0, 34), Position = UDim2.fromOffset(150, 66), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 28})
-local rarityTag = UIKit.panel(popup, {Size = UDim2.fromOffset(150, 28), Position = UDim2.fromOffset(150, 106), Color = C.Lilac, Radius = 14})
-local rarityLabel = UIKit.label(rarityTag, "", {Size = UDim2.new(1, -16, 0.76, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, StrokeColor = C.Ink, MaxText = 20})
-local incomePill = UIKit.panel(popup, {Size = UDim2.fromOffset(170, 32), Position = UDim2.fromOffset(150, 142), Color = C.Money, Radius = 16})
-local incomeLabel = UIKit.label(incomePill, "", {Size = UDim2.new(1, -18, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, StrokeColor = UIKit.shadeColor(C.Money, 0.6), MaxText = 20})
-local descBox = UIKit.panel(popup, {Size = UDim2.new(1, -44, 0, 62), Position = UDim2.new(0.5, 0, 0, 190), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 14, Stroke = false, Shade = false})
-local descLabel = UIKit.label(descBox, "", {Size = UDim2.new(1, -24, 1, -12), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 15})
-
-local pickButton = UIKit.button(popup, "PICK UP  [E]", {Size = UDim2.new(0.5, -28, 0, 56), Position = UDim2.new(0, 22, 1, -94), Color = C.Mint})
-local leaveButton = UIKit.button(popup, "LEAVE IT", {Size = UDim2.new(0.5, -28, 0, 56), Position = UDim2.new(1, -22, 1, -94), AnchorPoint = Vector2.new(1, 0), Color = C.Coral})
--- countdown: the find is left in the dirt when this runs out
-local timerTrack = UIKit.panel(popup, {Size = UDim2.new(1, -44, 0, 12), Position = UDim2.new(0.5, 0, 1, -26), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 6, Stroke = 2, StrokeColor = C.Lilac, Shade = false})
-local timerFill = UIKit.panel(timerTrack, {Size = UDim2.fromScale(1, 1), Color = C.Sun, Radius = 6, Stroke = false})
-
-local flash = Instance.new("Frame")
-flash.Size = UDim2.fromScale(1, 1)
-flash.BackgroundTransparency = 1
-flash.BorderSizePixel = 0
-flash.ZIndex = 0
-flash.Parent = gui
-
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local pullRemote = remotes:WaitForChild("PullFind")
 
--- The popup is now the "what you pulled out" card: one button, closes by itself
-leaveButton.Visible = false
-pickButton.Size = UDim2.new(1, -44, 0, 56)
-local pickLabel = pickButton:FindFirstChild("Label", true)
-if pickLabel and pickLabel:IsA("TextLabel") then pickLabel.Text = "AWESOME!" end
+local function textLine(y, size)
+	local l = UIKit.label(gui, "", {Size = UDim2.fromOffset(640, size), Position = UDim2.new(0.5, 0, 0, y), AnchorPoint = Vector2.new(0.5, 0),
+		Color = C.White, Stroke = 2.5, MaxText = size})
+	l.Visible = false
+	return l, l:FindFirstChildOfClass("UIStroke")
+end
+local foundText, foundStroke = textLine(150, 30)
+local hintText, hintStroke = textLine(186, 20)
+
+local tokens = {}
+local function say(label, stroke, text, color, duration)
+	tokens[label] = (tokens[label] or 0) + 1
+	local myToken = tokens[label]
+	label.Text = text
+	label.TextColor3 = color
+	label.TextTransparency = 0
+	if stroke then
+		stroke.Color = color:Lerp(Color3.new(0, 0, 0), 0.7)
+		stroke.Transparency = 0
+	end
+	label.Visible = true
+	UIKit.pop(label, 0.8)
+	task.delay(duration, function()
+		if tokens[label] ~= myToken then return end
+		local fade = TweenInfo.new(0.5)
+		TweenService:Create(label, fade, {TextTransparency = 1}):Play()
+		if stroke then TweenService:Create(stroke, fade, {Transparency = 1}):Play() end
+		task.delay(0.5, function()
+			if tokens[label] == myToken then label.Visible = false end
+		end)
+	end)
+end
+local function unsay(label)
+	tokens[label] = (tokens[label] or 0) + 1
+	label.Visible = false
+end
 
 ---------------------------------------------------------------------
--- BURIED PAINTING: a banner + outline while your find waits in the crater
+-- BURIED FIND: one line of text + an outline on the object while it waits in the crater
 ---------------------------------------------------------------------
-local buriedCard = UIKit.panel(gui, {Size = UDim2.fromOffset(470, 60), Position = UDim2.new(0.5, 0, 0, 14), AnchorPoint = Vector2.new(0.5, 0),
-	Color = C.Ink, Radius = 30, Stroke = 3, StrokeColor = C.Sun, ShadeAmount = 0.2})
-buriedCard.BackgroundTransparency = 0.08
-buriedCard.Visible = false
-local buriedStroke = buriedCard:FindFirstChildOfClass("UIStroke")
-local buriedBadge = UIKit.badge(buriedCard, "🖼", C.Sun, {Diameter = 46, Position = UDim2.new(0, 7, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
-local buriedTitle = UIKit.label(buriedCard, "", {Size = UDim2.new(1, -78, 0, 24), Position = UDim2.new(0, 64, 0, 7), Align = "Left", Color = C.White, Stroke = 0, MaxText = 22})
-UIKit.label(buriedCard, "Hold  E  (or tap it) to pull it out of the dirt!", {Size = UDim2.new(1, -78, 0, 18), Position = UDim2.new(0, 64, 0, 33), Align = "Left",
-	Color = C.Sky, Stroke = 0, Font = UIKit.BodyFont, MaxText = 16})
-local buriedTimer = UIKit.panel(buriedCard, {Size = UDim2.new(1, -90, 0, 4), Position = UDim2.new(0, 64, 1, -6), Color = C.Sun, Radius = 2, Stroke = false, Shade = false})
-
-local buriedToken = 0
 local buriedHighlight
 local function clearBuried()
-	buriedToken += 1
-	buriedCard.Visible = false
+	unsay(hintText)
 	if buriedHighlight then
 		buriedHighlight:Destroy()
 		buriedHighlight = nil
 	end
 end
 
--- other players' paintings can't be pulled by us: hide their prompts on this screen
+-- other players' finds can't be pulled by us: hide their prompts on this screen
 local findsFolder = workspace:WaitForChild("BuriedFinds", 30)
 if findsFolder then
 	local function check(d)
@@ -10849,80 +11882,35 @@ end
 
 resultRemote.OnClientEvent:Connect(function(info)
 	clearBuried()
-	local myToken = buriedToken
 	playFindSound()
-	buriedTitle.Text = "You uncovered a " .. string.upper(info.Rarity) .. " painting!"
-	buriedTitle.TextColor3 = info.Color:Lerp(C.White, 0.35)
-	buriedStroke.Color = info.Color
-	buriedBadge.BackgroundColor3 = info.Color
-	buriedCard.Visible = true
-	UIKit.pop(buriedCard, 0.6)
 	local timeout = tonumber(info.Timeout) or 25
-	buriedTimer.Size = UDim2.new(1, -90, 0, 4)
-	TweenService:Create(buriedTimer, TweenInfo.new(timeout, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 4)}):Play()
+	say(hintText, hintStroke, "You uncovered something " .. string.upper(info.Rarity) .. "!  Hold E to pull it out", info.Color:Lerp(C.White, 0.3), timeout)
 	if typeof(info.Painting) == "Instance" then
+		local model = info.Painting
 		buriedHighlight = Instance.new("Highlight")
 		buriedHighlight.FillTransparency = 0.85
 		buriedHighlight.FillColor = info.Color
 		buriedHighlight.OutlineColor = info.Color:Lerp(C.White, 0.3)
 		buriedHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-		buriedHighlight.Adornee = info.Painting
+		buriedHighlight.Adornee = model
 		buriedHighlight.Parent = gui
-		info.Painting.AncestryChanged:Connect(function()
-			if not info.Painting:IsDescendantOf(workspace) and buriedToken == myToken then clearBuried() end
+		local highlight = buriedHighlight
+		model.AncestryChanged:Connect(function()
+			if not model:IsDescendantOf(workspace) and buriedHighlight == highlight then clearBuried() end
 		end)
 	end
-	task.delay(timeout, function()
-		if buriedToken == myToken then clearBuried() end
-	end)
 end)
 
 ---------------------------------------------------------------------
--- "YOU FOUND" CARD: shows once the painting is pulled out and in your hands
+-- "YOU FOUND X": once it's pulled out
 ---------------------------------------------------------------------
-local popupToken = 0
-local function closePopup()
-	popupToken += 1
-	popup.Visible = false
-end
-pickButton.MouseButton1Click:Connect(closePopup)
-
-local function showFound(info)
-	popupToken += 1
-	local myToken = popupToken
-	for _, child in ipairs(iconHolder:GetChildren()) do child:Destroy() end
-	UIKit.artifactIcon(iconHolder, {Id = info.Id, Rarity = info.Rarity}, {Size = UDim2.fromScale(1, 1), Radius = 20})
-	nameLabel.Text = info.Name
-	rarityLabel.Text = string.upper(info.Rarity)
-	rarityTag.BackgroundColor3 = info.Color
-	popupStroke.Color = info.Color:Lerp(C.Ink, 0.45)
-	paintPopupHeader(info.Color:Lerp(C.Violet, 0.25))
-	incomeLabel.Text = "💵 " .. ArtifactData.FormatMoney(info.Income) .. "/s"
-	descLabel.Text = info.Description
-	foundLabel.Text = (info.Grade == "Perfect" and "✨ PERFECT DIG! ✨") or "ADDED TO YOUR INVENTORY!"
-
-	popup.Visible = true
-	popupScale.Scale = 0.3
-	TweenService:Create(popupScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
-	-- big finds (Legendary and up) flash the screen
-	if info.RarityIndex >= ArtifactData.GetRarityIndex("Legendary") then
-		flash.BackgroundColor3 = info.Color
-		flash.BackgroundTransparency = 0.55
-		TweenService:Create(flash, TweenInfo.new(1.2), {BackgroundTransparency = 1}):Play()
-	end
-	local SHOW = 6
-	timerFill.Size = UDim2.fromScale(1, 1)
-	TweenService:Create(timerFill, TweenInfo.new(SHOW, Enum.EasingStyle.Linear), {Size = UDim2.fromScale(0, 1)}):Play()
-	task.delay(SHOW, function()
-		if popupToken == myToken then closePopup() end
-	end)
-end
-
 pullRemote.OnClientEvent:Connect(function(finder, _painting, info)
 	if finder ~= player or typeof(info) ~= "table" then return end
 	clearBuried()
-	-- the card pops up once the painting is out of the ground and in your hands
-	task.delay(1.25, showFound, info)
+	task.delay(1.1, function()
+		say(foundText, foundStroke, "✨ You found " .. info.Name .. "!  " .. string.upper(info.Rarity) .. "  ·  +"
+			.. ArtifactData.FormatMoney(info.Income) .. "/s", info.Color:Lerp(C.White, 0.25), 3.5)
+	end)
 end)
 
 ---------------------------------------------------------------------
@@ -11634,8 +12622,8 @@ end)
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "MuseumClient", "LocalScript", [=[
 -- MuseumClient (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- The museum side of the UI (World 1 only):
---   * a spinning, floating meme card over every pedestal that has a meme on it (in every
---     player's museum, so visitors can see your collection too)
+--   * the real artifact (painting, statue, coin, tablet or crystal) under a glass case on
+--     every pedestal that has a meme on it (in every museum, so visitors see your collection)
 --   * the Display window: pick a meme from your inventory to put on a slot, or take it back
 --   * the Alien Art Dealer window: sell memes for cash
 --   * small up/down arrows at the top center while you're inside a museum, to change floors
@@ -11644,7 +12632,6 @@ install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
@@ -11664,68 +12651,96 @@ local player = Players.LocalPlayer
 local museumsFolder = workspace:WaitForChild("Museums")
 
 ---------------------------------------------------------------------
--- SPINNING MEME CARDS ON THE PEDESTALS
+-- DISPLAYS: the real artifact (painting, statue, coin, tablet or crystal, see
+-- ArtifactModels) standing still on its pedestal under a glass case
 ---------------------------------------------------------------------
-local cards = {} -- [slot model] = {Part, Base CFrame, Phase}
+local ArtifactModels = require(ReplicatedStorage:WaitForChild("ArtifactModels"))
+local cards = {} -- [slot model] = the display model
 
 local function removeCard(slot)
-	local card = cards[slot]
-	if card then
-		card.Part:Destroy()
+	local display = cards[slot]
+	if display then
+		display:Destroy()
 		cards[slot] = nil
 	end
 end
 
-local function cardFace(part, face, artifact)
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = face
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 50
-	gui.LightInfluence = 0
-	gui.Parent = part
-	UIKit.artifactIcon(gui, artifact, {Size = UDim2.fromScale(1, 1), Radius = 28, Stroke = 6})
+local CASE = Vector3.new(5, 6, 5) -- inside size of the glass case
+
+local function casePart(parent, name, size, cf, color, material, transparency)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	p.Size = size
+	p.CFrame = cf
+	p.Color = color
+	p.Material = material
+	p.Transparency = transparency or 0
+	p.Parent = parent
+	return p
+end
+
+-- a glass box with a dark metal frame and a thin glowing line at the base
+local function glassCase(parent, baseCF, color)
+	local glass = Color3.fromRGB(200, 235, 255)
+	local frame = Color3.fromRGB(40, 38, 64)
+	local w, h = CASE.X, CASE.Y
+	casePart(parent, "CaseGlass", Vector3.new(w, h, w), baseCF * CFrame.new(0, h / 2, 0), glass, Enum.Material.Glass, 0.82).Reflectance = 0.25
+	casePart(parent, "CaseLid", Vector3.new(w + 0.3, 0.3, w + 0.3), baseCF * CFrame.new(0, h + 0.15, 0), frame, Enum.Material.Metal)
+	casePart(parent, "CaseBase", Vector3.new(w + 0.3, 0.3, w + 0.3), baseCF * CFrame.new(0, 0.15, 0), frame, Enum.Material.Metal)
+	casePart(parent, "CaseGlow", Vector3.new(w + 0.34, 0.08, w + 0.34), baseCF * CFrame.new(0, 0.32, 0), color, Enum.Material.Neon)
+	for _, sx in ipairs({-1, 1}) do
+		for _, sz in ipairs({-1, 1}) do
+			casePart(parent, "CaseEdge", Vector3.new(0.18, h, 0.18), baseCF * CFrame.new(sx * w / 2, h / 2, sz * w / 2), frame, Enum.Material.Metal)
+		end
+	end
 end
 
 local function updateCard(slot)
 	removeCard(slot)
 	local artifact = ArtifactData.GetArtifact(slot:GetAttribute("ArtifactId") or "")
 	local spot = slot:FindFirstChild("DisplaySpot")
+	local cap = slot:FindFirstChild("Cap")
 	if not artifact or not spot then return end
 	local rarity = ArtifactData.GetRarity(artifact.Rarity)
 
-	local part = Instance.new("Part")
-	part.Name = "MemeCard"
-	part.Anchored = true
-	part.CanCollide = false
-	part.CanQuery = false
-	part.CanTouch = false
-	part.CastShadow = false
-	part.Size = Vector3.new(4.4, 4.4, 0.35)
-	part.Color = rarity.Color
-	part.Material = Enum.Material.SmoothPlastic
-	cardFace(part, Enum.NormalId.Front, artifact)
-	cardFace(part, Enum.NormalId.Back, artifact)
+	local display = Instance.new("Model")
+	display.Name = "Display"
+	-- the pedestal's top, facing into the room like the slot does
+	local topY = cap and (cap.Position.Y + cap.Size.X / 2) or (spot.Position.Y - 1.8)
+	local baseCF = CFrame.new(spot.Position.X, topY, spot.Position.Z) * spot.CFrame.Rotation
+	glassCase(display, baseCF, rarity.Color)
+
+	local object = ArtifactModels.build(artifact)
+	-- shrink big objects so they fit inside the case
+	local fit = math.min(1, (CASE.X - 0.8) / (object:GetAttribute("Width") or 4), (CASE.Y - 0.8) / ((object:GetAttribute("HalfHeight") or 2) * 2))
+	if fit < 1 then object:ScaleTo(fit) end
+	local half = (object:GetAttribute("HalfHeight") or 2) * fit
+	object:PivotTo(baseCF * CFrame.new(0, 0.35 + half, 0))
+	object.Parent = display
+	-- a soft spotlight in the rarity's color, and sparkles for the fancy ones
 	local light = Instance.new("PointLight")
 	light.Color = rarity.Color
 	light.Range = 10
 	light.Brightness = 0.7
-	light.Parent = part
-	-- fancier memes sparkle
+	light.Parent = object.PrimaryPart
 	if ArtifactData.GetRarityIndex(artifact.Rarity) >= 5 then
 		local sparkles = Instance.new("ParticleEmitter")
-		sparkles.Rate = 4
+		sparkles.Rate = 3
 		sparkles.Lifetime = NumberRange.new(0.8, 1.4)
-		sparkles.Speed = NumberRange.new(0.5, 1.2)
+		sparkles.Speed = NumberRange.new(0.3, 0.8)
 		sparkles.SpreadAngle = Vector2.new(180, 180)
-		sparkles.Size = NumberSequence.new(0.25, 0)
+		sparkles.Size = NumberSequence.new(0.2, 0)
 		sparkles.LightEmission = 0.8
 		sparkles.Color = ColorSequence.new(rarity.Color)
-		sparkles.Parent = part
+		sparkles.Parent = object.PrimaryPart
 	end
-	local base = CFrame.new(spot.Position + Vector3.new(0, 1, 0))
-	part.CFrame = base
-	part.Parent = slot
-	cards[slot] = {Part = part, Base = base, Phase = (slot:GetAttribute("SlotIndex") or 1) * 0.7}
+	display.Parent = slot
+	cards[slot] = display
 end
 
 local function watchSlot(slot, owned)
@@ -11760,13 +12775,6 @@ for _, museum in ipairs(museumsFolder:GetChildren()) do
 	task.spawn(watchMuseum, museum)
 end
 
-RunService.RenderStepped:Connect(function()
-	local t = os.clock()
-	for _, card in pairs(cards) do
-		local bob = math.sin(t * 1.6 + card.Phase) * 0.3
-		card.Part.CFrame = card.Base * CFrame.new(0, bob, 0) * CFrame.Angles(0, t * 0.9 + card.Phase, 0)
-	end
-end)
 
 ---------------------------------------------------------------------
 -- SHARED: an inventory grid with a button on every meme
@@ -11954,25 +12962,31 @@ end)
 ---------------------------------------------------------------------
 -- FLOOR ARROWS (only while you're inside a museum)
 ---------------------------------------------------------------------
--- a slim bar pinned to the top center of the screen:  [▼]  FLOOR 2/3  [▲]
-local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(212, 44), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0),
-	Color = C.Ink, Radius = 22, StrokeColor = C.Sky, Stroke = 2, ShadeAmount = 0.2})
-floorPanel.BackgroundTransparency = 0.1
+-- a bright elevator bar pinned to the top center of the screen:  [▼ DOWN]  🛗 FLOOR 2/3  [UP ▲]
+local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(360, 62), Position = UDim2.new(0.5, 0, 0, 8), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Panel, Radius = 31, StrokeColor = C.Violet, Stroke = 4, ShadeAmount = 0.12})
 floorPanel.Visible = false
-local downButton = UIKit.button(floorPanel, "▼", {Size = UDim2.fromOffset(36, 36), Position = UDim2.new(0, 4, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Violet, Radius = 18, MaxText = 16})
-local upButton = UIKit.button(floorPanel, "▲", {Size = UDim2.fromOffset(36, 36), Position = UDim2.new(1, -4, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Color = C.Sky, Radius = 18, MaxText = 16})
-local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -96, 0, 20), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 0, MaxText = 17})
+local downButton = UIKit.button(floorPanel, "▼ DOWN", {Size = UDim2.fromOffset(104, 48), Position = UDim2.new(0, 7, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Violet, Radius = 24, MaxText = 18})
+local upButton = UIKit.button(floorPanel, "UP ▲", {Size = UDim2.fromOffset(104, 48), Position = UDim2.new(1, -7, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Color = C.Sky, Radius = 24, MaxText = 18})
+local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -236, 0, 30), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0, MaxText = 22})
 -- the price of the next floor hangs under the bar when it's still locked
-local pricePill = UIKit.panel(floorPanel, {Size = UDim2.fromOffset(150, 24), Position = UDim2.new(0.5, 0, 1, 6), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Radius = 12, Stroke = 2})
-local upPrice = UIKit.label(pricePill, "", {Size = UDim2.new(1, -14, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 1.5, MaxText = 13})
+local pricePill = UIKit.panel(floorPanel, {Size = UDim2.fromOffset(190, 28), Position = UDim2.new(0.5, 0, 1, 6), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Radius = 14, Stroke = 2.5})
+local upPrice = UIKit.label(pricePill, "", {Size = UDim2.new(1, -16, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
 pricePill.Visible = false
 for _, b in ipairs({upButton, downButton}) do
 	local arrow = b:FindFirstChild("Label")
-	if arrow then
-		arrow.Font = Enum.Font.GothamBlack
-		arrow.Size = UDim2.new(1, -10, 1, -12)
-	end
+	if arrow then arrow.Font = Enum.Font.GothamBlack end
 end
+-- a soft glow pulsing around the bar so it's easy to spot
+local barStroke = floorPanel:FindFirstChildOfClass("UIStroke")
+task.spawn(function()
+	while true do
+		if floorPanel.Visible and barStroke then
+			barStroke.Color = C.Violet:Lerp(C.Sky, 0.5 + 0.5 * math.sin(os.clock() * 3))
+		end
+		task.wait(0.05)
+	end
+end)
 
 local function currentMuseumFloor()
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -11996,7 +13010,7 @@ task.spawn(function()
 			local opened = string.split(museum:GetAttribute("UnlockedFloors") or "1", ",")
 			local owned = museum:GetAttribute("OwnerUserId") == player.UserId
 			local nextOpen = table.find(opened, tostring(floor + 1)) ~= nil
-			floorLabel.Text = "FLOOR " .. floor .. "/" .. topFloor
+			floorLabel.Text = "🛗 FLOOR " .. floor .. "/" .. topFloor
 			upButton.Visible = floor < topFloor and (nextOpen or owned)
 			downButton.Visible = floor > 1
 			if upButton.Visible and not nextOpen then
@@ -12072,14 +13086,15 @@ end
 -- "JUMP INTO THE PIT" PROMPT: shows while you hold a pickaxe outside the pit and vanishes the
 -- instant your character enters the pit volume (GameConfig.IsInPit uses GetPartBoundsInBox)
 ---------------------------------------------------------------------
+-- a small pill on the left, under the money counters, out of the way
 local pitPrompt = UIKit.panel(gui, {
-	Size = UDim2.fromOffset(330, 44), Position = UDim2.new(0.5, 0, 1, -250), AnchorPoint = Vector2.new(0.5, 0),
-	Color = C.Ink, Radius = 22, Stroke = 2.5, StrokeColor = C.Sky, ShadeAmount = 0.2,
+	Size = UDim2.fromOffset(250, 36), Position = UDim2.fromOffset(14, 172),
+	Color = C.Ink, Radius = 18, Stroke = 2.5, StrokeColor = C.Sky, ShadeAmount = 0.2,
 })
 pitPrompt.BackgroundTransparency = 0.12
 pitPrompt.Visible = false
-UIKit.label(pitPrompt, "⛏  Jump into the pit to dig!", {Size = UDim2.new(1, -28, 1, -14), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
-	Color = C.White, Stroke = 0, MaxText = 20})
+UIKit.label(pitPrompt, "⛏  Jump into the pit to dig!", {Size = UDim2.new(1, -24, 1, -12), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+	Color = C.White, Stroke = 0, MaxText = 17})
 local insidePit = false
 
 digMessageRemote.OnClientEvent:Connect(function(message, color)
@@ -12486,7 +13501,13 @@ local function createRig(character, tool)
 		trail.MinLength = 0.05
 		trail.FaceCamera = true
 		trail.LightEmission = 0.5
-		trail.Color = ColorSequence.new(Color3.new(1, 1, 1), glow)
+		-- the swoosh matches the pickaxe's trail style (sparks, electricity, fire or galaxy)
+		local colorA, colorB = tool:GetAttribute("TrailColorA"), tool:GetAttribute("TrailColorB")
+		if typeof(colorA) == "Color3" and typeof(colorB) == "Color3" then
+			trail.Color = ColorSequence.new(colorA, colorB)
+		else
+			trail.Color = ColorSequence.new(Color3.new(1, 1, 1), glow)
+		end
 		trail.Transparency = NumberSequence.new(0.35, 1)
 		trail.WidthScale = NumberSequence.new(1, 0.3)
 		trail.Enabled = false
@@ -12845,10 +13866,12 @@ local holding = false
 
 local function trySwing(def)
 	local now = os.clock()
-	if now - lastSwing < def.Cooldown then return end
+	-- world events and boosts (Gold Rush, Sugar Rush, Glitch Surge...) make swings faster
+	local cooldown = def.Cooldown * (player:GetAttribute("DigSpeedMult") or 1)
+	if now - lastSwing < cooldown then return end
 	lastSwing = now
 
-	local length = math.clamp(def.Cooldown, 0.3, 0.5) -- overhead two-handed swing
+	local length = math.clamp(cooldown, 0.3, 0.5) -- overhead two-handed swing
 	startSwing(player.Character, length)
 
 	-- the dig happens exactly when the blade hits the ground
@@ -13181,7 +14204,7 @@ local player = Players.LocalPlayer
 local STEPS = {
 	{Icon = "⛏", Title = "Equip your pickaxe", Text = "Press 1, or click the pickaxe in your hotbar at the bottom of the screen."},
 	{Icon = "🕳", Title = "Jump into the pit", Text = "Follow the glowing trail to the dig site and hop down into the dirt!"},
-	{Icon = "🖼", Title = "Dig up a framed artifact", Text = "Click the ground to swing. Keep digging until a painting appears, then hold E to pull it out!"},
+	{Icon = "🖼", Title = "Dig up a framed artifact", Text = "Click the ground to swing. Keep digging until an artifact appears, then hold E to pull it out!"},
 	{Icon = "🏛", Title = "Display it in your museum", Text = "Follow the trail home and press E at a glowing pedestal to put your meme on show."},
 }
 local STEP_COLORS = {C.Sun, C.Mint, C.Coral, C.Violet}
@@ -13589,6 +14612,198 @@ local function onWorldChanged()
 end
 player:GetAttributeChangedSignal("CurrentWorld"):Connect(onWorldChanged)
 onWorldChanged()
+]=])
+install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "WorldGimmickClient", "LocalScript", [=[
+-- WorldGimmickClient (LocalScript in StarterPlayer > StarterPlayerScripts)
+-- The player's side of the world gimmicks (see ReplicatedStorage.WorldGimmicks):
+--   * a short intro line when you arrive in a world with a gimmick
+--   * low gravity in Galaxy Drift (gravity is simulated on your own screen)
+--   * the air meter in Coral Circuit (refill at the AirVent parts or near the surface)
+--   * snow and fog during a Blizzard, screen flicker during a Glitch Surge
+--   * a small timer pill for the current world event and your personal boost
+
+local CollectionService = game:GetService("CollectionService")
+local Lighting = game:GetService("Lighting")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local WorldGimmicks = require(ReplicatedStorage:WaitForChild("WorldGimmicks"))
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local C = UIKit.Colors
+local surfaceRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ReturnToSurface")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+local DEFAULT_GRAVITY = workspace.Gravity
+local AIR_SECONDS = 70   -- how long a full air meter lasts in the fumes
+local VENT_RANGE = 14    -- how close to a vent refills your air
+
+local gui = UIKit.screen(player, "WorldGimmickGui", 4)
+
+-- intro line (left side, under the money counters)
+local intro = UIKit.panel(gui, {Size = UDim2.fromOffset(330, 64), Position = UDim2.fromOffset(14, 214), Color = C.Ink, Radius = 18, Stroke = 2.5, StrokeColor = C.Lilac, ShadeAmount = 0.2})
+intro.BackgroundTransparency = 0.1
+intro.Visible = false
+local introTitle = UIKit.label(intro, "", {Size = UDim2.new(1, -20, 0, 22), Position = UDim2.fromOffset(12, 6), Align = "Left", Color = C.Sun, Stroke = 0, MaxText = 18})
+local introText = UIKit.label(intro, "", {Size = UDim2.new(1, -20, 0, 32), Position = UDim2.fromOffset(12, 28), Align = "Left", VAlign = "Top",
+	Color = C.White, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
+
+-- event + boost timers (left side, small pills)
+local function pill(y, color)
+	local p = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 32), Position = UDim2.fromOffset(14, y), Color = color, Radius = 16, Stroke = 2})
+	p.Visible = false
+	local l = UIKit.label(p, "", {Size = UDim2.new(1, -20, 1, -10), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
+	return p, l
+end
+local eventPill, eventLabel = pill(286, C.Violet)
+local boostPill, boostLabel = pill(324, C.Coral)
+
+-- air meter (right under the event pills)
+local airPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 40), Position = UDim2.fromOffset(14, 362), Color = C.Ink, Radius = 20, Stroke = 2.5, StrokeColor = C.Sky})
+airPanel.Visible = false
+UIKit.label(airPanel, "🫧 AIR", {Size = UDim2.fromOffset(60, 22), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Align = "Left", Color = C.White, Stroke = 0, MaxText = 16})
+local airTrack = UIKit.panel(airPanel, {Size = UDim2.new(1, -90, 0, 14), Position = UDim2.new(0, 76, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.PanelTint, Radius = 7, Stroke = false, Shade = false})
+local airFill = UIKit.panel(airTrack, {Size = UDim2.fromScale(1, 1), Color = C.Sky, Radius = 7, Stroke = false, Shade = false})
+
+-- blizzard snow around the camera, and a colour grade for fog / glitches
+local snowPart = Instance.new("Part")
+snowPart.Name = "BlizzardSnow"
+snowPart.Anchored = true
+snowPart.CanCollide = false
+snowPart.CanQuery = false
+snowPart.CanTouch = false
+snowPart.Transparency = 1
+snowPart.Size = Vector3.new(80, 1, 80)
+local snow = Instance.new("ParticleEmitter")
+snow.Shape = Enum.ParticleEmitterShape.Box
+snow.Color = ColorSequence.new(Color3.new(1, 1, 1))
+snow.Size = NumberSequence.new(0.35, 0.2)
+snow.Lifetime = NumberRange.new(2, 3)
+snow.Rate = 0
+snow.Speed = NumberRange.new(20, 30)
+snow.EmissionDirection = Enum.NormalId.Bottom
+snow.SpreadAngle = Vector2.new(25, 25)
+snow.Acceleration = Vector3.new(14, 0, 6)
+snow.Parent = snowPart
+local grade = Instance.new("ColorCorrectionEffect")
+grade.Name = "WorldGimmickGrade"
+grade.Enabled = false
+grade.Parent = Lighting
+
+local function currentWorldId()
+	return player:GetAttribute("CurrentWorld") or 1
+end
+
+local function container(worldId)
+	local worlds = workspace:FindFirstChild("Worlds")
+	return worlds and worlds:FindFirstChild("World" .. worldId)
+end
+
+-- INTRO on arrival
+local introToken = 0
+local function showIntro(worldId)
+	local info = WorldGimmicks[worldId]
+	introToken += 1
+	if not info then
+		intro.Visible = false
+		return
+	end
+	local myToken = introToken
+	introTitle.Text = info.Icon .. "  " .. info.Title
+	introText.Text = info.Text
+	intro.Visible = true
+	UIKit.pop(intro, 0.7)
+	task.delay(9, function()
+		if introToken == myToken then intro.Visible = false end
+	end)
+end
+player:GetAttributeChangedSignal("CurrentWorld"):Connect(function()
+	showIntro(currentWorldId())
+end)
+
+local air = 1
+RunService.RenderStepped:Connect(function(dt)
+	local worldId = currentWorldId()
+	local world = GameConfig.GetWorld(worldId) or GameConfig.Worlds[1]
+	local folder = container(worldId)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local clock = os.clock()
+
+	-- gravity
+	local gravity = folder and folder:GetAttribute("Gravity")
+	workspace.Gravity = gravity or DEFAULT_GRAVITY
+
+	-- events
+	local event = folder and folder:GetAttribute("Event") or ""
+	local eventName = player:GetAttribute("WorldEvent") or ""
+	local left = player:GetAttribute("WorldEventLeft") or 0
+	eventPill.Visible = eventName ~= ""
+	if eventPill.Visible then eventLabel.Text = "⭐ " .. eventName .. "  ·  " .. left .. "s" end
+	local boostName = player:GetAttribute("PersonalBoost") or ""
+	boostPill.Visible = boostName ~= ""
+	if boostPill.Visible then boostLabel.Text = "🍭 " .. boostName .. "  ·  " .. (player:GetAttribute("PersonalBoostLeft") or 0) .. "s" end
+
+	-- blizzard: snow falling around the camera and a cold, foggy tint
+	local blizzard = event == "BLIZZARD"
+	snow.Rate = blizzard and 500 or 0
+	if blizzard then
+		snowPart.CFrame = CFrame.new(camera.CFrame.Position + Vector3.new(0, 25, 0))
+		snowPart.Parent = workspace
+	elseif snowPart.Parent and snow.Rate == 0 then
+		snowPart.Parent = nil
+	end
+	local glitch = event == "GLITCH SURGE"
+	if blizzard then
+		grade.Enabled = true
+		grade.TintColor = Color3.fromRGB(215, 230, 255)
+		grade.Brightness = 0.12
+		grade.Contrast = -0.25
+		grade.Saturation = -0.3
+	elseif glitch then
+		-- flicker: every few frames the colors jump
+		grade.Enabled = true
+		local on = math.sin(clock * 37) > 0.6
+		grade.TintColor = on and Color3.fromRGB(200, 150, 255) or Color3.fromRGB(255, 255, 255)
+		grade.Saturation = on and 0.6 or 0.1
+		grade.Contrast = on and 0.3 or 0
+		grade.Brightness = 0
+	else
+		grade.Enabled = false
+	end
+
+	-- air meter
+	local oxygenDepth = folder and folder:GetAttribute("OxygenDepth")
+	if oxygenDepth and root then
+		local depth = world.Origin.Y - (root.Position.Y - 3)
+		local refilling = depth < oxygenDepth * 0.5
+		if not refilling then
+			for _, vent in ipairs(CollectionService:GetTagged("AirVent")) do
+				if (vent.Position - root.Position).Magnitude < VENT_RANGE then
+					refilling = true
+					break
+				end
+			end
+		end
+		if refilling then
+			air = math.min(1, air + dt * 0.5)
+		elseif depth > oxygenDepth then
+			air = math.max(0, air - dt / AIR_SECONDS)
+		end
+		airPanel.Visible = depth > oxygenDepth * 0.5 or air < 1
+		airFill.Size = UDim2.fromScale(air, 1)
+		airFill.BackgroundColor3 = air < 0.25 and C.Coral or (air < 0.5 and C.Sun or C.Sky)
+		if air <= 0 then
+			air = 1
+			surfaceRemote:FireServer() -- out of air: pulled back up to the surface
+		end
+	else
+		airPanel.Visible = false
+		air = 1
+	end
+end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
 print("Meme Archaeologist: installed " .. count .. " scripts. Now save the place (Ctrl+S).")

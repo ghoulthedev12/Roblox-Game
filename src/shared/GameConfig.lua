@@ -162,8 +162,19 @@ local ZONE_INFO = {
 	{Name = "Deep Zone", Rarities = DEEP},
 	{Name = "The Abyss", Rarities = ABYSS},
 }
+-- World prices after Neon Sakura Grove (world 2) follow a steep curve so nobody rushes
+-- through every world: Cost = BaseCost x Multiplier ^ (world number - 3)
+-- (world 3 = $500M, 4 = $2.5B, 5 = $12.5B, 6 = $62.5B, 7 = $312.5B, 8 = $1.56T, 9 = $7.8T)
+GameConfig.WorldPriceCurve = {BaseCost = 500e6, Multiplier = 5, FromWorld = 3}
+local function worldPrice(id, info)
+	local curve = GameConfig.WorldPriceCurve
+	if id < curve.FromWorld then return info.Price end
+	return curve.BaseCost * curve.Multiplier ^ (id - curve.FromWorld)
+end
+
 for i, info in ipairs(WorldsData.Worlds) do
 	local id = i + 1
+	local price = worldPrice(id, info)
 	local area = 21 + i -- this world's memes (ArtifactData areas 22-29)
 	local zoneList = {}
 	for z, material in ipairs(info.Zones) do
@@ -175,7 +186,7 @@ for i, info in ipairs(WorldsData.Worlds) do
 		local tier = WorldsData.ShovelTiers[t]
 		table.insert(shovels, {
 			Id = entry.Id or (entry[1]:gsub("[^%w]", "")), Name = entry[1], Description = entry[2],
-			Price = tier.PriceFactor * info.Price, MaxZone = tier.MaxZone,
+			Price = tier.PriceFactor * price, MaxZone = tier.MaxZone,
 			Power = tier.Power, FindChance = tier.FindChance, Luck = tier.Luck, Cooldown = tier.Cooldown,
 			Color = t % 2 == 1 and info.Look.Main or info.Look.Second, Material = "SmoothPlastic",
 			-- PickaxeModels builds these from the world's colors (the tier picks the head shape)
@@ -183,7 +194,7 @@ for i, info in ipairs(WorldsData.Worlds) do
 		})
 	end
 	table.insert(GameConfig.Worlds, {
-		Id = id, Name = info.Name, Enabled = true, Price = info.Price, Theme = info.Theme, Tagline = info.Tagline,
+		Id = id, Name = info.Name, Enabled = true, Price = price, Theme = info.Theme, Tagline = info.Tagline,
 		-- on a huge ring far from World 1 and from each other (~9000 studs apart), so no
 		-- island can see another one
 		Origin = Vector3.new(math.cos(math.rad(i * 45)) * 12000, 0, math.sin(math.rad(i * 45)) * 12000),
@@ -196,7 +207,7 @@ for i, info in ipairs(WorldsData.Worlds) do
 	})
 end
 
-GameConfig.BedrockThickness = 8
+GameConfig.BedrockThickness = 16 -- the indestructible floor under every pit
 -- rock strata in the pit: a layer this thick every Gap studs, reaching this far into the walls
 local STRATA = {First = 14, Gap = 18, Thickness = 4, IntoWall = 8}
 
