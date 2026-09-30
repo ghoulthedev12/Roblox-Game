@@ -36,11 +36,12 @@ NICE_NAMES = {
 def request(method, url, key, body=None, content_type=None):
     req = urllib.request.Request(url, data=body, method=method)
     req.add_header("x-api-key", key)
+    req.add_header("User-Agent", "MemeArchaeologist-AudioUploader/1.0")
     if content_type:
         req.add_header("Content-Type", content_type)
-    for attempt in range(6):
+    for attempt in range(10):
         try:
-            with urllib.request.urlopen(req, timeout=120) as resp:
+            with urllib.request.urlopen(req, timeout=180) as resp:
                 return json.loads(resp.read().decode("utf-8") or "{}")
         except urllib.error.HTTPError as e:
             text = e.read().decode("utf-8", "replace")
@@ -52,10 +53,15 @@ def request(method, url, key, body=None, content_type=None):
             raise SystemExit("\nRoblox refused the request (%d): %s\n"
                              "Check the API key has Assets Read+Write and the right --user-id/--group-id.\n"
                              "(Roblox also limits how many audio files you can upload per month.)" % (e.code, text))
-        except urllib.error.URLError as e:
-            print("   Network problem (%s), retrying..." % e.reason)
-            time.sleep(3)
-    raise SystemExit("Gave up after several retries.")
+        except (urllib.error.URLError, OSError) as e:  # OSError: connection aborted/reset mid-transfer
+            wait = min(5 * (attempt + 1), 30)
+            print("   Network problem (%s), retrying in %ds..." % (getattr(e, "reason", e), wait))
+            time.sleep(wait)
+    raise NetworkGaveUp()
+
+
+class NetworkGaveUp(Exception):
+    pass
 
 
 def upload(path, name, key, creator):
@@ -117,19 +123,32 @@ def main():
     if os.path.exists(PROGRESS):
         with open(PROGRESS, encoding="utf-8") as f:
             done = json.load(f)
-    files = sorted(n for n in os.listdir(AUDIO) if n.endswith(".ogg"))
+    # small sound effects first, then the bigger music tracks
+    files = sorted((n for n in os.listdir(AUDIO) if n.endswith(".ogg")),
+                   key=lambda n: (not n.startswith("sfx"), os.path.getsize(os.path.join(AUDIO, n)), n))
     todo = [n for n in files if n[:-4] not in done]
     print("%d audio files, %d already uploaded, %d to go." % (len(files), len(files) - len(todo), len(todo)))
 
+    failed = []
     for i, filename in enumerate(todo, 1):
         name = filename[:-4]
-        asset_id = upload(os.path.join(AUDIO, filename), name, key, creator)
+        print("[%d/%d] uploading %s (%d KB)..." % (i, len(todo), name, os.path.getsize(os.path.join(AUDIO, filename)) // 1024))
+        try:
+            asset_id = upload(os.path.join(AUDIO, filename), name, key, creator)
+        except NetworkGaveUp:
+            print("   Skipping %s for now (the connection keeps getting cut)." % name)
+            failed.append(name)
+            continue
         done[name] = asset_id
         with open(PROGRESS, "w", encoding="utf-8") as f:
             json.dump(done, f, indent=1, sort_keys=True)
         print("[%d/%d] %s -> %d" % (i, len(todo), name, asset_id))
         time.sleep(1)  # stay well under Roblox's upload rate limit
 
+    if failed:
+        print("\n%d file(s) didn't upload: %s" % (len(failed), ", ".join(failed)))
+        print("Your PC closed the connection (often antivirus HTTPS/web scanning or a VPN).")
+        print("Run the same command again to retry just those; everything else is saved.")
     write_lua(done)
     print("\nWrote %s with %d sounds." % (os.path.relpath(OUT_LUA, ROOT), len(done)))
     subprocess.run([sys.executable, os.path.join(ROOT, "tools", "build_installer.py")], cwd=ROOT, check=False)
