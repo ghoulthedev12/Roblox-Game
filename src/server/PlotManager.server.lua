@@ -82,6 +82,9 @@ local function onPlayerAdded(player)
 	museum.Name = "Museum_" .. player.Name
 	museum:SetAttribute("OwnerUserId", player.UserId)
 	museum:PivotTo(plot.CFrame)
+	-- pave the ground under the museum and its plaza, so the island's grass doesn't grow
+	-- up through the floors
+	workspace.Terrain:FillBlock(plot.CFrame * CFrame.new(0, -2.5, -14), Vector3.new(84, 4, 104), Enum.Material.Slate)
 	setOwnerSign(museum, player)
 	museum.Parent = museumsFolder
 	ownedMuseums[player] = museum

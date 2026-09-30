@@ -376,6 +376,16 @@ function MainIsland.build(parent)
 	ground.Name = "Ground"
 	ground.Parent = island
 	buildGround(Architecture.builder(ground, CFrame.new()), rng)
+	-- pave the terrain under roads and walkways: grass blades would poke up through them
+	local PAVED = {Boulevard = true, SidewalkIn = true, SidewalkOut = true, Avenue = true, MuseumWalk = true, EdgeCurb = true}
+	for _, part in ipairs(ground:GetChildren()) do
+		if PAVED[part.Name] then
+			local pos = part.Position
+			terrain:FillBlock(CFrame.new(pos.X, -2, pos.Z) * part.CFrame.Rotation, Vector3.new(part.Size.X + 2, 4, part.Size.Z + 2), Enum.Material.Slate)
+		elseif part.Name == "Lookout" then
+			terrain:FillCylinder(CFrame.new(part.Position.X, -2, part.Position.Z), 4, part.Size.Y / 2 + 1, Enum.Material.Slate)
+		end
+	end
 	for _, part in ipairs(ground:GetChildren()) do
 		if part.Name == "EdgeBarrier" then
 			part.Transparency = 1

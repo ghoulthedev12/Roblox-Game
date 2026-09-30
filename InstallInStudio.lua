@@ -4923,6 +4923,16 @@ function MainIsland.build(parent)
 	ground.Name = "Ground"
 	ground.Parent = island
 	buildGround(Architecture.builder(ground, CFrame.new()), rng)
+	-- pave the terrain under roads and walkways: grass blades would poke up through them
+	local PAVED = {Boulevard = true, SidewalkIn = true, SidewalkOut = true, Avenue = true, MuseumWalk = true, EdgeCurb = true}
+	for _, part in ipairs(ground:GetChildren()) do
+		if PAVED[part.Name] then
+			local pos = part.Position
+			terrain:FillBlock(CFrame.new(pos.X, -2, pos.Z) * part.CFrame.Rotation, Vector3.new(part.Size.X + 2, 4, part.Size.Z + 2), Enum.Material.Slate)
+		elseif part.Name == "Lookout" then
+			terrain:FillCylinder(CFrame.new(part.Position.X, -2, part.Position.Z), 4, part.Size.Y / 2 + 1, Enum.Material.Slate)
+		end
+	end
 	for _, part in ipairs(ground:GetChildren()) do
 		if part.Name == "EdgeBarrier" then
 			part.Transparency = 1
@@ -5295,7 +5305,6 @@ local function build()
 		fl:ring("FloorInlay", CFrame.new(0, base + 0.72, 4) * CFrame.Angles(math.rad(90), 0, 0), 11, 0.5, "GlowCyan", 32)
 		-- the lift pad: step onto it and use the arrows
 		fl:tiers("LiftPad", CFrame.new(0, base + 0.6, 4), {{8, 0.3, "Violet"}, {6.6, 0.3, "GlowCyan"}})
-		fl:ring("LiftHalo", CFrame.new(0, base + 7, 4) * CFrame.Angles(math.rad(90), 0, 0), 3.4, 0.35, "GlowPink", 20)
 		marker(arrivals, "Floor" .. f .. "Arrival", CFrame.new(0, base + 3.5, 4))
 		-- soft ceiling light panels (the next slab is the ceiling)
 		for _, x in ipairs({-12, 12}) do
@@ -5420,7 +5429,7 @@ local function build()
 	marker(waypoints, "Lobby", CFrame.new(0, 3, -HALF + 12), Vector3.new(10, 1, 4))
 
 	-- decorative rings and ropes shouldn't trip anyone up
-	local NO_COLLIDE = {FloorInlay = true, LiftHalo = true, Rope = true, DomeHalo = true, PortalGlow = true, CanopyBulb = true, PlazaGlow = true}
+	local NO_COLLIDE = {FloorInlay = true, Rope = true, DomeHalo = true, PortalGlow = true, CanopyBulb = true, PlazaGlow = true}
 	for _, part in ipairs(museum:GetDescendants()) do
 		if part:IsA("BasePart") and NO_COLLIDE[part.Name] then
 			part.CanCollide = false
@@ -6251,6 +6260,9 @@ local function onPlayerAdded(player)
 	museum.Name = "Museum_" .. player.Name
 	museum:SetAttribute("OwnerUserId", player.UserId)
 	museum:PivotTo(plot.CFrame)
+	-- pave the ground under the museum and its plaza, so the island's grass doesn't grow
+	-- up through the floors
+	workspace.Terrain:FillBlock(plot.CFrame * CFrame.new(0, -2.5, -14), Vector3.new(84, 4, 104), Enum.Material.Slate)
 	setOwnerSign(museum, player)
 	museum.Parent = museumsFolder
 	ownedMuseums[player] = museum

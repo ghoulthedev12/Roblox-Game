@@ -202,7 +202,6 @@ local function build()
 		fl:ring("FloorInlay", CFrame.new(0, base + 0.72, 4) * CFrame.Angles(math.rad(90), 0, 0), 11, 0.5, "GlowCyan", 32)
 		-- the lift pad: step onto it and use the arrows
 		fl:tiers("LiftPad", CFrame.new(0, base + 0.6, 4), {{8, 0.3, "Violet"}, {6.6, 0.3, "GlowCyan"}})
-		fl:ring("LiftHalo", CFrame.new(0, base + 7, 4) * CFrame.Angles(math.rad(90), 0, 0), 3.4, 0.35, "GlowPink", 20)
 		marker(arrivals, "Floor" .. f .. "Arrival", CFrame.new(0, base + 3.5, 4))
 		-- soft ceiling light panels (the next slab is the ceiling)
 		for _, x in ipairs({-12, 12}) do
@@ -327,7 +326,7 @@ local function build()
 	marker(waypoints, "Lobby", CFrame.new(0, 3, -HALF + 12), Vector3.new(10, 1, 4))
 
 	-- decorative rings and ropes shouldn't trip anyone up
-	local NO_COLLIDE = {FloorInlay = true, LiftHalo = true, Rope = true, DomeHalo = true, PortalGlow = true, CanopyBulb = true, PlazaGlow = true}
+	local NO_COLLIDE = {FloorInlay = true, Rope = true, DomeHalo = true, PortalGlow = true, CanopyBulb = true, PlazaGlow = true}
 	for _, part in ipairs(museum:GetDescendants()) do
 		if part:IsA("BasePart") and NO_COLLIDE[part.Name] then
 			part.CanCollide = false
