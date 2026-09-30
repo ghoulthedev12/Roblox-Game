@@ -17,6 +17,7 @@ do local old = game:GetService("ServerScriptService"):FindFirstChild("DataManage
 do local old = game:GetService("ServerScriptService"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
 do local old = game:GetService("ReplicatedStorage"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("MuseumStyle") if old then old:Destroy() print("Removed MuseumStyle") end end
+do local old = game:GetService("ServerScriptService"):FindFirstChild("TutorialSign") if old then old:Destroy() print("Removed TutorialSign") end end
 install(game:GetService("ReplicatedStorage"), "ArtifactData", "ModuleScript", [=[
 -- ArtifactData (ModuleScript in ReplicatedStorage)
 -- The ONE list the whole game reads from: rarities, the 20 dig areas, and every artifact.
@@ -2399,132 +2400,188 @@ return WorldsData
 ]=])
 install(game:GetService("ServerScriptService"), "AlienPortal", "ModuleScript", [=[
 -- AlienPortal (ModuleScript in ServerScriptService)
--- A glowing sci-fi portal the alien visitors come out of and leave through: a hover platform,
--- a thick violet ring with a neon inner rim, two spinning chrome arcs, pylons with glowing
--- tips, a swirling force-field vortex with sparkles, and floating crystals over the top.
--- Usage: AlienPortal(parent, cframe) -> model. cframe sits on the ground; -Z is the side the
--- aliens walk out of. Markers in the model: "Core" (inside the ring, where aliens appear and
--- vanish) and "Front" (on the ground in front of the portal).
--- The vortex and the arcs are spun on each player's screen by ShovelSpinner ("ShovelOrbit" tag).
+-- A green, swirly "Rick and Morty" style portal that pops open out of thin air, stands on
+-- the ground for a moment while aliens step through, then snaps shut.
+-- It's a tall glowing oval: a lime rim, a bright jelly-green middle, a pale glowing core and
+-- a swirling force-field skin, with green sparks, dripping goo, a splash ring on the ground
+-- and a green light. It wobbles like jelly while it's open.
+--
+--   local portal = AlienPortal.open(parent, cframe)  -- cframe on the ground, -Z = the side aliens come out of
+--   AlienPortal.close(portal)                        -- shrinks it away and destroys it
+--   AlienPortal.Size                                 -- how much room it needs (for picking a spot)
+-- Markers in the model: "Core" (in the middle of the oval, at standing height) and "Front"
+-- (on the ground a few studs in front of it).
 
+local TweenService = game:GetService("TweenService")
 local CollectionService = game:GetService("CollectionService")
-local Architecture = require(script.Parent:WaitForChild("Architecture"))
+local Debris = game:GetService("Debris")
 
 local rgb = Color3.fromRGB
-local RING_R = 7
-local PLATFORM_TOP = 1.7
+local AlienPortal = {}
 
-local function marker(parent, name, cf)
+local HEIGHT, WIDTH = 9.5, 6.6
+local CENTER_Y = HEIGHT / 2 + 0.3
+AlienPortal.Size = Vector3.new(WIDTH + 2, HEIGHT + 1, 4)
+
+-- {name, size multiplier (x, y), thickness, color, material, transparency}
+local LAYERS = {
+	{"PortalRim", 1, 0.3, rgb(140, 255, 60), Enum.Material.Neon, 0},
+	{"PortalJelly", 0.88, 0.42, rgb(40, 170, 40), Enum.Material.Neon, 0},
+	{"PortalSwirl", 0.86, 0.5, rgb(120, 255, 80), Enum.Material.ForceField, 0},
+	{"PortalCore", 0.34, 0.62, rgb(235, 255, 205), Enum.Material.Neon, 0.1},
+}
+
+local function part(parent, name, size, cf, color, material, transparency)
 	local p = Instance.new("Part")
 	p.Name = name
 	p.Anchored = true
 	p.CanCollide = false
 	p.CanQuery = false
 	p.CanTouch = false
-	p.Transparency = 1
-	p.Size = Vector3.new(2, 1, 2)
+	p.CastShadow = false
+	p.Size = size
 	p.CFrame = cf
+	p.Color = color
+	p.Material = material
+	p.Transparency = transparency or 0
 	p.Parent = parent
 	return p
 end
 
--- makes a part spin around the portal's axis on every player's screen
-local function spin(part, pivot, speed)
-	part:SetAttribute("OrbitPivot", pivot)
-	part:SetAttribute("OrbitOffset", pivot:ToObjectSpace(part.CFrame))
-	part:SetAttribute("OrbitSpeed", speed)
-	CollectionService:AddTag(part, "ShovelOrbit")
+local function oval(parent, name, size, cf, color, material, transparency)
+	local p = part(parent, name, size, cf, color, material, transparency)
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Sphere
+	mesh.Scale = Vector3.new(0.02, 0.02, 1) -- starts closed
+	mesh.Parent = p
+	return p, mesh
 end
 
-return function(parent, cf)
+local function emitter(parent, props)
+	local e = Instance.new("ParticleEmitter")
+	for k, v in pairs(props) do e[k] = v end
+	e.Parent = parent
+	return e
+end
+
+function AlienPortal.open(parent, cf)
 	local portal = Instance.new("Model")
 	portal.Name = "AlienPortal"
-	portal.Parent = parent
-	local b = Architecture.builder(portal, cf)
-	local ringY = PLATFORM_TOP + RING_R + 0.4
-	local center = cf * CFrame.new(0, ringY, 0)
-
-	-- hover platform
-	b:tiers("PortalBase", CFrame.new(), {{RING_R * 2 + 5, 0.6, "Ink"}, {RING_R * 2 + 3.6, 0.3, "GlowPink"}, {RING_R * 2 + 2.4, 0.8, "Navy"}})
-	b:ring("PortalBaseGlow", CFrame.new(0, PLATFORM_TOP + 0.05, 0) * CFrame.Angles(math.rad(90), 0, 0), RING_R + 0.2, 0.3, "GlowCyan", 40)
-
-	-- the ring itself
-	b:ring("PortalRing", CFrame.new(0, ringY, 0), RING_R, 1.7, "Violet", 36)
-	b:ring("PortalRim", CFrame.new(0, ringY, -0.9), RING_R - 0.9, 0.45, "GlowCyan", 36)
-	b:ring("PortalRim", CFrame.new(0, ringY, 0.9), RING_R - 0.9, 0.45, "GlowPink", 36)
-	-- feet that hold the ring on the platform
-	for _, s in ipairs({-1, 1}) do
-		b:box("PortalFoot", Vector3.new(2.2, 2.2, 3.2), CFrame.new(s * 2.4, PLATFORM_TOP + 0.9, 0) * CFrame.Angles(0, 0, s * math.rad(-30)), "Ink")
+	portal:SetAttribute("NoCalm", true)
+	local center = cf * CFrame.new(0, CENTER_Y, 0)
+	local meshes = {}
+	for i, layer in ipairs(LAYERS) do
+		local size = Vector3.new(WIDTH * layer[2], HEIGHT * layer[2], layer[3])
+		-- layers stack front to back a little so they don't flicker into each other
+		local _, mesh = oval(portal, layer[1], size, center * CFrame.new(0, 0, (i - 2.5) * 0.04), layer[4], layer[5], layer[6])
+		table.insert(meshes, mesh)
 	end
+	local core = portal:FindFirstChild("PortalCore")
+	local rim = portal:FindFirstChild("PortalRim")
 
-	-- chrome arcs that spin around the ring
-	local arcs = Instance.new("Model")
-	arcs.Name = "PortalArcs"
-	arcs.Parent = portal
-	local ab = Architecture.builder(arcs, cf)
-	ab:ring("PortalArc", CFrame.new(0, ringY, 0), RING_R + 1.5, 0.5, "Chrome", 10, 110, 20)
-	ab:ring("PortalArc", CFrame.new(0, ringY, 0), RING_R + 1.5, 0.5, "Chrome", 10, 110, 200)
-	for _, p in ipairs(arcs:GetDescendants()) do
-		if p:IsA("BasePart") then spin(p, center, 0.8) end
-	end
-
-	-- pylons with glowing tips on both sides
-	for _, s in ipairs({-1, 1}) do
-		b:pill("PortalPylon", Vector3.new(s * (RING_R + 3.2), PLATFORM_TOP, 0), Vector3.new(s * (RING_R + 3.2), PLATFORM_TOP + 10, 0), 1.1, "Ink")
-		b:box("PylonStrip", Vector3.new(0.2, 8, 0.2), CFrame.new(s * (RING_R + 3.2), PLATFORM_TOP + 5, -0.6), "GlowCyan")
-		b:bulb("PylonTip", 1.5, CFrame.new(s * (RING_R + 3.2), PLATFORM_TOP + 10.9, 0), "GlowPink", 10)
-	end
-
-	-- the vortex: a force-field disc and a glowing disc behind it, both spinning
-	local swirl = b:rod("PortalVortex", 0.25, RING_R * 2 - 1.4, CFrame.new(0, ringY, 0) * CFrame.Angles(0, math.rad(90), 0), "Portal")
-	swirl.Color = rgb(170, 130, 255)
-	local glow = b:rod("PortalVortexGlow", 0.2, RING_R * 2 - 1.8, CFrame.new(0, ringY, 0.25) * CFrame.Angles(0, math.rad(90), 0), "GlowCyan")
-	glow.Color = rgb(120, 90, 255)
-	glow.Transparency = 0.55
-	spin(swirl, center, 2.2)
-	spin(glow, center, -1.4)
-	for _, p in ipairs({swirl, glow}) do
-		p.CanCollide = false
-		p.CanQuery = false
-	end
+	-- green light spilling out onto the ground
 	local light = Instance.new("PointLight")
-	light.Color = rgb(170, 130, 255)
+	light.Color = rgb(120, 255, 80)
 	light.Range = 18
-	light.Brightness = 1.4
-	light.Parent = swirl
-	local sparkles = Instance.new("ParticleEmitter")
-	sparkles.Name = "VortexSparkles"
-	sparkles.Color = ColorSequence.new(rgb(200, 170, 255), rgb(110, 230, 255))
-	sparkles.LightEmission = 1
-	sparkles.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0)})
-	sparkles.Transparency = NumberSequence.new(0.1, 1)
-	sparkles.Lifetime = NumberRange.new(0.8, 1.4)
-	sparkles.Rate = 30
-	sparkles.Speed = NumberRange.new(1, 3)
-	sparkles.SpreadAngle = Vector2.new(25, 25)
-	sparkles.RotSpeed = NumberRange.new(-180, 180)
-	sparkles.EmissionDirection = Enum.NormalId.Right -- out of the portal's face
-	sparkles.Parent = swirl
+	light.Brightness = 0
+	light.Parent = core
 
-	-- floating crystals over the ring
-	for i, x in ipairs({-3, 0, 3}) do
-		local y = ringY + RING_R + 2.2 + (i == 2 and 1.2 or 0)
-		b:box("PortalCrystal", Vector3.new(0.7, 1.8, 0.7), CFrame.new(x, y, 0) * CFrame.Angles(0, math.rad(45), math.rad(x * 6)), i == 2 and "GlowPink" or "GlowCyan")
-	end
+	-- swirling sparks pouring out of the front, and goo dripping off the rim
+	emitter(core, {
+		Name = "PortalSparks", Color = ColorSequence.new(rgb(210, 255, 170), rgb(90, 230, 50)), LightEmission = 1,
+		Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 0)}),
+		Transparency = NumberSequence.new(0, 1), Lifetime = NumberRange.new(0.6, 1.1), Rate = 40,
+		Speed = NumberRange.new(2, 5), SpreadAngle = Vector2.new(35, 35), RotSpeed = NumberRange.new(-360, 360),
+		EmissionDirection = Enum.NormalId.Front, Drag = 2,
+	})
+	emitter(rim, {
+		Name = "PortalGoo", Color = ColorSequence.new(rgb(120, 240, 60)), LightEmission = 0.6,
+		Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0.1)}),
+		Transparency = NumberSequence.new(0.1, 0.8), Lifetime = NumberRange.new(0.6, 1), Rate = 14,
+		Speed = NumberRange.new(0, 1), SpreadAngle = Vector2.new(180, 180), Acceleration = Vector3.new(0, -30, 0),
+		Shape = Enum.ParticleEmitterShape.Box,
+	})
 
-	for _, d in ipairs(portal:GetDescendants()) do
-		-- only the platform and the pylons are solid: aliens walk straight through the ring
-		if d:IsA("BasePart") and not (d.Name:find("^PortalBase") or d.Name:find("^PortalPylon")) then
-			d.CanCollide = false
-		end
-	end
+	-- a splash of green light on the ground under it
+	local splash = part(portal, "PortalSplash", Vector3.new(0.12, 1, 1), cf * CFrame.new(0, 0.1, -0.5) * CFrame.Angles(0, 0, math.rad(90)),
+		rgb(120, 255, 80), Enum.Material.Neon, 0.5)
+	splash.Shape = Enum.PartType.Cylinder
 
 	-- markers for VisitorManager
-	marker(portal, "Core", cf * CFrame.new(0, PLATFORM_TOP + 3, 0))
-	marker(portal, "Front", cf * CFrame.new(0, 3, -(RING_R + 5)))
-	portal:SetAttribute("NoCalm", true)
+	local coreMarker = part(portal, "Core", Vector3.new(1, 1, 1), cf * CFrame.new(0, 3, 0), Color3.new(), Enum.Material.SmoothPlastic, 1)
+	coreMarker.Name = "Core"
+	part(portal, "Front", Vector3.new(1, 1, 1), cf * CFrame.new(0, 3, -6), Color3.new(), Enum.Material.SmoothPlastic, 1)
+	portal.Parent = parent
+
+	-- POP OPEN: a burst of sparks, then the oval springs out with an overshoot
+	local burst = emitter(core, {
+		Enabled = false, Color = ColorSequence.new(rgb(230, 255, 200), rgb(100, 240, 60)), LightEmission = 1,
+		Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 0)}),
+		Transparency = NumberSequence.new(0, 1), Lifetime = NumberRange.new(0.4, 0.8),
+		Speed = NumberRange.new(10, 22), SpreadAngle = Vector2.new(180, 180), Drag = 4,
+	})
+	burst:Emit(70)
+	local pop = TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+	for _, mesh in ipairs(meshes) do
+		TweenService:Create(mesh, pop, {Scale = Vector3.new(1, 1, 1)}):Play()
+	end
+	TweenService:Create(light, TweenInfo.new(0.3), {Brightness = 3}):Play()
+	TweenService:Create(splash, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {Size = Vector3.new(0.12, 9, 9), Transparency = 0.7}):Play()
+	-- then wobble like jelly while it's open, with a glowing spiral spinning inside
+	task.delay(0.5, function()
+		if not portal.Parent or portal:GetAttribute("Closing") then return end
+		local spiral = Instance.new("Model")
+		spiral.Name = "Spiral"
+		for arm = 0, 2 do
+			for i = 1, 24 do
+				local t = i / 24
+				local a = arm * math.pi * 2 / 3 + t * math.pi * 1.8
+				local r = 0.35 + t * 2.55
+				local dot = part(spiral, "SpiralDot", Vector3.one * (0.62 - t * 0.3),
+					center * CFrame.new(math.cos(a) * r, math.sin(a) * r, -0.36), rgb(200, 255, 150):Lerp(rgb(60, 200, 40), t), Enum.Material.Neon, 0.05)
+				dot.Shape = Enum.PartType.Ball
+				-- spun on every player's screen by ShovelSpinner
+				dot:SetAttribute("OrbitPivot", center)
+				dot:SetAttribute("OrbitOffset", center:ToObjectSpace(dot.CFrame))
+				dot:SetAttribute("OrbitSpeed", -3.2)
+				CollectionService:AddTag(dot, "ShovelOrbit")
+			end
+		end
+		spiral.Parent = portal
+		local wobble = TweenInfo.new(0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+		for i, mesh in ipairs(meshes) do
+			local k = i % 2 == 0 and 1 or -1
+			TweenService:Create(mesh, wobble, {Scale = Vector3.new(1 + 0.05 * k, 1 - 0.04 * k, 1)}):Play()
+		end
+		local core2 = portal:FindFirstChild("PortalCore")
+		if core2 then
+			TweenService:Create(core2, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = 0.45}):Play()
+		end
+	end)
 	return portal
 end
+
+function AlienPortal.close(portal)
+	if not portal or not portal.Parent or portal:GetAttribute("Closing") then return end
+	portal:SetAttribute("Closing", true)
+	local spiral = portal:FindFirstChild("Spiral")
+	if spiral then spiral:Destroy() end
+	local shut = TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+	for _, d in ipairs(portal:GetDescendants()) do
+		if d:IsA("SpecialMesh") then
+			TweenService:Create(d, shut, {Scale = Vector3.new(0.02, 0.02, 1)}):Play()
+		elseif d:IsA("ParticleEmitter") then
+			d.Enabled = false
+		elseif d:IsA("PointLight") then
+			TweenService:Create(d, shut, {Brightness = 0}):Play()
+		end
+	end
+	local splash = portal:FindFirstChild("PortalSplash")
+	if splash then TweenService:Create(splash, shut, {Size = Vector3.new(0.12, 0.5, 0.5), Transparency = 1}):Play() end
+	Debris:AddItem(portal, 0.8)
+end
+
+return AlienPortal
 ]=])
 install(game:GetService("ServerScriptService"), "Architecture", "ModuleScript", [=[
 -- Architecture (ModuleScript in ServerScriptService)
@@ -3454,6 +3511,8 @@ local lastSwing = {}  -- [player] = time of last swing
 local lastHit = {}    -- [player] = time of last successful dig (for combos)
 local combos = {}     -- [player] = current combo count
 local sessions = {}   -- [player] = Lucky Dig session
+local tutorialDigs = {} -- [player] = swings during the tutorial's "dig something up" step
+local TUTORIAL_FIND_AFTER = 4
 local resetting = false
 
 local function burst(position, color, count, speed)
@@ -3544,6 +3603,7 @@ local function resolveFind(player, take)
 	local data = PlayerData.Get(player)
 	if take and data and player.Parent then
 		PlayerData.AddArtifact(player, find.Artifact.Id)
+		player:SetAttribute("TutorialFound", true)
 		data.Stats.TotalDigs += 1
 		inventoryChangedRemote:FireClient(player)
 		local prompt = find.Model.PrimaryPart and find.Model.PrimaryPart:FindFirstChildOfClass("ProximityPrompt")
@@ -3816,7 +3876,16 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	digHitRemote:FireClient(player, {Combo = combo, Position = carveAt, Color = zone.Color})
 
 	-- Did we find something?
-	if not pending[player] and rng:NextNumber() < def.FindChance * (1 + COMBO_LUCK * (combo - 1)) then
+	if pending[player] then return end
+	if player:GetAttribute("Tutorial") == 3 then
+		-- first-join tutorial: the first find comes after a few swings, no minigame
+		tutorialDigs[player] = (tutorialDigs[player] or 0) + 1
+		if tutorialDigs[player] >= TUTORIAL_FIND_AFTER then
+			giveArtifact(player, zone, def.Luck, nil, carveAt + Vector3.new(0, 2, 0))
+			return
+		end
+	end
+	if rng:NextNumber() < def.FindChance * (1 + COMBO_LUCK * (combo - 1)) then
 		onFind(player, def, zone, carveAt + Vector3.new(0, 2, 0))
 	end
 end)
@@ -4085,6 +4154,7 @@ Players.PlayerRemoving:Connect(function(player)
 	sessions[player] = nil
 	currentWorld[player] = nil
 	lastBounceMessage[player] = nil
+	tutorialDigs[player] = nil
 end)
 
 print("DigManager ready: " .. #enabledWorlds() .. " world(s), 560-stud pits, pickaxe depth zones active")
@@ -4949,7 +5019,6 @@ install(game:GetService("ServerScriptService"), "MuseumBuilder", "ModuleScript",
 -- Returns a function() -> Model (PlotManager clones it for each player).
 
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
-local TutorialSign = require(script.Parent:WaitForChild("TutorialSign"))
 local P = Architecture.Palette
 
 local rgb = Color3.fromRGB
@@ -5248,9 +5317,6 @@ local function build()
 		d:pill("AlienAntenna", Vector3.new(x * 0.8, 9.8, 0.4), Vector3.new(x * 1.6, 11.2, 0.4), 0.25, "AlienSkin")
 		d:bulb("AntennaTip", 0.6, CFrame.new(x * 1.6, 11.3, 0.4), "GlowSun", 0)
 	end
-
-	-- HOW TO DIG sign on the other side of the plaza, right by the spawn, facing the pit
-	TutorialSign(museum, CFrame.new(24, 0.6, -HALF - 10) * CFrame.Angles(0, math.rad(20), 0))
 
 	-- MARKERS for scripts
 	local interior = marker(museum, "Interior", CFrame.new(0, ROOF_Y / 2, 0), Vector3.new(HALF * 2 - 3, ROOF_Y, HALF * 2 - 3))
@@ -5704,6 +5770,7 @@ local function defaultData()
 		PermitsRefunded = true, -- new players never bought the old Dig Permits
 		LastOnline = os.time(),
 		Stats = {TotalEarned = 0, TotalDigs = 0},
+		TutorialDone = false, -- the first-join walkthrough (TutorialManager)
 	}
 end
 
@@ -8767,180 +8834,80 @@ return function(parent, world, base)
 	return shop, prompt
 end
 ]=])
-install(game:GetService("ServerScriptService"), "TutorialSign", "ModuleScript", [=[
--- TutorialSign (ModuleScript in ServerScriptService)
--- A futuristic 2050 "HOW TO DIG" sign: a hover pedestal, two glowing pylons joined by a neon
--- arch, and a hologram projector. The steps float inside the frame on a BillboardGui:
---   1. Equip Pickaxe -> 2. Jump into Pit -> 3. Dig Up Framed Artifacts -> 4. Display in Museum
--- MuseumBuilder puts one on every museum's plaza, next to the spawn, facing the main pit.
--- Usage: TutorialSign(parent, cframe)  (cframe on the ground, -Z = the side people read from)
+install(game:GetService("ServerScriptService"), "TutorialManager", "Script", [=[
+-- TutorialManager (Script in ServerScriptService)
+-- The first-join walkthrough. New players go through four steps, shown by TutorialClient:
+--   1. Equip your pickaxe   2. Jump into the pit   3. Dig up a framed artifact (and pull it out)
+--   4. Put it on display in your museum
+-- The current step lives in the player's "Tutorial" attribute (0 = done / not running).
+-- DigManager guarantees a quick first find during step 3 and sets "TutorialFound" when the
+-- painting is pulled out. Finishing (or skipping) is saved, so it only ever shows once.
 
-local Architecture = require(script.Parent:WaitForChild("Architecture"))
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local rgb = Color3.fromRGB
-local CYAN = rgb(110, 230, 255)
-local STEPS = {
-	{"⛏", "Equip Pickaxe", rgb(255, 206, 84)},
-	{"🕳", "Jump into Pit", rgb(96, 226, 190)},
-	{"🖼", "Dig Up Framed Artifacts", rgb(255, 150, 200)},
-	{"🏛", "Display in Museum", rgb(178, 158, 255)},
-}
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
 
-local WIDTH, HEIGHT = 12, 11.5 -- the hologram's size in studs
-local SCREEN_Y = 8.2           -- its center, above the ground
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+local skipRemote = remotes:FindFirstChild("TutorialSkip") or Instance.new("RemoteEvent")
+skipRemote.Name = "TutorialSkip"
+skipRemote.Parent = remotes
 
-local function corner(parent, scale)
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(scale, 0)
-	c.Parent = parent
+local STEPS = 4
+
+local function finish(player)
+	local data = PlayerData.Get(player)
+	if data then data.TutorialDone = true end
+	player:SetAttribute("Tutorial", 0)
 end
 
-local function text(parent, value, props)
-	local l = Instance.new("TextLabel")
-	l.BackgroundTransparency = 1
-	l.Text = value
-	l.TextScaled = true
-	l.Font = props.Font or Enum.Font.GothamBlack
-	l.TextColor3 = props.Color or Color3.new(1, 1, 1)
-	l.TextXAlignment = props.Align or Enum.TextXAlignment.Center
-	l.Size = props.Size
-	l.Position = props.Position or UDim2.new()
-	l.AnchorPoint = props.AnchorPoint or Vector2.zero
-	l.Parent = parent
-	if props.Stroke then
-		local s = Instance.new("UIStroke")
-		s.Thickness = props.Stroke
-		s.Color = rgb(20, 22, 50)
-		s.Parent = l
+local function hasPlayedBefore(data)
+	return data.Stats.TotalDigs > 0 or next(data.Displayed) ~= nil or next(data.Inventory) ~= nil
+end
+
+local function holdingPickaxe(character)
+	local tool = character and character:FindFirstChildOfClass("Tool")
+	return tool ~= nil and tool:GetAttribute("ShovelId") ~= nil
+end
+
+local function run(player)
+	local data = PlayerData.WaitForData(player)
+	if not data or not player.Parent then return end
+	if data.TutorialDone then return end
+	if hasPlayedBefore(data) then
+		data.TutorialDone = true -- players from before the tutorial existed skip it
+		return
 	end
-	return l
-end
-
-local function hologram(anchor)
-	local gui = Instance.new("BillboardGui")
-	gui.Name = "TutorialBoard"
-	gui.Adornee = anchor
-	gui.Size = UDim2.fromScale(WIDTH, HEIGHT) -- in studs, so it scales with distance like a real sign
-	gui.LightInfluence = 0
-	gui.MaxDistance = 160
-	gui.AlwaysOnTop = false
-	gui.ResetOnSpawn = false
-	gui.Parent = anchor
-
-	local panel = Instance.new("Frame")
-	panel.Size = UDim2.fromScale(1, 1)
-	panel.BackgroundColor3 = rgb(16, 20, 48)
-	panel.BackgroundTransparency = 0.18
-	panel.Parent = gui
-	corner(panel, 0.06)
-	local edge = Instance.new("UIStroke")
-	edge.Thickness = 3
-	edge.Color = CYAN
-	edge.Transparency = 0.1
-	edge.Parent = panel
-	local sheen = Instance.new("UIGradient")
-	sheen.Rotation = 90
-	sheen.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.5, 0.12), NumberSequenceKeypoint.new(1, 0.3),
-	})
-	sheen.Parent = panel
-
-	text(panel, "HOW TO DIG", {Size = UDim2.fromScale(0.86, 0.12), Position = UDim2.fromScale(0.5, 0.035), AnchorPoint = Vector2.new(0.5, 0),
-		Color = rgb(255, 222, 110), Stroke = 2})
-	local line = Instance.new("Frame")
-	line.BorderSizePixel = 0
-	line.BackgroundColor3 = CYAN
-	line.Size = UDim2.fromScale(0.7, 0.008)
-	line.Position = UDim2.fromScale(0.5, 0.165)
-	line.AnchorPoint = Vector2.new(0.5, 0)
-	line.Parent = panel
-
-	local ROW_H, GAP, TOP = 0.15, 0.052, 0.2
-	for i, step in ipairs(STEPS) do
-		local y = TOP + (i - 1) * (ROW_H + GAP)
-		local row = Instance.new("Frame")
-		row.Size = UDim2.fromScale(0.9, ROW_H)
-		row.Position = UDim2.fromScale(0.05, y)
-		row.BackgroundColor3 = step[3]
-		row.BackgroundTransparency = 0.78
-		row.Parent = panel
-		corner(row, 0.3)
-		local rowEdge = Instance.new("UIStroke")
-		rowEdge.Thickness = 2
-		rowEdge.Color = step[3]
-		rowEdge.Parent = row
-
-		local badge = Instance.new("Frame")
-		badge.Size = UDim2.fromScale(0.16, 0.86)
-		badge.Position = UDim2.fromScale(0.02, 0.5)
-		badge.AnchorPoint = Vector2.new(0, 0.5)
-		badge.BackgroundColor3 = step[3]
-		badge.Parent = row
-		corner(badge, 0.5)
-		text(badge, tostring(i), {Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
-			Color = rgb(24, 26, 60)})
-		text(row, step[1], {Size = UDim2.fromScale(0.13, 0.8), Position = UDim2.fromScale(0.2, 0.5), AnchorPoint = Vector2.new(0, 0.5), Font = Enum.Font.GothamBold})
-		text(row, step[2], {Size = UDim2.fromScale(0.62, 0.56), Position = UDim2.fromScale(0.35, 0.5), AnchorPoint = Vector2.new(0, 0.5),
-			Align = Enum.TextXAlignment.Left, Stroke = 1.5})
-
-		-- a glowing arrow down to the next step
-		if i < #STEPS then
-			text(panel, "▼", {Size = UDim2.fromScale(0.1, GAP * 0.9), Position = UDim2.fromScale(0.5, y + ROW_H + GAP * 0.05), AnchorPoint = Vector2.new(0.5, 0),
-				Color = CYAN, Font = Enum.Font.GothamBold})
+	player:SetAttribute("TutorialFound", false)
+	player:SetAttribute("Tutorial", 1)
+	local world = GameConfig.Worlds[1]
+	while player.Parent do
+		local step = player:GetAttribute("Tutorial")
+		if not step or step == 0 or step > STEPS then break end
+		local character = player.Character
+		if step == 1 and holdingPickaxe(character) then
+			player:SetAttribute("Tutorial", 2)
+		elseif step == 2 and character and GameConfig.IsInPit(world, character) then
+			player:SetAttribute("Tutorial", 3)
+		elseif step == 3 and player:GetAttribute("TutorialFound") then
+			player:SetAttribute("Tutorial", 4)
+		elseif step == 4 and next(data.Displayed) ~= nil then
+			finish(player)
+			break
 		end
+		task.wait(0.25)
 	end
-	return gui
 end
 
-return function(parent, cf)
-	local sign = Instance.new("Model")
-	sign.Name = "TutorialSign"
-	sign.Parent = parent
-	local b = Architecture.builder(sign, cf)
-	local half = WIDTH / 2 + 0.9
-
-	-- hover pedestal with a glowing seam
-	b:tiers("SignBase", CFrame.new(), {{WIDTH + 5, 0.5, "Violet"}, {WIDTH + 3.8, 0.25, "GlowCyan"}, {WIDTH + 3, 0.7, "White"}})
-	-- hologram projector bar along the front of the pedestal
-	b:rod("Projector", WIDTH, 0.9, CFrame.new(0, 1.9, 0), "Ink")
-	b:rod("ProjectorLens", WIDTH - 1, 0.5, CFrame.new(0, 2.3, 0), "GlowCyan")
-	-- two slim pylons with neon strips on their faces
-	for _, x in ipairs({-half, half}) do
-		b:roundedBlock("Pylon", Vector3.new(1.6, SCREEN_Y + HEIGHT / 2 - 0.6, 1.6), CFrame.new(x, (SCREEN_Y + HEIGHT / 2 + 0.4) / 2 + 0.7, 0), 0.5, "Ink")
-		b:box("PylonGlow", Vector3.new(0.3, SCREEN_Y + HEIGHT / 2 - 2.5, 0.2), CFrame.new(x, (SCREEN_Y + HEIGHT / 2) / 2 + 1.2, -0.82), "GlowCyan")
-		b:bulb("PylonCap", 1.3, CFrame.new(x, SCREEN_Y + HEIGHT / 2 + 0.9, 0), "GlowSun", 8)
+skipRemote.OnServerEvent:Connect(function(player)
+	if (player:GetAttribute("Tutorial") or 0) > 0 then
+		finish(player)
 	end
-	-- neon arch over the top
-	b:ring("SignArch", CFrame.new(0, SCREEN_Y + HEIGHT / 2 + 0.6, 0), half, 0.9, "White", 18, 180, 0)
-	b:ring("SignArchGlow", CFrame.new(0, SCREEN_Y + HEIGHT / 2 + 0.6, -0.5), half - 0.2, 0.35, "GlowCyan", 18, 180, 0)
-	b:bulb("ArchGem", 1.6, CFrame.new(0, SCREEN_Y + HEIGHT / 2 + 0.6 + half, 0), "GlowPink", 10)
+end)
 
-	-- the hologram itself floats between the pylons
-	local anchor = b:box("HologramAnchor", Vector3.new(1, 1, 1), CFrame.new(0, SCREEN_Y, 0), "White",
-		{Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false})
-	hologram(anchor)
-	-- a soft beam up from the projector, and drifting sparkles
-	local beam = b:box("HoloBeam", Vector3.new(WIDTH - 0.6, HEIGHT - 1, 0.1), CFrame.new(0, SCREEN_Y - 0.2, 0.3), "GlowCyan",
-		{Transparency = 0.93, CanCollide = false, CanQuery = false, CanTouch = false})
-	local sparkles = Instance.new("ParticleEmitter")
-	sparkles.Color = ColorSequence.new(CYAN)
-	sparkles.LightEmission = 0.8
-	sparkles.Size = NumberSequence.new(0.18, 0)
-	sparkles.Transparency = NumberSequence.new(0.2, 1)
-	sparkles.Lifetime = NumberRange.new(1.5, 2.5)
-	sparkles.Rate = 6
-	sparkles.Speed = NumberRange.new(0.5, 1.2)
-	sparkles.EmissionDirection = Enum.NormalId.Top
-	sparkles.SpreadAngle = Vector2.new(10, 10)
-	sparkles.Parent = beam
-
-	for _, d in ipairs(sign:GetDescendants()) do
-		if d:IsA("BasePart") and (d.Name:find("Glow") or d.Name:find("Lens") or d.Name:find("Arch")) then
-			d.CanCollide = false
-		end
-	end
-	return sign
-end
+Players.PlayerAdded:Connect(function(player) task.spawn(run, player) end)
+for _, player in ipairs(Players:GetPlayers()) do task.spawn(run, player) end
 ]=])
 install(game:GetService("ServerScriptService"), "VisitorManager", "Script", [=[
 -- VisitorManager (Script in ServerScriptService)
@@ -8964,7 +8931,6 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local buildVisitor = require(script.Parent:WaitForChild("VisitorModels"))
 local AlienPortal = require(script.Parent:WaitForChild("AlienPortal"))
 local RunService = game:GetService("RunService")
-local Debris = game:GetService("Debris")
 
 local MAX_VISITORS = 4           -- per museum at once
 local SPAWN_EVERY = {8, 18}      -- seconds between new visitors (random in this range)
@@ -8973,12 +8939,10 @@ local LOOK_TIME = {2.5, 4.5}     -- seconds spent in front of each meme
 local ALIEN_CHANCE = 0          -- aliens now arrive through the portals instead of the plazas
 -- ALIENS
 local MAX_ALIENS = 7             -- roaming the island at once
-local ALIEN_EVERY = {6, 13}      -- seconds between arrivals
+local ALIEN_EVERY = {8, 16}      -- seconds between portal arrivals
 local ALIEN_SIGHTS = {1, 3}      -- places they look at before (maybe) visiting a museum
 local ALIEN_MUSEUM_CHANCE = 0.8  -- chance an alien visits a museum (if any has memes on show)
 local ALIEN_MAX_LIFETIME = 240   -- seconds; after that they beam away wherever they are
-local PORTAL_ANGLES = {90, 210, 330} -- at the lookouts at the end of three avenues (MainIsland)
-local PORTAL_DISTANCE = 452
 local STEP_TIMEOUT = 4           -- give up on a waypoint after this many seconds (then skip ahead)
 
 -- standard R15 animations (made by Roblox, usable in every game)
@@ -9334,7 +9298,7 @@ for _, museum in ipairs(museumsFolder:GetChildren()) do
 end
 
 ---------------------------------------------------------------------
--- ALIEN PORTALS + ROAMING ALIENS
+-- ALIENS: green portals pop open at random spots, aliens roam, then leave through a new portal
 ---------------------------------------------------------------------
 local portalsFolder = workspace:FindFirstChild("AlienPortals")
 if portalsFolder then portalsFolder:Destroy() end
@@ -9343,57 +9307,152 @@ portalsFolder.Name = "AlienPortals"
 portalsFolder:SetAttribute("NoCalm", true) -- keep the portals' glow (MapStyle tones down the rest)
 portalsFolder.Parent = workspace
 
-local portals = {}
-local function buildPortals()
-	local waited = 0
-	while not workspace:GetAttribute("MainIslandReady") and waited < 30 do
-		waited += task.wait(0.2)
+local WORLD = GameConfig.Worlds[1]
+local ORIGIN = WORLD.Origin
+local KEEP_OUT = WORLD.PitRadius + 12 -- aliens never walk inside this ring (the dig site and its rim)
+local DETOUR_RADIUS = KEEP_OUT + 20   -- they walk around the dig site on this ring instead
+
+-- pathfinding avoids the dig site too (an invisible no-go zone; it can't be clicked or touched)
+do
+	local zone = Instance.new("Part")
+	zone.Name = "DigSiteNoGo"
+	zone.Shape = Enum.PartType.Cylinder
+	zone.Anchored = true
+	zone.CanCollide = false
+	zone.CanQuery = false
+	zone.CanTouch = false
+	zone.Transparency = 1
+	zone.Size = Vector3.new(80, KEEP_OUT * 2, KEEP_OUT * 2)
+	zone.CFrame = CFrame.new(ORIGIN) * CFrame.Angles(0, 0, math.rad(90))
+	local modifier = Instance.new("PathfindingModifier")
+	modifier.Label = "DigSite"
+	modifier.Parent = zone
+	zone.Parent = portalsFolder
+end
+PATH_COSTS.DigSite = math.huge
+
+local function flatDistance(position)
+	return Vector3.new(position.X - ORIGIN.X, 0, position.Z - ORIGIN.Z).Magnitude
+end
+local function angleOf(position)
+	return math.atan2(position.Z - ORIGIN.Z, position.X - ORIGIN.X)
+end
+-- does the straight line from a to b cut through the dig site?
+local function crossesDigSite(a, b)
+	local flatA, flatB = Vector3.new(a.X, 0, a.Z), Vector3.new(b.X, 0, b.Z)
+	local center = Vector3.new(ORIGIN.X, 0, ORIGIN.Z)
+	local ab = flatB - flatA
+	local t = ab.Magnitude > 0 and math.clamp((center - flatA):Dot(ab) / ab:Dot(ab), 0, 1) or 0
+	return (flatA + ab * t - center).Magnitude < KEEP_OUT + 4
+end
+
+-- walks one leg; a path that dips into the dig site is thrown away (the leg is always
+-- outside it, so walking it straight is safe)
+local function walkLeg(npc, goal)
+	local humanoid = npc:FindFirstChildOfClass("Humanoid")
+	local root = npc:FindFirstChild("HumanoidRootPart")
+	if not humanoid or not root then return end
+	local path = PathfindingService:CreatePath({AgentRadius = 1.6, AgentHeight = 5.5, AgentCanJump = false, WaypointSpacing = 6, Costs = PATH_COSTS})
+	local ok = pcall(function() path:ComputeAsync(root.Position, goal) end)
+	local points = {goal}
+	if ok and path.Status == Enum.PathStatus.Success then
+		local waypoints = path:GetWaypoints()
+		local safe = true
+		for _, w in ipairs(waypoints) do
+			if flatDistance(w.Position) < KEEP_OUT then
+				safe = false
+				break
+			end
+		end
+		if safe then
+			points = {}
+			for i, w in ipairs(waypoints) do
+				if i > 1 then table.insert(points, w.Position) end
+			end
+		end
 	end
-	local origin = GameConfig.Worlds[1].Origin
-	for _, deg in ipairs(PORTAL_ANGLES) do
-		local a = math.rad(deg)
-		local pos = origin + Vector3.new(math.cos(a) * PORTAL_DISTANCE, 0.8, math.sin(a) * PORTAL_DISTANCE)
-		-- the portal faces the middle of the island
-		local cf = CFrame.lookAt(pos, Vector3.new(origin.X, pos.Y, origin.Z))
-		table.insert(portals, AlienPortal(portalsFolder, cf))
+	for _, point in ipairs(points) do
+		if not npc.Parent then return end
+		stepTo(humanoid, point)
 	end
 end
 
-local function portalSpot(portal, name)
-	local part = portal:FindFirstChild(name)
-	return part and part.Position
+-- walks anywhere on the island, going AROUND the dig site (never into or over it)
+local function roamTo(npc, goal)
+	local root = npc:FindFirstChild("HumanoidRootPart")
+	if not root or not goal then return end
+	if crossesDigSite(root.Position, goal) then
+		-- hop along a ring around the dig site, 45 degrees at a time, the short way round
+		local a0, a1 = angleOf(root.Position), angleOf(goal)
+		local diff = (a1 - a0 + math.pi) % (math.pi * 2) - math.pi
+		local steps = math.max(1, math.ceil(math.abs(diff) / math.rad(45)))
+		for i = 1, steps do
+			if not npc.Parent then return end
+			local a = a0 + diff * i / steps
+			walkLeg(npc, ORIGIN + Vector3.new(math.cos(a) * DETOUR_RADIUS, 3, math.sin(a) * DETOUR_RADIUS))
+			if not crossesDigSite(root.Position, goal) then break end
+		end
+	end
+	if npc.Parent then walkLeg(npc, goal) end
 end
 
--- sparks and a flash of light at a portal (or wherever an alien beams away)
-local function portalBurst(position, count)
-	local anchor = Instance.new("Part")
-	anchor.Anchored = true
-	anchor.CanCollide = false
-	anchor.CanQuery = false
-	anchor.CanTouch = false
-	anchor.Transparency = 1
-	anchor.Size = Vector3.one
-	anchor.CFrame = CFrame.new(position)
-	anchor.Parent = visitorsFolder
-	local e = Instance.new("ParticleEmitter")
-	e.Enabled = false
-	e.Color = ColorSequence.new(Color3.fromRGB(200, 170, 255), Color3.fromRGB(110, 230, 255))
-	e.LightEmission = 1
-	e.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 0)})
-	e.Transparency = NumberSequence.new(0, 1)
-	e.Lifetime = NumberRange.new(0.5, 1)
-	e.Speed = NumberRange.new(6, 14)
-	e.SpreadAngle = Vector2.new(180, 180)
-	e.Drag = 3
-	e.Parent = anchor
-	e:Emit(count or 50)
-	local flash = Instance.new("PointLight")
-	flash.Color = Color3.fromRGB(180, 150, 255)
-	flash.Range = 20
-	flash.Brightness = 4
-	flash.Parent = anchor
-	TweenService:Create(flash, TweenInfo.new(0.8), {Brightness = 0}):Play()
-	Debris:AddItem(anchor, 1.5)
+-- the ground at (x, z): returns the surface point if it's open, flat, ground-level land
+local function groundAt(x, z)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	local ignore = {visitorsFolder, portalsFolder}
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr.Character then table.insert(ignore, plr.Character) end
+	end
+	params.FilterDescendantsInstances = ignore
+	local hit = workspace:Raycast(Vector3.new(x, ORIGIN.Y + 80, z), Vector3.new(0, -120, 0), params)
+	if not hit or hit.Normal.Y < 0.9 then return nil end
+	if hit.Position.Y < ORIGIN.Y - 1.5 or hit.Position.Y > ORIGIN.Y + 2.5 then return nil end -- roofs, holes, water
+	return hit.Position
+end
+
+local function insideAMuseum(point)
+	for _, museum in ipairs(workspace:WaitForChild("Museums"):GetChildren()) do
+		local interior = museum:FindFirstChild("Interior")
+		if interior then
+			local rel = interior.CFrame:PointToObjectSpace(point)
+			local half = interior.Size / 2 + Vector3.new(6, 0, 6)
+			if math.abs(rel.X) < half.X and math.abs(rel.Z) < half.Z then return true end
+		end
+	end
+	return false
+end
+
+-- a random open spot around the museums and the dig site (outside the dig site itself),
+-- optionally near a position; with room = true there must be space for a portal there
+local function randomSpot(near, room)
+	for _ = 1, 30 do
+		local x, z
+		if near then
+			local a, d = rng:NextNumber(0, math.pi * 2), rng:NextNumber(10, 26)
+			x, z = near.X + math.cos(a) * d, near.Z + math.sin(a) * d
+		else
+			local a, d = rng:NextNumber(0, math.pi * 2), rng:NextNumber(KEEP_OUT + 12, 255)
+			x, z = ORIGIN.X + math.cos(a) * d, ORIGIN.Z + math.sin(a) * d
+		end
+		local ground = groundAt(x, z)
+		if ground and flatDistance(ground) > KEEP_OUT + 8 and not insideAMuseum(ground) then
+			if not room then return ground end
+			local params = OverlapParams.new()
+			params.FilterType = Enum.RaycastFilterType.Exclude
+			local ignore = {workspace.Terrain, visitorsFolder, portalsFolder}
+			for _, plr in ipairs(Players:GetPlayers()) do
+				if plr.Character then table.insert(ignore, plr.Character) end
+			end
+			params.FilterDescendantsInstances = ignore
+			local size = AlienPortal.Size
+			local boxCF = CFrame.new(ground + Vector3.new(0, 1 + size.Y / 2, 0))
+			if #workspace:GetPartBoundsInBox(boxCF, size + Vector3.new(4, 0, 8), params) == 0 then
+				return ground
+			end
+		end
+	end
+	return nil
 end
 
 -- grows (or shrinks) a character and fades it in (or out)
@@ -9418,23 +9477,9 @@ local function scaleAndFade(npc, fromScale, toScale, fromAlpha, toAlpha, duratio
 	end
 end
 
--- places worth a look on the island: the dig site's rim, the boulevard, the other lookouts
-local function randomSight(fromPortal)
-	local origin = GameConfig.Worlds[1].Origin
-	local roll = rng:NextNumber()
-	if roll < 0.4 then
-		-- the rim of the pit, on one of the six walkways
-		local a = math.rad(rng:NextInteger(0, 5) * 60 + rng:NextNumber(-4, 4))
-		local r = GameConfig.Worlds[1].PitRadius + rng:NextNumber(12, 20)
-		return origin + Vector3.new(math.cos(a) * r, 3, math.sin(a) * r)
-	elseif roll < 0.8 or #portals < 2 then
-		-- somewhere along the ring boulevard
-		local a = rng:NextNumber(0, math.pi * 2)
-		return origin + Vector3.new(math.cos(a) * 269, 3, math.sin(a) * 269)
-	end
-	local other = portals[rng:NextInteger(1, #portals)]
-	if other == fromPortal then return nil end
-	return portalSpot(other, "Front")
+local function marker(portal, name)
+	local part = portal:FindFirstChild(name)
+	return part and part.Position
 end
 
 local function museumsWithMemes()
@@ -9445,89 +9490,150 @@ local function museumsWithMemes()
 	return list
 end
 
-local function alienTrip(npc, portal)
+-- somewhere to look at: the dig site from just outside it, a museum's plaza, anywhere around
+local function randomSight()
+	local roll = rng:NextNumber()
+	if roll < 0.35 then
+		local a = rng:NextNumber(0, math.pi * 2)
+		local r = KEEP_OUT + rng:NextNumber(4, 12)
+		local ground = groundAt(ORIGIN.X + math.cos(a) * r, ORIGIN.Z + math.sin(a) * r)
+		return ground and ground + Vector3.new(0, 3, 0)
+	elseif roll < 0.6 then
+		local museums = workspace:WaitForChild("Museums"):GetChildren()
+		if #museums > 0 then
+			return waypoint(museums[rng:NextInteger(1, #museums)], "Outside")
+		end
+	end
+	local spot = randomSpot(nil, false)
+	return spot and spot + Vector3.new(0, 3, 0)
+end
+
+-- one alien steps out of an open portal (offset = how far to the side it walks out)
+local function stepOut(npc, portal, offset)
 	local humanoid = npc:FindFirstChildOfClass("Humanoid")
 	local root = npc:FindFirstChild("HumanoidRootPart")
-	local core, front = portalSpot(portal, "Core"), portalSpot(portal, "Front")
-	if not humanoid or not root or not core or not front then
-		npc:Destroy()
-		return
-	end
+	local core, front = marker(portal, "Core"), marker(portal, "Front")
+	if not humanoid or not root or not core or not front then return false end
 	humanoid.WalkSpeed = rng:NextNumber(11, 14)
-	local born = os.clock()
-
-	-- out of the vortex: tiny and invisible, growing and fading in with a burst of sparks
 	npc:PivotTo(CFrame.lookAt(core, Vector3.new(front.X, core.Y, front.Z)))
 	root.Anchored = true
 	pcall(function() npc:ScaleTo(0.05) end)
 	npc.Parent = visitorsFolder
-	portalBurst(core, 60)
-	scaleAndFade(npc, 0.05, 1, 1, 0, 0.7)
-	if not npc.Parent then return end
+	scaleAndFade(npc, 0.05, 1, 1, 0, 0.6)
+	if not npc.Parent then return false end
 	root.Anchored = false
 	pcall(function() root:SetNetworkOwner(nil) end)
 	setupAnimations(humanoid)
-	walkTo(npc, front)
+	local side = portal:FindFirstChild("Core").CFrame.RightVector * offset
+	stepTo(humanoid, front + side)
+	return true
+end
 
+-- an alien leaves: a portal pops open next to it, it walks in and is gone
+local function leave(npc)
+	local root = npc:FindFirstChild("HumanoidRootPart")
+	if not root or not npc.Parent then
+		if npc.Parent then npc:Destroy() end
+		return
+	end
+	local spot = randomSpot(root.Position, true) or randomSpot(nil, true)
+	if spot then
+		local facing = Vector3.new(root.Position.X, spot.Y, root.Position.Z)
+		if (facing - spot).Magnitude < 1 then facing = spot + Vector3.zAxis end
+		local portal = AlienPortal.open(portalsFolder, CFrame.lookAt(spot, facing))
+		roamTo(npc, marker(portal, "Front"))
+		local humanoid = npc:FindFirstChildOfClass("Humanoid")
+		if humanoid and npc.Parent then stepTo(humanoid, marker(portal, "Core")) end
+		if npc.Parent then
+			root.Anchored = true
+			scaleAndFade(npc, 1, 0.05, 0, 1, 0.45)
+		end
+		task.delay(0.6, AlienPortal.close, portal)
+	elseif npc.Parent then
+		scaleAndFade(npc, 1, 0.05, 0, 1, 0.45)
+	end
+	if npc.Parent then npc:Destroy() end
+end
+
+local function roam(npc)
+	local born = os.clock()
 	local function tooOld() return os.clock() - born > ALIEN_MAX_LIFETIME end
-
-	-- sightseeing around the island
 	for _ = 1, rng:NextInteger(ALIEN_SIGHTS[1], ALIEN_SIGHTS[2]) do
 		if not npc.Parent or tooOld() then break end
-		local sight = randomSight(portal)
+		local sight = randomSight()
 		if sight then
-			walkTo(npc, sight)
+			roamTo(npc, sight)
 			task.wait(rng:NextNumber(1.5, 3.5)) -- have a look around
 		end
 	end
-
 	-- inspect the displays in a museum
 	local museums = museumsWithMemes()
 	if npc.Parent and not tooOld() and #museums > 0 and rng:NextNumber() < ALIEN_MUSEUM_CHANCE then
-		tour(museums[rng:NextInteger(1, #museums)], npc)
+		local museum = museums[rng:NextInteger(1, #museums)]
+		roamTo(npc, waypoint(museum, "Outside"))
+		tour(museum, npc)
 	end
-
-	-- home through a portal (not always the one they came from)
-	local exit = portals[rng:NextInteger(1, #portals)]
-	if npc.Parent and not tooOld() then
-		walkTo(npc, portalSpot(exit, "Front"))
-		walkTo(npc, portalSpot(exit, "Core"))
-	end
-	if not npc.Parent then return end
-	local here = root.Position
-	root.Anchored = true
-	portalBurst(here, 45)
-	scaleAndFade(npc, 1, 0.05, 0, 1, 0.55)
-	npc:Destroy()
+	leave(npc)
 end
 
-task.spawn(function()
-	buildPortals()
-	if #portals == 0 then return end
-	local roaming = 0
-	task.wait(rng:NextNumber(2, 5))
-	while true do
-		if roaming < MAX_ALIENS then
-			roaming += 1
-			task.spawn(function()
-				local ok, npc = pcall(buildVisitor, "Alien", rng)
-				if ok and npc then
-					local tripOk, err = pcall(alienTrip, npc, portals[rng:NextInteger(1, #portals)])
-					if not tripOk then
+-- a portal pops open somewhere, one or two aliens come out, it snaps shut
+local function arrival(onDone)
+	local spot = randomSpot(nil, true)
+	if not spot then
+		onDone(2) -- no room anywhere this time: hand back both reserved places
+		return
+	end
+	local facing = Vector3.new(ORIGIN.X, spot.Y, ORIGIN.Z)
+	-- mostly face the middle of the island, with a random twist
+	local look = CFrame.lookAt(spot, facing) * CFrame.Angles(0, rng:NextNumber(-0.8, 0.8), 0)
+	local portal = AlienPortal.open(portalsFolder, look)
+	task.wait(0.5)
+	local count = rng:NextNumber() < 0.3 and 2 or 1
+	local out = 0
+	for i = 1, count do
+		local ok, npc = pcall(buildVisitor, "Alien", rng)
+		if ok and npc then
+			local stepped = stepOut(npc, portal, count == 1 and 0 or (i == 1 and -2.5 or 2.5))
+			if stepped then
+				out += 1
+				task.spawn(function()
+					local roamOk, err = pcall(roam, npc)
+					if not roamOk then
 						warn("Alien visitor error: " .. tostring(err))
 						if npc.Parent then npc:Destroy() end
 					end
-				else
-					warn("Couldn't build an alien: " .. tostring(npc))
-				end
-				roaming -= 1
-			end)
+					onDone(1)
+				end)
+			elseif npc.Parent then
+				npc:Destroy()
+			end
+		else
+			warn("Couldn't build an alien: " .. tostring(npc))
+		end
+		task.wait(0.6)
+	end
+	task.wait(1.2)
+	AlienPortal.close(portal)
+	onDone(2 - out) -- hand back the reserved places nobody used
+end
+
+task.spawn(function()
+	local waited = 0
+	while not workspace:GetAttribute("MainIslandReady") and waited < 30 do
+		waited += task.wait(0.2)
+	end
+	local roaming = 0
+	task.wait(rng:NextNumber(3, 6))
+	while true do
+		if roaming < MAX_ALIENS then
+			roaming += 2 -- reserve room for a pair; unused places are handed back
+			task.spawn(arrival, function(n) roaming -= n end)
 		end
 		task.wait(rng:NextNumber(ALIEN_EVERY[1], ALIEN_EVERY[2]))
 	end
 end)
 
-print("VisitorManager ready: humans visit every museum, aliens roam in from " .. #PORTAL_ANGLES .. " portals")
+print("VisitorManager ready: humans visit every museum, aliens pop in through green portals")
 ]=])
 install(game:GetService("ServerScriptService"), "VisitorModels", "ModuleScript", [=[
 -- VisitorModels (ModuleScript in ServerScriptService)
@@ -13053,6 +13159,228 @@ RunService.Heartbeat:Connect(function()
 		workspace:BulkMoveTo(parts, cframes, Enum.BulkMoveMode.FireCFrameChanged)
 	end
 end)
+]=])
+install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "TutorialClient", "LocalScript", [=[
+-- TutorialClient (LocalScript in StarterPlayer > StarterPlayerScripts)
+-- The first-join walkthrough (TutorialManager runs the steps on the server):
+--   a "WELCOME, ARCHAEOLOGIST!" splash, then a step card on the left of the screen
+--   (1 Equip Pickaxe -> 2 Jump into Pit -> 3 Dig Up Framed Artifacts -> 4 Display in Museum),
+--   a glowing guide beam from your character to where you need to go, and a bouncing arrow
+--   over the target. A Skip button ends it for good.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local C = UIKit.Colors
+local skipRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("TutorialSkip")
+local player = Players.LocalPlayer
+
+local STEPS = {
+	{Icon = "⛏", Title = "Equip your pickaxe", Text = "Press 1, or click the pickaxe in your hotbar at the bottom of the screen."},
+	{Icon = "🕳", Title = "Jump into the pit", Text = "Follow the glowing trail to the dig site and hop down into the dirt!"},
+	{Icon = "🖼", Title = "Dig up a framed artifact", Text = "Click the ground to swing. Keep digging until a painting appears, then hold E to pull it out!"},
+	{Icon = "🏛", Title = "Display it in your museum", Text = "Follow the trail home and press E at a glowing pedestal to put your meme on show."},
+}
+local STEP_COLORS = {C.Sun, C.Mint, C.Coral, C.Violet}
+
+local gui = UIKit.screen(player, "TutorialGui", 6)
+
+---------------------------------------------------------------------
+-- WELCOME SPLASH
+---------------------------------------------------------------------
+local splash = UIKit.panel(gui, {Size = UDim2.fromOffset(520, 150), Position = UDim2.fromScale(0.5, 0.36), AnchorPoint = Vector2.new(0.5, 0.5),
+	Color = C.Ink, Radius = 30, Stroke = 4, StrokeColor = C.Sun, ShadeAmount = 0.2})
+splash.BackgroundTransparency = 0.06
+splash.Visible = false
+UIKit.label(splash, "WELCOME, ARCHAEOLOGIST!", {Size = UDim2.new(1, -40, 0, 46), Position = UDim2.new(0.5, 0, 0, 22), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Sun, Stroke = 3, MaxText = 38})
+UIKit.label(splash, "It's 2050. The old internet is buried under your feet.\nLet's dig up your first meme!", {Size = UDim2.new(1, -50, 0, 52),
+	Position = UDim2.new(0.5, 0, 0, 78), AnchorPoint = Vector2.new(0.5, 0), Color = C.White, Stroke = 0, Font = UIKit.BodyFont, MaxText = 20})
+
+---------------------------------------------------------------------
+-- STEP CARD
+---------------------------------------------------------------------
+local card = UIKit.panel(gui, {Size = UDim2.fromOffset(330, 178), Position = UDim2.new(0, 16, 0.3, 0), Color = C.Ink, Radius = 22, Stroke = 3, StrokeColor = C.Sky, ShadeAmount = 0.2})
+card.BackgroundTransparency = 0.08
+card.Visible = false
+local cardStroke = card:FindFirstChildOfClass("UIStroke")
+local stepTag = UIKit.label(card, "", {Size = UDim2.new(1, -110, 0, 18), Position = UDim2.fromOffset(16, 12), Align = "Left", Color = C.Sky, Stroke = 0, MaxText = 15})
+local badge = UIKit.badge(card, "", C.Sun, {Diameter = 50, Position = UDim2.fromOffset(14, 38)})
+local badgeLabel = badge:FindFirstChildWhichIsA("TextLabel", true)
+local title = UIKit.label(card, "", {Size = UDim2.new(1, -90, 0, 28), Position = UDim2.fromOffset(74, 38), Align = "Left", Color = C.White, Stroke = 2, MaxText = 22})
+local body = UIKit.label(card, "", {Size = UDim2.new(1, -90, 0, 58), Position = UDim2.fromOffset(74, 68), Align = "Left", VAlign = "Top",
+	Color = C.PanelTint, Stroke = 0, Font = UIKit.BodyFont, TextSize = 15})
+local dots = {}
+for i = 1, #STEPS do
+	dots[i] = UIKit.panel(card, {Size = UDim2.fromOffset(40, 8), Position = UDim2.new(0, 16 + (i - 1) * 48, 1, -22), Color = C.Grey, Radius = 4, Stroke = false, Shade = false})
+end
+local skipButton = UIKit.button(card, "SKIP", {Size = UDim2.fromOffset(70, 30), Position = UDim2.new(1, -12, 0, 8), AnchorPoint = Vector2.new(1, 0), Color = C.Grey, Radius = 12, MaxText = 14})
+skipButton.MouseButton1Click:Connect(function()
+	skipRemote:FireServer()
+end)
+
+-- step 1: a bouncing arrow pointing down at the hotbar
+local hotbarArrow = UIKit.label(gui, "⬇", {Size = UDim2.fromOffset(60, 60), Position = UDim2.new(0.5, 0, 1, -140), AnchorPoint = Vector2.new(0.5, 1),
+	Color = C.Sun, Stroke = 3, MaxText = 56})
+hotbarArrow.Visible = false
+
+-- the "done!" toast
+local toast = UIKit.panel(gui, {Size = UDim2.fromOffset(460, 70), Position = UDim2.fromScale(0.5, 0.3), AnchorPoint = Vector2.new(0.5, 0.5),
+	Color = C.Mint, Radius = 35, Stroke = 4, StrokeColor = C.Ink})
+toast.Visible = false
+UIKit.label(toast, "🎉 TUTORIAL COMPLETE! Your meme is earning money!", {Size = UDim2.new(1, -40, 0.6, 0), Position = UDim2.fromScale(0.5, 0.5),
+	AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2.5, MaxText = 22})
+
+---------------------------------------------------------------------
+-- GUIDE BEAM + ARROW IN THE WORLD
+---------------------------------------------------------------------
+local targetPart = Instance.new("Part")
+targetPart.Name = "TutorialTarget"
+targetPart.Anchored = true
+targetPart.CanCollide = false
+targetPart.CanQuery = false
+targetPart.CanTouch = false
+targetPart.Transparency = 1
+targetPart.Size = Vector3.one
+local targetAttachment = Instance.new("Attachment")
+targetAttachment.Parent = targetPart
+local arrowGui = Instance.new("BillboardGui")
+arrowGui.Size = UDim2.fromOffset(90, 90)
+arrowGui.AlwaysOnTop = true
+arrowGui.LightInfluence = 0
+arrowGui.Parent = targetPart
+local worldArrow = UIKit.label(arrowGui, "⬇", {Size = UDim2.fromScale(1, 1), Color = C.Sun, Stroke = 3, MaxText = 80})
+
+local beam = Instance.new("Beam")
+beam.Attachment1 = targetAttachment
+beam.FaceCamera = true
+beam.Width0 = 1.2
+beam.Width1 = 1.2
+beam.Segments = 60
+beam.LightEmission = 0.8
+beam.LightInfluence = 0
+beam.Color = ColorSequence.new(Color3.fromRGB(120, 240, 255), Color3.fromRGB(255, 230, 120))
+beam.Parent = targetPart
+
+local function myMuseumSlot()
+	for _, museum in ipairs(workspace:WaitForChild("Museums"):GetChildren()) do
+		if museum:GetAttribute("OwnerUserId") == player.UserId then
+			local slots = museum:FindFirstChild("Slots")
+			local slot = slots and slots:FindFirstChild("Slot1")
+			local spot = slot and (slot:FindFirstChild("DisplaySpot") or slot:FindFirstChild("ViewSpot"))
+			if spot then return spot.Position end
+		end
+	end
+	return nil
+end
+
+local function myBuriedPainting()
+	local finds = workspace:FindFirstChild("BuriedFinds")
+	for _, model in ipairs(finds and finds:GetChildren() or {}) do
+		if model:GetAttribute("Owner") == player.UserId and model.PrimaryPart then
+			return model.PrimaryPart.Position
+		end
+	end
+	return nil
+end
+
+-- where the trail leads for each step (nil = no trail)
+local function targetFor(step, root)
+	if step == 2 then
+		local world = GameConfig.Worlds[1]
+		local flat = (root.Position - world.Origin) * Vector3.new(1, 0, 1)
+		local dir = flat.Magnitude > 1 and flat.Unit or Vector3.zAxis
+		return world.Origin + dir * (world.PitRadius - 8) + Vector3.new(0, 3, 0)
+	elseif step == 3 then
+		return myBuriedPainting()
+	elseif step == 4 then
+		return myMuseumSlot()
+	end
+	return nil
+end
+
+---------------------------------------------------------------------
+-- SHOWING THE STEPS
+---------------------------------------------------------------------
+local shownStep = 0
+local welcomed = false
+local fromAttachment
+
+local function showStep(step)
+	if step == shownStep then return end
+	local finished = shownStep > 0 and step == 0
+	shownStep = step
+	card.Visible = step > 0
+	if finished then
+		toast.Visible = true
+		UIKit.pop(toast, 0.4)
+		task.delay(4, function() toast.Visible = false end)
+	end
+	if step == 0 then return end
+	if not welcomed and step == 1 then
+		welcomed = true
+		splash.Visible = true
+		UIKit.pop(splash, 0.5)
+		task.delay(3.2, function() splash.Visible = false end)
+	end
+	local info = STEPS[step]
+	local color = STEP_COLORS[step]
+	stepTag.Text = "TUTORIAL  ·  STEP " .. step .. " OF " .. #STEPS
+	title.Text = info.Title
+	body.Text = info.Text
+	if badgeLabel then badgeLabel.Text = info.Icon end
+	badge.BackgroundColor3 = color
+	cardStroke.Color = color
+	for i, dot in ipairs(dots) do
+		dot.BackgroundColor3 = i < step and C.Mint or (i == step and color or C.Grey)
+	end
+	UIKit.pop(card, 0.8)
+end
+
+local function onTutorialChanged()
+	showStep(player:GetAttribute("Tutorial") or 0)
+end
+player:GetAttributeChangedSignal("Tutorial"):Connect(onTutorialChanged)
+onTutorialChanged()
+
+RunService.RenderStepped:Connect(function()
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local clock = os.clock()
+	hotbarArrow.Visible = shownStep == 1
+	if hotbarArrow.Visible then
+		hotbarArrow.Position = UDim2.new(0.5, 0, 1, -140 + math.sin(clock * 6) * 10)
+	end
+	local target = root and shownStep > 0 and targetFor(shownStep, root)
+	if not target then
+		targetPart.Parent = nil
+		return
+	end
+	-- the trail starts at our character
+	if not fromAttachment or fromAttachment.Parent ~= root then
+		fromAttachment = Instance.new("Attachment")
+		fromAttachment.Name = "TutorialTrailStart"
+		fromAttachment.Position = Vector3.new(0, -1.5, 0)
+		fromAttachment.Parent = root
+		beam.Attachment0 = fromAttachment
+	end
+	targetPart.CFrame = CFrame.new(target)
+	targetPart.Parent = workspace
+	arrowGui.StudsOffset = Vector3.new(0, 4 + math.sin(clock * 5) * 0.8, 0)
+	worldArrow.TextColor3 = STEP_COLORS[shownStep]
+	-- glowing pulses run along the trail toward the target
+	local keys = {}
+	for i = 0, 17 do
+		local x = i / 17
+		local wave = 0.5 + 0.5 * math.sin((x * 8 - clock * 2.5) * math.pi * 2)
+		table.insert(keys, NumberSequenceKeypoint.new(x, 0.15 + 0.6 * (1 - wave)))
+	end
+	beam.Transparency = NumberSequence.new(keys)
+end)
+
 ]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "WorldClient", "LocalScript", [=[
 -- WorldClient (LocalScript in StarterPlayer > StarterPlayerScripts)

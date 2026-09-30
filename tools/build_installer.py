@@ -14,6 +14,7 @@ DELETE = [
     ('game:GetService("ServerScriptService")', "ShovelModels"),  # replaced by PickaxeModels
     ('game:GetService("ReplicatedStorage")', "ShovelModels"),  # replaced by PickaxeModels
     ('game:GetService("ServerScriptService")', "MuseumStyle"),  # the museum is built by MuseumBuilder now
+    ('game:GetService("ServerScriptService")', "TutorialSign"),  # replaced by the first-join tutorial
 ]
 
 

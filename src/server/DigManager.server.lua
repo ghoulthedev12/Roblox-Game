@@ -145,6 +145,8 @@ local lastSwing = {}  -- [player] = time of last swing
 local lastHit = {}    -- [player] = time of last successful dig (for combos)
 local combos = {}     -- [player] = current combo count
 local sessions = {}   -- [player] = Lucky Dig session
+local tutorialDigs = {} -- [player] = swings during the tutorial's "dig something up" step
+local TUTORIAL_FIND_AFTER = 4
 local resetting = false
 
 local function burst(position, color, count, speed)
@@ -235,6 +237,7 @@ local function resolveFind(player, take)
 	local data = PlayerData.Get(player)
 	if take and data and player.Parent then
 		PlayerData.AddArtifact(player, find.Artifact.Id)
+		player:SetAttribute("TutorialFound", true)
 		data.Stats.TotalDigs += 1
 		inventoryChangedRemote:FireClient(player)
 		local prompt = find.Model.PrimaryPart and find.Model.PrimaryPart:FindFirstChildOfClass("ProximityPrompt")
@@ -507,7 +510,16 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	digHitRemote:FireClient(player, {Combo = combo, Position = carveAt, Color = zone.Color})
 
 	-- Did we find something?
-	if not pending[player] and rng:NextNumber() < def.FindChance * (1 + COMBO_LUCK * (combo - 1)) then
+	if pending[player] then return end
+	if player:GetAttribute("Tutorial") == 3 then
+		-- first-join tutorial: the first find comes after a few swings, no minigame
+		tutorialDigs[player] = (tutorialDigs[player] or 0) + 1
+		if tutorialDigs[player] >= TUTORIAL_FIND_AFTER then
+			giveArtifact(player, zone, def.Luck, nil, carveAt + Vector3.new(0, 2, 0))
+			return
+		end
+	end
+	if rng:NextNumber() < def.FindChance * (1 + COMBO_LUCK * (combo - 1)) then
 		onFind(player, def, zone, carveAt + Vector3.new(0, 2, 0))
 	end
 end)
@@ -776,6 +788,7 @@ Players.PlayerRemoving:Connect(function(player)
 	sessions[player] = nil
 	currentWorld[player] = nil
 	lastBounceMessage[player] = nil
+	tutorialDigs[player] = nil
 end)
 
 print("DigManager ready: " .. #enabledWorlds() .. " world(s), 560-stud pits, pickaxe depth zones active")

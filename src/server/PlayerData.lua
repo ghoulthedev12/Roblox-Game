@@ -49,6 +49,7 @@ local function defaultData()
 		PermitsRefunded = true, -- new players never bought the old Dig Permits
 		LastOnline = os.time(),
 		Stats = {TotalEarned = 0, TotalDigs = 0},
+		TutorialDone = false, -- the first-join walkthrough (TutorialManager)
 	}
 end
 

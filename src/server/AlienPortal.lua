@@ -1,127 +1,183 @@
 -- AlienPortal (ModuleScript in ServerScriptService)
--- A glowing sci-fi portal the alien visitors come out of and leave through: a hover platform,
--- a thick violet ring with a neon inner rim, two spinning chrome arcs, pylons with glowing
--- tips, a swirling force-field vortex with sparkles, and floating crystals over the top.
--- Usage: AlienPortal(parent, cframe) -> model. cframe sits on the ground; -Z is the side the
--- aliens walk out of. Markers in the model: "Core" (inside the ring, where aliens appear and
--- vanish) and "Front" (on the ground in front of the portal).
--- The vortex and the arcs are spun on each player's screen by ShovelSpinner ("ShovelOrbit" tag).
+-- A green, swirly "Rick and Morty" style portal that pops open out of thin air, stands on
+-- the ground for a moment while aliens step through, then snaps shut.
+-- It's a tall glowing oval: a lime rim, a bright jelly-green middle, a pale glowing core and
+-- a swirling force-field skin, with green sparks, dripping goo, a splash ring on the ground
+-- and a green light. It wobbles like jelly while it's open.
+--
+--   local portal = AlienPortal.open(parent, cframe)  -- cframe on the ground, -Z = the side aliens come out of
+--   AlienPortal.close(portal)                        -- shrinks it away and destroys it
+--   AlienPortal.Size                                 -- how much room it needs (for picking a spot)
+-- Markers in the model: "Core" (in the middle of the oval, at standing height) and "Front"
+-- (on the ground a few studs in front of it).
 
+local TweenService = game:GetService("TweenService")
 local CollectionService = game:GetService("CollectionService")
-local Architecture = require(script.Parent:WaitForChild("Architecture"))
+local Debris = game:GetService("Debris")
 
 local rgb = Color3.fromRGB
-local RING_R = 7
-local PLATFORM_TOP = 1.7
+local AlienPortal = {}
 
-local function marker(parent, name, cf)
+local HEIGHT, WIDTH = 9.5, 6.6
+local CENTER_Y = HEIGHT / 2 + 0.3
+AlienPortal.Size = Vector3.new(WIDTH + 2, HEIGHT + 1, 4)
+
+-- {name, size multiplier (x, y), thickness, color, material, transparency}
+local LAYERS = {
+	{"PortalRim", 1, 0.3, rgb(140, 255, 60), Enum.Material.Neon, 0},
+	{"PortalJelly", 0.88, 0.42, rgb(40, 170, 40), Enum.Material.Neon, 0},
+	{"PortalSwirl", 0.86, 0.5, rgb(120, 255, 80), Enum.Material.ForceField, 0},
+	{"PortalCore", 0.34, 0.62, rgb(235, 255, 205), Enum.Material.Neon, 0.1},
+}
+
+local function part(parent, name, size, cf, color, material, transparency)
 	local p = Instance.new("Part")
 	p.Name = name
 	p.Anchored = true
 	p.CanCollide = false
 	p.CanQuery = false
 	p.CanTouch = false
-	p.Transparency = 1
-	p.Size = Vector3.new(2, 1, 2)
+	p.CastShadow = false
+	p.Size = size
 	p.CFrame = cf
+	p.Color = color
+	p.Material = material
+	p.Transparency = transparency or 0
 	p.Parent = parent
 	return p
 end
 
--- makes a part spin around the portal's axis on every player's screen
-local function spin(part, pivot, speed)
-	part:SetAttribute("OrbitPivot", pivot)
-	part:SetAttribute("OrbitOffset", pivot:ToObjectSpace(part.CFrame))
-	part:SetAttribute("OrbitSpeed", speed)
-	CollectionService:AddTag(part, "ShovelOrbit")
+local function oval(parent, name, size, cf, color, material, transparency)
+	local p = part(parent, name, size, cf, color, material, transparency)
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Sphere
+	mesh.Scale = Vector3.new(0.02, 0.02, 1) -- starts closed
+	mesh.Parent = p
+	return p, mesh
 end
 
-return function(parent, cf)
+local function emitter(parent, props)
+	local e = Instance.new("ParticleEmitter")
+	for k, v in pairs(props) do e[k] = v end
+	e.Parent = parent
+	return e
+end
+
+function AlienPortal.open(parent, cf)
 	local portal = Instance.new("Model")
 	portal.Name = "AlienPortal"
-	portal.Parent = parent
-	local b = Architecture.builder(portal, cf)
-	local ringY = PLATFORM_TOP + RING_R + 0.4
-	local center = cf * CFrame.new(0, ringY, 0)
-
-	-- hover platform
-	b:tiers("PortalBase", CFrame.new(), {{RING_R * 2 + 5, 0.6, "Ink"}, {RING_R * 2 + 3.6, 0.3, "GlowPink"}, {RING_R * 2 + 2.4, 0.8, "Navy"}})
-	b:ring("PortalBaseGlow", CFrame.new(0, PLATFORM_TOP + 0.05, 0) * CFrame.Angles(math.rad(90), 0, 0), RING_R + 0.2, 0.3, "GlowCyan", 40)
-
-	-- the ring itself
-	b:ring("PortalRing", CFrame.new(0, ringY, 0), RING_R, 1.7, "Violet", 36)
-	b:ring("PortalRim", CFrame.new(0, ringY, -0.9), RING_R - 0.9, 0.45, "GlowCyan", 36)
-	b:ring("PortalRim", CFrame.new(0, ringY, 0.9), RING_R - 0.9, 0.45, "GlowPink", 36)
-	-- feet that hold the ring on the platform
-	for _, s in ipairs({-1, 1}) do
-		b:box("PortalFoot", Vector3.new(2.2, 2.2, 3.2), CFrame.new(s * 2.4, PLATFORM_TOP + 0.9, 0) * CFrame.Angles(0, 0, s * math.rad(-30)), "Ink")
+	portal:SetAttribute("NoCalm", true)
+	local center = cf * CFrame.new(0, CENTER_Y, 0)
+	local meshes = {}
+	for i, layer in ipairs(LAYERS) do
+		local size = Vector3.new(WIDTH * layer[2], HEIGHT * layer[2], layer[3])
+		-- layers stack front to back a little so they don't flicker into each other
+		local _, mesh = oval(portal, layer[1], size, center * CFrame.new(0, 0, (i - 2.5) * 0.04), layer[4], layer[5], layer[6])
+		table.insert(meshes, mesh)
 	end
+	local core = portal:FindFirstChild("PortalCore")
+	local rim = portal:FindFirstChild("PortalRim")
 
-	-- chrome arcs that spin around the ring
-	local arcs = Instance.new("Model")
-	arcs.Name = "PortalArcs"
-	arcs.Parent = portal
-	local ab = Architecture.builder(arcs, cf)
-	ab:ring("PortalArc", CFrame.new(0, ringY, 0), RING_R + 1.5, 0.5, "Chrome", 10, 110, 20)
-	ab:ring("PortalArc", CFrame.new(0, ringY, 0), RING_R + 1.5, 0.5, "Chrome", 10, 110, 200)
-	for _, p in ipairs(arcs:GetDescendants()) do
-		if p:IsA("BasePart") then spin(p, center, 0.8) end
-	end
-
-	-- pylons with glowing tips on both sides
-	for _, s in ipairs({-1, 1}) do
-		b:pill("PortalPylon", Vector3.new(s * (RING_R + 3.2), PLATFORM_TOP, 0), Vector3.new(s * (RING_R + 3.2), PLATFORM_TOP + 10, 0), 1.1, "Ink")
-		b:box("PylonStrip", Vector3.new(0.2, 8, 0.2), CFrame.new(s * (RING_R + 3.2), PLATFORM_TOP + 5, -0.6), "GlowCyan")
-		b:bulb("PylonTip", 1.5, CFrame.new(s * (RING_R + 3.2), PLATFORM_TOP + 10.9, 0), "GlowPink", 10)
-	end
-
-	-- the vortex: a force-field disc and a glowing disc behind it, both spinning
-	local swirl = b:rod("PortalVortex", 0.25, RING_R * 2 - 1.4, CFrame.new(0, ringY, 0) * CFrame.Angles(0, math.rad(90), 0), "Portal")
-	swirl.Color = rgb(170, 130, 255)
-	local glow = b:rod("PortalVortexGlow", 0.2, RING_R * 2 - 1.8, CFrame.new(0, ringY, 0.25) * CFrame.Angles(0, math.rad(90), 0), "GlowCyan")
-	glow.Color = rgb(120, 90, 255)
-	glow.Transparency = 0.55
-	spin(swirl, center, 2.2)
-	spin(glow, center, -1.4)
-	for _, p in ipairs({swirl, glow}) do
-		p.CanCollide = false
-		p.CanQuery = false
-	end
+	-- green light spilling out onto the ground
 	local light = Instance.new("PointLight")
-	light.Color = rgb(170, 130, 255)
+	light.Color = rgb(120, 255, 80)
 	light.Range = 18
-	light.Brightness = 1.4
-	light.Parent = swirl
-	local sparkles = Instance.new("ParticleEmitter")
-	sparkles.Name = "VortexSparkles"
-	sparkles.Color = ColorSequence.new(rgb(200, 170, 255), rgb(110, 230, 255))
-	sparkles.LightEmission = 1
-	sparkles.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0)})
-	sparkles.Transparency = NumberSequence.new(0.1, 1)
-	sparkles.Lifetime = NumberRange.new(0.8, 1.4)
-	sparkles.Rate = 30
-	sparkles.Speed = NumberRange.new(1, 3)
-	sparkles.SpreadAngle = Vector2.new(25, 25)
-	sparkles.RotSpeed = NumberRange.new(-180, 180)
-	sparkles.EmissionDirection = Enum.NormalId.Right -- out of the portal's face
-	sparkles.Parent = swirl
+	light.Brightness = 0
+	light.Parent = core
 
-	-- floating crystals over the ring
-	for i, x in ipairs({-3, 0, 3}) do
-		local y = ringY + RING_R + 2.2 + (i == 2 and 1.2 or 0)
-		b:box("PortalCrystal", Vector3.new(0.7, 1.8, 0.7), CFrame.new(x, y, 0) * CFrame.Angles(0, math.rad(45), math.rad(x * 6)), i == 2 and "GlowPink" or "GlowCyan")
-	end
+	-- swirling sparks pouring out of the front, and goo dripping off the rim
+	emitter(core, {
+		Name = "PortalSparks", Color = ColorSequence.new(rgb(210, 255, 170), rgb(90, 230, 50)), LightEmission = 1,
+		Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 0)}),
+		Transparency = NumberSequence.new(0, 1), Lifetime = NumberRange.new(0.6, 1.1), Rate = 40,
+		Speed = NumberRange.new(2, 5), SpreadAngle = Vector2.new(35, 35), RotSpeed = NumberRange.new(-360, 360),
+		EmissionDirection = Enum.NormalId.Front, Drag = 2,
+	})
+	emitter(rim, {
+		Name = "PortalGoo", Color = ColorSequence.new(rgb(120, 240, 60)), LightEmission = 0.6,
+		Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0.1)}),
+		Transparency = NumberSequence.new(0.1, 0.8), Lifetime = NumberRange.new(0.6, 1), Rate = 14,
+		Speed = NumberRange.new(0, 1), SpreadAngle = Vector2.new(180, 180), Acceleration = Vector3.new(0, -30, 0),
+		Shape = Enum.ParticleEmitterShape.Box,
+	})
 
-	for _, d in ipairs(portal:GetDescendants()) do
-		-- only the platform and the pylons are solid: aliens walk straight through the ring
-		if d:IsA("BasePart") and not (d.Name:find("^PortalBase") or d.Name:find("^PortalPylon")) then
-			d.CanCollide = false
-		end
-	end
+	-- a splash of green light on the ground under it
+	local splash = part(portal, "PortalSplash", Vector3.new(0.12, 1, 1), cf * CFrame.new(0, 0.1, -0.5) * CFrame.Angles(0, 0, math.rad(90)),
+		rgb(120, 255, 80), Enum.Material.Neon, 0.5)
+	splash.Shape = Enum.PartType.Cylinder
 
 	-- markers for VisitorManager
-	marker(portal, "Core", cf * CFrame.new(0, PLATFORM_TOP + 3, 0))
-	marker(portal, "Front", cf * CFrame.new(0, 3, -(RING_R + 5)))
-	portal:SetAttribute("NoCalm", true)
+	local coreMarker = part(portal, "Core", Vector3.new(1, 1, 1), cf * CFrame.new(0, 3, 0), Color3.new(), Enum.Material.SmoothPlastic, 1)
+	coreMarker.Name = "Core"
+	part(portal, "Front", Vector3.new(1, 1, 1), cf * CFrame.new(0, 3, -6), Color3.new(), Enum.Material.SmoothPlastic, 1)
+	portal.Parent = parent
+
+	-- POP OPEN: a burst of sparks, then the oval springs out with an overshoot
+	local burst = emitter(core, {
+		Enabled = false, Color = ColorSequence.new(rgb(230, 255, 200), rgb(100, 240, 60)), LightEmission = 1,
+		Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 0)}),
+		Transparency = NumberSequence.new(0, 1), Lifetime = NumberRange.new(0.4, 0.8),
+		Speed = NumberRange.new(10, 22), SpreadAngle = Vector2.new(180, 180), Drag = 4,
+	})
+	burst:Emit(70)
+	local pop = TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+	for _, mesh in ipairs(meshes) do
+		TweenService:Create(mesh, pop, {Scale = Vector3.new(1, 1, 1)}):Play()
+	end
+	TweenService:Create(light, TweenInfo.new(0.3), {Brightness = 3}):Play()
+	TweenService:Create(splash, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {Size = Vector3.new(0.12, 9, 9), Transparency = 0.7}):Play()
+	-- then wobble like jelly while it's open, with a glowing spiral spinning inside
+	task.delay(0.5, function()
+		if not portal.Parent or portal:GetAttribute("Closing") then return end
+		local spiral = Instance.new("Model")
+		spiral.Name = "Spiral"
+		for arm = 0, 2 do
+			for i = 1, 24 do
+				local t = i / 24
+				local a = arm * math.pi * 2 / 3 + t * math.pi * 1.8
+				local r = 0.35 + t * 2.55
+				local dot = part(spiral, "SpiralDot", Vector3.one * (0.62 - t * 0.3),
+					center * CFrame.new(math.cos(a) * r, math.sin(a) * r, -0.36), rgb(200, 255, 150):Lerp(rgb(60, 200, 40), t), Enum.Material.Neon, 0.05)
+				dot.Shape = Enum.PartType.Ball
+				-- spun on every player's screen by ShovelSpinner
+				dot:SetAttribute("OrbitPivot", center)
+				dot:SetAttribute("OrbitOffset", center:ToObjectSpace(dot.CFrame))
+				dot:SetAttribute("OrbitSpeed", -3.2)
+				CollectionService:AddTag(dot, "ShovelOrbit")
+			end
+		end
+		spiral.Parent = portal
+		local wobble = TweenInfo.new(0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+		for i, mesh in ipairs(meshes) do
+			local k = i % 2 == 0 and 1 or -1
+			TweenService:Create(mesh, wobble, {Scale = Vector3.new(1 + 0.05 * k, 1 - 0.04 * k, 1)}):Play()
+		end
+		local core2 = portal:FindFirstChild("PortalCore")
+		if core2 then
+			TweenService:Create(core2, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = 0.45}):Play()
+		end
+	end)
 	return portal
 end
+
+function AlienPortal.close(portal)
+	if not portal or not portal.Parent or portal:GetAttribute("Closing") then return end
+	portal:SetAttribute("Closing", true)
+	local spiral = portal:FindFirstChild("Spiral")
+	if spiral then spiral:Destroy() end
+	local shut = TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+	for _, d in ipairs(portal:GetDescendants()) do
+		if d:IsA("SpecialMesh") then
+			TweenService:Create(d, shut, {Scale = Vector3.new(0.02, 0.02, 1)}):Play()
+		elseif d:IsA("ParticleEmitter") then
+			d.Enabled = false
+		elseif d:IsA("PointLight") then
+			TweenService:Create(d, shut, {Brightness = 0}):Play()
+		end
+	end
+	local splash = portal:FindFirstChild("PortalSplash")
+	if splash then TweenService:Create(splash, shut, {Size = Vector3.new(0.12, 0.5, 0.5), Transparency = 1}):Play() end
+	Debris:AddItem(portal, 0.8)
+end
+
+return AlienPortal

@@ -19,7 +19,6 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local buildVisitor = require(script.Parent:WaitForChild("VisitorModels"))
 local AlienPortal = require(script.Parent:WaitForChild("AlienPortal"))
 local RunService = game:GetService("RunService")
-local Debris = game:GetService("Debris")
 
 local MAX_VISITORS = 4           -- per museum at once
 local SPAWN_EVERY = {8, 18}      -- seconds between new visitors (random in this range)
@@ -28,12 +27,10 @@ local LOOK_TIME = {2.5, 4.5}     -- seconds spent in front of each meme
 local ALIEN_CHANCE = 0          -- aliens now arrive through the portals instead of the plazas
 -- ALIENS
 local MAX_ALIENS = 7             -- roaming the island at once
-local ALIEN_EVERY = {6, 13}      -- seconds between arrivals
+local ALIEN_EVERY = {8, 16}      -- seconds between portal arrivals
 local ALIEN_SIGHTS = {1, 3}      -- places they look at before (maybe) visiting a museum
 local ALIEN_MUSEUM_CHANCE = 0.8  -- chance an alien visits a museum (if any has memes on show)
 local ALIEN_MAX_LIFETIME = 240   -- seconds; after that they beam away wherever they are
-local PORTAL_ANGLES = {90, 210, 330} -- at the lookouts at the end of three avenues (MainIsland)
-local PORTAL_DISTANCE = 452
 local STEP_TIMEOUT = 4           -- give up on a waypoint after this many seconds (then skip ahead)
 
 -- standard R15 animations (made by Roblox, usable in every game)
@@ -389,7 +386,7 @@ for _, museum in ipairs(museumsFolder:GetChildren()) do
 end
 
 ---------------------------------------------------------------------
--- ALIEN PORTALS + ROAMING ALIENS
+-- ALIENS: green portals pop open at random spots, aliens roam, then leave through a new portal
 ---------------------------------------------------------------------
 local portalsFolder = workspace:FindFirstChild("AlienPortals")
 if portalsFolder then portalsFolder:Destroy() end
@@ -398,57 +395,152 @@ portalsFolder.Name = "AlienPortals"
 portalsFolder:SetAttribute("NoCalm", true) -- keep the portals' glow (MapStyle tones down the rest)
 portalsFolder.Parent = workspace
 
-local portals = {}
-local function buildPortals()
-	local waited = 0
-	while not workspace:GetAttribute("MainIslandReady") and waited < 30 do
-		waited += task.wait(0.2)
+local WORLD = GameConfig.Worlds[1]
+local ORIGIN = WORLD.Origin
+local KEEP_OUT = WORLD.PitRadius + 12 -- aliens never walk inside this ring (the dig site and its rim)
+local DETOUR_RADIUS = KEEP_OUT + 20   -- they walk around the dig site on this ring instead
+
+-- pathfinding avoids the dig site too (an invisible no-go zone; it can't be clicked or touched)
+do
+	local zone = Instance.new("Part")
+	zone.Name = "DigSiteNoGo"
+	zone.Shape = Enum.PartType.Cylinder
+	zone.Anchored = true
+	zone.CanCollide = false
+	zone.CanQuery = false
+	zone.CanTouch = false
+	zone.Transparency = 1
+	zone.Size = Vector3.new(80, KEEP_OUT * 2, KEEP_OUT * 2)
+	zone.CFrame = CFrame.new(ORIGIN) * CFrame.Angles(0, 0, math.rad(90))
+	local modifier = Instance.new("PathfindingModifier")
+	modifier.Label = "DigSite"
+	modifier.Parent = zone
+	zone.Parent = portalsFolder
+end
+PATH_COSTS.DigSite = math.huge
+
+local function flatDistance(position)
+	return Vector3.new(position.X - ORIGIN.X, 0, position.Z - ORIGIN.Z).Magnitude
+end
+local function angleOf(position)
+	return math.atan2(position.Z - ORIGIN.Z, position.X - ORIGIN.X)
+end
+-- does the straight line from a to b cut through the dig site?
+local function crossesDigSite(a, b)
+	local flatA, flatB = Vector3.new(a.X, 0, a.Z), Vector3.new(b.X, 0, b.Z)
+	local center = Vector3.new(ORIGIN.X, 0, ORIGIN.Z)
+	local ab = flatB - flatA
+	local t = ab.Magnitude > 0 and math.clamp((center - flatA):Dot(ab) / ab:Dot(ab), 0, 1) or 0
+	return (flatA + ab * t - center).Magnitude < KEEP_OUT + 4
+end
+
+-- walks one leg; a path that dips into the dig site is thrown away (the leg is always
+-- outside it, so walking it straight is safe)
+local function walkLeg(npc, goal)
+	local humanoid = npc:FindFirstChildOfClass("Humanoid")
+	local root = npc:FindFirstChild("HumanoidRootPart")
+	if not humanoid or not root then return end
+	local path = PathfindingService:CreatePath({AgentRadius = 1.6, AgentHeight = 5.5, AgentCanJump = false, WaypointSpacing = 6, Costs = PATH_COSTS})
+	local ok = pcall(function() path:ComputeAsync(root.Position, goal) end)
+	local points = {goal}
+	if ok and path.Status == Enum.PathStatus.Success then
+		local waypoints = path:GetWaypoints()
+		local safe = true
+		for _, w in ipairs(waypoints) do
+			if flatDistance(w.Position) < KEEP_OUT then
+				safe = false
+				break
+			end
+		end
+		if safe then
+			points = {}
+			for i, w in ipairs(waypoints) do
+				if i > 1 then table.insert(points, w.Position) end
+			end
+		end
 	end
-	local origin = GameConfig.Worlds[1].Origin
-	for _, deg in ipairs(PORTAL_ANGLES) do
-		local a = math.rad(deg)
-		local pos = origin + Vector3.new(math.cos(a) * PORTAL_DISTANCE, 0.8, math.sin(a) * PORTAL_DISTANCE)
-		-- the portal faces the middle of the island
-		local cf = CFrame.lookAt(pos, Vector3.new(origin.X, pos.Y, origin.Z))
-		table.insert(portals, AlienPortal(portalsFolder, cf))
+	for _, point in ipairs(points) do
+		if not npc.Parent then return end
+		stepTo(humanoid, point)
 	end
 end
 
-local function portalSpot(portal, name)
-	local part = portal:FindFirstChild(name)
-	return part and part.Position
+-- walks anywhere on the island, going AROUND the dig site (never into or over it)
+local function roamTo(npc, goal)
+	local root = npc:FindFirstChild("HumanoidRootPart")
+	if not root or not goal then return end
+	if crossesDigSite(root.Position, goal) then
+		-- hop along a ring around the dig site, 45 degrees at a time, the short way round
+		local a0, a1 = angleOf(root.Position), angleOf(goal)
+		local diff = (a1 - a0 + math.pi) % (math.pi * 2) - math.pi
+		local steps = math.max(1, math.ceil(math.abs(diff) / math.rad(45)))
+		for i = 1, steps do
+			if not npc.Parent then return end
+			local a = a0 + diff * i / steps
+			walkLeg(npc, ORIGIN + Vector3.new(math.cos(a) * DETOUR_RADIUS, 3, math.sin(a) * DETOUR_RADIUS))
+			if not crossesDigSite(root.Position, goal) then break end
+		end
+	end
+	if npc.Parent then walkLeg(npc, goal) end
 end
 
--- sparks and a flash of light at a portal (or wherever an alien beams away)
-local function portalBurst(position, count)
-	local anchor = Instance.new("Part")
-	anchor.Anchored = true
-	anchor.CanCollide = false
-	anchor.CanQuery = false
-	anchor.CanTouch = false
-	anchor.Transparency = 1
-	anchor.Size = Vector3.one
-	anchor.CFrame = CFrame.new(position)
-	anchor.Parent = visitorsFolder
-	local e = Instance.new("ParticleEmitter")
-	e.Enabled = false
-	e.Color = ColorSequence.new(Color3.fromRGB(200, 170, 255), Color3.fromRGB(110, 230, 255))
-	e.LightEmission = 1
-	e.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 0)})
-	e.Transparency = NumberSequence.new(0, 1)
-	e.Lifetime = NumberRange.new(0.5, 1)
-	e.Speed = NumberRange.new(6, 14)
-	e.SpreadAngle = Vector2.new(180, 180)
-	e.Drag = 3
-	e.Parent = anchor
-	e:Emit(count or 50)
-	local flash = Instance.new("PointLight")
-	flash.Color = Color3.fromRGB(180, 150, 255)
-	flash.Range = 20
-	flash.Brightness = 4
-	flash.Parent = anchor
-	TweenService:Create(flash, TweenInfo.new(0.8), {Brightness = 0}):Play()
-	Debris:AddItem(anchor, 1.5)
+-- the ground at (x, z): returns the surface point if it's open, flat, ground-level land
+local function groundAt(x, z)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	local ignore = {visitorsFolder, portalsFolder}
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr.Character then table.insert(ignore, plr.Character) end
+	end
+	params.FilterDescendantsInstances = ignore
+	local hit = workspace:Raycast(Vector3.new(x, ORIGIN.Y + 80, z), Vector3.new(0, -120, 0), params)
+	if not hit or hit.Normal.Y < 0.9 then return nil end
+	if hit.Position.Y < ORIGIN.Y - 1.5 or hit.Position.Y > ORIGIN.Y + 2.5 then return nil end -- roofs, holes, water
+	return hit.Position
+end
+
+local function insideAMuseum(point)
+	for _, museum in ipairs(workspace:WaitForChild("Museums"):GetChildren()) do
+		local interior = museum:FindFirstChild("Interior")
+		if interior then
+			local rel = interior.CFrame:PointToObjectSpace(point)
+			local half = interior.Size / 2 + Vector3.new(6, 0, 6)
+			if math.abs(rel.X) < half.X and math.abs(rel.Z) < half.Z then return true end
+		end
+	end
+	return false
+end
+
+-- a random open spot around the museums and the dig site (outside the dig site itself),
+-- optionally near a position; with room = true there must be space for a portal there
+local function randomSpot(near, room)
+	for _ = 1, 30 do
+		local x, z
+		if near then
+			local a, d = rng:NextNumber(0, math.pi * 2), rng:NextNumber(10, 26)
+			x, z = near.X + math.cos(a) * d, near.Z + math.sin(a) * d
+		else
+			local a, d = rng:NextNumber(0, math.pi * 2), rng:NextNumber(KEEP_OUT + 12, 255)
+			x, z = ORIGIN.X + math.cos(a) * d, ORIGIN.Z + math.sin(a) * d
+		end
+		local ground = groundAt(x, z)
+		if ground and flatDistance(ground) > KEEP_OUT + 8 and not insideAMuseum(ground) then
+			if not room then return ground end
+			local params = OverlapParams.new()
+			params.FilterType = Enum.RaycastFilterType.Exclude
+			local ignore = {workspace.Terrain, visitorsFolder, portalsFolder}
+			for _, plr in ipairs(Players:GetPlayers()) do
+				if plr.Character then table.insert(ignore, plr.Character) end
+			end
+			params.FilterDescendantsInstances = ignore
+			local size = AlienPortal.Size
+			local boxCF = CFrame.new(ground + Vector3.new(0, 1 + size.Y / 2, 0))
+			if #workspace:GetPartBoundsInBox(boxCF, size + Vector3.new(4, 0, 8), params) == 0 then
+				return ground
+			end
+		end
+	end
+	return nil
 end
 
 -- grows (or shrinks) a character and fades it in (or out)
@@ -473,23 +565,9 @@ local function scaleAndFade(npc, fromScale, toScale, fromAlpha, toAlpha, duratio
 	end
 end
 
--- places worth a look on the island: the dig site's rim, the boulevard, the other lookouts
-local function randomSight(fromPortal)
-	local origin = GameConfig.Worlds[1].Origin
-	local roll = rng:NextNumber()
-	if roll < 0.4 then
-		-- the rim of the pit, on one of the six walkways
-		local a = math.rad(rng:NextInteger(0, 5) * 60 + rng:NextNumber(-4, 4))
-		local r = GameConfig.Worlds[1].PitRadius + rng:NextNumber(12, 20)
-		return origin + Vector3.new(math.cos(a) * r, 3, math.sin(a) * r)
-	elseif roll < 0.8 or #portals < 2 then
-		-- somewhere along the ring boulevard
-		local a = rng:NextNumber(0, math.pi * 2)
-		return origin + Vector3.new(math.cos(a) * 269, 3, math.sin(a) * 269)
-	end
-	local other = portals[rng:NextInteger(1, #portals)]
-	if other == fromPortal then return nil end
-	return portalSpot(other, "Front")
+local function marker(portal, name)
+	local part = portal:FindFirstChild(name)
+	return part and part.Position
 end
 
 local function museumsWithMemes()
@@ -500,86 +578,147 @@ local function museumsWithMemes()
 	return list
 end
 
-local function alienTrip(npc, portal)
+-- somewhere to look at: the dig site from just outside it, a museum's plaza, anywhere around
+local function randomSight()
+	local roll = rng:NextNumber()
+	if roll < 0.35 then
+		local a = rng:NextNumber(0, math.pi * 2)
+		local r = KEEP_OUT + rng:NextNumber(4, 12)
+		local ground = groundAt(ORIGIN.X + math.cos(a) * r, ORIGIN.Z + math.sin(a) * r)
+		return ground and ground + Vector3.new(0, 3, 0)
+	elseif roll < 0.6 then
+		local museums = workspace:WaitForChild("Museums"):GetChildren()
+		if #museums > 0 then
+			return waypoint(museums[rng:NextInteger(1, #museums)], "Outside")
+		end
+	end
+	local spot = randomSpot(nil, false)
+	return spot and spot + Vector3.new(0, 3, 0)
+end
+
+-- one alien steps out of an open portal (offset = how far to the side it walks out)
+local function stepOut(npc, portal, offset)
 	local humanoid = npc:FindFirstChildOfClass("Humanoid")
 	local root = npc:FindFirstChild("HumanoidRootPart")
-	local core, front = portalSpot(portal, "Core"), portalSpot(portal, "Front")
-	if not humanoid or not root or not core or not front then
-		npc:Destroy()
-		return
-	end
+	local core, front = marker(portal, "Core"), marker(portal, "Front")
+	if not humanoid or not root or not core or not front then return false end
 	humanoid.WalkSpeed = rng:NextNumber(11, 14)
-	local born = os.clock()
-
-	-- out of the vortex: tiny and invisible, growing and fading in with a burst of sparks
 	npc:PivotTo(CFrame.lookAt(core, Vector3.new(front.X, core.Y, front.Z)))
 	root.Anchored = true
 	pcall(function() npc:ScaleTo(0.05) end)
 	npc.Parent = visitorsFolder
-	portalBurst(core, 60)
-	scaleAndFade(npc, 0.05, 1, 1, 0, 0.7)
-	if not npc.Parent then return end
+	scaleAndFade(npc, 0.05, 1, 1, 0, 0.6)
+	if not npc.Parent then return false end
 	root.Anchored = false
 	pcall(function() root:SetNetworkOwner(nil) end)
 	setupAnimations(humanoid)
-	walkTo(npc, front)
+	local side = portal:FindFirstChild("Core").CFrame.RightVector * offset
+	stepTo(humanoid, front + side)
+	return true
+end
 
+-- an alien leaves: a portal pops open next to it, it walks in and is gone
+local function leave(npc)
+	local root = npc:FindFirstChild("HumanoidRootPart")
+	if not root or not npc.Parent then
+		if npc.Parent then npc:Destroy() end
+		return
+	end
+	local spot = randomSpot(root.Position, true) or randomSpot(nil, true)
+	if spot then
+		local facing = Vector3.new(root.Position.X, spot.Y, root.Position.Z)
+		if (facing - spot).Magnitude < 1 then facing = spot + Vector3.zAxis end
+		local portal = AlienPortal.open(portalsFolder, CFrame.lookAt(spot, facing))
+		roamTo(npc, marker(portal, "Front"))
+		local humanoid = npc:FindFirstChildOfClass("Humanoid")
+		if humanoid and npc.Parent then stepTo(humanoid, marker(portal, "Core")) end
+		if npc.Parent then
+			root.Anchored = true
+			scaleAndFade(npc, 1, 0.05, 0, 1, 0.45)
+		end
+		task.delay(0.6, AlienPortal.close, portal)
+	elseif npc.Parent then
+		scaleAndFade(npc, 1, 0.05, 0, 1, 0.45)
+	end
+	if npc.Parent then npc:Destroy() end
+end
+
+local function roam(npc)
+	local born = os.clock()
 	local function tooOld() return os.clock() - born > ALIEN_MAX_LIFETIME end
-
-	-- sightseeing around the island
 	for _ = 1, rng:NextInteger(ALIEN_SIGHTS[1], ALIEN_SIGHTS[2]) do
 		if not npc.Parent or tooOld() then break end
-		local sight = randomSight(portal)
+		local sight = randomSight()
 		if sight then
-			walkTo(npc, sight)
+			roamTo(npc, sight)
 			task.wait(rng:NextNumber(1.5, 3.5)) -- have a look around
 		end
 	end
-
 	-- inspect the displays in a museum
 	local museums = museumsWithMemes()
 	if npc.Parent and not tooOld() and #museums > 0 and rng:NextNumber() < ALIEN_MUSEUM_CHANCE then
-		tour(museums[rng:NextInteger(1, #museums)], npc)
+		local museum = museums[rng:NextInteger(1, #museums)]
+		roamTo(npc, waypoint(museum, "Outside"))
+		tour(museum, npc)
 	end
-
-	-- home through a portal (not always the one they came from)
-	local exit = portals[rng:NextInteger(1, #portals)]
-	if npc.Parent and not tooOld() then
-		walkTo(npc, portalSpot(exit, "Front"))
-		walkTo(npc, portalSpot(exit, "Core"))
-	end
-	if not npc.Parent then return end
-	local here = root.Position
-	root.Anchored = true
-	portalBurst(here, 45)
-	scaleAndFade(npc, 1, 0.05, 0, 1, 0.55)
-	npc:Destroy()
+	leave(npc)
 end
 
-task.spawn(function()
-	buildPortals()
-	if #portals == 0 then return end
-	local roaming = 0
-	task.wait(rng:NextNumber(2, 5))
-	while true do
-		if roaming < MAX_ALIENS then
-			roaming += 1
-			task.spawn(function()
-				local ok, npc = pcall(buildVisitor, "Alien", rng)
-				if ok and npc then
-					local tripOk, err = pcall(alienTrip, npc, portals[rng:NextInteger(1, #portals)])
-					if not tripOk then
+-- a portal pops open somewhere, one or two aliens come out, it snaps shut
+local function arrival(onDone)
+	local spot = randomSpot(nil, true)
+	if not spot then
+		onDone(2) -- no room anywhere this time: hand back both reserved places
+		return
+	end
+	local facing = Vector3.new(ORIGIN.X, spot.Y, ORIGIN.Z)
+	-- mostly face the middle of the island, with a random twist
+	local look = CFrame.lookAt(spot, facing) * CFrame.Angles(0, rng:NextNumber(-0.8, 0.8), 0)
+	local portal = AlienPortal.open(portalsFolder, look)
+	task.wait(0.5)
+	local count = rng:NextNumber() < 0.3 and 2 or 1
+	local out = 0
+	for i = 1, count do
+		local ok, npc = pcall(buildVisitor, "Alien", rng)
+		if ok and npc then
+			local stepped = stepOut(npc, portal, count == 1 and 0 or (i == 1 and -2.5 or 2.5))
+			if stepped then
+				out += 1
+				task.spawn(function()
+					local roamOk, err = pcall(roam, npc)
+					if not roamOk then
 						warn("Alien visitor error: " .. tostring(err))
 						if npc.Parent then npc:Destroy() end
 					end
-				else
-					warn("Couldn't build an alien: " .. tostring(npc))
-				end
-				roaming -= 1
-			end)
+					onDone(1)
+				end)
+			elseif npc.Parent then
+				npc:Destroy()
+			end
+		else
+			warn("Couldn't build an alien: " .. tostring(npc))
+		end
+		task.wait(0.6)
+	end
+	task.wait(1.2)
+	AlienPortal.close(portal)
+	onDone(2 - out) -- hand back the reserved places nobody used
+end
+
+task.spawn(function()
+	local waited = 0
+	while not workspace:GetAttribute("MainIslandReady") and waited < 30 do
+		waited += task.wait(0.2)
+	end
+	local roaming = 0
+	task.wait(rng:NextNumber(3, 6))
+	while true do
+		if roaming < MAX_ALIENS then
+			roaming += 2 -- reserve room for a pair; unused places are handed back
+			task.spawn(arrival, function(n) roaming -= n end)
 		end
 		task.wait(rng:NextNumber(ALIEN_EVERY[1], ALIEN_EVERY[2]))
 	end
 end)
 
-print("VisitorManager ready: humans visit every museum, aliens roam in from " .. #PORTAL_ANGLES .. " portals")
+print("VisitorManager ready: humans visit every museum, aliens pop in through green portals")
