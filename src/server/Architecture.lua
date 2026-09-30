@@ -2,7 +2,7 @@
 -- Shared building kit for the cartoony 2050 look: chunky rounded shapes (discs, capsules,
 -- domes, rings, arches, rounded blocks), a bright soft palette (white, lilac, sky, mint,
 -- sunshine) and gentle pastel glow trims.
--- ShopBuilder, WorldGate and MuseumStyle all build with this.
+-- ShopBuilder, WorldGate, MuseumBuilder and MainIsland all build with this.
 
 local Architecture = {}
 

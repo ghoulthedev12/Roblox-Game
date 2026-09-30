@@ -15,6 +15,7 @@ end
 pcall(function() game:GetService("Lighting").Technology = Enum.Technology.Future end)
 do local old = game:GetService("ServerScriptService"):FindFirstChild("DataManager") if old then old:Destroy() print("Removed DataManager") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
+do local old = game:GetService("ServerScriptService"):FindFirstChild("MuseumStyle") if old then old:Destroy() print("Removed MuseumStyle") end end
 install(game:GetService("ReplicatedStorage"), "ArtifactData", "ModuleScript", [=[
 -- ArtifactData (ModuleScript in ReplicatedStorage)
 -- The ONE list the whole game reads from: rarities, the 20 dig areas, and every artifact.
@@ -838,17 +839,18 @@ function GameConfig.GetFloorOfSlot(slotIndex)
 end
 
 -- Which floor of a museum a position is on (nil if it's not inside that museum).
--- Uses the museum's Floor1Arrival spot (in the middle of the back of the hall) as reference.
+-- MuseumBuilder puts an invisible "Interior" box around the floors, with the storey height
+-- in its FloorHeight attribute.
 function GameConfig.GetMuseumFloor(museum, position)
-	local arrivals = museum:FindFirstChild("Arrivals")
-	local first = arrivals and arrivals:FindFirstChild("Floor1Arrival")
-	if not first or not first:IsA("BasePart") then return nil end
-	local p = first.CFrame:PointToObjectSpace(position)
-	-- the hall is 96 studs wide and runs from the entrance (-107) to the back wall (+28)
-	if math.abs(p.X) > 48 or p.Z < -108 or p.Z > 29 or p.Y < -6 or p.Y > 96 then
+	local interior = museum:FindFirstChild("Interior")
+	if not interior or not interior:IsA("BasePart") then return nil end
+	local p = interior.CFrame:PointToObjectSpace(position)
+	local half = interior.Size / 2
+	if math.abs(p.X) > half.X or math.abs(p.Z) > half.Z or p.Y < -half.Y - 3 or p.Y > half.Y then
 		return nil
 	end
-	return math.clamp(math.floor((p.Y + 6) / 32) + 1, 1, #GameConfig.FloorPrices)
+	local floorHeight = interior:GetAttribute("FloorHeight") or 22
+	return math.clamp(math.floor((p.Y + half.Y) / floorHeight) + 1, 1, #GameConfig.FloorPrices)
 end
 
 ---------------------------------------------------------------------
@@ -3119,7 +3121,7 @@ install(game:GetService("ServerScriptService"), "Architecture", "ModuleScript", 
 -- Shared building kit for the cartoony 2050 look: chunky rounded shapes (discs, capsules,
 -- domes, rings, arches, rounded blocks), a bright soft palette (white, lilac, sky, mint,
 -- sunshine) and gentle pastel glow trims.
--- ShopBuilder, WorldGate and MuseumStyle all build with this.
+-- ShopBuilder, WorldGate, MuseumBuilder and MainIsland all build with this.
 
 local Architecture = {}
 
@@ -4208,7 +4210,11 @@ end
 
 local worldsBuilt = false -- the floating islands must exist before the pits are filled
 task.spawn(function()
-	while not worldsBuilt do task.wait(0.1) end
+	-- wait for the floating islands (worlds 2-9 here, World 1 in MapStyle) before filling the pits
+	local waited = 0
+	while (not worldsBuilt or not workspace:GetAttribute("MainIslandReady")) and waited < 30 do
+		waited += task.wait(0.1)
+	end
 	resetPits() -- fresh ground when the server starts
 	while true do
 		task.wait(GameConfig.PitResetMinutes * 60 - 30)
@@ -4538,17 +4544,428 @@ return function(digSite, world)
 	digSite:SetAttribute("Cartoon2050", true)
 end
 ]=])
+install(game:GetService("ServerScriptService"), "MainIsland", "ModuleScript", [=[
+-- MainIsland (ModuleScript in ServerScriptService)
+-- World 1 as a compact, densely packed floating island (radius 470 studs, about half the old
+-- map) wrapped in a belt of towering 2050 skyscrapers.
+--
+-- Layout, from the middle out:
+--   0-130   the Meme Dig Site with its six walkways          (DigSite, built by the place)
+--   150-245 the six player museums on their plots            (MuseumBuilder / PlotManager)
+--   258-280 a glowing ring boulevard with lamps and trees
+--   290-450 three rings of skyscrapers, getting taller outward, split by six radial
+--           avenues (between the museums) so every museum keeps a view out
+--   470     the island edge: a glass railing, then the floating cliff underneath
+--
+-- Every skyscraper is made from Instance.new("Part") with exact Color3s, Glass and Neon
+-- materials and CFrame math: floors that twist a few degrees each, stacks that shear
+-- sideways along a sine curve, set-back tiers, glass cylinders ringed with neon, twin towers
+-- joined by sky tubes, and a few megatowers with spiralling neon ribs and sky gardens.
+-- MapStyle calls MainIsland.build() once when the server starts.
+
+local Architecture = require(script.Parent:WaitForChild("Architecture"))
+local P = Architecture.Palette
+
+local MainIsland = {}
+
+local rgb = Color3.fromRGB
+local terrain = workspace.Terrain
+
+local ISLAND_RADIUS = 470
+local BOULEVARD = {Radius = 269, Width = 22}
+local AVENUE_ANGLES = {30, 90, 150, 210, 270, 330} -- between the museums (plots sit at 0, 60, 120...)
+local AVENUE_HALF_WIDTH = 20
+-- tower rings: radius, footprint range, height range
+local RINGS = {
+	{Radius = 312, Width = {28, 36}, Height = {110, 210}},
+	{Radius = 364, Width = {32, 42}, Height = {180, 320}},
+	{Radius = 422, Width = {36, 48}, Height = {260, 480}},
+}
+local GAP = 12 -- studs between neighbouring towers
+local MEGA_COUNT = 6
+
+---------------------------------------------------------------------
+-- MATERIALS (exact colors)
+---------------------------------------------------------------------
+local GLASS_TINTS = {
+	rgb(120, 200, 255), -- sky
+	rgb(176, 160, 255), -- lilac
+	rgb(110, 232, 204), -- mint
+	rgb(255, 168, 206), -- rose
+	rgb(255, 214, 140), -- champagne
+	rgb(196, 232, 255), -- ice
+}
+local NEON_TINTS = {
+	rgb(84, 212, 240),  -- cyan
+	rgb(236, 112, 190), -- pink
+	rgb(236, 192, 92),  -- gold
+	rgb(92, 226, 180),  -- mint
+	rgb(168, 132, 250), -- violet
+}
+local glassNames, neonNames = {}, {}
+for i, c in ipairs(GLASS_TINTS) do
+	local name = "IslandGlass" .. i
+	P[name] = {Color = c, Material = Enum.Material.Glass, Transparency = 0.05, Reflectance = 0.28}
+	table.insert(glassNames, name)
+	-- a deeper version of the same tint for set-back cores and shadows
+	P[name .. "Core"] = {Color = c:Lerp(rgb(40, 44, 90), 0.45), Material = Enum.Material.SmoothPlastic}
+end
+for i, c in ipairs(NEON_TINTS) do
+	local name = "IslandNeon" .. i
+	P[name] = {Color = c, Material = Enum.Material.Neon}
+	table.insert(neonNames, name)
+end
+P.IslandFrame = {Color = rgb(238, 241, 250), Material = Enum.Material.SmoothPlastic}
+P.IslandSteel = {Color = rgb(206, 212, 228), Material = Enum.Material.Metal, Reflectance = 0.12}
+P.IslandRoad = {Color = rgb(64, 60, 112), Material = Enum.Material.SmoothPlastic}
+P.IslandWalk = {Color = rgb(226, 222, 246), Material = Enum.Material.SmoothPlastic}
+P.IslandLeaf = {Color = rgb(96, 206, 150), Material = Enum.Material.SmoothPlastic}
+
+local function pick(rng, list)
+	return list[rng:NextInteger(1, #list)]
+end
+
+-- CFrame at a point on a circle, turned so its -Z faces the island center
+local function facingCenter(angle, radius, y)
+	local pos = Vector3.new(math.cos(angle) * radius, y or 0, math.sin(angle) * radius)
+	-- yaw so LookVector points at the center: LookVector of Angles(0, t, 0) is (-sin t, 0, -cos t)
+	return CFrame.new(pos) * CFrame.Angles(0, math.atan2(pos.X, pos.Z), 0)
+end
+
+local function angleDiff(a, b)
+	local d = (a - b) % (math.pi * 2)
+	return math.min(d, math.pi * 2 - d)
+end
+
+---------------------------------------------------------------------
+-- TERRAIN: the floating island itself
+---------------------------------------------------------------------
+local function buildTerrain(rng)
+	local R = ISLAND_RADIUS
+	terrain:FillCylinder(CFrame.new(0, -16, 0), 32, R, Enum.Material.Slate)
+	for _, layer in ipairs({{0.86, -40, 18}, {0.68, -62, 26}, {0.5, -90, 32}, {0.32, -124, 36}}) do
+		terrain:FillCylinder(CFrame.new(0, layer[2], 0), layer[3], R * layer[1], Enum.Material.Slate)
+	end
+	for _ = 1, 22 do
+		local a = rng:NextNumber(0, math.pi * 2)
+		local d = rng:NextNumber(R * 0.4, R * 0.85)
+		terrain:FillBall(Vector3.new(math.cos(a) * d, rng:NextNumber(-80, -36), math.sin(a) * d), rng:NextNumber(18, 34), Enum.Material.Slate)
+	end
+	-- grass on top (the Dig Site refills its own square in the middle)
+	terrain:FillCylinder(CFrame.new(0, -2, 0), 4, R, Enum.Material.Grass)
+end
+
+---------------------------------------------------------------------
+-- GROUND: boulevard, avenues, walkways to the museums, lamps, trees, the edge railing
+---------------------------------------------------------------------
+local function ringOfBoxes(b, name, radius, width, height, y, finish, segments)
+	local length = 2 * math.pi * radius / segments + 0.8
+	for i = 0, segments - 1 do
+		local a = (i + 0.5) / segments * math.pi * 2
+		local pos = Vector3.new(math.cos(a) * radius, y, math.sin(a) * radius)
+		local tangent = Vector3.new(-math.sin(a), 0, math.cos(a))
+		b:box(name, Vector3.new(length, height, width), Architecture.alongX(pos, tangent), finish)
+	end
+end
+
+local function buildGround(b, rng)
+	-- the ring boulevard with sidewalks, a glowing center line and lamps
+	ringOfBoxes(b, "Boulevard", BOULEVARD.Radius, BOULEVARD.Width, 0.4, 0.2, "IslandRoad", 64)
+	ringOfBoxes(b, "SidewalkIn", BOULEVARD.Radius - BOULEVARD.Width / 2 - 3, 6, 0.6, 0.3, "IslandWalk", 64)
+	ringOfBoxes(b, "SidewalkOut", BOULEVARD.Radius + BOULEVARD.Width / 2 + 3, 6, 0.6, 0.3, "IslandWalk", 72)
+	ringOfBoxes(b, "LaneGlow", BOULEVARD.Radius, 0.5, 0.45, 0.22, "IslandNeon1", 64)
+	for i = 0, 35 do
+		local a = i / 36 * math.pi * 2 + 0.05
+		local cf = facingCenter(a, BOULEVARD.Radius - BOULEVARD.Width / 2 - 3)
+		b:pill("LampPost", cf.Position + Vector3.new(0, 0.6, 0), cf.Position + Vector3.new(0, 14, 0), 0.6, "IslandFrame")
+		b:ball("LampGlow", 2, CFrame.new(cf.Position + Vector3.new(0, 15, 0)), pick(rng, neonNames))
+		-- a round tree between every pair of lamps
+		local tree = facingCenter(a + math.pi / 36, BOULEVARD.Radius - BOULEVARD.Width / 2 - 4)
+		b:pill("TreeTrunk", tree.Position, tree.Position + Vector3.new(0, 6, 0), 1.2, "IslandSteel")
+		b:ball("TreeTop", rng:NextNumber(6, 8), CFrame.new(tree.Position + Vector3.new(0, 8.5, 0)), i % 3 == 0 and "Mint" or "IslandLeaf")
+	end
+	-- radial avenues between the museums, out to the island edge
+	for _, deg in ipairs(AVENUE_ANGLES) do
+		local a = math.rad(deg)
+		local dir = Vector3.new(math.cos(a), 0, math.sin(a))
+		local from, to = BOULEVARD.Radius + BOULEVARD.Width / 2, ISLAND_RADIUS - 14
+		local mid = dir * ((from + to) / 2) + Vector3.new(0, 0.2, 0)
+		b:box("Avenue", Vector3.new(to - from, 0.4, 26), Architecture.alongX(mid, dir), "IslandRoad")
+		b:box("AvenueGlow", Vector3.new(to - from, 0.45, 0.5), Architecture.alongX(mid, dir), "IslandNeon2")
+		-- a lookout at the end of each avenue
+		local look = dir * (ISLAND_RADIUS - 20)
+		b:disc("Lookout", 30, 0.8, CFrame.new(look + Vector3.new(0, 0.4, 0)), "IslandWalk")
+		b:ring("LookoutGlow", CFrame.new(look + Vector3.new(0, 0.9, 0)) * CFrame.Angles(math.rad(90), 0, 0), 14.5, 0.5, "IslandNeon1", 24)
+	end
+	-- walkways from the Dig Site's paths to each museum's plaza
+	for k = 0, 5 do
+		local a = math.rad(k * 60)
+		local dir = Vector3.new(math.cos(a), 0, math.sin(a))
+		b:box("MuseumWalk", Vector3.new(40, 0.5, 14), Architecture.alongX(dir * 146 + Vector3.new(0, 0.25, 0), dir), "IslandWalk")
+	end
+	-- the edge: a glass railing with a glowing top, plus an invisible wall so nobody falls off
+	ringOfBoxes(b, "EdgeCurb", ISLAND_RADIUS - 3, 4, 1.6, 0.8, "IslandFrame", 96)
+	ringOfBoxes(b, "EdgeRail", ISLAND_RADIUS - 3, 0.6, 4, 3.6, "IslandGlass6", 96)
+	ringOfBoxes(b, "EdgeRailGlow", ISLAND_RADIUS - 3, 0.8, 0.4, 5.7, "IslandNeon1", 96)
+	ringOfBoxes(b, "EdgeBarrier", ISLAND_RADIUS - 1, 2, 80, 40, "IslandFrame", 64)
+end
+
+---------------------------------------------------------------------
+-- SKYSCRAPER STYLES. b is a builder at the tower's footprint (ground = y 0, -Z faces the
+-- island center), w = footprint width, h = height, rng = this tower's random numbers.
+---------------------------------------------------------------------
+local function podium(b, w, glass, neon)
+	b:box("Podium", Vector3.new(w + 8, 6, w + 8), CFrame.new(0, 3, 0), "IslandFrame")
+	b:box("PodiumGlow", Vector3.new(w + 8.4, 0.5, w + 8.4), CFrame.new(0, 6, 0), neon)
+	b:box("Lobby", Vector3.new(w + 2, 8, w + 2), CFrame.new(0, 10, 0), glass)
+	return 14 -- where the tower itself starts
+end
+
+local function antenna(b, y, height, neon)
+	b:pill("Antenna", Vector3.new(0, y, 0), Vector3.new(0, y + height, 0), 1, "IslandSteel")
+	b:ball("AntennaTip", 2.4, CFrame.new(0, y + height + 1, 0), neon)
+end
+
+-- A: set-back tiers, like a 2050 art-deco tower: each tier is narrower, with white corner
+-- posts, a neon stripe up the front and a white crown ledge
+local function setbackTower(b, w, h, rng, glass, neon)
+	local y = podium(b, w, glass, neon)
+	local tiers = rng:NextInteger(3, 4)
+	local remaining = h - y - 16
+	for i = 1, tiers do
+		local size = w * (1 - (i - 1) * 0.17)
+		local th = remaining * (i == 1 and 0.4 or (0.6 / (tiers - 1)))
+		b:box("Tier", Vector3.new(size, th, size), CFrame.new(0, y + th / 2, 0), glass)
+		for _, c in ipairs({{1, 1}, {-1, 1}, {1, -1}, {-1, -1}}) do
+			b:box("CornerPost", Vector3.new(1.6, th, 1.6), CFrame.new(c[1] * size / 2, y + th / 2, c[2] * size / 2), "IslandFrame")
+		end
+		b:box("FrontStripe", Vector3.new(1, th - 4, 0.6), CFrame.new(0, y + th / 2, -size / 2 - 0.3), neon)
+		b:box("Ledge", Vector3.new(size + 2, 1.4, size + 2), CFrame.new(0, y + th, 0), "IslandFrame")
+		y += th
+	end
+	b:box("Crown", Vector3.new(w * 0.3, 10, w * 0.3), CFrame.new(0, y + 5, 0) * CFrame.Angles(0, math.rad(45), 0), glass)
+	antenna(b, y + 10, rng:NextNumber(10, 22), neon)
+end
+
+-- B: twisting tower: stacked glass floors, each turned a few degrees more than the one below
+local function twistTower(b, w, h, rng, glass, neon)
+	local y = podium(b, w, glass, neon)
+	local segH = 24
+	local n = math.max(3, math.floor((h - y - 14) / segH))
+	local twist = math.rad(rng:NextNumber(4, 7)) * (rng:NextNumber() < 0.5 and -1 or 1)
+	for i = 0, n - 1 do
+		local size = w * (1 - 0.25 * i / n)
+		local turn = CFrame.Angles(0, i * twist, 0)
+		b:box("TwistFloor", Vector3.new(size, segH - 1.2, size), CFrame.new(0, y + segH / 2, 0) * turn, glass)
+		if i % 2 == 0 then
+			b:box("TwistPlate", Vector3.new(size + 1.6, 1.2, size + 1.6), CFrame.new(0, y, 0) * turn, "IslandFrame")
+		end
+		y += segH
+	end
+	b:box("TwistCap", Vector3.new(w * 0.6, 3, w * 0.6), CFrame.new(0, y + 1.5, 0) * CFrame.Angles(0, n * twist, 0), neon)
+	antenna(b, y + 3, rng:NextNumber(12, 24), neon)
+end
+
+-- C: glass cylinder banded with thin neon discs, a dome on top
+local function cylinderTower(b, w, h, rng, glass, neon)
+	local y = podium(b, w, glass, neon)
+	local body = h - y - w * 0.4
+	b:disc("Cylinder", w, body, CFrame.new(0, y + body / 2, 0), glass)
+	b:disc("CylinderCore", w * 0.7, body, CFrame.new(0, y + body / 2, 0), glass .. "Core")
+	local bands = math.floor(body / 30)
+	for i = 1, bands do
+		b:disc("NeonBand", w + 0.8, 0.8, CFrame.new(0, y + i * body / (bands + 1), 0), neon)
+	end
+	b:disc("CylinderLip", w + 2, 1.4, CFrame.new(0, y + body, 0), "IslandFrame")
+	b:ellipsoid("CylinderDome", Vector3.new(w, w * 0.8, w), CFrame.new(0, y + body, 0), glass)
+	antenna(b, y + body + w * 0.35, rng:NextNumber(8, 16), neon)
+end
+
+-- D: sheared tower: segments slide sideways along a sine curve and lean with it, so the
+-- whole tower bends gracefully
+local function shearTower(b, w, h, rng, glass, neon)
+	local y = podium(b, w, glass, neon)
+	local n = rng:NextInteger(5, 7)
+	local segH = (h - y - 10) / n
+	local sway = w * rng:NextNumber(0.25, 0.4) * (rng:NextNumber() < 0.5 and -1 or 1)
+	for i = 0, n - 1 do
+		local t0, t1 = i / n, (i + 1) / n
+		local x0, x1 = math.sin(t0 * math.pi) * sway, math.sin(t1 * math.pi) * sway
+		local lean = math.atan2(x1 - x0, segH)
+		local cf = CFrame.new((x0 + x1) / 2, y + segH / 2, 0) * CFrame.Angles(0, 0, -lean)
+		b:box("ShearFloor", Vector3.new(w * 0.9, segH - 1, w * 0.9), cf, glass)
+		b:box("ShearEdge", Vector3.new(0.8, segH - 1, 0.8), cf * CFrame.new(w * 0.45, 0, -w * 0.45), neon)
+		b:box("ShearEdge", Vector3.new(0.8, segH - 1, 0.8), cf * CFrame.new(-w * 0.45, 0, -w * 0.45), neon)
+		b:box("ShearPlate", Vector3.new(w * 0.95, 1, w * 0.95), CFrame.new(x0, y, 0) * CFrame.Angles(0, 0, -lean), "IslandFrame")
+		y += segH
+	end
+	b:box("ShearRoof", Vector3.new(w * 0.95, 1.6, w * 0.95), CFrame.new(math.sin(math.pi) * sway, y, 0), "IslandFrame")
+	antenna(b, y + 1, rng:NextNumber(10, 18), neon)
+end
+
+-- E: twin towers joined by glass sky tubes
+local function twinTower(b, w, h, rng, glass, neon)
+	local y = podium(b, w, glass, neon)
+	local tw = w * 0.42
+	local heights = {h - y, (h - y) * rng:NextNumber(0.7, 0.85)}
+	for i, side in ipairs({-1, 1}) do
+		local th = heights[i]
+		local x = side * w * 0.27
+		b:box("TwinBody", Vector3.new(tw, th, tw), CFrame.new(x, y + th / 2, 0), glass)
+		b:box("TwinFin", Vector3.new(1.2, th, tw + 2), CFrame.new(x + side * tw / 2, y + th / 2, 0), "IslandFrame")
+		b:box("TwinGlow", Vector3.new(0.8, th - 6, 0.8), CFrame.new(x - side * tw / 2, y + th / 2, -tw / 2), neon)
+		b:box("TwinTop", Vector3.new(tw + 1.4, 1.4, tw + 1.4), CFrame.new(x, y + th, 0), "IslandFrame")
+		if i == 1 then antenna(b, y + th, rng:NextNumber(10, 20), neon) end
+	end
+	for k = 1, 3 do
+		local by = y + heights[2] * (0.3 + 0.2 * k)
+		b:rod("SkyTube", w * 0.25, 5, CFrame.new(0, by, 0), "IslandGlass6")
+		b:rod("SkyTubeGlow", w * 0.25, 5.4, CFrame.new(0, by - 1.5, 0), neon, {Transparency = 0.6})
+	end
+end
+
+-- F: megatower: twisting floors with neon ribs spiralling around the corners, two sky
+-- gardens and a stepped crown with a halo and a spire
+local function megaTower(b, w, h, rng, glass, neon)
+	local y = podium(b, w, glass, neon)
+	local segH = 20
+	local n = math.floor((h - y - 40) / segH)
+	local twist = math.rad(rng:NextNumber(3.5, 5.5)) * (rng:NextNumber() < 0.5 and -1 or 1)
+	local prev
+	for i = 0, n - 1 do
+		local t = i / math.max(n - 1, 1)
+		local size = w * (1 - 0.25 * math.sin(t * math.pi * 0.85)) * (1 - 0.12 * t)
+		local turn = CFrame.Angles(0, i * twist, 0)
+		b:box("MegaFloor", Vector3.new(size, segH - 1, size), CFrame.new(0, y + segH / 2, 0) * turn, glass)
+		b:box("MegaPlate", Vector3.new(size + 1.6, 1, size + 1.6), CFrame.new(0, y, 0) * turn, "IslandFrame")
+		if i % 2 == 0 then
+			local corners = {}
+			for k = 0, 3 do
+				local a = math.rad(45 + k * 90)
+				corners[k + 1] = (CFrame.new(0, y, 0) * turn * CFrame.new(math.cos(a) * size * 0.72, 0, math.sin(a) * size * 0.72)).Position
+			end
+			if prev then
+				for k = 1, 4 do
+					local p0, p1 = prev[k], corners[k]
+					b:rod("MegaRib", (p1 - p0).Magnitude + 0.6, 1, Architecture.alongX((p0 + p1) / 2, p1 - p0), neon)
+				end
+			end
+			prev = corners
+		end
+		if i == math.floor(n / 3) or i == math.floor(n * 2 / 3) then
+			b:disc("SkyGarden", size * 1.45, 1.4, CFrame.new(0, y + 0.5, 0), "IslandFrame")
+			for k = 1, 6 do
+				local a = math.pi * 2 * k / 6
+				b:ball("GardenTree", 4, CFrame.new(math.cos(a) * size * 0.6, y + 3.4, math.sin(a) * size * 0.6), "IslandLeaf")
+			end
+		end
+		y += segH
+	end
+	local _, crownH = b:tiers("MegaCrown", CFrame.new(0, y, 0) * CFrame.Angles(0, n * twist, 0), {
+		{w * 0.6, 4, "IslandFrame"}, {w * 0.46, 4, glass}, {w * 0.3, 8, glass .. "Core"},
+	})
+	b:ring("MegaHalo", CFrame.new(0, y + crownH + 5, 0) * CFrame.Angles(math.rad(90), 0, 0), w * 0.3, 1, neon, 24)
+	antenna(b, y + crownH, 30, neon)
+end
+
+local STYLES = {setbackTower, twistTower, cylinderTower, shearTower, twinTower}
+
+---------------------------------------------------------------------
+-- PLACE THE TOWERS
+---------------------------------------------------------------------
+local function planTowers(rng)
+	local plan = {}
+	for ringIndex, ring in ipairs(RINGS) do
+		local angle = rng:NextNumber(0, 0.1)
+		while angle < math.pi * 2 - 0.05 do
+			local w = rng:NextNumber(ring.Width[1], ring.Width[2])
+			local center = angle + (w / 2) / ring.Radius
+			-- keep the avenues clear
+			local blocked = false
+			for _, deg in ipairs(AVENUE_ANGLES) do
+				if angleDiff(center, math.rad(deg)) * ring.Radius < AVENUE_HALF_WIDTH + w * 0.75 then
+					blocked = true
+					break
+				end
+			end
+			if not blocked then
+				-- a gentle skyline wave so the heights feel designed, not random
+				local wave = 0.8 + 0.2 * (math.sin(center * 3 + ringIndex) + 1)
+				local h = rng:NextNumber(ring.Height[1], ring.Height[2]) * wave
+				table.insert(plan, {Angle = center, Radius = ring.Radius + rng:NextNumber(-5, 5), Width = w, Height = h, Ring = ringIndex})
+				angle += (w + GAP) / ring.Radius
+			else
+				angle += 6 / ring.Radius
+			end
+		end
+	end
+	-- the tallest outer-ring spots become megatowers
+	local outer = {}
+	for _, t in ipairs(plan) do
+		if t.Ring == #RINGS then table.insert(outer, t) end
+	end
+	table.sort(outer, function(a, c) return a.Height > c.Height end)
+	for i = 1, math.min(MEGA_COUNT, #outer) do
+		outer[i].Mega = true
+		outer[i].Height = math.max(outer[i].Height, 420) + 60
+	end
+	return plan
+end
+
+function MainIsland.build(parent)
+	local rng = Random.new(2050)
+	local island = Instance.new("Model")
+	island.Name = "MainIsland"
+	island:SetAttribute("NoCalm", true) -- its glow is already tuned; MapStyle leaves it alone
+
+	buildTerrain(rng)
+	local ground = Instance.new("Model")
+	ground.Name = "Ground"
+	ground.Parent = island
+	buildGround(Architecture.builder(ground, CFrame.new()), rng)
+	for _, part in ipairs(ground:GetChildren()) do
+		if part.Name == "EdgeBarrier" then
+			part.Transparency = 1
+			part.CanQuery = false
+			part.CastShadow = false
+		end
+	end
+
+	local towers = Instance.new("Model")
+	towers.Name = "Skyscrapers"
+	towers.Parent = island
+	for i, t in ipairs(planTowers(rng)) do
+		local model = Instance.new("Model")
+		model.Name = t.Mega and "MegaTower" or "Skyscraper"
+		local towerRng = Random.new(i * 7919)
+		local b = Architecture.builder(model, facingCenter(t.Angle, t.Radius))
+		local glass = pick(towerRng, glassNames)
+		local neon = pick(towerRng, neonNames)
+		if t.Mega then
+			megaTower(b, t.Width, t.Height, towerRng, glass, neon)
+		else
+			STYLES[towerRng:NextInteger(1, #STYLES)](b, t.Width, t.Height, towerRng, glass, neon)
+		end
+		model.Parent = towers
+	end
+
+	island.Parent = parent or workspace
+	return island
+end
+
+return MainIsland
+]=])
 install(game:GetService("ServerScriptService"), "MapStyle", "Script", [=[
 -- MapStyle (Script in ServerScriptService)
 -- Gives the whole map the cartoony 2050 look when the server starts:
--- rebuilds the skyline, restyles the dig site, brightens the ground and the sky, and sets
+-- builds the compact main island and its skyline (MainIsland), restyles the dig site, brightens the ground and the sky, and sets
 -- calm, clean lighting (soft shadows, very little bloom, glow only on small accents).
 
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
-local CityBuilder = require(script.Parent:WaitForChild("CityBuilder"))
+local MainIsland = require(script.Parent:WaitForChild("MainIsland"))
 local DigSiteStyle = require(script.Parent:WaitForChild("DigSiteStyle"))
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
 
@@ -4556,14 +4973,16 @@ local Architecture = require(script.Parent:WaitForChild("Architecture"))
 local SUNNY_SKY = true
 
 ---------------------------------------------------------------------
--- GROUND
+-- GROUND: World 1 is now a compact floating island (MainIsland) instead of the old sprawling
+-- city on big baseplates, so those are removed and the island is built in their place.
 ---------------------------------------------------------------------
 for _, part in ipairs(workspace:GetChildren()) do
 	if part:IsA("BasePart") and part.Name:find("^Baseplate") then
-		part.Material = Enum.Material.SmoothPlastic
-		part.Color = Color3.fromRGB(196, 202, 228)
+		part:Destroy()
 	end
 end
+local oldCity = workspace:FindFirstChild("City")
+if oldCity then oldCity:Destroy() end
 local spawnLocation = workspace:FindFirstChildOfClass("SpawnLocation")
 if spawnLocation then
 	spawnLocation.Material = Enum.Material.SmoothPlastic
@@ -4578,12 +4997,10 @@ for materialName, color in pairs(GameConfig.TerrainColors) do
 end
 
 ---------------------------------------------------------------------
--- CITY + DIG SITE
+-- MAIN ISLAND + DIG SITE
 ---------------------------------------------------------------------
-local city = workspace:FindFirstChild("City")
-if city then
-	CityBuilder.build(city)
-end
+MainIsland.build()
+workspace:SetAttribute("MainIslandReady", true) -- DigManager fills the pit after this
 local digSite = workspace:FindFirstChild("DigSite")
 if digSite then
 	DigSiteStyle(digSite, GameConfig.Worlds[1])
@@ -4662,7 +5079,8 @@ grade.Parent = Lighting
 -- also catches the Shovel Shops and World Gates that DigManager builds on start.
 local function calmWorld()
 	for _, child in ipairs(workspace:GetChildren()) do
-		if not (child:IsA("Model") and game:GetService("Players"):GetPlayerFromCharacter(child)) then
+		local isCharacter = child:IsA("Model") and game:GetService("Players"):GetPlayerFromCharacter(child)
+		if not isCharacter and not child:GetAttribute("NoCalm") then
 			Architecture.calm(child)
 		end
 	end
@@ -4671,6 +5089,349 @@ calmWorld()
 task.delay(5, calmWorld)
 
 print("MapStyle: cartoony 2050 skyline, dig site and sky ready")
+]=])
+install(game:GetService("ServerScriptService"), "MuseumBuilder", "ModuleScript", [=[
+-- MuseumBuilder (ModuleScript in ServerScriptService)
+-- Builds the player museum from code: a compact, three-storey 2050 gallery (64 x 64 studs,
+-- floors every 22 studs) instead of a huge simulator hall. White walls with rounded capsule
+-- corners, a glass curtain front with glowing floor bands, a round portal entrance under a
+-- saucer canopy, a glass dome with a halo on the roof, and a plaza with the Alien Art Dealer's
+-- kiosk out front.
+--
+-- Inside, each floor has 8 display alcoves around the walls (24 slots in total) and a glowing
+-- lift pad in the middle (the on-screen arrows teleport between the pads).
+--
+-- The parts keep the names the other scripts look for:
+--   Slots/Slot1..24     AlcovePanel, AlcoveGlow, FactScreen (2 labels), FactGlow, GlowRing,
+--                       RingCover, Step, Column, Band, Cap, Plaque, DisplaySpot (InfoGui with
+--                       NameLabel + IncomeLabel) and ViewSpot (where visitors stand)
+--   Arrivals/FloorNArrival, AlienDealer/Counter, Exterior/EntranceSign (TitleLabel, SubLabel)
+--   Interior (invisible box around the floors), SpawnPoint, Waypoints/Outside, Door, Lobby
+-- Local layout: the entrance faces -Z, ground level is y = 0, and the pivot sits on the plot.
+-- Returns a function() -> Model (PlotManager clones it for each player).
+
+local Architecture = require(script.Parent:WaitForChild("Architecture"))
+local P = Architecture.Palette
+
+local rgb = Color3.fromRGB
+local HALF = 32          -- half the building width/depth
+local FLOOR_H = 22       -- height of one storey
+local FLOORS = 3
+local WALL = 1.4
+local ROOF_Y = FLOOR_H * FLOORS
+
+P.MuseumGlass = {Color = rgb(170, 220, 255), Material = Enum.Material.Glass, Transparency = 0.35, Reflectance = 0.2}
+P.MuseumTile = {Color = rgb(236, 232, 252), Material = Enum.Material.SmoothPlastic}
+P.MuseumWall = {Color = rgb(248, 248, 253), Material = Enum.Material.SmoothPlastic}
+P.MuseumAlcove = {Color = rgb(32, 30, 64), Material = Enum.Material.SmoothPlastic}
+P.MuseumAlcoveGlow = {Color = rgb(150, 130, 255), Material = Enum.Material.Neon}
+P.MuseumGold = {Color = rgb(255, 214, 110), Material = Enum.Material.Metal, Reflectance = 0.1}
+P.AlienSkin = {Color = rgb(120, 220, 120), Material = Enum.Material.SmoothPlastic}
+
+---------------------------------------------------------------------
+-- HELPERS
+---------------------------------------------------------------------
+local function marker(parent, name, cf, size)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Transparency = 1
+	p.Size = size or Vector3.new(4, 1, 4)
+	p.CFrame = cf
+	p.Parent = parent
+	return p
+end
+
+local function textLabel(parent, name, text, pos, size, color, font)
+	local l = Instance.new("TextLabel")
+	l.Name = name
+	l.BackgroundTransparency = 1
+	l.Position = pos
+	l.Size = size
+	l.Text = text
+	l.TextScaled = true
+	l.TextColor3 = color
+	l.Font = font or Enum.Font.FredokaOne
+	l.Parent = parent
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 2
+	stroke.Color = rgb(24, 20, 60)
+	stroke.Transparency = 0.3
+	stroke.Parent = l
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft = UDim.new(0.04, 0)
+	pad.PaddingRight = UDim.new(0.04, 0)
+	pad.Parent = l
+	return l
+end
+
+local function surface(part, face)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = face or Enum.NormalId.Front
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 40
+	gui.LightInfluence = 0
+	gui.Parent = part
+	return gui
+end
+
+---------------------------------------------------------------------
+-- ONE DISPLAY SLOT (slotCF: at the pedestal, on the floor, -Z facing into the room)
+---------------------------------------------------------------------
+local function buildSlot(parent, index, floor, slotCF)
+	local slot = Instance.new("Model")
+	slot.Name = "Slot" .. index
+	slot:SetAttribute("SlotIndex", index)
+	slot:SetAttribute("Floor", floor)
+	local b = Architecture.builder(slot, slotCF)
+
+	-- wall alcove with a glowing frame and the fact screen above the pedestal
+	b:box("AlcoveGlow", Vector3.new(12.8, 16.8, 0.3), CFrame.new(0, 9.4, 5.4), "MuseumAlcoveGlow")
+	b:box("AlcovePanel", Vector3.new(12, 16, 0.4), CFrame.new(0, 9.4, 5.2), "MuseumAlcove")
+	b:box("FactGlow", Vector3.new(9.6, 4.8, 0.2), CFrame.new(0, 14.6, 4.95), "MuseumAlcoveGlow")
+	local screen = b:box("FactScreen", Vector3.new(9, 4.2, 0.3), CFrame.new(0, 14.6, 4.85), "Ink")
+	local gui = surface(screen)
+	textLabel(gui, "Label", "EMPTY DISPLAY", UDim2.fromScale(0, 0.06), UDim2.fromScale(1, 0.44), rgb(190, 170, 255))
+	textLabel(gui, "Label", "Put a meme here to earn money every second!", UDim2.fromScale(0, 0.52), UDim2.fromScale(1, 0.42), rgb(235, 235, 250), Enum.Font.GothamMedium)
+
+	-- round pedestal: glowing ring on the floor, a white step, a column with a light band, a dark cap
+	local flat = CFrame.Angles(0, 0, math.rad(90)) -- cylinders stand upright
+	b:box("GlowRing", Vector3.new(0.3, 9, 9), CFrame.new(0, 0.75, 0) * flat, "GlowCyan", {Shape = Enum.PartType.Cylinder})
+	b:box("RingCover", Vector3.new(0.34, 8.2, 8.2), CFrame.new(0, 0.8, 0) * flat, "White", {Shape = Enum.PartType.Cylinder})
+	b:box("Step", Vector3.new(1, 7, 7), CFrame.new(0, 1.2, 0) * flat, "Cloud", {Shape = Enum.PartType.Cylinder})
+	b:box("Column", Vector3.new(4.6, 3.6, 3.6), CFrame.new(0, 3.9, 0) * flat, "White", {Shape = Enum.PartType.Cylinder})
+	b:box("Band", Vector3.new(0.4, 3.9, 3.9), CFrame.new(0, 4.6, 0) * flat, "GlowCyan", {Shape = Enum.PartType.Cylinder})
+	local cap = b:box("Cap", Vector3.new(0.6, 5, 5), CFrame.new(0, 6.5, 0) * flat, "Ink", {Shape = Enum.PartType.Cylinder})
+	local light = Instance.new("PointLight")
+	light.Range = 10
+	light.Brightness = 0.6
+	light.Color = rgb(200, 220, 255)
+	light.Parent = cap
+
+	-- where the meme card floats, with its name tag
+	local spot = b:box("DisplaySpot", Vector3.new(1, 1, 1), CFrame.new(0, 8.6, 0), "White", {Transparency = 1, CanCollide = false, CanQuery = false})
+	local info = Instance.new("BillboardGui")
+	info.Name = "InfoGui"
+	info.Size = UDim2.fromScale(9, 2.4)
+	info.StudsOffset = Vector3.new(0, 5.2, 0)
+	info.MaxDistance = 60
+	info.LightInfluence = 0
+	info.Parent = spot
+	textLabel(info, "NameLabel", "EMPTY", UDim2.fromScale(0, 0), UDim2.fromScale(1, 0.58), rgb(190, 170, 255))
+	textLabel(info, "IncomeLabel", "", UDim2.fromScale(0, 0.58), UDim2.fromScale(1, 0.42), rgb(120, 230, 140))
+
+	-- little plaque on a slanted stand, and a glowing rope line in front
+	b:box("PlaqueStand", Vector3.new(0.4, 2, 0.4), CFrame.new(0, 1, -4.6), "Chrome")
+	local plaque = b:box("Plaque", Vector3.new(4.2, 1.5, 0.3), CFrame.new(0, 2.2, -4.7) * CFrame.Angles(math.rad(-30), 0, 0), "Ink")
+	textLabel(surface(plaque), "Label", "EMPTY SLOT " .. index, UDim2.fromScale(0, 0.1), UDim2.fromScale(1, 0.8), rgb(235, 235, 250))
+	for _, x in ipairs({-4.6, 4.6}) do
+		b:pill("RopePost", Vector3.new(x, 0.6, -5.4), Vector3.new(x, 3, -5.4), 0.5, "MuseumGold")
+	end
+	b:box("Rope", Vector3.new(9.2, 0.18, 0.18), CFrame.new(0, 2.6, -5.4), "GlowPink", {CanCollide = false})
+
+	-- where visitors stand to look
+	marker(slot, "ViewSpot", slotCF * CFrame.new(0, 3, -8.5))
+	slot.Parent = parent
+	return slot
+end
+
+-- pedestal spots on one floor: 3 along each side wall, 2 on the back wall
+local SLOT_SPOTS = {
+	{Vector3.new(-25, 0, -16), Vector3.xAxis}, {Vector3.new(-25, 0, 0), Vector3.xAxis}, {Vector3.new(-25, 0, 16), Vector3.xAxis},
+	{Vector3.new(-12, 0, 25), -Vector3.zAxis}, {Vector3.new(12, 0, 25), -Vector3.zAxis},
+	{Vector3.new(25, 0, 16), -Vector3.xAxis}, {Vector3.new(25, 0, 0), -Vector3.xAxis}, {Vector3.new(25, 0, -16), -Vector3.xAxis},
+}
+
+---------------------------------------------------------------------
+-- THE BUILDING
+---------------------------------------------------------------------
+local function build()
+	local museum = Instance.new("Model")
+	museum.Name = "MuseumTemplate"
+	local exterior = Instance.new("Folder")
+	exterior.Name = "Exterior"
+	exterior.Parent = museum
+	local floorsFolder = Instance.new("Folder")
+	floorsFolder.Name = "Floors"
+	floorsFolder.Parent = museum
+	local slots = Instance.new("Folder")
+	slots.Name = "Slots"
+	slots.Parent = museum
+	local arrivals = Instance.new("Folder")
+	arrivals.Name = "Arrivals"
+	arrivals.Parent = museum
+	local waypoints = Instance.new("Folder")
+	waypoints.Name = "Waypoints"
+	waypoints.Parent = museum
+
+	local ex = Architecture.builder(exterior, CFrame.new())
+	local fl = Architecture.builder(floorsFolder, CFrame.new())
+
+	-- FOUNDATION + PLAZA
+	ex:roundedBlock("Foundation", Vector3.new(HALF * 2 + 6, 1.2, HALF * 2 + 6), CFrame.new(0, 0.1, 0), 6, "Lilac")
+	ex:roundedBlock("Plaza", Vector3.new(76, 0.6, 30), CFrame.new(0, 0.3, -HALF - 16), 10, "MuseumTile")
+	ex:roundedBlock("PlazaInlay", Vector3.new(60, 0.64, 18), CFrame.new(0, 0.32, -HALF - 16), 8, "Cloud")
+	ex:box("PlazaGlow", Vector3.new(16, 0.66, 0.5), CFrame.new(0, 0.33, -HALF - 16), "GlowCyan")
+	for _, x in ipairs({-30, 30}) do
+		-- planters with round topiary and a lamp
+		ex:tiers("Planter", CFrame.new(x, 0.6, -HALF - 22), {{7, 1.6, "White"}, {6, 0.4, "Mint"}})
+		ex:ball("Topiary", 5, CFrame.new(x, 4.6, -HALF - 22), "Mint")
+		ex:pill("LampPost", Vector3.new(x * 0.62, 0.6, -HALF - 26), Vector3.new(x * 0.62, 11, -HALF - 26), 0.6, "White")
+		ex:bulb("LampGlow", 1.8, CFrame.new(x * 0.62, 12, -HALF - 26), "GlowSun", 16)
+	end
+	-- benches along the plaza
+	for _, x in ipairs({-12, 12}) do
+		ex:roundedBlock("Bench", Vector3.new(7, 0.8, 2.2), CFrame.new(x, 1.6, -HALF - 27), 1, "Sky")
+		ex:box("BenchLeg", Vector3.new(5, 1.2, 1), CFrame.new(x, 0.8, -HALF - 27), "White")
+	end
+
+	-- FLOORS: slabs, ceiling lights, lift pads, arrivals
+	for f = 1, FLOORS do
+		local base = (f - 1) * FLOOR_H
+		fl:box("FloorSlab", Vector3.new(HALF * 2 - WALL, f == 1 and 0.8 or 1.2, HALF * 2 - WALL), CFrame.new(0, base + (f == 1 and 0.6 or 0), 0), "MuseumTile")
+		fl:ring("FloorInlay", CFrame.new(0, base + 0.72, 4) * CFrame.Angles(math.rad(90), 0, 0), 11, 0.5, "GlowCyan", 32)
+		-- the lift pad: step onto it and use the arrows
+		fl:tiers("LiftPad", CFrame.new(0, base + 0.6, 4), {{8, 0.3, "Violet"}, {6.6, 0.3, "GlowCyan"}})
+		fl:ring("LiftHalo", CFrame.new(0, base + 7, 4) * CFrame.Angles(math.rad(90), 0, 0), 3.4, 0.35, "GlowPink", 20)
+		marker(arrivals, "Floor" .. f .. "Arrival", CFrame.new(0, base + 3.5, 4))
+		-- soft ceiling light panels (the next slab is the ceiling)
+		for _, x in ipairs({-12, 12}) do
+			fl:roundedBlock("CeilingLight", Vector3.new(10, 0.3, 30), CFrame.new(x, base + FLOOR_H - 0.8, 0), 3, "White")
+			local strip = fl:box("CeilingGlow", Vector3.new(0.6, 0.35, 28), CFrame.new(x, base + FLOOR_H - 0.9, 0), "GlowCyan")
+			local l = Instance.new("SurfaceLight")
+			l.Face = Enum.NormalId.Bottom
+			l.Range = 18
+			l.Brightness = 0.7
+			l.Color = rgb(235, 240, 255)
+			l.Parent = strip
+		end
+		local floorTop = base + (f == 1 and 1 or 0.6)
+		for i, spot in ipairs(SLOT_SPOTS) do
+			local pos = Vector3.new(spot[1].X, floorTop - 0.6, spot[1].Z)
+			-- turn so the slot's front (-Z) faces into the room
+			local facing = spot[2]
+			buildSlot(slots, (f - 1) * #SLOT_SPOTS + i, f, CFrame.new(pos) * CFrame.Angles(0, math.atan2(-facing.X, -facing.Z), 0))
+		end
+	end
+	fl:box("RoofSlab", Vector3.new(HALF * 2 + 2, 1.6, HALF * 2 + 2), CFrame.new(0, ROOF_Y + 0.8, 0), "White")
+
+	-- WALLS: solid white sides and back with glass window strips, a glass front
+	local wallX = HALF - WALL / 2
+	for _, side in ipairs({-1, 1}) do
+		ex:box("SideWall", Vector3.new(WALL, ROOF_Y, HALF * 2), CFrame.new(side * wallX, ROOF_Y / 2, 0), "MuseumWall")
+		for f = 1, FLOORS do
+			local y = (f - 1) * FLOOR_H + 17.5
+			ex:box("SideWindow", Vector3.new(0.6, 3, HALF * 2 - 16), CFrame.new(side * (HALF + 0.05), y, 0), "MuseumGlass")
+			ex:box("SideWindowTrim", Vector3.new(0.7, 0.4, HALF * 2 - 14), CFrame.new(side * (HALF + 0.1), y - 1.7, 0), "GlowCyan")
+		end
+		-- vertical lilac fins
+		for _, z in ipairs({-12, 12}) do
+			ex:roundedBlock("Fin", Vector3.new(2.4, ROOF_Y - 4, 2.4), CFrame.new(side * (HALF + 1), ROOF_Y / 2, z), 1.1, "Lilac")
+		end
+	end
+	ex:box("BackWall", Vector3.new(HALF * 2, ROOF_Y, WALL), CFrame.new(0, ROOF_Y / 2, wallX), "MuseumWall")
+	-- front: glass curtain on floors 2-3, glass panels either side of the entrance on floor 1
+	local frontZ = -wallX
+	ex:box("FrontGlass", Vector3.new(HALF * 2 - 4, FLOOR_H * 2, 0.8), CFrame.new(0, FLOOR_H * 2, frontZ), "MuseumGlass")
+	for _, side in ipairs({-1, 1}) do
+		ex:box("FrontGlassLow", Vector3.new(HALF - 9, FLOOR_H, 0.8), CFrame.new(side * (HALF / 2 + 4.5), FLOOR_H / 2, frontZ), "MuseumGlass")
+		ex:box("EntranceJamb", Vector3.new(2, 14, 1.6), CFrame.new(side * 8, 7, frontZ), "White")
+	end
+	ex:box("AboveEntrance", Vector3.new(18, FLOOR_H - 14, 0.8), CFrame.new(0, 14 + (FLOOR_H - 14) / 2, frontZ), "MuseumGlass")
+	-- mullions and glowing floor bands across the front
+	for i = -3, 3 do
+		if i == 0 then continue end -- keep the doorway clear
+		ex:box("Mullion", Vector3.new(0.5, ROOF_Y, 1.2), CFrame.new(i * 9, ROOF_Y / 2, frontZ - 0.2), "White", {CanCollide = false})
+	end
+	for f = 1, FLOORS - 1 do
+		ex:box("FloorFascia", Vector3.new(HALF * 2, 1.6, 1.4), CFrame.new(0, f * FLOOR_H, frontZ - 0.4), "White")
+		ex:box("FloorBand", Vector3.new(HALF * 2 - 2, 0.4, 0.3), CFrame.new(0, f * FLOOR_H - 1.1, frontZ - 1.1), "GlowCyan")
+	end
+	-- capsule corners
+	for _, sx in ipairs({-1, 1}) do
+		for _, sz in ipairs({-1, 1}) do
+			local x, z = sx * HALF, sz * HALF
+			ex:disc("CornerCapsule", 6, ROOF_Y + 2, CFrame.new(x, (ROOF_Y + 2) / 2, z), "Lilac")
+			ex:ball("CornerDome", 6, CFrame.new(x, ROOF_Y + 2, z), "Violet")
+			for f = 1, FLOORS do
+				ex:disc("CornerBand", 6.3, 0.5, CFrame.new(x, (f - 1) * FLOOR_H + 17.5, z), "GlowPink")
+			end
+		end
+	end
+
+	-- ENTRANCE: round portal, saucer canopy
+	local portal = CFrame.new(0, 7, frontZ - 1.2)
+	ex:ring("PortalRing", portal, 8.4, 1.8, "White", 24, 180, 0)
+	ex:ring("PortalGlow", portal * CFrame.new(0, 0, -0.9), 7.4, 0.4, "GlowCyan", 24, 180, 0)
+	ex:ellipsoid("Canopy", Vector3.new(26, 2.4, 12), CFrame.new(0, 16.5, frontZ - 5), "White")
+	ex:ellipsoid("CanopyUnder", Vector3.new(25, 1.4, 11), CFrame.new(0, 15.9, frontZ - 5), "Sky")
+	for i = -2, 2 do
+		ex:bulb("CanopyBulb", 0.9, CFrame.new(i * 4.5, 15.2, frontZ - 8.5), i % 2 == 0 and "GlowSun" or "GlowPink", 0)
+	end
+
+	-- ROOF: parapet, glass dome with a halo, and the big sign
+	ex:roundedBlock("Parapet", Vector3.new(HALF * 2 + 3, 2.4, HALF * 2 + 3), CFrame.new(0, ROOF_Y + 2.6, 0), 4, "Lilac")
+	ex:ellipsoid("Dome", Vector3.new(36, 18, 36), CFrame.new(0, ROOF_Y + 1.6, 4), "MuseumGlass")
+	ex:ring("DomeHalo", CFrame.new(0, ROOF_Y + 13, 4) * CFrame.Angles(math.rad(90), 0, 0), 12, 0.9, "GlowCyan", 32)
+	ex:pill("DomeSpire", Vector3.new(0, ROOF_Y + 10, 4), Vector3.new(0, ROOF_Y + 20, 4), 0.8, "Chrome")
+	ex:bulb("DomeBeacon", 2, CFrame.new(0, ROOF_Y + 21, 4), "GlowPink", 20)
+	ex:roundedBlock("SignBack", Vector3.new(44, 9, 1.4), CFrame.new(0, ROOF_Y + 8, frontZ + 1), 3, "Violet")
+	local sign = ex:roundedBlock("EntranceSign", Vector3.new(42, 7.6, 1.6), CFrame.new(0, ROOF_Y + 8, frontZ + 0.8), 2.6, "Ink")
+	sign.Name = "EntranceSign"
+	local signGui = surface(sign)
+	textLabel(signGui, "TitleLabel", "MEME MUSEUM 2050", UDim2.fromScale(0, 0.06), UDim2.fromScale(1, 0.56), rgb(255, 222, 110))
+	textLabel(signGui, "SubLabel", "EST. 2050", UDim2.fromScale(0, 0.62), UDim2.fromScale(1, 0.32), rgb(150, 230, 255))
+	ex:box("SignGlow", Vector3.new(42, 0.4, 1.8), CFrame.new(0, ROOF_Y + 3.9, frontZ + 0.8), "GlowSun")
+
+	-- ALIEN ART DEALER kiosk on the plaza (left of the entrance)
+	local dealer = Instance.new("Model")
+	dealer.Name = "AlienDealer"
+	dealer.Parent = museum
+	local dealerCF = CFrame.new(-24, 0.6, -HALF - 10) * CFrame.Angles(0, math.rad(-20), 0)
+	local d = Architecture.builder(dealer, dealerCF)
+	d:tiers("KioskBase", CFrame.new(), {{14, 0.6, "Violet"}, {12.6, 0.3, "GlowPink"}})
+	local counter = d:roundedBlock("Counter", Vector3.new(10, 3.6, 3), CFrame.new(0, 2.7, -2.5), 1.2, "Mint")
+	counter.Name = "Counter"
+	d:roundedBlock("CounterTop", Vector3.new(10.6, 0.5, 3.6), CFrame.new(0, 4.7, -2.5), 1.4, "White")
+	for _, x in ipairs({-5.5, 5.5}) do
+		d:pill("KioskPole", Vector3.new(x, 0.9, 1.5), Vector3.new(x, 11, 1.5), 0.7, "White")
+	end
+	d:ellipsoid("KioskRoof", Vector3.new(15, 2.4, 9), CFrame.new(0, 11.6, 0), "Mint")
+	local kioskSign = d:roundedBlock("KioskSign", Vector3.new(10, 2.6, 0.6), CFrame.new(0, 13.8, 0), 1, "Ink")
+	textLabel(surface(kioskSign), "Label", "👽 ALIEN ART DEALER", UDim2.fromScale(0, 0.1), UDim2.fromScale(1, 0.8), rgb(150, 255, 200))
+	-- the dealer: a friendly alien behind the counter
+	d:ellipsoid("AlienBody", Vector3.new(3, 4, 2.6), CFrame.new(0, 5.2, 0.4), "Violet")
+	d:ellipsoid("AlienHead", Vector3.new(3.8, 3.4, 3.4), CFrame.new(0, 8.4, 0.4), "AlienSkin")
+	for _, x in ipairs({-0.8, 0.8}) do
+		d:ellipsoid("AlienEye", Vector3.new(1, 1.4, 0.6), CFrame.new(x, 8.6, -1.1) * CFrame.Angles(0, 0, x * 0.3), "Ink")
+		d:pill("AlienAntenna", Vector3.new(x * 0.8, 9.8, 0.4), Vector3.new(x * 1.6, 11.2, 0.4), 0.25, "AlienSkin")
+		d:bulb("AntennaTip", 0.6, CFrame.new(x * 1.6, 11.3, 0.4), "GlowSun", 0)
+	end
+
+	-- MARKERS for scripts
+	local interior = marker(museum, "Interior", CFrame.new(0, ROOF_Y / 2, 0), Vector3.new(HALF * 2 - 3, ROOF_Y, HALF * 2 - 3))
+	interior:SetAttribute("FloorHeight", FLOOR_H)
+	marker(museum, "SpawnPoint", CFrame.lookAt(Vector3.new(0, 3.5, -HALF - 20), Vector3.new(0, 3.5, 0)))
+	marker(waypoints, "Outside", CFrame.new(0, 3, -HALF - 22), Vector3.new(24, 1, 8))
+	marker(waypoints, "Door", CFrame.new(0, 3, -HALF + 2))
+	marker(waypoints, "Lobby", CFrame.new(0, 3, -HALF + 12), Vector3.new(10, 1, 4))
+
+	-- decorative rings and ropes shouldn't trip anyone up
+	local NO_COLLIDE = {FloorInlay = true, LiftHalo = true, Rope = true, DomeHalo = true, PortalGlow = true, CanopyBulb = true, PlazaGlow = true}
+	for _, part in ipairs(museum:GetDescendants()) do
+		if part:IsA("BasePart") and NO_COLLIDE[part.Name] then
+			part.CanCollide = false
+		end
+	end
+
+	museum.WorldPivot = CFrame.new(0, 0.5, 0) -- the plot part's center sits half a stud above the ground
+	return museum
+end
+
+return build
 ]=])
 install(game:GetService("ServerScriptService"), "MuseumManager", "Script", [=[
 -- MuseumManager (Script in ServerScriptService)
@@ -5050,176 +5811,6 @@ end)
 
 print("MuseumManager ready: " .. SLOT_COUNT .. " display slots, floor arrows and the art dealer")
 ]=])
-install(game:GetService("ServerScriptService"), "MuseumStyle", "ModuleScript", [=[
--- MuseumStyle (ModuleScript in ServerScriptService)
--- Restyles ServerStorage.MuseumTemplate once, on server start, before any museum is cloned:
---   1. Softens the colors into a friendly cartoony palette (pastel glow instead of harsh
---      neon, playful indigo instead of dark navy, cartoon trees instead of glowing glass).
---   2. Adds chunky rounded 2050 architecture to the outside: capsule corner towers with
---      domed caps, a glass bubble dome on the roof, porthole windows, rounded floor bands,
---      a bubble canopy and capsule pillars at the entrance, and floating orb pedestals.
--- Slot, elevator and sign parts keep their names and positions, so nothing that looks
--- them up by name breaks.
-
-local Architecture = require(script.Parent:WaitForChild("Architecture"))
-local P = Architecture.Palette
-
-local function near(c, r, g, b)
-	return math.abs(c.R * 255 - r) < 12 and math.abs(c.G * 255 - g) < 12 and math.abs(c.B * 255 - b) < 12
-end
-
-local function apply(part, finish)
-	part.Color = finish.Color
-	part.Material = finish.Material
-	if finish.Transparency then part.Transparency = finish.Transparency end
-	if finish.Reflectance then part.Reflectance = finish.Reflectance end
-end
-
-local function hasGui(part)
-	return part:FindFirstChildWhichIsA("SurfaceGui") ~= nil
-end
-
----------------------------------------------------------------------
--- 1. PALETTE PASS
----------------------------------------------------------------------
-local function restylePart(part)
-	local c = part.Color
-	local m = part.Material
-
-	if m == Enum.Material.Neon then
-		-- keep the hue, make it a soft pastel glow instead of a blinding one
-		part.Color = c:Lerp(Color3.new(0.8, 0.8, 0.85), 0.2)
-	elseif m == Enum.Material.Glass then
-		local name = part.Name
-		if name == "Bush" or name == "TreeCrown" or name == "Leaves" then
-			-- glowing sci-fi foliage becomes chunky cartoon greenery
-			part.Material = Enum.Material.SmoothPlastic
-			part.Color = Color3.fromRGB(96, 214, 150)
-			part.Transparency = 0
-		else
-			apply(part, P.Glass)
-		end
-	elseif m == Enum.Material.Grass then
-		part.Material = Enum.Material.SmoothPlastic
-		part.Color = Color3.fromRGB(110, 200, 120)
-	elseif m == Enum.Material.SmoothPlastic or m == Enum.Material.Plastic then
-		if near(c, 238, 240, 245) then
-			apply(part, P.White)
-		elseif near(c, 222, 226, 234) or near(c, 208, 212, 220) then
-			apply(part, P.Cloud)
-		elseif near(c, 28, 34, 60) or near(c, 20, 22, 34) or near(c, 40, 32, 66) then
-			apply(part, hasGui(part) and P.Ink or P.Navy)
-		end
-	end
-end
-
-local function restyleDescendant(d)
-	if d:IsA("BasePart") then
-		restylePart(d)
-	elseif d:IsA("UIStroke") then
-		d.Color = Color3.fromRGB(30, 26, 70)
-	end
-end
-
----------------------------------------------------------------------
--- 2. ARCHITECTURE PASS (template coordinates: entrance faces -Z,
---    building spans X -48..48, Z 28..163, Y 0..96, floors every 32)
----------------------------------------------------------------------
-local function addArchitecture(template)
-	local folder = Instance.new("Folder")
-	folder.Name = "Architecture"
-	folder.Parent = template
-	-- the template's own space: every template part position is measured from here
-	local b = Architecture.builder(folder, CFrame.new())
-
-	-- A. Capsule corner towers: round shells, colored bands per floor, domed caps with a bulb
-	local bandColors = {"Sky", "Lilac", "Mint"}
-	for _, x in ipairs({-48, 48}) do
-		for _, z in ipairs({27, 163}) do
-			b:disc("TowerShell", 8, 99, CFrame.new(x, 49.5, z), "White")
-			b:disc("TowerFoot", 9.6, 1.4, CFrame.new(x, 0.7, z), "Violet")
-			for i, y in ipairs({32, 64, 96}) do
-				b:disc("TowerBand", 8.8, 1.6, CFrame.new(x, y, z), bandColors[i])
-			end
-			b:ellipsoid("TowerDome", Vector3.new(8.8, 7, 8.8), CFrame.new(x, 99, z), "Lilac")
-			b:bulb("TowerBulb", 1.6, CFrame.new(x, 103.2, z), "GlowSun", 16)
-		end
-	end
-
-	-- B. Rounded floor bands wrapping the front and both sides
-	for i, y in ipairs({32.4, 64.4}) do
-		local finish = i == 1 and "Sky" or "Lilac"
-		b:rod("FrontBand", 96, 2.2, CFrame.new(0, y, 27.1), finish)
-		for _, side in ipairs({-1, 1}) do
-			b:rod("SideBand", 134, 2.2, CFrame.new(side * 48.6, y, 95) * CFrame.Angles(0, math.rad(90), 0), finish)
-		end
-	end
-
-	-- C. Round porthole windows along both side walls, between the existing fins
-	for _, side in ipairs({-1, 1}) do
-		for z = 47, 143, 16 do
-			for _, y in ipairs({16, 48, 80}) do
-				b:rod("PortholeRim", 0.7, 9.4, CFrame.new(side * 47.3, y, z), "Lilac")
-				b:rod("PortholeGlass", 0.8, 7.6, CFrame.new(side * 47.35, y, z), "Glass")
-				b:ball("PortholeShine", 1.4, CFrame.new(side * 47.75, y + 1.9, z - 1.9), "White", {CastShadow = false})
-			end
-		end
-	end
-
-	-- D. Entrance: bubble canopy, capsule pillars, rounded sign backing
-	b:ellipsoid("CanopyBubble", Vector3.new(38, 3.4, 13), CFrame.new(0, 25.2, 24.5), "Sky")
-	b:ellipsoid("CanopyBubbleTop", Vector3.new(34, 2.2, 10.5), CFrame.new(0, 26.4, 24.5), "White")
-	for i = -3, 3 do
-		b:bulb("CanopyBulb", 0.9, CFrame.new(i * 5, 23.7, 18.5), i % 2 == 0 and "GlowSun" or "GlowPink", 8)
-	end
-	for _, side in ipairs({-1, 1}) do
-		b:disc("PillarShell", 7, 22.4, CFrame.new(side * 14, 11.2, 27), "Lilac")
-		b:ball("PillarTop", 7.2, CFrame.new(side * 14, 22.4, 27), "Lilac")
-		b:disc("PillarBand", 7.6, 1.2, CFrame.new(side * 14, 6, 27), "Sun")
-		b:disc("PillarBand", 7.6, 1.2, CFrame.new(side * 14, 17, 27), "Sun")
-		b:disc("PillarFoot", 8.6, 1.2, CFrame.new(side * 14, 0.6, 27), "Violet")
-	end
-	b:roundedBlock("EntranceSignBack", Vector3.new(40, 10.6, 0.8), CFrame.new(0, 30, 24.2), 3, "Violet")
-	b:roundedBlock("RoofSignBack", Vector3.new(53.5, 12, 1), CFrame.new(0, 103.5, 34.5), 3.5, "Violet")
-
-	-- E. Glass bubble dome on the roof with a floating meme orb inside
-	b:disc("DomeDrum", 46, 4, CFrame.new(0, 101, 80), "White")
-	b:disc("DomeDrumBand", 47, 1.4, CFrame.new(0, 101.6, 80), "Sky")
-	local dome = b:ellipsoid("RoofDome", Vector3.new(44, 30, 44), CFrame.new(0, 103, 80), "Glass")
-	dome.Color = Color3.fromRGB(196, 176, 255)
-	dome.Transparency = 0.3
-	b:ring("RoofDomeRing", CFrame.new(0, 103.2, 80) * CFrame.Angles(math.rad(90), 0, 0), 22.2, 1.4, "Lilac", 40)
-	b:ball("MemeOrb", 8, CFrame.new(0, 109, 80), "Coral")
-	b:ring("MemeOrbRing", CFrame.new(0, 109, 80) * CFrame.Angles(math.rad(70), 0, math.rad(15)), 6.2, 0.7, "Sun", 24)
-	b:disc("DomeCap", 6, 1.2, CFrame.new(0, 118, 80), "Lilac")
-	b:bulb("DomeBeacon", 2.4, CFrame.new(0, 119.6, 80), "GlowPink", 30)
-
-	-- F. Floating orb pedestals on the plaza
-	for _, side in ipairs({-1, 1}) do
-		local cf = CFrame.new(side * 16.5, 0.6, 10)
-		local _, h = b:tiers("PlazaPedestal", cf, {
-			{8, 0.6, "Violet"},
-			{6.4, 0.8, "White"},
-			{5, 0.4, "Sky"},
-		})
-		local orb = cf * CFrame.new(0, h + 3.4, 0)
-		b:ball("PlazaOrb", 3.2, orb, side < 0 and "Sun" or "Mint")
-		b:ring("PlazaOrbRing", orb * CFrame.Angles(math.rad(75), 0, math.rad(side * 18)), 2.6, 0.35, "Lilac", 18)
-		b:disc("PlazaOrbGlow", 3.6, 0.15, cf * CFrame.new(0, h + 0.08, 0), "GlowCyan")
-	end
-end
-
----------------------------------------------------------------------
-return function(template)
-	if template:GetAttribute("StyledCartoon2050") then return end
-	for _, d in ipairs(template:GetDescendants()) do
-		restyleDescendant(d)
-	end
-	addArchitecture(template)
-	Architecture.calm(template)
-	template:SetAttribute("StyledCartoon2050", true)
-end
-]=])
 install(game:GetService("ServerScriptService"), "PlayerData", "ModuleScript", [=[
 -- PlayerData (ModuleScript in ServerScriptService)
 -- Loads and saves each player's progress with ProfileService (session-locked, auto-saving,
@@ -5581,15 +6172,11 @@ install(game:GetService("ServerScriptService"), "PlotManager", "Script", [=[
 -- puts their name on the sign, and spawns them in front of it.
 
 local Players = game:GetService("Players")
-local ServerStorage = game:GetService("ServerStorage")
 local RunService = game:GetService("RunService")
 
-local template = ServerStorage:WaitForChild("MuseumTemplate")
--- Give the template the 2050 look once, before any museum is copied from it
-require(script.Parent:WaitForChild("MuseumStyle"))(template)
--- no elevators: players change floors with the up/down arrows on screen (MuseumClient)
-local elevators = template:FindFirstChild("Elevators")
-if elevators then elevators:Destroy() end
+-- The museum is built from code (compact 2050 gallery, see MuseumBuilder); every player's
+-- museum is a copy of it. (The old ServerStorage.MuseumTemplate is no longer used.)
+local template = require(script.Parent:WaitForChild("MuseumBuilder"))()
 local plotsFolder = workspace:WaitForChild("Plots")
 
 local museumsFolder = workspace:FindFirstChild("Museums") or Instance.new("Folder")
@@ -5617,8 +6204,12 @@ local function findFreePlot()
 end
 
 -- Spot on the plaza in front of the museum, facing the entrance
-local function getSpawnCFrame(plot)
-	return plot.CFrame * CFrame.new(0, 3.5, -82) * CFrame.Angles(0, math.pi, 0)
+local function getSpawnCFrame(plot, museum)
+	local spawnPoint = museum and museum:FindFirstChild("SpawnPoint")
+	if spawnPoint then
+		return spawnPoint.CFrame
+	end
+	return plot.CFrame * CFrame.new(0, 3.5, -52) * CFrame.Angles(0, math.pi, 0)
 end
 
 local function setOwnerSign(museum, player)
@@ -5635,7 +6226,7 @@ local function sendHome(player)
 	local plot = ownedPlots[player]
 	local character = player.Character
 	if plot and character then
-		character:PivotTo(getSpawnCFrame(plot))
+		character:PivotTo(getSpawnCFrame(plot, ownedMuseums[player]))
 	end
 end
 
@@ -8404,21 +8995,20 @@ visitorsFolder.Parent = workspace
 
 ---------------------------------------------------------------------
 -- MUSEUM GEOMETRY
--- The museum template is built along +Z: entrance at z = 29, back wall at z = 163, halls
--- 96 studs wide, floors every 32 studs. Everything here is measured from the Floor1Arrival
--- spot (template position 0, 4, 135), so it works on every plot whatever way it faces.
+-- MuseumBuilder leaves invisible marker parts for visitors: Waypoints/Outside, Door and
+-- Lobby, a ViewSpot in front of every display slot (plus the slot's Floor attribute), and
+-- the lift pads' FloorNArrival spots. They move with the museum, so any plot works.
 ---------------------------------------------------------------------
-local ARRIVAL = Vector3.new(0, 4, 135)
-
-local function frameOf(museum)
-	local arrivals = museum:FindFirstChild("Arrivals")
-	local first = arrivals and arrivals:FindFirstChild("Floor1Arrival")
-	return first and first.CFrame
+-- a random point on a marker part's top (so visitors don't all stand in the same spot)
+local function pointOn(part)
+	local half = part.Size / 2
+	return (part.CFrame * CFrame.new(rng:NextNumber(-half.X, half.X) * 0.8, 0, rng:NextNumber(-half.Z, half.Z) * 0.8)).Position
 end
 
--- template position -> world position
-local function toWorld(frame, templatePos)
-	return frame * (templatePos - ARRIVAL)
+local function waypoint(museum, name)
+	local folder = museum:FindFirstChild("Waypoints")
+	local part = folder and folder:FindFirstChild(name)
+	return part and pointOn(part)
 end
 
 local function floorArrival(museum, floor)
@@ -8427,15 +9017,12 @@ local function floorArrival(museum, floor)
 	return part and part.Position
 end
 
--- where a visitor stands to look at a slot: in front of its rope, facing the pedestal
-local function viewingSpot(frame, slot)
-	local spot = slot:FindFirstChild("DisplaySpot")
-	if not spot then return nil end
-	local p = frame:PointToObjectSpace(spot.Position) + ARRIVAL -- back to template coordinates
-	local floorY = 4 + (math.floor((p.Y - 4) / 32 + 0.5)) * 32
-	local side = p.X >= 0 and 1 or -1
-	local stand = Vector3.new(side * (math.abs(p.X) - 9.5), floorY, p.Z + rng:NextNumber(-1.5, 1.5))
-	return toWorld(frame, stand), spot.Position, math.clamp(math.floor((floorY - 4) / 32 + 0.5) + 1, 1, 3)
+-- where a visitor stands to look at a slot, what they look at, and which floor it's on
+local function viewingSpot(slot)
+	local view, spot = slot:FindFirstChild("ViewSpot"), slot:FindFirstChild("DisplaySpot")
+	if not view or not spot then return nil end
+	local sideways = view.CFrame.RightVector * rng:NextNumber(-1.5, 1.5)
+	return view.Position + sideways, spot.Position, slot:GetAttribute("Floor") or 1
 end
 
 local function occupiedSlots(museum)
@@ -8597,16 +9184,13 @@ end
 -- ONE VISIT
 ---------------------------------------------------------------------
 local function visit(museum, npc)
-	local frame = frameOf(museum)
 	local humanoid = npc:FindFirstChildOfClass("Humanoid")
-	if not frame or not humanoid then
+	local outside, doorway, lobby = waypoint(museum, "Outside"), waypoint(museum, "Door"), waypoint(museum, "Lobby")
+	if not (outside and doorway and lobby) or not humanoid then
 		npc:Destroy()
 		return
 	end
 
-	local outside = toWorld(frame, Vector3.new(rng:NextNumber(-10, 10), 4, rng:NextNumber(-22, -12)))
-	local doorway = toWorld(frame, Vector3.new(rng:NextNumber(-3, 3), 4, 34))
-	local lobby = toWorld(frame, Vector3.new(rng:NextNumber(-4, 4), 4, 48))
 	npc:PivotTo(CFrame.lookAt(outside + Vector3.new(0, 3, 0), doorway + Vector3.new(0, 3, 0)))
 	npc.Parent = visitorsFolder
 	local root = npc:FindFirstChild("HumanoidRootPart")
@@ -8620,7 +9204,7 @@ local function visit(museum, npc)
 	local choices = occupiedSlots(museum)
 	local byFloor = {}
 	for _, choice in ipairs(choices) do
-		local stand, target, floor = viewingSpot(frame, choice.Slot)
+		local stand, target, floor = viewingSpot(choice.Slot)
 		if stand then
 			choice.Stand, choice.Target = stand, target
 			byFloor[floor] = byFloor[floor] or {}
@@ -9568,9 +10152,9 @@ local MAX_OBJECTS = 40
 local SPAWN_EVERY = 0.35      -- seconds between new objects
 local SPAWN_HEIGHT = {450, 750} -- studs above the world's ground
 local DESTROY_BELOW = -220    -- studs below the world's ground: removed here
--- how far out they fall (studs from the world's center): World 1's city reaches ~960 studs
--- at its corners, the islands are 125 studs across
-local DISTANCE = {World1 = {1150, 1700}, Island = {520, 1100}}
+-- how far out they fall (studs from the world's center): World 1's island reaches 470 studs,
+-- the other islands 125
+local DISTANCE = {World1 = {700, 1200}, Island = {520, 1100}}
 local CONE_MESH = "rbxassetid://1033714" -- Roblox's classic cone mesh
 
 local COLORS = {
@@ -10065,17 +10649,16 @@ local rng = Random.new()
 
 -- Traffic lanes: circles around the map, placed between the rings of towers
 -- Dir 1 = counter-clockwise, -1 = clockwise. Kind = which vehicle flies there.
-local LANES = {
-	{Radius = 305, Height = 30,  Speed = 40,  Count = 6, Dir = 1,  Kind = "drone"},  -- low over the ring road
-	{Radius = 305, Height = 48,  Speed = 70,  Count = 6, Dir = -1, Kind = "car"},
-	{Radius = 305, Height = 64,  Speed = 55,  Count = 3, Dir = 1,  Kind = "bus"},
-	{Radius = 410, Height = 90,  Speed = 85,  Count = 7, Dir = 1,  Kind = "car"},    -- between tower rings 1 and 2
-	{Radius = 410, Height = 110, Speed = 65,  Count = 3, Dir = -1, Kind = "bus"},
-	{Radius = 518, Height = 140, Speed = 95,  Count = 7, Dir = -1, Kind = "car"},    -- between tower rings 2 and 3
-	{Radius = 518, Height = 165, Speed = 45,  Count = 5, Dir = 1,  Kind = "drone"},
-	{Radius = 628, Height = 200, Speed = 100, Count = 6, Dir = 1,  Kind = "car"},    -- in front of the edge wall
-	{Radius = 450, Height = 400, Speed = 25,  Count = 3, Dir = -1, Kind = "blimp"},
-	{Radius = 600, Height = 430, Speed = 22,  Count = 2, Dir = 1,  Kind = "blimp"},
+local LANES = { -- World 1 is a compact island now: boulevard at 269, towers from 290 to 450
+	{Radius = 269, Height = 26,  Speed = 40,  Count = 6, Dir = 1,  Kind = "drone"},  -- low over the ring boulevard
+	{Radius = 269, Height = 42,  Speed = 70,  Count = 6, Dir = -1, Kind = "car"},
+	{Radius = 269, Height = 60,  Speed = 55,  Count = 3, Dir = 1,  Kind = "bus"},
+	{Radius = 312, Height = 250, Speed = 85,  Count = 6, Dir = 1,  Kind = "car"},    -- above the inner tower ring
+	{Radius = 364, Height = 360, Speed = 70,  Count = 5, Dir = -1, Kind = "car"},    -- above the middle ring
+	{Radius = 520, Height = 140, Speed = 95,  Count = 7, Dir = -1, Kind = "car"},    -- just past the island edge
+	{Radius = 520, Height = 220, Speed = 50,  Count = 4, Dir = 1,  Kind = "drone"},
+	{Radius = 300, Height = 600, Speed = 25,  Count = 2, Dir = -1, Kind = "blimp"},
+	{Radius = 560, Height = 520, Speed = 22,  Count = 2, Dir = 1,  Kind = "blimp"},
 }
 
 ---------------------------------------------------------------------

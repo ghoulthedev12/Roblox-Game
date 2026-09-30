@@ -32,17 +32,18 @@ function GameConfig.GetFloorOfSlot(slotIndex)
 end
 
 -- Which floor of a museum a position is on (nil if it's not inside that museum).
--- Uses the museum's Floor1Arrival spot (in the middle of the back of the hall) as reference.
+-- MuseumBuilder puts an invisible "Interior" box around the floors, with the storey height
+-- in its FloorHeight attribute.
 function GameConfig.GetMuseumFloor(museum, position)
-	local arrivals = museum:FindFirstChild("Arrivals")
-	local first = arrivals and arrivals:FindFirstChild("Floor1Arrival")
-	if not first or not first:IsA("BasePart") then return nil end
-	local p = first.CFrame:PointToObjectSpace(position)
-	-- the hall is 96 studs wide and runs from the entrance (-107) to the back wall (+28)
-	if math.abs(p.X) > 48 or p.Z < -108 or p.Z > 29 or p.Y < -6 or p.Y > 96 then
+	local interior = museum:FindFirstChild("Interior")
+	if not interior or not interior:IsA("BasePart") then return nil end
+	local p = interior.CFrame:PointToObjectSpace(position)
+	local half = interior.Size / 2
+	if math.abs(p.X) > half.X or math.abs(p.Z) > half.Z or p.Y < -half.Y - 3 or p.Y > half.Y then
 		return nil
 	end
-	return math.clamp(math.floor((p.Y + 6) / 32) + 1, 1, #GameConfig.FloorPrices)
+	local floorHeight = interior:GetAttribute("FloorHeight") or 22
+	return math.clamp(math.floor((p.Y + half.Y) / floorHeight) + 1, 1, #GameConfig.FloorPrices)
 end
 
 ---------------------------------------------------------------------

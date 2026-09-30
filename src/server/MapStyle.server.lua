@@ -1,13 +1,13 @@
 -- MapStyle (Script in ServerScriptService)
 -- Gives the whole map the cartoony 2050 look when the server starts:
--- rebuilds the skyline, restyles the dig site, brightens the ground and the sky, and sets
+-- builds the compact main island and its skyline (MainIsland), restyles the dig site, brightens the ground and the sky, and sets
 -- calm, clean lighting (soft shadows, very little bloom, glow only on small accents).
 
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
-local CityBuilder = require(script.Parent:WaitForChild("CityBuilder"))
+local MainIsland = require(script.Parent:WaitForChild("MainIsland"))
 local DigSiteStyle = require(script.Parent:WaitForChild("DigSiteStyle"))
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
 
@@ -15,14 +15,16 @@ local Architecture = require(script.Parent:WaitForChild("Architecture"))
 local SUNNY_SKY = true
 
 ---------------------------------------------------------------------
--- GROUND
+-- GROUND: World 1 is now a compact floating island (MainIsland) instead of the old sprawling
+-- city on big baseplates, so those are removed and the island is built in their place.
 ---------------------------------------------------------------------
 for _, part in ipairs(workspace:GetChildren()) do
 	if part:IsA("BasePart") and part.Name:find("^Baseplate") then
-		part.Material = Enum.Material.SmoothPlastic
-		part.Color = Color3.fromRGB(196, 202, 228)
+		part:Destroy()
 	end
 end
+local oldCity = workspace:FindFirstChild("City")
+if oldCity then oldCity:Destroy() end
 local spawnLocation = workspace:FindFirstChildOfClass("SpawnLocation")
 if spawnLocation then
 	spawnLocation.Material = Enum.Material.SmoothPlastic
@@ -37,12 +39,10 @@ for materialName, color in pairs(GameConfig.TerrainColors) do
 end
 
 ---------------------------------------------------------------------
--- CITY + DIG SITE
+-- MAIN ISLAND + DIG SITE
 ---------------------------------------------------------------------
-local city = workspace:FindFirstChild("City")
-if city then
-	CityBuilder.build(city)
-end
+MainIsland.build()
+workspace:SetAttribute("MainIslandReady", true) -- DigManager fills the pit after this
 local digSite = workspace:FindFirstChild("DigSite")
 if digSite then
 	DigSiteStyle(digSite, GameConfig.Worlds[1])
@@ -121,7 +121,8 @@ grade.Parent = Lighting
 -- also catches the Shovel Shops and World Gates that DigManager builds on start.
 local function calmWorld()
 	for _, child in ipairs(workspace:GetChildren()) do
-		if not (child:IsA("Model") and game:GetService("Players"):GetPlayerFromCharacter(child)) then
+		local isCharacter = child:IsA("Model") and game:GetService("Players"):GetPlayerFromCharacter(child)
+		if not isCharacter and not child:GetAttribute("NoCalm") then
 			Architecture.calm(child)
 		end
 	end

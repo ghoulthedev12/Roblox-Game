@@ -12,6 +12,7 @@ TARGETS = [  # (folder, Studio location as Luau expression)
 DELETE = [
     ('game:GetService("ServerScriptService")', "DataManager"),
     ('game:GetService("ServerScriptService")', "ShovelModels"),  # moved to ReplicatedStorage
+    ('game:GetService("ServerScriptService")', "MuseumStyle"),  # the museum is built by MuseumBuilder now
 ]
 
 

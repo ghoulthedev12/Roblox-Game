@@ -455,7 +455,11 @@ end
 
 local worldsBuilt = false -- the floating islands must exist before the pits are filled
 task.spawn(function()
-	while not worldsBuilt do task.wait(0.1) end
+	-- wait for the floating islands (worlds 2-9 here, World 1 in MapStyle) before filling the pits
+	local waited = 0
+	while (not worldsBuilt or not workspace:GetAttribute("MainIslandReady")) and waited < 30 do
+		waited += task.wait(0.1)
+	end
 	resetPits() -- fresh ground when the server starts
 	while true do
 		task.wait(GameConfig.PitResetMinutes * 60 - 30)

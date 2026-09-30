@@ -17,9 +17,9 @@ local MAX_OBJECTS = 40
 local SPAWN_EVERY = 0.35      -- seconds between new objects
 local SPAWN_HEIGHT = {450, 750} -- studs above the world's ground
 local DESTROY_BELOW = -220    -- studs below the world's ground: removed here
--- how far out they fall (studs from the world's center): World 1's city reaches ~960 studs
--- at its corners, the islands are 125 studs across
-local DISTANCE = {World1 = {1150, 1700}, Island = {520, 1100}}
+-- how far out they fall (studs from the world's center): World 1's island reaches 470 studs,
+-- the other islands 125
+local DISTANCE = {World1 = {700, 1200}, Island = {520, 1100}}
 local CONE_MESH = "rbxassetid://1033714" -- Roblox's classic cone mesh
 
 local COLORS = {

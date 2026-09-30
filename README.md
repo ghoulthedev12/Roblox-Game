@@ -25,7 +25,8 @@ All game scripts live in `src/` and sync into Roblox Studio with [Rojo](https://
 - All of this is set in `src/shared/GameConfig.lua` (`GameConfig.Worlds`).
 
 ## The museum (World 1 only)
-Each player gets a museum with 24 display slots over 3 floors (`MuseumManager` + `MuseumClient`).
+Each player gets a compact 2050 museum (64 x 64 studs, 3 floors, built by `MuseumBuilder`) with
+24 display slots (`MuseumManager` + `MuseumClient`).
 - Press E at a pedestal: unlock it, put a meme from your bag on it, swap it or take it back.
   Memes on display earn money every second.
 - Inside a museum, the up/down arrows on the left change floors; the up arrow also buys
@@ -58,7 +59,9 @@ radius = `GameConfig.DigRadiusForPower(Power)`.
   switches `Lighting.Technology` to Future.
 
 ## The 9 worlds
-World 1 is the Meme Dig Site next to the museums. Worlds 2-9 are floating islands reached
+World 1 is a compact floating island (`MainIsland`, radius 470): the Meme Dig Site in the middle,
+the six museums around it, a ring boulevard, and three rings of procedurally built 2050
+skyscrapers (twisting, set-back, sheared, cylinder, twin and mega towers) split by six avenues. Worlds 2-9 are floating islands reached
 through the World Gate, each unlocked with cash:
 
 | # | World | Dirt (shallow → abyss) |

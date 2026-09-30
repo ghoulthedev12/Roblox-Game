@@ -3,15 +3,11 @@
 -- puts their name on the sign, and spawns them in front of it.
 
 local Players = game:GetService("Players")
-local ServerStorage = game:GetService("ServerStorage")
 local RunService = game:GetService("RunService")
 
-local template = ServerStorage:WaitForChild("MuseumTemplate")
--- Give the template the 2050 look once, before any museum is copied from it
-require(script.Parent:WaitForChild("MuseumStyle"))(template)
--- no elevators: players change floors with the up/down arrows on screen (MuseumClient)
-local elevators = template:FindFirstChild("Elevators")
-if elevators then elevators:Destroy() end
+-- The museum is built from code (compact 2050 gallery, see MuseumBuilder); every player's
+-- museum is a copy of it. (The old ServerStorage.MuseumTemplate is no longer used.)
+local template = require(script.Parent:WaitForChild("MuseumBuilder"))()
 local plotsFolder = workspace:WaitForChild("Plots")
 
 local museumsFolder = workspace:FindFirstChild("Museums") or Instance.new("Folder")
@@ -39,8 +35,12 @@ local function findFreePlot()
 end
 
 -- Spot on the plaza in front of the museum, facing the entrance
-local function getSpawnCFrame(plot)
-	return plot.CFrame * CFrame.new(0, 3.5, -82) * CFrame.Angles(0, math.pi, 0)
+local function getSpawnCFrame(plot, museum)
+	local spawnPoint = museum and museum:FindFirstChild("SpawnPoint")
+	if spawnPoint then
+		return spawnPoint.CFrame
+	end
+	return plot.CFrame * CFrame.new(0, 3.5, -52) * CFrame.Angles(0, math.pi, 0)
 end
 
 local function setOwnerSign(museum, player)
@@ -57,7 +57,7 @@ local function sendHome(player)
 	local plot = ownedPlots[player]
 	local character = player.Character
 	if plot and character then
-		character:PivotTo(getSpawnCFrame(plot))
+		character:PivotTo(getSpawnCFrame(plot, ownedMuseums[player]))
 	end
 end
 

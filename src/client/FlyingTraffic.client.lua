@@ -16,17 +16,16 @@ local rng = Random.new()
 
 -- Traffic lanes: circles around the map, placed between the rings of towers
 -- Dir 1 = counter-clockwise, -1 = clockwise. Kind = which vehicle flies there.
-local LANES = {
-	{Radius = 305, Height = 30,  Speed = 40,  Count = 6, Dir = 1,  Kind = "drone"},  -- low over the ring road
-	{Radius = 305, Height = 48,  Speed = 70,  Count = 6, Dir = -1, Kind = "car"},
-	{Radius = 305, Height = 64,  Speed = 55,  Count = 3, Dir = 1,  Kind = "bus"},
-	{Radius = 410, Height = 90,  Speed = 85,  Count = 7, Dir = 1,  Kind = "car"},    -- between tower rings 1 and 2
-	{Radius = 410, Height = 110, Speed = 65,  Count = 3, Dir = -1, Kind = "bus"},
-	{Radius = 518, Height = 140, Speed = 95,  Count = 7, Dir = -1, Kind = "car"},    -- between tower rings 2 and 3
-	{Radius = 518, Height = 165, Speed = 45,  Count = 5, Dir = 1,  Kind = "drone"},
-	{Radius = 628, Height = 200, Speed = 100, Count = 6, Dir = 1,  Kind = "car"},    -- in front of the edge wall
-	{Radius = 450, Height = 400, Speed = 25,  Count = 3, Dir = -1, Kind = "blimp"},
-	{Radius = 600, Height = 430, Speed = 22,  Count = 2, Dir = 1,  Kind = "blimp"},
+local LANES = { -- World 1 is a compact island now: boulevard at 269, towers from 290 to 450
+	{Radius = 269, Height = 26,  Speed = 40,  Count = 6, Dir = 1,  Kind = "drone"},  -- low over the ring boulevard
+	{Radius = 269, Height = 42,  Speed = 70,  Count = 6, Dir = -1, Kind = "car"},
+	{Radius = 269, Height = 60,  Speed = 55,  Count = 3, Dir = 1,  Kind = "bus"},
+	{Radius = 312, Height = 250, Speed = 85,  Count = 6, Dir = 1,  Kind = "car"},    -- above the inner tower ring
+	{Radius = 364, Height = 360, Speed = 70,  Count = 5, Dir = -1, Kind = "car"},    -- above the middle ring
+	{Radius = 520, Height = 140, Speed = 95,  Count = 7, Dir = -1, Kind = "car"},    -- just past the island edge
+	{Radius = 520, Height = 220, Speed = 50,  Count = 4, Dir = 1,  Kind = "drone"},
+	{Radius = 300, Height = 600, Speed = 25,  Count = 2, Dir = -1, Kind = "blimp"},
+	{Radius = 560, Height = 520, Speed = 22,  Count = 2, Dir = 1,  Kind = "blimp"},
 }
 
 ---------------------------------------------------------------------

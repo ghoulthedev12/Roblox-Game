@@ -63,21 +63,20 @@ visitorsFolder.Parent = workspace
 
 ---------------------------------------------------------------------
 -- MUSEUM GEOMETRY
--- The museum template is built along +Z: entrance at z = 29, back wall at z = 163, halls
--- 96 studs wide, floors every 32 studs. Everything here is measured from the Floor1Arrival
--- spot (template position 0, 4, 135), so it works on every plot whatever way it faces.
+-- MuseumBuilder leaves invisible marker parts for visitors: Waypoints/Outside, Door and
+-- Lobby, a ViewSpot in front of every display slot (plus the slot's Floor attribute), and
+-- the lift pads' FloorNArrival spots. They move with the museum, so any plot works.
 ---------------------------------------------------------------------
-local ARRIVAL = Vector3.new(0, 4, 135)
-
-local function frameOf(museum)
-	local arrivals = museum:FindFirstChild("Arrivals")
-	local first = arrivals and arrivals:FindFirstChild("Floor1Arrival")
-	return first and first.CFrame
+-- a random point on a marker part's top (so visitors don't all stand in the same spot)
+local function pointOn(part)
+	local half = part.Size / 2
+	return (part.CFrame * CFrame.new(rng:NextNumber(-half.X, half.X) * 0.8, 0, rng:NextNumber(-half.Z, half.Z) * 0.8)).Position
 end
 
--- template position -> world position
-local function toWorld(frame, templatePos)
-	return frame * (templatePos - ARRIVAL)
+local function waypoint(museum, name)
+	local folder = museum:FindFirstChild("Waypoints")
+	local part = folder and folder:FindFirstChild(name)
+	return part and pointOn(part)
 end
 
 local function floorArrival(museum, floor)
@@ -86,15 +85,12 @@ local function floorArrival(museum, floor)
 	return part and part.Position
 end
 
--- where a visitor stands to look at a slot: in front of its rope, facing the pedestal
-local function viewingSpot(frame, slot)
-	local spot = slot:FindFirstChild("DisplaySpot")
-	if not spot then return nil end
-	local p = frame:PointToObjectSpace(spot.Position) + ARRIVAL -- back to template coordinates
-	local floorY = 4 + (math.floor((p.Y - 4) / 32 + 0.5)) * 32
-	local side = p.X >= 0 and 1 or -1
-	local stand = Vector3.new(side * (math.abs(p.X) - 9.5), floorY, p.Z + rng:NextNumber(-1.5, 1.5))
-	return toWorld(frame, stand), spot.Position, math.clamp(math.floor((floorY - 4) / 32 + 0.5) + 1, 1, 3)
+-- where a visitor stands to look at a slot, what they look at, and which floor it's on
+local function viewingSpot(slot)
+	local view, spot = slot:FindFirstChild("ViewSpot"), slot:FindFirstChild("DisplaySpot")
+	if not view or not spot then return nil end
+	local sideways = view.CFrame.RightVector * rng:NextNumber(-1.5, 1.5)
+	return view.Position + sideways, spot.Position, slot:GetAttribute("Floor") or 1
 end
 
 local function occupiedSlots(museum)
@@ -256,16 +252,13 @@ end
 -- ONE VISIT
 ---------------------------------------------------------------------
 local function visit(museum, npc)
-	local frame = frameOf(museum)
 	local humanoid = npc:FindFirstChildOfClass("Humanoid")
-	if not frame or not humanoid then
+	local outside, doorway, lobby = waypoint(museum, "Outside"), waypoint(museum, "Door"), waypoint(museum, "Lobby")
+	if not (outside and doorway and lobby) or not humanoid then
 		npc:Destroy()
 		return
 	end
 
-	local outside = toWorld(frame, Vector3.new(rng:NextNumber(-10, 10), 4, rng:NextNumber(-22, -12)))
-	local doorway = toWorld(frame, Vector3.new(rng:NextNumber(-3, 3), 4, 34))
-	local lobby = toWorld(frame, Vector3.new(rng:NextNumber(-4, 4), 4, 48))
 	npc:PivotTo(CFrame.lookAt(outside + Vector3.new(0, 3, 0), doorway + Vector3.new(0, 3, 0)))
 	npc.Parent = visitorsFolder
 	local root = npc:FindFirstChild("HumanoidRootPart")
@@ -279,7 +272,7 @@ local function visit(museum, npc)
 	local choices = occupiedSlots(museum)
 	local byFloor = {}
 	for _, choice in ipairs(choices) do
-		local stand, target, floor = viewingSpot(frame, choice.Slot)
+		local stand, target, floor = viewingSpot(choice.Slot)
 		if stand then
 			choice.Stand, choice.Target = stand, target
 			byFloor[floor] = byFloor[floor] or {}
