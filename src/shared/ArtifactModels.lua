@@ -1,14 +1,15 @@
 -- ArtifactModels (ModuleScript in ReplicatedStorage)
 -- Turns a meme artifact into a real 3D museum object instead of a flat card. The famous
 -- memes are real 3D sculptures of the meme itself (MemeFigures: the Chill Dude with his hands
--- in his pockets, the Shocked Yellow Rodent...). Everything else gets one of five forms
--- (picked from words in its name, otherwise from its id):
---   Painting  an old gold frame with the meme on the canvas and a name plate
+-- in his pockets, the Shocked Yellow Rodent...). Everything else gets the form the asset
+-- spec gives it in MemeList:
+--   Painting  a wood / gold / ornate frame with the meme on the canvas and a name plate
 --   Statue    a marble (or gold, for the rarest) figure on a plinth with the meme as its face
 --   Coin      a big bronze / silver / gold coin with the meme stamped on both faces (a meme
 --             with a figure is struck as a raised 3D relief of its silhouette)
 --   Tablet    a carved stone tablet with the meme engraved into it (or carved in relief)
---   Crystal   a rough geode with glowing crystals in the rarity's color
+--   Relic     a painted medallion of the meme on a velvet cushion and a display stand
+--   (Crystal, a glowing geode, is only used for memes with no form at all)
 -- Used for finds lying in the crater (BuriedPainting) and for the displays in the museum
 -- (MuseumClient puts them on the pedestals, under glass).
 --
@@ -38,12 +39,15 @@ local KEYWORDS = {
 	{"Crystal", {"crystal", "prism", "gem", "orb", "eye", "nebula", "aurora", "star", "moon", "constellation", "aura", "diamond", "core"}},
 	{"Painting", {"portrait", "selfie", "painting", "poster", "panel", "comic", "photo", "picture", "image", "screen", "doodle", "banner", "card", "frame"}},
 }
+local FORMS_BY_SPEC = {Statue = "Statue", Painting = "Painting", Coin = "Coin", Tablet = "Tablet", Relic = "Relic"}
 local FALLBACK = {"Painting", "Painting", "Painting", "Statue", "Statue", "Coin", "Tablet", "Tablet", "Crystal"}
 
 -- which form an artifact takes (always the same for the same artifact)
 function ArtifactModels.formOf(artifact)
 	local figure = MemeFigures.For(artifact)
 	if figure then return figure.Form or "Figure" end
+	-- the form the asset spec gave it (a Statue with no built figure yet is a marble statue)
+	if artifact.Form and FORMS_BY_SPEC[artifact.Form] then return FORMS_BY_SPEC[artifact.Form] end
 	local name = string.lower(artifact.Name or "")
 	for _, entry in ipairs(KEYWORDS) do
 		for _, word in ipairs(entry[2]) do
@@ -209,7 +213,7 @@ local function plate(parent, artifact)
 end
 
 ---------------------------------------------------------------------
--- THE FIVE FORMS (each returns its outer size)
+-- THE FORMS (each returns its outer size)
 ---------------------------------------------------------------------
 local FORMS = {}
 
@@ -231,7 +235,7 @@ function FORMS.Painting(model, artifact, color, rarityIndex)
 		for _, sy in ipairs({-1, 1}) do
 			part(model, "Corner", Vector3.one * 0.72, CFrame.new(sx * (W / 2 - BAR / 2), sy * (H / 2 - BAR / 2), -0.08), frame:Lerp(Color3.new(1, 1, 1), 0.15),
 				frameMaterial, {Shape = Enum.PartType.Ball})
-			if rarityIndex >= 5 then
+			if rarityIndex >= 6 then
 				-- ornate: curled scrollwork on every corner
 				part(model, "Scroll", Vector3.new(0.9, 0.22, 0.22), CFrame.new(sx * (W / 2 - 0.2), sy * (H / 2 + 0.05), -0.12) * CFrame.Angles(0, 0, sx * sy * math.rad(35)),
 					GOLD:Lerp(Color3.new(1, 1, 1), 0.1), Enum.Material.Metal)
@@ -261,6 +265,27 @@ function FORMS.Statue(model, artifact, color, rarityIndex)
 	-- the meme is carved into the plinth too, like a museum inscription
 	art(model:FindFirstChild("Plinth"), artifact, Enum.NormalId.Front, {Style = "Engraved", Tint = MARBLE:Lerp(STONE, 0.3), EmojiSize = 0.9})
 	return Vector3.new(2.9, 5, 2.3)
+end
+
+-- a relic on a velvet cushion: a thick painted medallion of the meme standing on a
+-- gold-trimmed display stand
+function FORMS.Relic(model, artifact, color, rarityIndex)
+	local stand = rarityIndex >= 6 and rgb(40, 38, 46) or rgb(92, 62, 42)
+	part(model, "Stand", Vector3.new(2.8, 0.5, 2.0), CFrame.new(0, -1.95, 0), stand, rarityIndex >= 6 and Enum.Material.Marble or Enum.Material.Wood)
+	part(model, "StandTrim", Vector3.new(2.88, 0.1, 2.08), CFrame.new(0, -1.68, 0), GOLD, Enum.Material.Metal)
+	local cushion = part(model, "Cushion", Vector3.new(2.3, 0.5, 1.6), CFrame.new(0, -1.4, 0), color:Lerp(rgb(120, 20, 40), 0.6), Enum.Material.Fabric)
+	local cmesh = Instance.new("SpecialMesh")
+	cmesh.MeshType = Enum.MeshType.Sphere
+	cmesh.Parent = cushion
+	local D, T = 2.6, 0.5
+	local face = CFrame.new(0, 0.2, 0) * CFrame.Angles(0, math.rad(90), 0)
+	local disc = cylinder(model, "Medallion", D, T, face, rgb(250, 246, 236), Enum.Material.SmoothPlastic)
+	cylinder(model, "MedallionRim", D + 0.22, T * 0.8, face, GOLD, Enum.Material.Metal, {Reflectance = 0.1})
+	cylinder(model, "MedallionGlow", D + 0.4, T * 0.4, face, color, Enum.Material.Neon, {Transparency = 0.5})
+	for _, normal in ipairs({Enum.NormalId.Right, Enum.NormalId.Left}) do
+		art(disc, artifact, normal, {Round = true, Background = color:Lerp(Color3.new(1, 1, 1), 0.55), EmojiSize = 0.72})
+	end
+	return Vector3.new(2.9, 4.4, 2.1)
 end
 
 -- a real 3D sculpture of the meme on a marble plinth with a brass name plate

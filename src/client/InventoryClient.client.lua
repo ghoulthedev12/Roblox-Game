@@ -93,11 +93,10 @@ local function refresh()
 	for i, entry in ipairs(entries) do
 		local artifact = entry.Artifact
 		local rarity = ArtifactData.GetRarity(artifact.Rarity)
-		-- the card's border shows the rarity (Mythic and better get an animated rainbow border)
-		local rarityIndex = ArtifactData.GetRarityIndex(artifact.Rarity)
+		-- the card's border shows the rarity (secret rarities get an animated rainbow border)
 		local card = UIKit.panel(gridHolder, {Size = UDim2.fromOffset(150, 186), Color = C.White, Radius = 20, Stroke = 4, StrokeColor = rarity.Color, ShadeAmount = 0.06})
 		card.LayoutOrder = i
-		if rarityIndex >= ArtifactData.GetRarityIndex("Mythic") then
+		if ArtifactData.IsSecret(artifact.Rarity) then
 			local border = card:FindFirstChildOfClass("UIStroke")
 			border.Color = Color3.new(1, 1, 1)
 			local rainbow = Instance.new("UIGradient")

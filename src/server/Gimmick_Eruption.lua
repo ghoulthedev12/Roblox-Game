@@ -53,7 +53,7 @@ function Gimmick.Start(ctx)
 	local world = ctx.World
 	local origin = world.Origin
 	local multiplier = ArtifactData.WorldMultipliers[world.Id - 1] or 1
-	local reward = math.floor(ArtifactData.Rarities[3].Income * multiplier * 60)
+	local reward = math.floor(ArtifactData.GetRarity("Rare").Income * multiplier * 60)
 	local rng = Random.new()
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Include

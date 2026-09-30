@@ -26,7 +26,7 @@ local terrain = workspace.Terrain
 ---------------------------------------------------------------------
 local MINIGAME_TIMEOUT = 8
 local MINIGAME_LUCK = {Perfect = 3, Good = 1.5, Miss = 1} -- multiplies the shovel's luck
-local ANNOUNCE_FROM = ArtifactData.GetRarityIndex("Mythic")
+local ANNOUNCE_FROM = ArtifactData.GetRarityIndex("Legendary")
 local MAX_REACH = 14 -- how far from your character you can dig
 local PICKUP_SECONDS = 25  -- how long a buried painting waits to be pulled out before it sinks back into the dirt
 local PULL_SECONDS = 1.1   -- the pull-out animation (the pickaxe is put away meanwhile)

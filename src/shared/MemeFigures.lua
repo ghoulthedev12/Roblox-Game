@@ -32,39 +32,48 @@ local WHITE, BLACK = rgb(245, 245, 245), rgb(24, 22, 26)
 ---------------------------------------------------------------------
 MemeFigures.ById = {
 	-- World 1
-	ChillDude = {Kind = "ChillDude"},
-	ChillDudeTablet = {Kind = "ChillDude", Form = "Tablet"},
 	ShockedRodent = {Kind = "ShockedRodent"},
-	PurpleBirthdayShake = {Kind = "PurpleShake"},
-	SingingThrone = {Kind = "ToiletHead"},
-	SkibidiMonolith = {Kind = "ToiletHead", Tint = rgb(236, 196, 90), TintAmount = 0.75, Material = Enum.Material.Metal},
-	SharkSneakers = {Kind = "SneakerShark"},
-	LogBatGuy = {Kind = "LogBatGuy"},
-	CappuccinoBallerina = {Kind = "CappuccinoBallerina"},
-	CrocBomber = {Kind = "CrocBomber"},
-	JawlineChad = {Kind = "JawlineChad"},
+	ChonkyBunny = {Kind = "ChonkyBunny"},
+	PurpleTitanBuggy = {Kind = "TitanBuggy"},
+	-- World 2
 	SpaceInfant = {Kind = "SpaceInfant"},
 	SpongeLeaving = {Kind = "SpongeLeaving"},
-	PurpleTitanBuggy = {Kind = "TitanBuggy"},
-	RainbowPastryCat = {Kind = "RainbowPastryCat"},
-	FrowningCat = {Kind = "GrumpyCat"},
-	DramaticHamster = {Kind = "DramaticHamster"},
+	-- World 3
 	SusBean = {Kind = "SusBean"},
-	ChonkyBunny = {Kind = "ChonkyBunny"},
+	JawlineChad = {Kind = "JawlineChad"},
+	-- World 4
+	SkibidiMonolith = {Kind = "ToiletHead", Tint = rgb(236, 196, 90), TintAmount = 0.75, Material = Enum.Material.Metal},
+	PurpleBirthdayShake = {Kind = "PurpleShake"},
+	-- World 5
 	PointingSuits = {Kind = "PointingSuits"},
-	FineDog = {Kind = "FineDog"},
-	WowShibaCoin = {Kind = "WowShiba", Form = "Coin"},
-	QuantumDoge = {Kind = "WowShiba", Tint = rgb(120, 255, 255), TintAmount = 0.45, Material = Enum.Material.Glass},
-	-- Worlds 2-9: the same memes, dressed for each world
-	SakuraChillDude = {Kind = "ChillDude", Colors = {Sweater = rgb(255, 172, 204), Jeans = rgb(250, 240, 245)}},
-	AstronautDog = {Kind = "WowShiba", Colors = {Helmet = true}},
-	ZeroGSusBean = {Kind = "SusBean", Colors = {Body = rgb(140, 92, 230)}},
-	FrozenChonkyBunny = {Kind = "ChonkyBunny", Tint = rgb(170, 225, 255), TintAmount = 0.55, Material = Enum.Material.Ice},
-	ChromeTitanBuggy = {Kind = "TitanBuggy", Tint = rgb(210, 215, 225), TintAmount = 0.6, Material = Enum.Material.Metal},
-	DeepSeaSneakerShark = {Kind = "SneakerShark", Colors = {Skin = rgb(60, 110, 150), Shoe = rgb(255, 120, 60)}},
-	BubblegumShake = {Kind = "PurpleShake", Colors = {Shake = rgb(255, 120, 190)}},
-	MoltenJawlineChad = {Kind = "JawlineChad", Tint = rgb(255, 110, 40), TintAmount = 0.3, Material = Enum.Material.CrackedLava},
-	GlitchedShockedRodent = {Kind = "ShockedRodent", Colors = {Body = rgb(90, 255, 200)}, Material = Enum.Material.Neon},
+	ChillDude = {Kind = "ChillDude"},
+	-- World 6
+	AtlantisJawlineChad = {Kind = "JawlineChad", Tint = rgb(90, 200, 190), TintAmount = 0.35, Material = Enum.Material.Marble},
+	-- World 7
+	RainbowPastryCat = {Kind = "RainbowPastryCat"},
+	WowShiba = {Kind = "WowShiba"},
+	FrowningCat = {Kind = "GrumpyCat"},
+	PhantomChonkyBunny = {Kind = "ChonkyBunny", Tint = rgb(170, 255, 200), TintAmount = 0.6, Material = Enum.Material.Glass},
+	-- World 8: remixes of the famous figures with a new finish
+	CyberWowShiba = {Kind = "WowShiba", Tint = rgb(120, 220, 255), TintAmount = 0.35, Material = Enum.Material.Metal},
+	QuantumShockedRodent = {Kind = "ShockedRodent", Tint = rgb(180, 240, 255), TintAmount = 0.3, Material = Enum.Material.Glass},
+	MultiverseSpaceInfant = {Kind = "SpaceInfant", Colors = {Robe = rgb(90, 110, 220), Skin = rgb(120, 200, 230)}},
+	NeonSusBean = {Kind = "SusBean", Colors = {Body = rgb(255, 60, 200)}, Material = Enum.Material.Neon},
+	HoloJawlineChad = {Kind = "JawlineChad", Tint = rgb(90, 230, 255), TintAmount = 0.6, Material = Enum.Material.Glass},
+	CosmicShake = {Kind = "PurpleShake", Colors = {Shake = rgb(70, 40, 160)}},
+	InterdimensionalChillDude = {Kind = "ChillDude", Colors = {Sweater = rgb(130, 80, 220), Jeans = rgb(40, 40, 70)}},
+	CyberSingingThrone = {Kind = "ToiletHead", Tint = rgb(200, 210, 225), TintAmount = 0.55, Material = Enum.Material.Metal},
+	ApexWowShiba = {Kind = "WowShiba", Tint = rgb(240, 200, 80), TintAmount = 0.7, Material = Enum.Material.Metal},
+	-- World 9: remixes with a physics twist
+	ParticleWowShiba = {Kind = "WowShiba", Tint = rgb(255, 230, 150), TintAmount = 0.4, Material = Enum.Material.Neon},
+	StringTheoryBunny = {Kind = "ChonkyBunny", Tint = rgb(255, 140, 220), TintAmount = 0.3, Material = Enum.Material.Neon},
+	ParallelJawlineChad = {Kind = "JawlineChad", Tint = rgb(40, 40, 60), TintAmount = 0.5},
+	RealityWarpedSponge = {Kind = "SpongeLeaving", Tint = rgb(150, 90, 255), TintAmount = 0.35},
+	HypercubeChillDude = {Kind = "ChillDude", Tint = rgb(120, 230, 255), TintAmount = 0.4, Material = Enum.Material.Glass},
+	ZeroPointThrone = {Kind = "ToiletHead", Tint = rgb(235, 245, 255), TintAmount = 0.6, Material = Enum.Material.Glass},
+	TesseractShake = {Kind = "PurpleShake", Tint = rgb(200, 150, 255), TintAmount = 0.3, Material = Enum.Material.Glass},
+	EventHorizonShiba = {Kind = "WowShiba", Tint = rgb(40, 30, 70), TintAmount = 0.55},
+	OriginalShiba = {Kind = "WowShiba", Tint = rgb(240, 200, 80), TintAmount = 0.6, Material = Enum.Material.Metal},
 }
 
 function MemeFigures.For(artifact)

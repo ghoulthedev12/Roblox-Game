@@ -123,7 +123,7 @@ return function(artifact, rarityColor, placement, rng)
 	motes.Lifetime = NumberRange.new(1, 1.8)
 	motes.Speed = NumberRange.new(1, 2.5)
 	motes.SpreadAngle = Vector2.new(25, 25)
-	motes.Rate = 3 + ArtifactData.GetRarityIndex(artifact.Rarity) * 1.5
+	motes.Rate = 3 + math.min(ArtifactData.GetRarityIndex(artifact.Rarity), 9) * 1.5
 	motes.EmissionDirection = Enum.NormalId.Right -- the disc's X points up
 	motes.Parent = glow
 

@@ -123,8 +123,8 @@ GameConfig.PitResetMinutes = 15
 -- its Shovels (MaxZone = deepest zone that shovel can break into), then set Enabled = true.
 --
 -- Zone depths are in studs below the surface. Rarities = the ONLY rarities that can spawn
--- in that zone (so Mythic+ can only come from the Abyss). Areas = which artifact lists
--- from ArtifactData the zone pulls from.
+-- in that zone ("Secret" = the world's secret rarities, only in the Abyss). Areas = which
+-- world's memes the zone pulls from (ArtifactData area = world number).
 ---------------------------------------------------------------------
 local function zones(list)
 	-- Standard 560-stud depth scale shared by every world; each zone is thicker than the one above
@@ -137,10 +137,10 @@ local function zones(list)
 	return list
 end
 
-local SHALLOW = {"Common", "Uncommon", "Rare"}
-local MID = {"Rare", "Epic"}
-local DEEP = {"Epic", "Legendary"}
-local ABYSS = {"Mythic", "Divine", "Celestial", "Transcendent"}
+local SHALLOW = {"Basic", "Common", "Uncommon"}
+local MID = {"Uncommon", "Rare"}
+local DEEP = {"Rare", "Epic"}
+local ABYSS = {"Legendary", "Secret"}
 
 GameConfig.Worlds = {
 	{
@@ -152,13 +152,13 @@ GameConfig.Worlds = {
 		Zones = zones({
 			-- the layers you dig through: Topsoil -> Dense Clay -> (rocky crust bands) ->
 			-- Crystal-Infused Substratum -> Magma Core (see also the rock strata in FillDigTerrain)
-			{Name = "Shallow Zone", Era = "Brainrot", Areas = {1}, Rarities = SHALLOW,
+			{Name = "Shallow Zone", Areas = {1}, Rarities = SHALLOW,
 				Material = "Ground", Color = Color3.fromRGB(150, 104, 70)},     -- topsoil
-			{Name = "Mid Zone", Era = "GoldenAge", Areas = {8}, Rarities = MID,
+			{Name = "Mid Zone", Areas = {1}, Rarities = MID,
 				Material = "Sandstone", Color = Color3.fromRGB(188, 112, 78)},  -- dense clay
-			{Name = "Deep Zone", Era = "Paleolithic", Areas = {15}, Rarities = DEEP,
+			{Name = "Deep Zone", Areas = {1}, Rarities = DEEP,
 				Material = "Glacier", Color = Color3.fromRGB(120, 200, 235)},   -- crystal-infused substratum
-			{Name = "The Abyss", Era = "Abyss", Areas = {15, 21}, Rarities = ABYSS,
+			{Name = "The Abyss", Areas = {1}, Rarities = ABYSS,
 				Material = "CrackedLava", Color = Color3.fromRGB(235, 96, 50)}, -- magma core
 		}),
 		-- PICKAXES (shop order; the table is still called Shovels and the ids are the old save ids). MaxZone: 1 = Shallow, 2 = Mid, 3 = Deep, 4 = Abyss.
@@ -206,7 +206,7 @@ GameConfig.Worlds = {
 }
 
 -- Worlds 2-9: floating islands far out on the map, unlocked with money (see WorldsData).
--- Each one has its own dirt materials, memes (ArtifactsWorlds), shovels and sky.
+-- Each one has its own dirt materials, memes (MemeList), shovels and sky.
 local WorldsData = require(script.Parent:WaitForChild("WorldsData"))
 GameConfig.TerrainColors = WorldsData.TerrainColors
 local ZONE_INFO = {
@@ -228,10 +228,10 @@ end
 for i, info in ipairs(WorldsData.Worlds) do
 	local id = i + 1
 	local price = worldPrice(id, info)
-	local area = 21 + i -- this world's memes (ArtifactData areas 22-29)
+	local area = id -- this world's memes (ArtifactData area = world number)
 	local zoneList = {}
 	for z, material in ipairs(info.Zones) do
-		table.insert(zoneList, {Name = ZONE_INFO[z].Name, Era = info.Theme, Areas = {area}, Rarities = ZONE_INFO[z].Rarities,
+		table.insert(zoneList, {Name = ZONE_INFO[z].Name, Areas = {area}, Rarities = ZONE_INFO[z].Rarities,
 			Material = material, Color = WorldsData.TerrainColors[material]})
 	end
 	local shovels = {}

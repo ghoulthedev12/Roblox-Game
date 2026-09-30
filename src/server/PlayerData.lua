@@ -150,6 +150,13 @@ local function migrate(data)
 		data.PermitsRefunded = true
 	end
 	data.UnlockedLayers = nil
+	-- memes that were removed from the game (the old meme list) disappear from the save
+	for uid, artifactId in pairs(data.Inventory or {}) do
+		if not ArtifactData.GetArtifact(artifactId) then data.Inventory[uid] = nil end
+	end
+	for slot, artifactId in pairs(data.Displayed or {}) do
+		if not ArtifactData.GetArtifact(artifactId) then data.Displayed[slot] = nil end
+	end
 end
 
 ---------------------------------------------------------------------

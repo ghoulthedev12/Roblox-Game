@@ -445,8 +445,6 @@ end
 -- MEME ICON: the artifact's emoji on a tile in its rarity color, with a rarity badge
 ---------------------------------------------------------------------
 local ArtifactData, ArtifactIcons, ArtifactImages -- loaded on first use
-local RARITY_SHORT = {Common = "C", Uncommon = "U", Rare = "R", Epic = "E", Legendary = "L",
-	Mythic = "M", Divine = "D", Celestial = "CE", Transcendent = "T"}
 
 function UIKit.artifactIcon(parent, artifact, props)
 	props = props or {}
@@ -494,7 +492,7 @@ function UIKit.artifactIcon(parent, artifact, props)
 	if props.Badge ~= false then
 		local badge = UIKit.panel(tile, {Size = UDim2.fromScale(0.36, 0.26), Position = UDim2.new(1, 4, 0, -4), AnchorPoint = Vector2.new(1, 0),
 			Color = color, Radius = 8, Stroke = 2, Shade = false})
-		UIKit.label(badge, RARITY_SHORT[artifact.Rarity] or "?", {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5),
+		UIKit.label(badge, rarity and (rarity.Secret and "★" or rarity.Code) or "?", {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5),
 			AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
 	end
 	return tile

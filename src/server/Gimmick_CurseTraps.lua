@@ -25,7 +25,7 @@ function Gimmick.Start(ctx)
 	local Api = GimmickHooks.Api
 	local trapRemote = GimmickHooks.Remote("CurseTrap")
 	local multiplier = ArtifactData.WorldMultipliers[world.Id - 1] or 1
-	local reward = math.floor(ArtifactData.Rarities[3].Income * multiplier * 30)
+	local reward = math.floor(ArtifactData.GetRarity("Rare").Income * multiplier * 30)
 
 	local function fail(player)
 		traps[player] = nil

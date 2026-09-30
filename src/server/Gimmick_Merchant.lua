@@ -21,7 +21,7 @@ function Gimmick.Start(ctx)
 	local world = ctx.World
 	local origin = world.Origin
 	local multiplier = ArtifactData.WorldMultipliers[world.Id - 1] or 1
-	local price = math.floor(ArtifactData.Rarities[3].Income * multiplier * 600)
+	local price = math.floor(ArtifactData.GetRarity("Rare").Income * multiplier * 600)
 
 	local rng = Random.new()
 	local ok, merchant = pcall(buildVisitor, "Alien", rng)

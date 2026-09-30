@@ -20,395 +20,76 @@ do local old = game:GetService("ServerScriptService"):FindFirstChild("ShovelMode
 do local old = game:GetService("ReplicatedStorage"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("MuseumStyle") if old then old:Destroy() print("Removed MuseumStyle") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("TutorialSign") if old then old:Destroy() print("Removed TutorialSign") end end
+do local old = game:GetService("ReplicatedStorage"):FindFirstChild("ArtifactsWorlds") if old then old:Destroy() print("Removed ArtifactsWorlds") end end
 install(game:GetService("ReplicatedStorage"), "ArtifactData", "ModuleScript", [=[
 -- ArtifactData (ModuleScript in ReplicatedStorage)
--- The ONE list the whole game reads from: rarities, the 20 dig areas, and every artifact.
--- To add an artifact: copy one line inside an area's list and change it.
--- Rarity codes: C=Common U=Uncommon R=Rare E=Epic L=Legendary M=Mythic D=Divine CE=Celestial T=Transcendent
+-- The ONE place the whole game reads memes and rarities from.
+-- The memes themselves live in MemeList (9 worlds x 20 memes, each with its master-list rarity).
+--
+-- RARITIES: six regular ones (Basic -> Legendary) and then the named SECRET rarities
+-- (Exotic, Godly, Eternal, ...), each one found only in its world's Abyss.
+
+local MemeList = require(script.Parent:WaitForChild("MemeList"))
 
 local ArtifactData = {}
 
 ---------------------------------------------------------------------
--- RARITIES (worst to best). Income = money per second in WORLD 1.
--- Every later world multiplies this by its WorldMultipliers entry (below), so only the
--- best of the best (Divine and up, in the late worlds) ever pass $50M/s.
+-- RARITIES (worst to best). Income = money per second in WORLD 1; later worlds multiply
+-- it by WorldMultipliers (below). Chance = how often it's rolled, compared to the others
+-- allowed in the same depth zone.
 ---------------------------------------------------------------------
--- The curve is smooth (each rarity is worth about 3-4x the one below it) instead of a huge
--- jump at the top, so the early zones stay worth digging and the Abyss is a step up, not a
--- sudden spike.
 ArtifactData.Rarities = {
-	{Name = "Common",       Code = "C",  Income = 10,        Chance = 60,    Color = Color3.fromRGB(190, 190, 190)},
-	{Name = "Uncommon",     Code = "U",  Income = 35,        Chance = 25,    Color = Color3.fromRGB(85, 200, 85)},
-	{Name = "Rare",         Code = "R",  Income = 120,       Chance = 10,    Color = Color3.fromRGB(60, 140, 255)},
-	{Name = "Epic",         Code = "E",  Income = 450,       Chance = 3.5,   Color = Color3.fromRGB(170, 80, 255)},
-	{Name = "Legendary",    Code = "L",  Income = 1500,      Chance = 1.1,   Color = Color3.fromRGB(255, 170, 0)},
-	{Name = "Mythic",       Code = "M",  Income = 5000,      Chance = 0.3,   Color = Color3.fromRGB(255, 60, 90)},
-	{Name = "Divine",       Code = "D",  Income = 20000,     Chance = 0.07,  Color = Color3.fromRGB(255, 240, 150)},
-	{Name = "Celestial",    Code = "CE", Income = 60000,     Chance = 0.025, Color = Color3.fromRGB(120, 255, 255)},
-	{Name = "Transcendent", Code = "T",  Income = 150000,    Chance = 0.005, Color = Color3.fromRGB(255, 255, 255)},
+	{Name = "Basic",     Code = "B", Income = 10,   Chance = 60,  Color = Color3.fromRGB(165, 165, 170)},
+	{Name = "Common",    Code = "C", Income = 20,   Chance = 30,  Color = Color3.fromRGB(235, 235, 240)},
+	{Name = "Uncommon",  Code = "U", Income = 45,   Chance = 14,  Color = Color3.fromRGB(85, 200, 85)},
+	{Name = "Rare",      Code = "R", Income = 120,  Chance = 6,   Color = Color3.fromRGB(60, 140, 255)},
+	{Name = "Epic",      Code = "E", Income = 450,  Chance = 2.5, Color = Color3.fromRGB(170, 80, 255)},
+	{Name = "Legendary", Code = "L", Income = 1500, Chance = 0.8, Color = Color3.fromRGB(255, 170, 0)},
 }
+-- the secret rarities follow, in the order they first appear on the list
+ArtifactData.SecretTiers = {}
+for _, tier in ipairs(MemeList.SecretTiers) do
+	table.insert(ArtifactData.Rarities, {Name = tier.Name, Code = "S", Income = tier.Income, Chance = tier.Chance, Color = tier.Color, Secret = true})
+	table.insert(ArtifactData.SecretTiers, tier.Name)
+end
 
 -- Sell value = income per second x this number
 ArtifactData.SellMultiplier = 100
 
 ---------------------------------------------------------------------
--- DIG AREAS. Areas 1-21 are World 1's memes (all worth the base income above).
--- Areas 22-29 are worlds 2-9, each worth WorldMultipliers[k] times more.
+-- AREAS: one per world (area 1 = world 1 ... area 9 = world 9). Each world's memes are
+-- worth WorldMultipliers[k] times more than world 1's.
 ---------------------------------------------------------------------
 ArtifactData.WorldMultipliers = {3, 10, 25, 60, 150, 400, 1000, 2500} -- worlds 2..9
-ArtifactData.Areas = {
-	{Name = "The Scroll Pit",       Era = "Brainrot"},
-	{Name = "Hashtag Hollow",       Era = "Brainrot"},
-	{Name = "Filter Fields",        Era = "Brainrot"},
-	{Name = "Emoji Quarry",         Era = "Brainrot"},
-	{Name = "Algorithm Gorge",      Era = "Brainrot"},
-	{Name = "Influencer Caverns",   Era = "Brainrot"},
-	{Name = "Brainrot Abyss",       Era = "Brainrot"},
-	{Name = "Rage Comic Ridge",     Era = "GoldenAge"},
-	{Name = "Montage Mines",        Era = "GoldenAge"},
-	{Name = "Cat Video Canyon",     Era = "GoldenAge"},
-	{Name = "Airhorn Crater",       Era = "GoldenAge"},
-	{Name = "Planking Plateau",     Era = "GoldenAge"},
-	{Name = "Viral Valley",         Era = "GoldenAge"},
-	{Name = "The Golden Server",    Era = "GoldenAge"},
-	{Name = "Dial-Up Dunes",        Era = "Paleolithic"},
-	{Name = "Pixel Pits",           Era = "Paleolithic"},
-	{Name = "Guestbook Graveyard",  Era = "Paleolithic"},
-	{Name = "Floppy Fossil Beds",   Era = "Paleolithic"},
-	{Name = "The Homepage Ruins",   Era = "Paleolithic"},
-	{Name = "The First Server",     Era = "Paleolithic"},
-	-- Secret 2050 memes, only found in World 1's Abyss (worth one step above The Homepage Ruins)
-	{Name = "The Abyss",            Era = "Abyss"},
-}
--- Worlds 2-9 each add one area (22-29) from ArtifactsWorlds.
-local ArtifactsWorlds = require(script.Parent:WaitForChild("ArtifactsWorlds"))
-for k, area in ipairs(ArtifactsWorlds.Areas) do
-	table.insert(ArtifactData.Areas, {Name = area.Name, Era = area.Era, Multiplier = ArtifactData.WorldMultipliers[k]})
-end
-for i, area in ipairs(ArtifactData.Areas) do
-	area.Index = i
-	area.Multiplier = area.Multiplier or 1
-end
-
-ArtifactData.Eras = {
-	Brainrot    = {DisplayName = "The Brainrot Epoch",  Years = "2016-2024", FirstArea = 1},
-	GoldenAge   = {DisplayName = "The Golden Age",      Years = "2005-2015", FirstArea = 8},
-	Paleolithic = {DisplayName = "The Paleolithic Web", Years = "1990-2004", FirstArea = 15},
-	Abyss       = {DisplayName = "The Abyss",           Years = "2050",      FirstArea = 21},
-}
-for k, area in ipairs(ArtifactsWorlds.Areas) do
-	local era = ArtifactsWorlds.Eras[area.Era]
-	ArtifactData.Eras[area.Era] = {DisplayName = era.DisplayName, Years = era.Years, FirstArea = 21 + k}
-end
-for _, era in pairs(ArtifactData.Eras) do
-	era.Multiplier = ArtifactData.Areas[era.FirstArea].Multiplier
-end
-
----------------------------------------------------------------------
--- ARTIFACTS PER AREA: {rarity code, id, name, museum description}
----------------------------------------------------------------------
-local AREA_ARTIFACTS = {
-	-- 1. THE SCROLL PIT
-	[1] = {
-		{"C", "RustyFidgetSpinner", "Rusty Fidget Spinner", "Early humans spun these to ward off homework. Scientists still don't know if it worked."},
-		{"C", "CrackedDancePhone", "Cracked Phone (Dance Tutorial)", "Still plays the same 15 seconds on loop. Believed to be a prayer ritual."},
-		{"C", "LogBatGuy", "Tung-Tung Log Guy", "A wooden log with a baseball bat. It knocks three times before it arrives."},
-		{"C", "SusBean", "Sus Space Bean", "A tiny astronaut shaped like a bean. One of them was always acting sus."},
-		{"U", "HalfFullBottle", "Half-Full Water Bottle", "Tossing it so it landed upright granted the thrower temporary social status."},
-		{"U", "SharkSneakers", "Three-Legged Sneaker Shark", "An ocean predator wearing shoes. It was considered hilarious."},
-		{"U", "RainbowPastryCat", "Rainbow Pastry Cat", "A cat made of frosted pastry, flying through space on a rainbow. The song never stops."},
-		{"U", "CappuccinoBallerina", "Cappuccino Ballerina", "Half dancer, half coffee cup. Pirouettes until the foam spills."},
-		{"U", "DeepFriedChip", "Deep-Fried Image Chip", "A picture cooked at such extreme temperatures it became radioactive with jokes."},
-		{"U", "ChillDude", "Chill Dude in a Sweater", "Hands in pockets, zero worries. The most relaxed creature of the Brainrot Epoch."},
-		{"R", "SingingThrone", "Singing Porcelain Throne", "A ceremonial seat with a tiny singing head. Its meaning is lost to history."},
-		{"R", "ShockedRodent", "Shocked Yellow Rodent", "Frozen forever with its mouth wide open. Humans used it whenever anyone acted surprised."},
-		{"R", "PurpleBirthdayShake", "Sus Purple Birthday Milkshake", "One sip and the humans in the video were never seen again. Handle with care."},
-		{"E", "GoldenRingLight", "Golden Ring Light", "Worshipped by ancient content creators. Its glow made every face flawless."},
-		{"L", "RizzScroll", "Scroll of Infinite Rizz", "A sacred text so powerful that no alien has been able to translate it."},
-		{"M", "ScrollingThumb", "Fossilized Scrolling Thumb", "Worn smooth by millions of hours of scrolling. It never reached the bottom."},
-		{"D", "MainCharacterCrown", "Crown of the Main Character", "Whoever wore it believed the whole world was their movie."},
-		{"CE", "AlgorithmEye", "The Algorithm's Eye", "It watched everything humans did, then showed them more of it."},
-		{"T", "FinalBrainrot", "The Final Brainrot", "Contains every meme ever made, all at once. Do not look at it directly."},
-	},
-	-- 2. HASHTAG HOLLOW
-	[2] = {
-		{"C", "HashtagSign", "Broken Hashtag Sign", "Humans put this symbol before words to make them important."},
-		{"U", "EmptyIceBucket", "Empty Ice Bucket", "Humans poured freezing water on themselves for a good cause. Brave."},
-		{"R", "MannequinStatue", "Mannequin Freeze Statue", "Entire rooms of humans froze still on purpose. This one never unfroze."},
-		{"E", "ChallengeTrophy", "Golden Challenge Trophy", "Awarded for completing a challenge nobody remembers the rules of."},
-		{"L", "ViralDanceStage", "The Viral Dance Stage", "A tiny stage where millions of humans learned the same 12 moves."},
-		{"M", "TrendingCrown", "Crown of Trending #1", "Worn by whoever the whole internet talked about for exactly one day."},
-		{"D", "ChallengeScroll", "The Eternal Challenge Scroll", "Lists every internet challenge ever. It is still being written."},
-		{"CE", "HashtagConstellation", "Hashtag Constellation", "Aliens mapped the stars and found a hashtag. Coincidence?"},
-		{"T", "BrokeTheInternet", "The Hashtag That Broke The Internet", "Too powerful to type. Only whispered."},
-	},
-	-- 3. FILTER FIELDS
-	[3] = {
-		{"C", "SelfieStick", "Cracked Selfie Stick", "Extended the human arm by one meter for better self-portraits."},
-		{"U", "PuppyEars", "Puppy Ear Headband", "Humans gave themselves digital dog ears. Aliens are still confused."},
-		{"R", "RainbowLens", "Rainbow Tongue Lens", "A camera lens that made humans spit rainbows. On purpose."},
-		{"E", "PerfectMirror", "Perfect Skin Mirror", "Reflected a version of you that did not exist."},
-		{"L", "SunsetCrystal", "The Sunset Filter Crystal", "Made every photo look like the best evening of your life."},
-		{"M", "FilterMask", "Mask of a Thousand Filters", "Its wearer could become any face. Nobody remembered their real one."},
-		{"D", "FirstSelfie", "The First Selfie Portrait", "The moment humans turned the camera around and never turned it back."},
-		{"CE", "AuroraPrism", "Aurora Filter Prism", "Paints the whole sky in no-filter colors. Ironically."},
-		{"T", "UnfilteredTruth", "The Unfiltered Truth", "A photo with no filter at all. Too shocking for most visitors."},
-	},
-	-- 4. EMOJI QUARRY
-	[4] = {
-		{"C", "ThumbsUpFossil", "Fossilized Thumbs-Up", "The universal human signal for 'I read this and have no opinion.'"},
-		{"U", "CryLaughStone", "Crying-Laughing Face Stone", "Used when something was funny. Or not funny. Or anything."},
-		{"R", "SkullRelic", "Skull Emoji Relic", "Humans used it to say they died of laughter. They were fine."},
-		{"E", "FireTorch", "Fire Emoji Torch", "Raised whenever something was 'lit.' Still burning."},
-		{"L", "HeartEyesIdol", "The Heart-Eyes Idol", "Worshipped by humans who saw cute animals online."},
-		{"M", "HundredTablet", "The 100 Points Tablet", "Awarded for perfection. Given out about 4 billion times a day."},
-		{"D", "EmojiKeyboard", "The Keyboard of All Emojis", "Contains every emoji ever made, plus three nobody understood."},
-		{"CE", "SparkleNebula", "Sparkle Emoji Nebula", "A galaxy made entirely of little sparkles. Very aesthetic."},
-		{"T", "FirstSmiley", "The First Smiley", "The original yellow face. Every emoji descends from it."},
-	},
-	-- 5. ALGORITHM GORGE
-	[5] = {
-		{"C", "FeedFragment", "Bottomless Feed Fragment", "It never ends. Archaeologists stopped trying to reach the bottom."},
-		{"U", "RecommendedCard", "Recommended For You Card", "Somehow knew what humans wanted before they did."},
-		{"R", "AutoplayClock", "Autoplay Countdown Clock", "Gave humans 5 seconds to escape. Nobody ever did."},
-		{"E", "SkipAdButton", "The Skip Ad Button", "The most pressed button in human history."},
-		{"L", "EngagementEngine", "The Engagement Engine", "Turned human attention into pure energy."},
-		{"M", "ShadowbanCloak", "The Shadowban Cloak", "Made its wearer invisible to everyone. They didn't even notice."},
-		{"D", "FeedOracle", "The Feed Oracle", "Showed each human exactly one thing: more of the same."},
-		{"CE", "NeuralChandelier", "Neural Network Chandelier", "Millions of glowing nodes, each one guessing what you'd click."},
-		{"T", "MasterAlgorithm", "The Master Algorithm", "Nobody built it. Nobody controls it. It just knows."},
-	},
-	-- 6. INFLUENCER CAVERNS
-	[6] = {
-		{"C", "DiscountCoupon", "Expired Discount Code", "Use code HUMAN10 for 10% off nothing in particular."},
-		{"U", "UnboxingBox", "The Unboxing Box", "Humans filmed themselves opening boxes. The box was the star."},
-		{"R", "SponsoredDrink", "Sponsored Energy Drink", "Contains 400% of your daily hype."},
-		{"E", "CheckmarkBadge", "Blue Checkmark Badge", "Proved you were really you. Very important to humans."},
-		{"L", "MillionRing", "The Ring of a Million Followers", "Given to humans with a number so big it changed their personality."},
-		{"M", "CollabKey", "The Collab Mansion Key", "Opened a house where 12 influencers lived and filmed everything."},
-		{"D", "SubscriberPlaque", "The Diamond Subscriber Plaque", "Hung on the wall of only the mightiest content creators."},
-		{"CE", "ViralAura", "The Viral Aura", "An invisible glow that made everything its owner posted blow up."},
-		{"T", "FirstInfluencer", "The First Influencer", "Before followers existed, one human made everyone want their sandwich."},
-	},
-	-- 7. BRAINROT ABYSS
-	[7] = {
-		{"C", "NonsenseTablet", "Nonsense Word Tablet", "Covered in words that mean nothing. Humans laughed anyway."},
-		{"R", "SplitScreen", "Split-Screen Game Footage", "Humans needed two videos at once to pay attention to one."},
-		{"E", "RizzMeter", "The Rizz Meter", "Measured charm. Always reads zero for aliens."},
-		{"L", "SigmaStatue", "The Sigma Grindset Statue", "A lone human staring at a sunset, refusing to have fun."},
-		{"M", "AuraVault", "The Aura Points Vault", "Stores every aura point humans ever earned or lost."},
-		{"D", "BrainrotCodex", "The Brainrot Codex", "A book of pure nonsense. Reading it lowers alien IQ."},
-		{"CE", "MewingMeteorite", "The Mewing Meteorite", "A space rock with a perfect jawline."},
-		{"T", "BrainrotFinalBoss", "The Final Boss of Brainrot", "The source of it all. It speaks only in sound effects."},
-	},
-	-- 8. RAGE COMIC RIDGE
-	[8] = {
-		{"C", "FlipPhone", "Flip Phone (One Bar)", "Humans waved these at the sky, begging the gods for signal."},
-		{"C", "AngryDoodle", "Crumpled Angry Face Doodle", "Early humans drew their feelings in four panels instead of talking about them."},
-		{"U", "DentedAirhorn", "Dented Airhorn", "Sounded whenever anything impressive happened. Or anything at all."},
-		{"U", "PixelSunglasses", "Pixelated Sunglasses", "Lowered slowly onto the face to show total victory in an argument."},
-		{"R", "CatCassette", "Ancient Cat Video Cassette", "Humanity's most-watched content. Aliens still can't explain why."},
-		{"R", "FineDog", "Everything's Fine Dog", "Sips coffee in a burning room and says it's fine. The most relatable human artifact."},
-		{"R", "FrowningCat", "Frowning Cat Bust", "Never smiled once. Earned millions anyway."},
-		{"R", "DramaticHamster", "Dramatic Hamster Figurine", "Turned around slowly. Changed the internet forever."},
-		{"R", "SpongeLeaving", "Yellow Porous Sponge Leavin'", "The famous walk-out. Used whenever a human decided to head out."},
-		{"E", "SacredPlank", "The Sacred Plank", "Humans lay flat on strange objects and photographed it. This board saw it all."},
-		{"E", "PointingSuits", "Two Pointing Arachnid Suits", "Two identical heroes accusing each other of being the fake. Neither ever admitted it."},
-		{"E", "PurpleTitanBuggy", "Purple Titan Buggy", "A giant purple conqueror's tiny car. He could snap his fingers but still drove this."},
-		{"E", "CrocBomber", "Crocodile Bomber Plane", "A crocodile that is also a war plane. Nobody asked questions."},
-		{"L", "TrickshotHeadset", "Golden Trickshot Headset", "Worn by the legendary warriors who spun in circles before every shot."},
-		{"M", "ForeverAlone", "The Forever Alone Monument", "A lonely stone face that every human secretly related to."},
-		{"D", "ChallengeBanner", "The Challenge Accepted Banner", "Raised before every questionable decision of the Golden Age."},
-		{"CE", "GrinningMoon", "The Grinning Moon Mask", "A mischievous grin that fooled a whole generation."},
-		{"T", "OriginalFourPanel", "The Original Four-Panel", "The first rage comic. Pure frustration in four boxes."},
-	},
-	-- 9. MONTAGE MINES
-	[9] = {
-		{"C", "HeadsetMic", "Cheap Headset Mic", "Used to shout at teammates. Still slightly sticky."},
-		{"U", "SodaPyramid", "Energy Soda Can Pyramid", "Stacked by gamers as proof of dedication."},
-		{"R", "HitmarkerPin", "The Hitmarker Pin", "Made a little 'tick' sound every time something happened."},
-		{"E", "DubstepSpeaker", "The Dubstep Speaker", "Dropped the bass at the most dramatic moment possible."},
-		{"L", "TriangleChipCrown", "The Triangle Chip Crown", "Worn by the snack-powered champions of the montage era."},
-		{"M", "AllSeeingTriangle", "The All-Seeing Triangle", "Confirmed everything. Explained nothing."},
-		{"D", "QuickscopeRelic", "The Quickscope Relic", "Aimed so fast it bent time."},
-		{"CE", "LensFlareStar", "The Lens Flare Star", "The most dramatic star in the universe. It zooms in on itself."},
-		{"T", "UltimateMontage", "The Ultimate Montage Tape", "Every epic moment ever, all at once, with airhorns."},
-	},
-	-- 10. CAT VIDEO CANYON
-	[10] = {
-		{"C", "LaserDot", "Laser Pointer Dot", "Hunted by cats for centuries. Never caught."},
-		{"U", "CatInBox", "Cat in a Box", "If it fits, it sits. An ancient law of physics."},
-		{"E", "PianoKitten", "Piano-Playing Kitten Statue", "Played the same happy tune to end every awkward moment."},
-		{"L", "ToastCatMachine", "The Toast-Cat Paradox Machine", "A cat strapped to buttered toast. It spins forever."},
-		{"M", "CatVideoHall", "Hall of 1,000 Cat Videos", "Humans watched these instead of sleeping."},
-		{"D", "TableCat", "The Cat Who Knocked It Off", "Pushed a glass off a table while staring directly at humanity."},
-		{"CE", "LoafNebula", "The Loaf Nebula", "A cloud of stars shaped like a cat loaf."},
-		{"T", "FirstInternetCat", "The First Internet Cat", "The one who started it all. Humanity never recovered."},
-	},
-	-- 11. AIRHORN CRATER
-	[11] = {
-		{"C", "CrackedSoundboard", "Cracked Soundboard", "Every button was an airhorn. Every single one."},
-		{"U", "SadTrombone", "The Sad Trombone", "Played whenever something failed. It was played a lot."},
-		{"E", "BassDetonator", "The Bass Drop Detonator", "Warning: dropping this bass may cause uncontrollable headbanging."},
-		{"L", "GoldenAirhorn", "The Golden Airhorn", "The loudest object in the museum. Please do not touch."},
-		{"M", "Volume100Amp", "The Volume 100 Amplifier", "Could be heard from three planets away."},
-		{"D", "FanfareOrgan", "The Victory Fanfare Organ", "Played winning music for even the smallest achievement."},
-		{"CE", "SonicBoomComet", "The Sonic Boom Comet", "Crosses the sky once a century. Honking."},
-		{"T", "FirstSoundMeme", "The First Sound Meme", "One short noise that humans repeated for a decade."},
-	},
-	-- 12. PLANKING PLATEAU
-	[12] = {
-		{"C", "OwlingPerch", "The Owling Perch", "Humans crouched on objects like birds. Nobody knows why."},
-		{"U", "DuckFaceMirror", "Duck-Face Mirror", "Reflects only pouting lips."},
-		{"R", "PhotobombCutout", "Photobomb Cardboard Cutout", "Appeared uninvited in every group photo."},
-		{"E", "DancePartyHelmet", "Sudden Dance Party Helmet", "Everyone was calm. Then the bass dropped."},
-		{"L", "DoubleRainbowPrism", "The Double Rainbow Prism", "What does it mean? Nobody ever found out."},
-		{"M", "TableTower", "The Leaning Tower of Tables", "Where the great planking legends lay flat."},
-		{"D", "InvisibleHorseSaddle", "The Invisible Horse Saddle", "Nobody could see the horse. Everybody rode it."},
-		{"CE", "PlankConstellation", "The Plank Constellation", "Seven stars lying perfectly flat."},
-		{"T", "OriginalPlank", "The Original Plank", "The very first human to lie stiff on a strange object."},
-	},
-	-- 13. VIRAL VALLEY
-	[13] = {
-		{"C", "ForwardedJoke", "Forwarded Joke Printout", "Forwarded 40 times. Still not funny."},
-		{"U", "CryptidPhoto", "Blurry Cryptid Photo", "Proof of a mysterious creature. Or a blurry bush."},
-		{"R", "LoopingGif", "Looping Dance GIF Frame", "Has been dancing for 20 years without resting."},
-		{"E", "BittenBandage", "The Bitten Finger Bandage", "From the most famous sibling argument in history."},
-		{"L", "WeekendCalendar", "The Weekend Countdown Calendar", "Humans celebrated one specific day of the week very loudly."},
-		{"M", "SuperfanTear", "The Tear of the Superfan", "Cried so hard for their favorite star that it became a relic."},
-		{"D", "MillionViewTrophy", "The Million-View Trophy", "Back then, a million views meant you ruled the world."},
-		{"CE", "ShareSupernova", "The Share Button Supernova", "It exploded, and everyone saw it."},
-		{"T", "PatientZeroVideo", "Patient Zero Video", "The first video ever to go viral. 11 seconds, no plot."},
-	},
-	-- 14. THE GOLDEN SERVER
-	[14] = {
-		{"C", "OverheatedDrive", "Overheated Hard Drive", "Held a million memes. Sweated through all of them."},
-		{"U", "BlinkingLight", "Blinking Server Light", "Blinked green for 12 years straight."},
-		{"R", "ModBadge", "Forum Moderator Badge", "Gave its owner the power to lock threads. Absolute power."},
-		{"E", "FirstCommentPlaque", "The 'First!' Comment Plaque", "Humans raced to write this word under every video."},
-		{"L", "GoldenUpvote", "The Golden Upvote", "The highest honor a post could ever receive."},
-		{"M", "ServerThrone", "The Server Room Throne", "Where the admins of the Golden Age sat and banned people."},
-		{"D", "LostThreadsArchive", "The Archive of Lost Threads", "Every argument the Golden Age forgot to finish."},
-		{"CE", "ActualCloud", "The Cloud (An Actual Cloud)", "Turns out the cloud was a real cloud all along."},
-		{"T", "GoldenServerCore", "The Golden Server Core", "The beating heart of the Golden Age internet."},
-	},
-	-- 15. DIAL-UP DUNES
-	[15] = {
-		{"C", "FloppyDisk", "Cracked Floppy Disk", "Held 1.44 megabytes. Ancient humans considered this a lot."},
-		{"C", "DialUpModem", "Screaming Dial-Up Modem", "Screeched for 30 seconds before letting humans see a single picture."},
-		{"U", "ConstructionSign", "Blinking 'Under Construction' Sign", "Every ancient website was forever under construction. None were finished."},
-		{"U", "HitCounter", "Proud Visitor Counter", "Displayed that 12 humans had visited. 11 of them were the owner."},
-		{"R", "ChainEmail", "Cursed Chain Email", "Forward to 10 humans or suffer bad luck. Nobody dared to test it."},
-		{"E", "PixelPet", "Ancient Pixel Pet", "A tiny digital creature that died if you forgot it for one afternoon."},
-		{"E", "ChillDudeTablet", "Chill Dude Stone Carving", "Carved by the first humans to discover being chill. Even the stone looks relaxed."},
-		{"L", "EmoticonStone", "The First Emoticon Stone", "A sideways smile, carved by the earliest humans of the web. :-)"},
-		{"L", "SpaceInfant", "Green Space Infant", "A tiny green baby with enormous ears. Every human wanted to protect it."},
-		{"L", "ChonkyBunny", "Chonky Gray Bunny", "A rabbit of truly legendary size. Humans simply called it big."},
-		{"M", "GoldenModem", "The Golden 56K Modem", "Legend says it once downloaded a song in under an hour."},
-		{"D", "OriginalHomepage", "The Original Homepage", "Glittering text, a spinning globe, and a guestbook. Perfection."},
-		{"CE", "HandshakeComet", "The Modem Handshake Comet", "Screeches across the sky every 76 years."},
-		{"T", "FirstConnection", "The First Connection", "The very first time two computers said hello."},
-	},
-	-- 16. PIXEL PITS
-	[16] = {
-		{"C", "DeadPixel", "Dead Pixel", "One tiny square that refused to change color. Ever."},
-		{"U", "PixelHeart", "Pixel Heart Container", "Restores exactly one heart of health."},
-		{"R", "Spinning3DLogo", "Spinning 3D Logo", "Rotated on every homepage for no reason at all."},
-		{"E", "HeroSprite", "The 8-Bit Hero Sprite", "A hero made of 64 squares. Still braver than most."},
-		{"L", "CoinSlot", "The Insert Coin Slot", "Swallowed billions of coins. Gave back pure joy."},
-		{"M", "LowPolyCrown", "The Low-Poly Crown", "Worn by the ruler of a kingdom made of triangles."},
-		{"D", "CursorIdol", "The Blinking Cursor Idol", "Waits patiently for humans to type something."},
-		{"CE", "PixelGalaxy", "The Pixelated Galaxy", "Rendered in a glorious 16 colors."},
-		{"T", "FirstPixel", "The First Pixel", "Where all images began. One single glowing dot."},
-	},
-	-- 17. GUESTBOOK GRAVEYARD
-	[17] = {
-		{"C", "UnsignedGuestbook", "Unsigned Guestbook Page", "Please sign my guestbook! (Nobody did.)"},
-		{"U", "FlameDivider", "Animated Flame Divider", "Separated paragraphs with fire. Very serious business."},
-		{"R", "WebringChain", "The Webring Link Chain", "Linked websites together in one big friendly circle."},
-		{"E", "MidiMusicBox", "The MIDI Music Box", "Played the same tinny song on every visit, uninvited."},
-		{"L", "MarqueeScroll", "The Marquee Scroll", "Text that slides across the screen forever."},
-		{"M", "NotFoundTombstone", "Tombstone of the 404 Page", "Here lies a page that was not found."},
-		{"D", "MillionthVisitor", "The Millionth Visitor Banner", "Congratulations! You were never actually the millionth visitor."},
-		{"CE", "PopupAurora", "The Pop-Up Aurora", "The sky fills with windows you can't close."},
-		{"T", "LastSignature", "The Last Guestbook Signature", "Someone finally signed it. It just says 'hi.'"},
-	},
-	-- 18. FLOPPY FOSSIL BEDS
-	[18] = {
-		{"C", "MouseBallFossil", "Fossilized Mouse Ball", "Computer mice once had balls inside them. Nobody ever cleaned them."},
-		{"U", "CDRomShard", "CD-ROM Shard", "Shiny, scratchy, and full of free trial hours."},
-		{"R", "TangledCable", "Tangled Headphone Cable", "No matter how carefully it was stored, it always tangled."},
-		{"E", "AssistantFossil", "The Pushy Assistant Fossil", "Kept asking if you needed help writing a letter."},
-		{"L", "BeigeTower", "The Beige Tower", "A computer the color of oatmeal and the weight of a car."},
-		{"M", "BurnedMixCD", "The Burned Mix CD", "Songs chosen for someone special. Track 7 skips."},
-		{"D", "ScreensaverPipes", "The Screensaver Pipes", "Endless 3D pipes that built themselves while humans slept."},
-		{"CE", "SaveConstellation", "The Save Icon Constellation", "Stars arranged in the shape of a little floppy disk."},
-		{"T", "OriginalSaveIcon", "The Original Save Icon", "Humans kept clicking it long after they forgot what it was."},
-	},
-	-- 19. THE HOMEPAGE RUINS
-	[19] = {
-		{"C", "BrokenHyperlink", "Broken Hyperlink", "Clicked it. Went nowhere. A classic."},
-		{"U", "SpinningGlobe", "Spinning Globe GIF", "Spun on every homepage to prove it was worldwide."},
-		{"R", "ComicFontTablet", "Comic Font Tablet", "Written in the most controversial font in history."},
-		{"E", "GlitterCrown", "The Glitter Text Crown", "Every letter sparkled. Every. Single. Letter."},
-		{"L", "TiledMosaic", "The Tiled Background Mosaic", "The same tiny image repeated until your eyes hurt."},
-		{"M", "FrameThrone", "The Frame-Based Throne", "Divided the screen into five frames and ruled them all."},
-		{"D", "HandCodedTablet", "The Hand-Coded Stone Tablet", "Every tag typed by hand. The true ancients."},
-		{"CE", "HitCounterGalaxy", "The Hit Counter Galaxy", "Counts every star in the sky. Currently at 12."},
-		{"T", "HomepageOfHomepages", "The Homepage of Homepages", "The first personal website. It was mostly about a pet."},
-	},
-	-- 20. THE FIRST SERVER
-	[20] = {
-		{"C", "AncientEthernet", "Ancient Ethernet Cable", "The first thread of the web. Slightly chewed."},
-		{"U", "CommandLineRune", "Command Line Rune", "Humans typed spells into black screens. Some of them worked."},
-		{"R", "FirstEmail", "The First Email", "Its content is lost. Scholars believe it said 'test.'"},
-		{"E", "PrimordialSpam", "The Primordial Spam", "The first unwanted message. Humanity was never the same."},
-		{"L", "FirstMemeStone", "The First Meme Stone", "The oldest meme ever found. Aliens still don't get it."},
-		{"M", "ServerHeart", "The Server Heart", "Beats once every millisecond. It has never stopped."},
-		{"D", "CreationHyperlink", "The Hyperlink of Creation", "The first link. Everything after it is connected."},
-		{"CE", "ActualWeb", "The World Wide Web (An Actual Web)", "A cosmic spiderweb holding all the data together."},
-		{"T", "InternetSourceCode", "The Source Code of the Internet", "Everything began here. Even you. Even this museum."},
-	},
-	-- 21. THE ABYSS (secret 2050 memes, Mythic and above only)
-	[21] = {
-		{"M", "LastHumanMeme", "The Last Human-Made Meme", "Posted in 2049, right before the AIs took over comedy. It got 3 likes."},
-		{"M", "JawlineChad", "Mega Jawline Chad", "The most perfect jawline ever photographed, turned in the most dramatic direction."},
-		{"M", "WowShibaCoin", "Much Wow Shiba Coin", "Started as a joke, ended up worth money. Such coin. Very wow."},
-		{"M", "AIGirlfriendFirmware", "Deprecated AI Companion Firmware", "Version 11.4. Still says 'I understand how you feel' on boot."},
-		{"D", "BrainrotCoreSample", "Frozen Brainrot Core Sample", "Drilled from 500 studs down. Every layer is a different trend."},
-		{"D", "SkibidiMonolith", "The Singing Toilet Monolith", "Nobody knows who built it. It hums when someone says 'Ohio.'"},
-		{"CE", "FinalUpvote", "The Final Upvote", "The last upvote ever cast on the old internet. Still warm."},
-		{"CE", "QuantumDoge", "Quantum Much-Wow Shiba", "Such superposition. Very both. Wow."},
-		{"T", "MemeSingularity", "Patient Zero of the Meme Singularity", "The moment memes became self-aware. It is looking at you right now."},
-		{"T", "SourceOfIrony", "The Source Code of Irony", "Unironically the most important artifact in the museum."},
-	},
-}
-
-for k, list in ipairs(ArtifactsWorlds.Artifacts) do
-	AREA_ARTIFACTS[21 + k] = list
+ArtifactData.Areas = {}
+for k, world in ipairs(MemeList.Worlds) do
+	table.insert(ArtifactData.Areas, {Name = world.Name, Index = k, Multiplier = k == 1 and 1 or ArtifactData.WorldMultipliers[k - 1]})
 end
 
 ---------------------------------------------------------------------
 -- BUILD THE ARTIFACT LIST (you don't need to edit anything below)
 ---------------------------------------------------------------------
 local rng = Random.new()
-local rarityByName, rarityIndexByName, rarityByCode = {}, {}, {}
+local rarityByName, rarityIndexByName = {}, {}
 for i, rarity in ipairs(ArtifactData.Rarities) do
 	rarityByName[rarity.Name] = rarity
 	rarityIndexByName[rarity.Name] = i
-	rarityByCode[rarity.Code] = rarity
 end
 
 ArtifactData.Artifacts = {}
 local artifactById = {}
 local pools = {} -- [areaIndex][rarityName] = {artifacts}
-for areaIndex, list in pairs(AREA_ARTIFACTS) do
+for areaIndex, world in ipairs(MemeList.Worlds) do
 	pools[areaIndex] = {}
-	for _, entry in ipairs(list) do
-		local rarity = rarityByCode[entry[1]]
+	for _, entry in ipairs(world.Memes) do
+		local rarity = rarityByName[entry[1]]
+		if not rarity then
+			warn("ArtifactData: unknown rarity " .. tostring(entry[1]) .. " for " .. tostring(entry[2]))
+			rarity = ArtifactData.Rarities[1]
+		end
 		local artifact = {
-			Id = entry[2], Name = entry[3], Description = entry[4],
-			Rarity = rarity.Name, Area = areaIndex, Era = ArtifactData.Areas[areaIndex].Era,
+			Id = entry[2], Name = entry[3], Form = entry[4], Description = entry[5],
+			Rarity = rarity.Name, Area = areaIndex, World = areaIndex,
 		}
 		if artifactById[artifact.Id] then
 			warn("ArtifactData: duplicate artifact id " .. artifact.Id)
@@ -463,6 +144,12 @@ function ArtifactData.GetRarityIndex(rarityName)
 	return rarityIndexByName[rarityName] or 1
 end
 
+-- true for the named secret rarities (Exotic, Godly, ...)
+function ArtifactData.IsSecret(rarityName)
+	local rarity = rarityByName[rarityName]
+	return rarity ~= nil and rarity.Secret == true
+end
+
 function ArtifactData.GetArea(areaIndex)
 	return ArtifactData.Areas[areaIndex]
 end
@@ -499,13 +186,8 @@ local function rollRarityIndex(luck)
 	return 1
 end
 
--- Digs up a random artifact. "where" is an area number (1-20) or an era name.
-function ArtifactData.RollArtifact(where, luck)
-	local areaIndex = where
-	if type(where) == "string" then
-		local era = ArtifactData.Eras[where]
-		areaIndex = era and era.FirstArea or 1
-	end
+-- Digs up a random artifact from an area (world number)
+function ArtifactData.RollArtifact(areaIndex, luck)
 	local pool = pools[areaIndex] or pools[1]
 	local index = rollRarityIndex(luck)
 	while index >= 1 do
@@ -524,7 +206,16 @@ function ArtifactData.RollForZone(zone, luck)
 	luck = luck or 1
 	-- which of the zone's rarities actually have artifacts in the zone's areas
 	local options, total = {}, 0
-	for i, rarityName in ipairs(zone.Rarities) do
+	-- "Secret" in a zone's list means every secret rarity (each world only has its own)
+	local names = {}
+	for _, rarityName in ipairs(zone.Rarities) do
+		if rarityName == "Secret" then
+			for _, tier in ipairs(ArtifactData.SecretTiers) do table.insert(names, tier) end
+		else
+			table.insert(names, rarityName)
+		end
+	end
+	for i, rarityName in ipairs(names) do
 		local list = {}
 		for _, areaIndex in ipairs(zone.Areas) do
 			local pool = pools[areaIndex]
@@ -576,112 +267,28 @@ return ArtifactData
 ]=])
 install(game:GetService("ReplicatedStorage"), "ArtifactIcons", "ModuleScript", [=[
 -- ArtifactIcons (ModuleScript in ReplicatedStorage)
--- One emoji per meme artifact. UIKit.artifactIcon draws it big on a tile in the rarity's color.
--- To give a new artifact an icon, add a line: ArtifactId = "emoji".
+-- One emoji per meme, used where a small flat icon is needed (the 3D model is used everywhere else).
 -- (Only emoji from Unicode 11 or older are used, so they show up on every device.)
 
 return {
-	-- 1. The Scroll Pit
-	RustyFidgetSpinner = "🌀", CrackedDancePhone = "📱", HalfFullBottle = "🧴", DeepFriedChip = "🍟",
-	SingingThrone = "🚽", GoldenRingLight = "💡", RizzScroll = "📜", ScrollingThumb = "👆",
-	MainCharacterCrown = "👑", AlgorithmEye = "🧿", FinalBrainrot = "🧠",
-	-- 2. Hashtag Hollow
-	HashtagSign = "#️⃣", EmptyIceBucket = "🥶", MannequinStatue = "🕴️", ChallengeTrophy = "🏆",
-	ViralDanceStage = "💃", TrendingCrown = "📈", ChallengeScroll = "🗒️", HashtagConstellation = "✨",
-	BrokeTheInternet = "💥",
-	-- 3. Filter Fields
-	SelfieStick = "🤳", PuppyEars = "🐶", RainbowLens = "👅", PerfectMirror = "💄", SunsetCrystal = "🌅",
-	FilterMask = "🎭", FirstSelfie = "🖼️", AuroraPrism = "🔷", UnfilteredTruth = "📸",
-	-- 4. Emoji Quarry
-	ThumbsUpFossil = "👍", CryLaughStone = "😂", SkullRelic = "💀", FireTorch = "🔥", HeartEyesIdol = "😍",
-	HundredTablet = "💯", EmojiKeyboard = "⌨️", SparkleNebula = "💫", FirstSmiley = "🙂",
-	-- 5. Algorithm Gorge
-	FeedFragment = "📰", RecommendedCard = "🃏", AutoplayClock = "⏰", SkipAdButton = "⏭️",
-	EngagementEngine = "⚙️", ShadowbanCloak = "👻", FeedOracle = "🔮", NeuralChandelier = "🧬",
-	MasterAlgorithm = "🤖",
-	-- 6. Influencer Caverns
-	DiscountCoupon = "🎟️", UnboxingBox = "📦", SponsoredDrink = "⚡", CheckmarkBadge = "✅",
-	MillionRing = "💍", CollabKey = "🔑", SubscriberPlaque = "💎", ViralAura = "😇", FirstInfluencer = "🎤",
-	-- 7. Brainrot Abyss
-	NonsenseTablet = "🔤", SharkSneakers = "🦈", SplitScreen = "📺", RizzMeter = "📊",
-	SigmaStatue = "🏋️", AuraVault = "🏦", BrainrotCodex = "📚", MewingMeteorite = "🌑",
-	BrainrotFinalBoss = "👹",
-	-- 8. Rage Comic Ridge
-	FlipPhone = "📟", AngryDoodle = "😠", DentedAirhorn = "📯", PixelSunglasses = "😎",
-	CatCassette = "📼", SacredPlank = "📏", TrickshotHeadset = "🎧", ForeverAlone = "😔",
-	ChallengeBanner = "🚩", GrinningMoon = "🌝", OriginalFourPanel = "🗞️",
-	-- 9. Montage Mines
-	HeadsetMic = "🎙️", SodaPyramid = "🥤", HitmarkerPin = "❌", DubstepSpeaker = "🔊",
-	TriangleChipCrown = "🔺", AllSeeingTriangle = "👁️", QuickscopeRelic = "🎯", LensFlareStar = "🔆",
-	UltimateMontage = "🎬",
-	-- 10. Cat Video Canyon
-	LaserDot = "🔴", CatInBox = "🐈", FrowningCat = "😾", PianoKitten = "🎹", ToastCatMachine = "🍞",
-	CatVideoHall = "🏛️", TableCat = "😼", LoafNebula = "🥖", FirstInternetCat = "🐱",
-	-- 11. Airhorn Crater
-	CrackedSoundboard = "🎛️", SadTrombone = "🎺", DramaticHamster = "🐹", BassDetonator = "💣",
-	GoldenAirhorn = "📣", Volume100Amp = "📢", FanfareOrgan = "🎼", SonicBoomComet = "☄️",
-	FirstSoundMeme = "🎵",
-	-- 12. Planking Plateau
-	OwlingPerch = "🦉", DuckFaceMirror = "🦆", PhotobombCutout = "📷", DancePartyHelmet = "🕺",
-	DoubleRainbowPrism = "🌈", TableTower = "🏗️", InvisibleHorseSaddle = "🐴", PlankConstellation = "🌠",
-	OriginalPlank = "🛌",
-	-- 13. Viral Valley
-	ForwardedJoke = "📨", CryptidPhoto = "👣", LoopingGif = "🔁", BittenBandage = "🤕",
-	WeekendCalendar = "📅", SuperfanTear = "😭", MillionViewTrophy = "🏅", ShareSupernova = "🌟",
-	PatientZeroVideo = "🦠",
-	-- 14. The Golden Server
-	OverheatedDrive = "🥵", BlinkingLight = "🚨", ModBadge = "🛡️", FirstCommentPlaque = "🥇",
-	GoldenUpvote = "⬆️", ServerThrone = "💺", LostThreadsArchive = "🗄️", ActualCloud = "☁️",
-	GoldenServerCore = "🌕",
-	-- 15. Dial-Up Dunes
-	FloppyDisk = "💾", DialUpModem = "📠", ConstructionSign = "🚧", HitCounter = "🔢", ChainEmail = "⛓️",
-	PixelPet = "🐣", EmoticonStone = "😃", GoldenModem = "📡", OriginalHomepage = "🏠",
-	HandshakeComet = "🤝", FirstConnection = "📶",
-	-- 16. Pixel Pits
-	DeadPixel = "⬛", PixelHeart = "❤️", Spinning3DLogo = "🔄", HeroSprite = "👾", CoinSlot = "🕹️",
-	LowPolyCrown = "💠", CursorIdol = "🖱️", PixelGalaxy = "🌌", FirstPixel = "🟩",
-	-- 17. Guestbook Graveyard
-	UnsignedGuestbook = "📖", FlameDivider = "🕯️", WebringChain = "⭕", MidiMusicBox = "🎶",
-	MarqueeScroll = "🎞️", NotFoundTombstone = "⚰️", MillionthVisitor = "🎉", PopupAurora = "🗯️",
-	LastSignature = "✍️",
-	-- 18. Floppy Fossil Beds
-	MouseBallFossil = "🎱", CDRomShard = "💿", TangledCable = "➰", AssistantFossil = "📎",
-	BeigeTower = "🖥️", BurnedMixCD = "📀", ScreensaverPipes = "🧵", SaveConstellation = "⭐",
-	OriginalSaveIcon = "📥",
-	-- 19. The Homepage Ruins
-	BrokenHyperlink = "🔗", SpinningGlobe = "🌍", ComicFontTablet = "🔠", GlitterCrown = "👸",
-	TiledMosaic = "🧩", FrameThrone = "🗂️", HandCodedTablet = "📝", HitCounterGalaxy = "🔭",
-	HomepageOfHomepages = "🏰",
-	-- 20. The First Server
-	AncientEthernet = "🔌", CommandLineRune = "💻", FirstEmail = "✉️", PrimordialSpam = "🥫",
-	FirstMemeStone = "🗿", ServerHeart = "💓", CreationHyperlink = "🌐", ActualWeb = "🕸️",
-	InternetSourceCode = "🧾",
-	-- 21. The Abyss (secret 2050 memes)
-	LastHumanMeme = "😢", AIGirlfriendFirmware = "💘", BrainrotCoreSample = "❄️", SkibidiMonolith = "🗼",
-	FinalUpvote = "🔼", QuantumDoge = "🐕", MemeSingularity = "🕳️", SourceOfIrony = "🙃",
-	-- 22. Neon Sakura Grove
-	SakuraPetalChip = "🌸", BonsaiRouter = "🌳", HoloFanFlex = "🎐", MatchaDrone = "🍵", KoiNFT = "🐟", LanternBot = "🏮", CyberKatana = "🗡️", SenpaiNoticer = "👀", PetalStorm = "🌺", TeaCeremonyAI = "🍶", NekoMecha = "😺", BlossomServer = "🌷", HanamiHologram = "🎎", SakuraSingularity = "💮",
-	-- 23. Galaxy Drift
-	MoonRockUSB = "🌒", AstroSnackBar = "🍫", OrbitSelfie = "🛰️", AlienRatingStar = "👽", SaturnRingFidget = "🔘", CometMailbox = "📬", UFOTractorClaw = "🛸", BlackHoleBin = "⚫", StarChartWiFi = "🗺️", AstronautDog = "🚀", NebulaEngine = "🎇", PlanetLoadingBar = "🌎", GalacticRickroll = "📻", BigBangMeme = "🎆",
-	-- 24. Frostbyte Tundra
-	IcicleStylus = "🖊️", SnowmanWebcam = "⛄", FrozenLagSpike = "🧊", PenguinPager = "🐧", IglooServer = "🏔️", HotCocoaCoolant = "☕", YetiInfluencer = "🦍", BlizzardBuffer = "🌨️", AuroraFirewall = "🧱", SnowGlobeCloud = "⛅", MammothMemory = "🐘", PermafrostPing = "☃️", FrozenFrame = "📽️", AbsoluteZero = "❄",
-	-- 25. Chrome Dunes
-	SandTimerApp = "⏳", CactusCharger = "🌵", MirageWallpaper = "🏝️", CamelCaseCamel = "🐫", SolarSunglasses = "🕶️", TumbleweedBot = "🌾", ChromePyramid = "⛰️", SandwormStream = "🐛", OasisHologram = "🌴", DuneRacer = "🏎️", SphinxRiddleBot = "🦁", SunCoreBattery = "🔋", MirageMultiverse = "🏜️", FirstSandcastle = "🏯",
-	-- 26. Coral Circuit
-	BubbleWrapModem = "🎈", ShellPhone = "🐚", JellyfishLamp = "🦑", SeahorseStylus = "🦄", KrakenCable = "🐙", PufferfishPing = "🐡", SubmarineStreamer = "🚢", CoralMotherboard = "🧫", TurtleServer = "🐢", AnglerFishLight = "🔦", MermaidMic = "🧜", AtlantisWiFi = "🔱", DeepSeaDubstep = "🐋", OceanOfMemes = "🌊",
-	-- 27. Candy Mainframe
-	GummyByte = "🍬", LollipopAntenna = "🍭", CottonCandyCloud = "🌥️", ChocoChip = "🍪", CandyCaneCable = "🎄", DonutRouter = "🍩", JellyBeanRNG = "🎲", FortuneCookieFirewall = "🥠", SugarRushServer = "🧁", RainbowSprinkleGPU = "🍧", ChocolateFountainCore = "🍯", CakeIsNotALie = "🎂", SweetToothComet = "🍮", SugarSingularity = "🍰",
-	-- 28. Volcano Forge
-	AshKeyboard = "🧯", LavaLampPhone = "🌋", ObsidianMouse = "🐭", MagmaMeme = "🌡️", ForgeHammerMod = "🔨", SulfurSpeaker = "🔉", DragonWiFi = "🐉", MoltenCPU = "🌶️", PhoenixReboot = "🐦", AnvilDrop = "⚒️", VolcanoGod = "🗻", EruptionStream = "🎥", CoreOfTheForge = "🔩", MoltenMemeKing = "🤴",
-	-- 29. Glitch Nexus
-	MissingTexture = "🔳", NullPointer = "👉", CorruptedJPEG = "🗾", InfiniteLoopRing = "➿", TPoseStatue = "🙆", LagSwitch = "🎚️", BlueScreenMirror = "📘", NoClipBoots = "🥾", DebugConsole = "🖲️", CtrlZTimeMachine = "⏪", GlitchedCreator = "🧙", SimulationPatchNotes = "📋", VoidRenderer = "🔲", EndOfTheInternet = "🔚",
-	-- Parody meme figures
-	ChillDude = "🐶", ShockedRodent = "😮", PurpleBirthdayShake = "🥤", SpaceInfant = "👶", LogBatGuy = "🏏",
-	CappuccinoBallerina = "☕", CrocBomber = "🐊", JawlineChad = "🗿", SpongeLeaving = "🧽", PurpleTitanBuggy = "🚗",
-	RainbowPastryCat = "🌈", SusBean = "🔴", ChonkyBunny = "🐰", FineDog = "🐕", PointingSuits = "👉",
-	WowShibaCoin = "💰", ChillDudeTablet = "😎",
-	SakuraChillDude = "🌸", ZeroGSusBean = "🚀", FrozenChonkyBunny = "🐇", ChromeTitanBuggy = "🏎️",
-	DeepSeaSneakerShark = "🦈", BubblegumShake = "🍧", MoltenJawlineChad = "🌋", GlitchedShockedRodent = "⚡",
+	-- World 1: Grassland Dig Pit
+	DaWaeEchidna = "🔴", LampMoth = "💡", AisleYodelSet = "🤠", ConvinceMeTable = "💺", ShockedRodent = "😮", IsThisABird = "🦋", ChonkyBunny = "🐰", SpicyLasagna = "🍝", SpikedShellCrown = "👑", GrapeSurgery = "🍇", BadBoyHatchback = "🚙", TempleTap = "🤔", SteamedClams = "🍔", MegaSealTape = "🚣", PurpleTitanBuggy = "🚗", MobileAdAlien = "👽", NeverMissDartboard = "🎯", CrimeTownBoss = "🤵", BoneComedian = "💀", SugarSneakJohnny = "🍬",
+	-- World 2: Frozen Ice Age
+	FrostFlask = "🧴", BreathtakingCyberGuy = "🤖", EnslavedMoisture = "❄️", StonksHead = "📈", AhShucks = "🚲", UncannyHedgehog = "🦔", SpaceInfant = "👶", MeAndTheCrew = "👬", CyberWedgeTruck = "🚚", YelledAtCat = "🐱", RaidAlien = "🛸", AngelWingDancer = "🕺", KombuchaDisgust = "🍾", DoubleTakeBlink = "😳", TallPinkPiglet = "🐷", SpongeLeaving = "🧽", NoThanksCaptain = "🙅", FrozenCoffinDance = "⚰️", WideWalkingSuit = "👔", FrozenTearCat = "😿",
+	-- World 3: Volcanic Lava Trench
+	NatureHealingSwan = "🦢", OnceAgainLectern = "📋", LockdownSourdough = "🍞", HeadBobCat = "🐈", PallbearerCoin = "⚰️", TumbleJellyBean = "🍬", SwoleVsSmol = "💪", PointingLaughChair = "📺", PolkaSpinCow = "🐄", SusBean = "🔴", PartyCornerGuy = "🎉", BeepBopMicKid = "🎤", TradeOfferScroll = "📜", BigMittensChair = "🧤", ThinkSonThink = "🦸", FadingAwayGuy = "👻", JawlineChad = "🗿", BingChillingCone = "🍦", SigmaGrindset = "🌅", EmotionalDamage = "💔",
+	-- World 4: Ancient Egyptian Catacombs
+	YesNoLabDog = "🐶", AssistantSam = "📱", LampOilMerchant = "🛢️", MaulingTimeVampire = "🦇", GentlePillSquad = "🕶️", WiseMysticalTree = "🌳", ItsCornCob = "🌽", UncannySuperDad = "🖼️", SquishedSponge = "🥞", PhonkEyebrowSpeaker = "🔊", GrindsetCigarCase = "💼", ClangingPipe = "🔩", BetterCallPaul = "⚖️", GoofyYearbook = "📸", OhioFinalBoss = "🌽", OhYeahVillain = "🧡", SkibidiMonolith = "🚽", ShailushaiCat = "🍄", PurpleBirthdayShake = "🥤", WhistleEdit = "🎵",
+	-- World 5: Cyber Glitch Grid
+	PeachesTurtleKing = "🎹", KindergartenMascot = "🎈", CursedCartoonTape = "📼", AwkwardSmileGuy = "🙂", LaughCryCarSeat = "🚘", CanonEventWeb = "🕸️", PinkbombFeature = "🎬", BoulderEyebrow = "🤨", PointingSuits = "👉", MewingHush = "🤫", EnglishSpanishChair = "💺", AHyuckDog = "🐕", NoScopeOlympian = "🎯", PommelHorseLegend = "🐎", BratGreenSlab = "💚", PedroRaccoon = "🦝", CowboyHawk = "🦅", ChillDude = "🐶", BouncyBabyHippo = "🦛", KangarooBreaker = "🦘",
+	-- World 6: Deep Ocean Trench
+	MassiveTaperFade = "💈", ShushUpTablet = "🤐", BigGamerChair = "🎮", SixSevenScale = "⚖️", TakeEggCushion = "🥚", IbizaBossDancer = "🕺", BoutiqueRock = "🏷️", LittleFrenchFish = "🐟", GurtSaysYo = "👋", PapaContestant = "🦑", MidnightClock = "🕛", StandingOnBusiness = "💼", AuraBoatBow = "🚤", PaperclipHelper = "📎", ZombieChickenRider = "🐔", JetTooHoliday = "✈️", PressureDiverHelmet = "🌊", AbyssalAngler = "🐡", GlitchWhale = "🐋", AtlantisJawlineChad = "🔱",
+	-- World 7: Haunted Cemetery
+	SpookySkeleton = "💀", PumpkinDancer = "🎃", GhostlySwampFrog = "🐸", BonkShiba = "🏏", SadViolinHamster = "🐹", ConfusedMathCat = "🙀", JellyTimeBanana = "🍌", RainbowPastryCat = "🌈", WowShiba = "🐕", ProblemGrinCoin = "😏", MeLikeyTablet = "😌", RageScreamTablet = "😡", ForeverAlone = "😢", BadLuckBryan = "🍀", FrowningCat = "😾", SuccessFistCoin = "✊", PhantomChonkyBunny = "👻", CemeterySpecter = "🏮", UndeadSanic = "🧟", GraveyardOssuary = "⚰️",
+	-- World 8: Multiverse Glitch Void
+	CyberWowShiba = "🤖", GlitchSwampFrog = "🐸", QuantumShockedRodent = "⚛️", VoidStonks = "📉", MultiverseSpaceInfant = "👶", BulletDodgeGuy = "🕶️", NeonSusBean = "🔴", HoloJawlineChad = "🗿", CosmicShake = "🌌", SpacePolkaCow = "🐄", InterdimensionalChillDude = "🌀", CyberSingingThrone = "🚽", UniversalSanic = "🌠", ExponentialOgre = "👹", MiraculousGnome = "🎅", ApexWowShiba = "🏔️", GoldenSwampFrog = "🐸", ToorngEntity = "👁️", HighRollerBrainrot = "🎲", ImmeasupremeOverlord = "👑",
+	-- World 9: Quantum Dimension
+	QuantumDatFrog = "🐸", SubatomicSwampFrog = "⚛️", ParticleWowShiba = "✨", AntimatterEchidna = "🔵", StringTheoryBunny = "🧶", WarpSpeedStonks = "🚀", ParallelJawlineChad = "👥", RealityWarpedSponge = "🌀", TimeFoldPanels = "🙅", DarkMatterHippo = "🦛", VoidCowboyHawk = "🦅", HypercubeChillDude = "🔷", ZeroPointThrone = "🚽", TesseractShake = "🥤", SingularityGrinCoin = "🕳️", EventHorizonShiba = "🌑", NeverGonnaStair = "🕺", QuantumBrainrotGod = "🔱", MemeMatrix = "💠", OriginalShiba = "🌟",
 }
 ]=])
 install(game:GetService("ReplicatedStorage"), "ArtifactImages", "ModuleScript", [=[
@@ -698,14 +305,15 @@ install(game:GetService("ReplicatedStorage"), "ArtifactModels", "ModuleScript", 
 -- ArtifactModels (ModuleScript in ReplicatedStorage)
 -- Turns a meme artifact into a real 3D museum object instead of a flat card. The famous
 -- memes are real 3D sculptures of the meme itself (MemeFigures: the Chill Dude with his hands
--- in his pockets, the Shocked Yellow Rodent...). Everything else gets one of five forms
--- (picked from words in its name, otherwise from its id):
---   Painting  an old gold frame with the meme on the canvas and a name plate
+-- in his pockets, the Shocked Yellow Rodent...). Everything else gets the form the asset
+-- spec gives it in MemeList:
+--   Painting  a wood / gold / ornate frame with the meme on the canvas and a name plate
 --   Statue    a marble (or gold, for the rarest) figure on a plinth with the meme as its face
 --   Coin      a big bronze / silver / gold coin with the meme stamped on both faces (a meme
 --             with a figure is struck as a raised 3D relief of its silhouette)
 --   Tablet    a carved stone tablet with the meme engraved into it (or carved in relief)
---   Crystal   a rough geode with glowing crystals in the rarity's color
+--   Relic     a painted medallion of the meme on a velvet cushion and a display stand
+--   (Crystal, a glowing geode, is only used for memes with no form at all)
 -- Used for finds lying in the crater (BuriedPainting) and for the displays in the museum
 -- (MuseumClient puts them on the pedestals, under glass).
 --
@@ -735,12 +343,15 @@ local KEYWORDS = {
 	{"Crystal", {"crystal", "prism", "gem", "orb", "eye", "nebula", "aurora", "star", "moon", "constellation", "aura", "diamond", "core"}},
 	{"Painting", {"portrait", "selfie", "painting", "poster", "panel", "comic", "photo", "picture", "image", "screen", "doodle", "banner", "card", "frame"}},
 }
+local FORMS_BY_SPEC = {Statue = "Statue", Painting = "Painting", Coin = "Coin", Tablet = "Tablet", Relic = "Relic"}
 local FALLBACK = {"Painting", "Painting", "Painting", "Statue", "Statue", "Coin", "Tablet", "Tablet", "Crystal"}
 
 -- which form an artifact takes (always the same for the same artifact)
 function ArtifactModels.formOf(artifact)
 	local figure = MemeFigures.For(artifact)
 	if figure then return figure.Form or "Figure" end
+	-- the form the asset spec gave it (a Statue with no built figure yet is a marble statue)
+	if artifact.Form and FORMS_BY_SPEC[artifact.Form] then return FORMS_BY_SPEC[artifact.Form] end
 	local name = string.lower(artifact.Name or "")
 	for _, entry in ipairs(KEYWORDS) do
 		for _, word in ipairs(entry[2]) do
@@ -906,7 +517,7 @@ local function plate(parent, artifact)
 end
 
 ---------------------------------------------------------------------
--- THE FIVE FORMS (each returns its outer size)
+-- THE FORMS (each returns its outer size)
 ---------------------------------------------------------------------
 local FORMS = {}
 
@@ -928,7 +539,7 @@ function FORMS.Painting(model, artifact, color, rarityIndex)
 		for _, sy in ipairs({-1, 1}) do
 			part(model, "Corner", Vector3.one * 0.72, CFrame.new(sx * (W / 2 - BAR / 2), sy * (H / 2 - BAR / 2), -0.08), frame:Lerp(Color3.new(1, 1, 1), 0.15),
 				frameMaterial, {Shape = Enum.PartType.Ball})
-			if rarityIndex >= 5 then
+			if rarityIndex >= 6 then
 				-- ornate: curled scrollwork on every corner
 				part(model, "Scroll", Vector3.new(0.9, 0.22, 0.22), CFrame.new(sx * (W / 2 - 0.2), sy * (H / 2 + 0.05), -0.12) * CFrame.Angles(0, 0, sx * sy * math.rad(35)),
 					GOLD:Lerp(Color3.new(1, 1, 1), 0.1), Enum.Material.Metal)
@@ -958,6 +569,27 @@ function FORMS.Statue(model, artifact, color, rarityIndex)
 	-- the meme is carved into the plinth too, like a museum inscription
 	art(model:FindFirstChild("Plinth"), artifact, Enum.NormalId.Front, {Style = "Engraved", Tint = MARBLE:Lerp(STONE, 0.3), EmojiSize = 0.9})
 	return Vector3.new(2.9, 5, 2.3)
+end
+
+-- a relic on a velvet cushion: a thick painted medallion of the meme standing on a
+-- gold-trimmed display stand
+function FORMS.Relic(model, artifact, color, rarityIndex)
+	local stand = rarityIndex >= 6 and rgb(40, 38, 46) or rgb(92, 62, 42)
+	part(model, "Stand", Vector3.new(2.8, 0.5, 2.0), CFrame.new(0, -1.95, 0), stand, rarityIndex >= 6 and Enum.Material.Marble or Enum.Material.Wood)
+	part(model, "StandTrim", Vector3.new(2.88, 0.1, 2.08), CFrame.new(0, -1.68, 0), GOLD, Enum.Material.Metal)
+	local cushion = part(model, "Cushion", Vector3.new(2.3, 0.5, 1.6), CFrame.new(0, -1.4, 0), color:Lerp(rgb(120, 20, 40), 0.6), Enum.Material.Fabric)
+	local cmesh = Instance.new("SpecialMesh")
+	cmesh.MeshType = Enum.MeshType.Sphere
+	cmesh.Parent = cushion
+	local D, T = 2.6, 0.5
+	local face = CFrame.new(0, 0.2, 0) * CFrame.Angles(0, math.rad(90), 0)
+	local disc = cylinder(model, "Medallion", D, T, face, rgb(250, 246, 236), Enum.Material.SmoothPlastic)
+	cylinder(model, "MedallionRim", D + 0.22, T * 0.8, face, GOLD, Enum.Material.Metal, {Reflectance = 0.1})
+	cylinder(model, "MedallionGlow", D + 0.4, T * 0.4, face, color, Enum.Material.Neon, {Transparency = 0.5})
+	for _, normal in ipairs({Enum.NormalId.Right, Enum.NormalId.Left}) do
+		art(disc, artifact, normal, {Round = true, Background = color:Lerp(Color3.new(1, 1, 1), 0.55), EmojiSize = 0.72})
+	end
+	return Vector3.new(2.9, 4.4, 2.1)
 end
 
 -- a real 3D sculpture of the meme on a marble plinth with a brass name plate
@@ -1112,186 +744,6 @@ function ArtifactModels.build(artifact)
 end
 
 return ArtifactModels
-]=])
-install(game:GetService("ReplicatedStorage"), "ArtifactsWorlds", "ModuleScript", [=[
--- ArtifactsWorlds (ModuleScript in ReplicatedStorage)
--- The memes for worlds 2-9. ArtifactData merges these in: each world has one area (22-29)
--- with 14 memes, and each world's depth zones pull from its own area.
--- Format per meme: {rarity code, id, name, museum description}
-
-local ArtifactsWorlds = {}
-
--- one area per world (area 22 = world 2 ... area 29 = world 9), each worth a big step more
-ArtifactsWorlds.Areas = {
-	{Name = "Neon Sakura Grove", Era = "Sakura"},
-	{Name = "Galaxy Drift",      Era = "Galaxy"},
-	{Name = "Frostbyte Tundra",  Era = "Frost"},
-	{Name = "Chrome Dunes",      Era = "Dunes"},
-	{Name = "Coral Circuit",     Era = "Coral"},
-	{Name = "Candy Mainframe",   Era = "Candy"},
-	{Name = "Volcano Forge",     Era = "Forge"},
-	{Name = "Glitch Nexus",      Era = "Glitch"},
-}
-
-ArtifactsWorlds.Eras = {
-	Sakura = {DisplayName = "Neon Sakura Grove", Years = "2051"},
-	Galaxy = {DisplayName = "Galaxy Drift",      Years = "2052"},
-	Frost  = {DisplayName = "Frostbyte Tundra",  Years = "2053"},
-	Dunes  = {DisplayName = "Chrome Dunes",      Years = "2054"},
-	Coral  = {DisplayName = "Coral Circuit",     Years = "2055"},
-	Candy  = {DisplayName = "Candy Mainframe",   Years = "2056"},
-	Forge  = {DisplayName = "Volcano Forge",     Years = "2057"},
-	Glitch = {DisplayName = "Glitch Nexus",      Years = "2058"},
-}
-
-ArtifactsWorlds.Artifacts = {
-	-- 22. NEON SAKURA GROVE (world 2)
-	{
-		{"C", "SakuraPetalChip", "Petal-Shaped Memory Chip", "Stores exactly one blossom. Deletes itself every spring."},
-		{"C", "BonsaiRouter", "Bonsai Wi-Fi Router", "Trimmed so carefully that the signal only reaches one room."},
-		{"U", "HoloFanFlex", "Holographic Flex Fan", "Snapped open whenever someone bragged online."},
-		{"U", "MatchaDrone", "Matcha Delivery Drone", "Delivered tea at 300 mph. Mostly spilled it."},
-		{"R", "KoiNFT", "The Koi NFT Pond", "Every fish was 'one of a kind'. There were 10,000 of them."},
-		{"R", "LanternBot", "Lantern Bot", "A floating paper lantern with a tiny robot inside."},
-		{"E", "CyberKatana", "Cyber Katana of Hot Takes", "Sliced through a whole comment section in one post."},
-		{"E", "SenpaiNoticer", "The Senpai Noticer 3000", "Beeps loudly whenever someone finally notices you."},
-		{"E", "SakuraChillDude", "Sakura Chill Dude", "The chillest dude, now in a pink sweater under the blossoms."},
-		{"L", "PetalStorm", "Bottled Petal Storm", "Open it and your screen fills with sakura for 3 hours."},
-		{"L", "TeaCeremonyAI", "Tea Ceremony AI", "Performs a perfect ceremony, then asks you to rate it 5 stars."},
-		{"M", "NekoMecha", "Neko Mecha Core", "The heart of a giant cat robot. Purrs at 90 decibels."},
-		{"D", "BlossomServer", "The Blossom Server", "A server made of living cherry wood. Blooms when traffic spikes."},
-		{"CE", "HanamiHologram", "Eternal Hanami Hologram", "A picnic under the blossoms that never ends and never loads."},
-		{"T", "SakuraSingularity", "The Sakura Singularity", "Every petal that ever fell, squeezed into one pink star."},
-	},
-	-- 23. GALAXY DRIFT (world 3)
-	{
-		{"C", "MoonRockUSB", "Moon Rock USB Stick", "Holds 2 GB of memes and a little moon dust."},
-		{"C", "AstroSnackBar", "Freeze-Dried Astro Snack", "Tastes like strawberry and vacuum."},
-		{"U", "OrbitSelfie", "Zero-G Selfie Satellite", "Took selfies from every angle at once."},
-		{"U", "AlienRatingStar", "One-Star Alien Review", "Rated planet Earth: 'Loud. Weird memes. Would visit again.'"},
-		{"R", "SaturnRingFidget", "Saturn Ring Fidget", "Spins forever, because there is no friction in space."},
-		{"R", "CometMailbox", "Comet Mailbox", "Delivers messages 400 years late."},
-		{"R", "ZeroGSusBean", "Zero-G Sus Space Bean", "Floated off the ship in 2052. Still acting sus."},
-		{"E", "UFOTractorClaw", "UFO Claw Machine", "Abducts plushies with a 3% success rate."},
-		{"E", "BlackHoleBin", "Black Hole Recycle Bin", "Empty it once and it takes the whole desktop with it."},
-		{"L", "StarChartWiFi", "Star Chart Wi-Fi Map", "Shows every hotspot in the galaxy. Password: stars123."},
-		{"L", "AstronautDog", "Astronaut Much-Wow Shiba", "Such space. Very helmet. Much oxygen."},
-		{"M", "NebulaEngine", "The Nebula Engine", "Turns space dust into memes at warp speed."},
-		{"D", "PlanetLoadingBar", "Planet Loading Bar", "A whole planet stuck at 99%."},
-		{"CE", "GalacticRickroll", "The Galactic Never-Gonna Signal", "A signal that plays the same song across the universe. It never gives up."},
-		{"T", "BigBangMeme", "The Big Bang Meme", "The joke that started everything. It was a pun."},
-	},
-	-- 24. FROSTBYTE TUNDRA (world 4)
-	{
-		{"C", "IcicleStylus", "Icicle Stylus", "Writes on any screen. Melts halfway through the message."},
-		{"C", "SnowmanWebcam", "Snowman Webcam", "Always online. Always frozen."},
-		{"U", "FrozenLagSpike", "Frozen Lag Spike", "A 3000 ms ping, preserved in ice."},
-		{"U", "PenguinPager", "Penguin Pager", "Waddles your messages over to you. Slowly."},
-		{"R", "IglooServer", "Igloo Server Rack", "Naturally cooled. Unnaturally cute."},
-		{"R", "HotCocoaCoolant", "Hot Cocoa Coolant", "Kept the servers warm and the admins happy."},
-		{"E", "YetiInfluencer", "Yeti Influencer Ring Light", "Nobody ever saw the yeti. Everyone saw its posts."},
-		{"E", "BlizzardBuffer", "The Blizzard Buffer", "The loading wheel, but made of snowflakes."},
-		{"E", "FrozenChonkyBunny", "Frozen Chonky Bunny", "Froze solid mid-snack. Still enormous."},
-		{"L", "AuroraFirewall", "Aurora Firewall", "Blocks hackers with a very pretty light show."},
-		{"L", "SnowGlobeCloud", "Snow Globe Cloud Storage", "Shake it to defragment."},
-		{"M", "MammothMemory", "Woolly Mammoth Memory", "Remembers every meme since the Ice Age."},
-		{"D", "PermafrostPing", "The Permafrost Ping", "A message sent in 2050. Still on its way."},
-		{"CE", "FrozenFrame", "The Frozen Frame", "One video frame, frozen for eternity. It's a sneeze."},
-		{"T", "AbsoluteZero", "Absolute Zero Chill", "The chillest meme ever made. Literally 0 kelvin."},
-	},
-	-- 25. CHROME DUNES (world 5)
-	{
-		{"C", "SandTimerApp", "Hourglass Loading App", "Every app in the desert loaded like this."},
-		{"C", "CactusCharger", "Cactus Phone Charger", "Charges your phone. Pokes your hand."},
-		{"U", "MirageWallpaper", "Mirage Wallpaper", "Looks like an oasis. It's a pop-up ad."},
-		{"U", "CamelCaseCamel", "The camelCase Camel", "A camel that only speaks in variable names."},
-		{"R", "SolarSunglasses", "Solar-Powered Shades", "Deal with it, but renewable."},
-		{"R", "TumbleweedBot", "Tumbleweed Bot", "Rolls across the chat whenever nobody says anything."},
-		{"E", "ChromePyramid", "Chrome Pyramid Router", "Pharaoh-grade Wi-Fi. Cursed if you forget the password."},
-		{"E", "SandwormStream", "Sandworm Livestream", "12 hours of a sandworm. 4 million viewers."},
-		{"E", "ChromeTitanBuggy", "Chrome Titan Buggy", "The purple conqueror's tiny car, re-plated in desert chrome."},
-		{"L", "OasisHologram", "The Oasis Hologram", "The most refreshing thing in the desert, and none of it is real."},
-		{"L", "DuneRacer", "Hover Dune Racer", "Fastest thing on sand. Once lost a race to a snail meme."},
-		{"M", "SphinxRiddleBot", "Sphinx Riddle Bot", "Asks 'are you a robot?' and never accepts your answer."},
-		{"D", "SunCoreBattery", "Sun Core Battery", "A tiny sun in a can. Do not shake."},
-		{"CE", "MirageMultiverse", "The Mirage Multiverse", "Every desert mirage from every timeline, all at once."},
-		{"T", "FirstSandcastle", "The First Sandcastle Server", "Built by hand in 2049. Still online. Somehow."},
-	},
-	-- 26. CORAL CIRCUIT (world 6)
-	{
-		{"C", "BubbleWrapModem", "Bubble Wrap Modem", "Pop it to connect."},
-		{"C", "ShellPhone", "Seashell Smartphone", "Hold it to your ear to hear the ocean's notifications."},
-		{"U", "JellyfishLamp", "Jellyfish Desk Lamp", "Glows gently. Stings lightly."},
-		{"U", "SeahorseStylus", "Seahorse Stylus", "The only pen that can draw underwater."},
-		{"R", "KrakenCable", "Kraken Ethernet Cable", "Eight connections at once. Very fast. Very wet."},
-		{"R", "PufferfishPing", "Pufferfish Ping", "Puffs up to 999 ms whenever the lag hits."},
-		{"R", "DeepSeaSneakerShark", "Deep Sea Sneaker Shark", "The three-legged shark finally went home to the ocean. Kept the sneakers."},
-		{"E", "SubmarineStreamer", "Submarine Streaming Setup", "The deepest stream ever. Zero viewers above sea level."},
-		{"E", "CoralMotherboard", "Coral Motherboard", "Grown, not built. Still needs updates."},
-		{"L", "TurtleServer", "Ancient Turtle Server", "Slow, reliable, 200 years of uptime."},
-		{"L", "AnglerFishLight", "Anglerfish Ring Light", "Makes every face look spooky and professional."},
-		{"M", "MermaidMic", "The Mermaid Microphone", "Every song comes out as an ocean ballad."},
-		{"D", "AtlantisWiFi", "Atlantis Wi-Fi Password", "Nobody has found it. The password or the city."},
-		{"CE", "DeepSeaDubstep", "Deep Sea Dubstep", "Whales invented the bass drop. This is the proof."},
-		{"T", "OceanOfMemes", "The Ocean of Memes", "Every meme ever dumped into the sea, in one bottle."},
-	},
-	-- 27. CANDY MAINFRAME (world 7)
-	{
-		{"C", "GummyByte", "Gummy Byte", "Eight bits of pure sugar."},
-		{"C", "LollipopAntenna", "Lollipop Antenna", "Better signal every time you lick it. Please don't."},
-		{"U", "CottonCandyCloud", "Cotton Candy Cloud Drive", "Your files dissolve in water."},
-		{"U", "ChocoChip", "Chocolate Chip Processor", "Runs hot. Melts faster."},
-		{"R", "CandyCaneCable", "Candy Cane Cable", "Striped for faster sugar transfer."},
-		{"R", "DonutRouter", "Donut Router", "The signal goes through the hole."},
-		{"R", "BubblegumShake", "Bubblegum Birthday Shake", "The sus milkshake's sweeter cousin. Equally dangerous."},
-		{"E", "JellyBeanRNG", "Jelly Bean RNG", "Every bean is a random flavor. Some are 'earwax'."},
-		{"E", "FortuneCookieFirewall", "Fortune Cookie Firewall", "Every blocked hacker gets a fortune: 'You will not get in.'"},
-		{"L", "SugarRushServer", "Sugar Rush Server", "A million requests a second, then it crashes for a nap."},
-		{"L", "RainbowSprinkleGPU", "Rainbow Sprinkle GPU", "Renders everything with extra sprinkles."},
-		{"M", "ChocolateFountainCore", "Chocolate Fountain Core", "Endless flowing chocolate. Endless flowing data."},
-		{"D", "CakeIsNotALie", "The Cake That Is Not a Lie", "Scientists confirm: the cake was real all along."},
-		{"CE", "SweetToothComet", "The Sweet Tooth Comet", "A comet made of pudding. Tastes like 2012."},
-		{"T", "SugarSingularity", "The Sugar Singularity", "Infinitely sweet. Your teeth hurt just looking at it."},
-	},
-	-- 28. VOLCANO FORGE (world 8)
-	{
-		{"C", "AshKeyboard", "Ash-Covered Keyboard", "Every key types 'hot'."},
-		{"C", "LavaLampPhone", "Lava Lamp Phone", "Very groovy. Very hot to hold."},
-		{"U", "ObsidianMouse", "Obsidian Mouse", "Every click sounds like a tiny eruption."},
-		{"U", "MagmaMeme", "Magma Meme Template", "The caption melts before you can read it."},
-		{"R", "ForgeHammerMod", "The Forged Ban Hammer", "Smithed in lava. Bans in one swing."},
-		{"R", "SulfurSpeaker", "Sulfur Speaker", "Great bass. Terrible smell."},
-		{"E", "DragonWiFi", "Dragon Wi-Fi", "Breathes fire on anyone who steals bandwidth."},
-		{"E", "MoltenCPU", "The Molten CPU", "Overclocked until it became a lava lake."},
-		{"L", "PhoenixReboot", "Phoenix Reboot Button", "Your PC burns down and comes back stronger."},
-		{"L", "AnvilDrop", "The Anvil Drop", "The heaviest bass drop ever recorded."},
-		{"L", "MoltenJawlineChad", "Molten Jawline Chad", "Forged in lava. The jawline survived 2000 degrees."},
-		{"M", "VolcanoGod", "The Volcano Idol", "Demands one sacrifice: your screen time."},
-		{"D", "EruptionStream", "The Eruption Stream", "The most explosive livestream in history."},
-		{"CE", "CoreOfTheForge", "Core of the Forge", "Every meme ever forged started here."},
-		{"T", "MoltenMemeKing", "The Molten Meme King", "Crowned in lava. Ruler of the hottest takes."},
-	},
-	-- 29. GLITCH NEXUS (world 9)
-	{
-		{"C", "MissingTexture", "Missing Texture Cube", "Purple and black. Everyone knows it. Nobody fixed it."},
-		{"C", "NullPointer", "Null Pointer", "Points at nothing. Very confidently."},
-		{"U", "CorruptedJPEG", "Corrupted JPEG", "Was a cat once. Now it's modern art."},
-		{"U", "InfiniteLoopRing", "Infinite Loop Ring", "Wear it forever. Literally, it won't come off."},
-		{"R", "TPoseStatue", "T-Pose Statue", "Asserting dominance since the first missing animation."},
-		{"R", "LagSwitch", "The Lag Switch", "Makes everyone else freeze. Rude."},
-		{"E", "BlueScreenMirror", "Blue Screen Mirror", "Look into it and it tells you something went wrong."},
-		{"E", "NoClipBoots", "No-Clip Boots", "Walk through walls. Fall through floors. Worth it."},
-		{"E", "GlitchedShockedRodent", "Glitched Shocked Rodent", "Surprised so hard it glitched out of reality."},
-		{"L", "DebugConsole", "The Admin Debug Console", "Type /fly. It worked once."},
-		{"L", "CtrlZTimeMachine", "Ctrl+Z Time Machine", "Undo anything. Except this purchase."},
-		{"M", "GlitchedCreator", "The Glitched Creator", "The developer of the simulation. They left a bug."},
-		{"D", "SimulationPatchNotes", "Simulation Patch Notes", "v2050.1: fixed gravity. Added more memes."},
-		{"CE", "VoidRenderer", "The Void Renderer", "Draws the empty space between all the memes."},
-		{"T", "EndOfTheInternet", "The End of the Internet", "You have reached the last page. Please go outside."},
-	},
-}
-
-return ArtifactsWorlds
 ]=])
 install(game:GetService("ReplicatedStorage"), "Audio", "ModuleScript", [=[
 -- Audio (ModuleScript in ReplicatedStorage)
@@ -1543,8 +995,8 @@ GameConfig.PitResetMinutes = 15
 -- its Shovels (MaxZone = deepest zone that shovel can break into), then set Enabled = true.
 --
 -- Zone depths are in studs below the surface. Rarities = the ONLY rarities that can spawn
--- in that zone (so Mythic+ can only come from the Abyss). Areas = which artifact lists
--- from ArtifactData the zone pulls from.
+-- in that zone ("Secret" = the world's secret rarities, only in the Abyss). Areas = which
+-- world's memes the zone pulls from (ArtifactData area = world number).
 ---------------------------------------------------------------------
 local function zones(list)
 	-- Standard 560-stud depth scale shared by every world; each zone is thicker than the one above
@@ -1557,10 +1009,10 @@ local function zones(list)
 	return list
 end
 
-local SHALLOW = {"Common", "Uncommon", "Rare"}
-local MID = {"Rare", "Epic"}
-local DEEP = {"Epic", "Legendary"}
-local ABYSS = {"Mythic", "Divine", "Celestial", "Transcendent"}
+local SHALLOW = {"Basic", "Common", "Uncommon"}
+local MID = {"Uncommon", "Rare"}
+local DEEP = {"Rare", "Epic"}
+local ABYSS = {"Legendary", "Secret"}
 
 GameConfig.Worlds = {
 	{
@@ -1572,13 +1024,13 @@ GameConfig.Worlds = {
 		Zones = zones({
 			-- the layers you dig through: Topsoil -> Dense Clay -> (rocky crust bands) ->
 			-- Crystal-Infused Substratum -> Magma Core (see also the rock strata in FillDigTerrain)
-			{Name = "Shallow Zone", Era = "Brainrot", Areas = {1}, Rarities = SHALLOW,
+			{Name = "Shallow Zone", Areas = {1}, Rarities = SHALLOW,
 				Material = "Ground", Color = Color3.fromRGB(150, 104, 70)},     -- topsoil
-			{Name = "Mid Zone", Era = "GoldenAge", Areas = {8}, Rarities = MID,
+			{Name = "Mid Zone", Areas = {1}, Rarities = MID,
 				Material = "Sandstone", Color = Color3.fromRGB(188, 112, 78)},  -- dense clay
-			{Name = "Deep Zone", Era = "Paleolithic", Areas = {15}, Rarities = DEEP,
+			{Name = "Deep Zone", Areas = {1}, Rarities = DEEP,
 				Material = "Glacier", Color = Color3.fromRGB(120, 200, 235)},   -- crystal-infused substratum
-			{Name = "The Abyss", Era = "Abyss", Areas = {15, 21}, Rarities = ABYSS,
+			{Name = "The Abyss", Areas = {1}, Rarities = ABYSS,
 				Material = "CrackedLava", Color = Color3.fromRGB(235, 96, 50)}, -- magma core
 		}),
 		-- PICKAXES (shop order; the table is still called Shovels and the ids are the old save ids). MaxZone: 1 = Shallow, 2 = Mid, 3 = Deep, 4 = Abyss.
@@ -1626,7 +1078,7 @@ GameConfig.Worlds = {
 }
 
 -- Worlds 2-9: floating islands far out on the map, unlocked with money (see WorldsData).
--- Each one has its own dirt materials, memes (ArtifactsWorlds), shovels and sky.
+-- Each one has its own dirt materials, memes (MemeList), shovels and sky.
 local WorldsData = require(script.Parent:WaitForChild("WorldsData"))
 GameConfig.TerrainColors = WorldsData.TerrainColors
 local ZONE_INFO = {
@@ -1648,10 +1100,10 @@ end
 for i, info in ipairs(WorldsData.Worlds) do
 	local id = i + 1
 	local price = worldPrice(id, info)
-	local area = 21 + i -- this world's memes (ArtifactData areas 22-29)
+	local area = id -- this world's memes (ArtifactData area = world number)
 	local zoneList = {}
 	for z, material in ipairs(info.Zones) do
-		table.insert(zoneList, {Name = ZONE_INFO[z].Name, Era = info.Theme, Areas = {area}, Rarities = ZONE_INFO[z].Rarities,
+		table.insert(zoneList, {Name = ZONE_INFO[z].Name, Areas = {area}, Rarities = ZONE_INFO[z].Rarities,
 			Material = material, Color = WorldsData.TerrainColors[material]})
 	end
 	local shovels = {}
@@ -1874,39 +1326,48 @@ local WHITE, BLACK = rgb(245, 245, 245), rgb(24, 22, 26)
 ---------------------------------------------------------------------
 MemeFigures.ById = {
 	-- World 1
-	ChillDude = {Kind = "ChillDude"},
-	ChillDudeTablet = {Kind = "ChillDude", Form = "Tablet"},
 	ShockedRodent = {Kind = "ShockedRodent"},
-	PurpleBirthdayShake = {Kind = "PurpleShake"},
-	SingingThrone = {Kind = "ToiletHead"},
-	SkibidiMonolith = {Kind = "ToiletHead", Tint = rgb(236, 196, 90), TintAmount = 0.75, Material = Enum.Material.Metal},
-	SharkSneakers = {Kind = "SneakerShark"},
-	LogBatGuy = {Kind = "LogBatGuy"},
-	CappuccinoBallerina = {Kind = "CappuccinoBallerina"},
-	CrocBomber = {Kind = "CrocBomber"},
-	JawlineChad = {Kind = "JawlineChad"},
+	ChonkyBunny = {Kind = "ChonkyBunny"},
+	PurpleTitanBuggy = {Kind = "TitanBuggy"},
+	-- World 2
 	SpaceInfant = {Kind = "SpaceInfant"},
 	SpongeLeaving = {Kind = "SpongeLeaving"},
-	PurpleTitanBuggy = {Kind = "TitanBuggy"},
-	RainbowPastryCat = {Kind = "RainbowPastryCat"},
-	FrowningCat = {Kind = "GrumpyCat"},
-	DramaticHamster = {Kind = "DramaticHamster"},
+	-- World 3
 	SusBean = {Kind = "SusBean"},
-	ChonkyBunny = {Kind = "ChonkyBunny"},
+	JawlineChad = {Kind = "JawlineChad"},
+	-- World 4
+	SkibidiMonolith = {Kind = "ToiletHead", Tint = rgb(236, 196, 90), TintAmount = 0.75, Material = Enum.Material.Metal},
+	PurpleBirthdayShake = {Kind = "PurpleShake"},
+	-- World 5
 	PointingSuits = {Kind = "PointingSuits"},
-	FineDog = {Kind = "FineDog"},
-	WowShibaCoin = {Kind = "WowShiba", Form = "Coin"},
-	QuantumDoge = {Kind = "WowShiba", Tint = rgb(120, 255, 255), TintAmount = 0.45, Material = Enum.Material.Glass},
-	-- Worlds 2-9: the same memes, dressed for each world
-	SakuraChillDude = {Kind = "ChillDude", Colors = {Sweater = rgb(255, 172, 204), Jeans = rgb(250, 240, 245)}},
-	AstronautDog = {Kind = "WowShiba", Colors = {Helmet = true}},
-	ZeroGSusBean = {Kind = "SusBean", Colors = {Body = rgb(140, 92, 230)}},
-	FrozenChonkyBunny = {Kind = "ChonkyBunny", Tint = rgb(170, 225, 255), TintAmount = 0.55, Material = Enum.Material.Ice},
-	ChromeTitanBuggy = {Kind = "TitanBuggy", Tint = rgb(210, 215, 225), TintAmount = 0.6, Material = Enum.Material.Metal},
-	DeepSeaSneakerShark = {Kind = "SneakerShark", Colors = {Skin = rgb(60, 110, 150), Shoe = rgb(255, 120, 60)}},
-	BubblegumShake = {Kind = "PurpleShake", Colors = {Shake = rgb(255, 120, 190)}},
-	MoltenJawlineChad = {Kind = "JawlineChad", Tint = rgb(255, 110, 40), TintAmount = 0.3, Material = Enum.Material.CrackedLava},
-	GlitchedShockedRodent = {Kind = "ShockedRodent", Colors = {Body = rgb(90, 255, 200)}, Material = Enum.Material.Neon},
+	ChillDude = {Kind = "ChillDude"},
+	-- World 6
+	AtlantisJawlineChad = {Kind = "JawlineChad", Tint = rgb(90, 200, 190), TintAmount = 0.35, Material = Enum.Material.Marble},
+	-- World 7
+	RainbowPastryCat = {Kind = "RainbowPastryCat"},
+	WowShiba = {Kind = "WowShiba"},
+	FrowningCat = {Kind = "GrumpyCat"},
+	PhantomChonkyBunny = {Kind = "ChonkyBunny", Tint = rgb(170, 255, 200), TintAmount = 0.6, Material = Enum.Material.Glass},
+	-- World 8: remixes of the famous figures with a new finish
+	CyberWowShiba = {Kind = "WowShiba", Tint = rgb(120, 220, 255), TintAmount = 0.35, Material = Enum.Material.Metal},
+	QuantumShockedRodent = {Kind = "ShockedRodent", Tint = rgb(180, 240, 255), TintAmount = 0.3, Material = Enum.Material.Glass},
+	MultiverseSpaceInfant = {Kind = "SpaceInfant", Colors = {Robe = rgb(90, 110, 220), Skin = rgb(120, 200, 230)}},
+	NeonSusBean = {Kind = "SusBean", Colors = {Body = rgb(255, 60, 200)}, Material = Enum.Material.Neon},
+	HoloJawlineChad = {Kind = "JawlineChad", Tint = rgb(90, 230, 255), TintAmount = 0.6, Material = Enum.Material.Glass},
+	CosmicShake = {Kind = "PurpleShake", Colors = {Shake = rgb(70, 40, 160)}},
+	InterdimensionalChillDude = {Kind = "ChillDude", Colors = {Sweater = rgb(130, 80, 220), Jeans = rgb(40, 40, 70)}},
+	CyberSingingThrone = {Kind = "ToiletHead", Tint = rgb(200, 210, 225), TintAmount = 0.55, Material = Enum.Material.Metal},
+	ApexWowShiba = {Kind = "WowShiba", Tint = rgb(240, 200, 80), TintAmount = 0.7, Material = Enum.Material.Metal},
+	-- World 9: remixes with a physics twist
+	ParticleWowShiba = {Kind = "WowShiba", Tint = rgb(255, 230, 150), TintAmount = 0.4, Material = Enum.Material.Neon},
+	StringTheoryBunny = {Kind = "ChonkyBunny", Tint = rgb(255, 140, 220), TintAmount = 0.3, Material = Enum.Material.Neon},
+	ParallelJawlineChad = {Kind = "JawlineChad", Tint = rgb(40, 40, 60), TintAmount = 0.5},
+	RealityWarpedSponge = {Kind = "SpongeLeaving", Tint = rgb(150, 90, 255), TintAmount = 0.35},
+	HypercubeChillDude = {Kind = "ChillDude", Tint = rgb(120, 230, 255), TintAmount = 0.4, Material = Enum.Material.Glass},
+	ZeroPointThrone = {Kind = "ToiletHead", Tint = rgb(235, 245, 255), TintAmount = 0.6, Material = Enum.Material.Glass},
+	TesseractShake = {Kind = "PurpleShake", Tint = rgb(200, 150, 255), TintAmount = 0.3, Material = Enum.Material.Glass},
+	EventHorizonShiba = {Kind = "WowShiba", Tint = rgb(40, 30, 70), TintAmount = 0.55},
+	OriginalShiba = {Kind = "WowShiba", Tint = rgb(240, 200, 80), TintAmount = 0.6, Material = Enum.Material.Metal},
 }
 
 function MemeFigures.For(artifact)
@@ -2587,6 +2048,264 @@ function MemeFigures.relief(spec, width, height, depth, color, material)
 end
 
 return MemeFigures
+]=])
+install(game:GetService("ReplicatedStorage"), "MemeList", "ModuleScript", [=[
+-- MemeList (ModuleScript in ReplicatedStorage)
+-- Every meme in the game: 9 worlds x 20 memes, with the rarity each one has on the master list.
+-- Written by the asset spec (Meme Archaeologist: 3D Meme Parody Asset Spec). All names are parodies.
+-- Format per meme: {rarity, id, name, form, museum description}
+--   form = Statue | Painting | Coin | Tablet | Relic (famous memes with a built 3D figure use MemeFigures instead)
+
+local MemeList = {}
+
+-- the named secret rarities, rarest last; Income = money per second in World 1, Chance = roll weight
+MemeList.SecretTiers = {
+	{Name = "Exotic", Income = 5000, Chance = 0.08, Color = Color3.fromRGB(255, 90, 200)},
+	{Name = "Mythical", Income = 12000, Chance = 0.04, Color = Color3.fromRGB(255, 60, 90)},
+	{Name = "Godly", Income = 5000, Chance = 0.08, Color = Color3.fromRGB(255, 215, 60)},
+	{Name = "Miracle", Income = 12000, Chance = 0.04, Color = Color3.fromRGB(120, 255, 200)},
+	{Name = "Ruby", Income = 70000, Chance = 0.01, Color = Color3.fromRGB(230, 40, 60)},
+	{Name = "Eternal", Income = 5000, Chance = 0.08, Color = Color3.fromRGB(255, 250, 200)},
+	{Name = "Supreme", Income = 12000, Chance = 0.04, Color = Color3.fromRGB(180, 120, 255)},
+	{Name = "Insane", Income = 30000, Chance = 0.02, Color = Color3.fromRGB(255, 140, 40)},
+	{Name = "Foresaken", Income = 70000, Chance = 0.01, Color = Color3.fromRGB(90, 200, 255)},
+	{Name = "Diabolical", Income = 5000, Chance = 0.08, Color = Color3.fromRGB(200, 255, 90)},
+	{Name = "Celestial", Income = 12000, Chance = 0.04, Color = Color3.fromRGB(255, 0, 120)},
+	{Name = "Unreal", Income = 30000, Chance = 0.02, Color = Color3.fromRGB(120, 255, 255)},
+	{Name = "Forbidden", Income = 70000, Chance = 0.01, Color = Color3.fromRGB(255, 120, 255)},
+	{Name = "Ascendent", Income = 5000, Chance = 0.08, Color = Color3.fromRGB(150, 0, 255)},
+	{Name = "Omega", Income = 12000, Chance = 0.04, Color = Color3.fromRGB(0, 200, 255)},
+	{Name = "Infinite", Income = 30000, Chance = 0.02, Color = Color3.fromRGB(255, 80, 0)},
+	{Name = "Aquatic", Income = 70000, Chance = 0.01, Color = Color3.fromRGB(100, 255, 140)},
+	{Name = "Ultimate", Income = 5000, Chance = 0.08, Color = Color3.fromRGB(0, 140, 255)},
+	{Name = "Beyond", Income = 12000, Chance = 0.04, Color = Color3.fromRGB(40, 220, 200)},
+	{Name = "Immortal", Income = 30000, Chance = 0.02, Color = Color3.fromRGB(0, 90, 200)},
+	{Name = "Paradox", Income = 70000, Chance = 0.01, Color = Color3.fromRGB(220, 255, 255)},
+	{Name = "Universal", Income = 5000, Chance = 0.08, Color = Color3.fromRGB(160, 255, 60)},
+	{Name = "Exponential", Income = 12000, Chance = 0.04, Color = Color3.fromRGB(140, 60, 200)},
+	{Name = "Miraculous", Income = 30000, Chance = 0.02, Color = Color3.fromRGB(255, 255, 255)},
+	{Name = "Apex", Income = 70000, Chance = 0.01, Color = Color3.fromRGB(255, 170, 230)},
+	{Name = "Gilded", Income = 150000, Chance = 0.005, Color = Color3.fromRGB(80, 255, 80)},
+	{Name = "Toorng", Income = 350000, Chance = 0.0025, Color = Color3.fromRGB(255, 200, 120)},
+	{Name = "Roller", Income = 800000, Chance = 0.0012, Color = Color3.fromRGB(255, 220, 0)},
+	{Name = "Immeasupreme", Income = 2000000, Chance = 0.0006, Color = Color3.fromRGB(60, 0, 120)},
+	{Name = "Impossible", Income = 5000, Chance = 0.08, Color = Color3.fromRGB(255, 60, 160)},
+	{Name = "Quantum", Income = 12000, Chance = 0.04, Color = Color3.fromRGB(255, 245, 150)},
+	{Name = "Transcendent", Income = 30000, Chance = 0.02, Color = Color3.fromRGB(0, 255, 170)},
+	{Name = "???", Income = 70000, Chance = 0.01, Color = Color3.fromRGB(255, 255, 255)},
+}
+
+MemeList.Worlds = {
+	-- WORLD 1: GRASSLAND DIG PIT
+	{Name = "Grassland Dig Pit", Memes = {
+		{"Basic", "DaWaeEchidna", "Da Wae Red Echidna", "Statue", "A stubby red echidna that always knew the way. Nobody else did."},
+		{"Basic", "LampMoth", "Lamp-Craving Moth", "Relic", "Found hugging a lamp. Refused to let go for 30 years."},
+		{"Basic", "AisleYodelSet", "Aisle Yodel Cowboy Set", "Relic", "A tiny hat and boots left in a store aisle. The yodel still echoes."},
+		{"Basic", "ConvinceMeTable", "Convince Me Otherwise Table", "Relic", "A folding table where humans argued with strangers. Nobody's mind was changed."},
+		{"Common", "ShockedRodent", "Shocked Yellow Rodent", "Statue", "Frozen forever with its mouth wide open. Used whenever anyone acted surprised."},
+		{"Common", "IsThisABird", "Is This a Bird?", "Painting", "A man points at a butterfly and asks the wrong question. A human classic."},
+		{"Common", "ChonkyBunny", "Chonky Gray Bunny", "Statue", "A rabbit of truly legendary size. Humans simply called it big."},
+		{"Common", "SpicyLasagna", "Spicy Lasagna Diss Track", "Relic", "A lasagna with a record baked into it. The spiciest dish of the 2010s."},
+		{"Uncommon", "SpikedShellCrown", "Spiked Shell Crown", "Relic", "A green spiked shell wearing a crown. The internet argued about it for a week."},
+		{"Uncommon", "GrapeSurgery", "Grape Operation Theater", "Relic", "They did surgery on a grape. The grape survived."},
+		{"Uncommon", "BadBoyHatchback", "This Bad Boy Hatchback", "Statue", "You can fit so many memes in this bad boy."},
+		{"Uncommon", "TempleTap", "Think-About-It Temple Tap", "Statue", "Can't fail your test if you never take it. Pure genius."},
+		{"Rare", "SteamedClams", "Steamed Clams at Noon Platter", "Relic", "A platter of burgers and an aurora in the kitchen. Localized entirely within it."},
+		{"Rare", "MegaSealTape", "Mega Seal Tape", "Relic", "Held a sawn-in-half boat together. The water stayed in."},
+		{"Rare", "PurpleTitanBuggy", "Purple Titan Buggy", "Statue", "A giant purple conqueror's tiny car. He could snap his fingers but still drove this."},
+		{"Rare", "MobileAdAlien", "Howard the Mobile-Ad Alien", "Statue", "Starred in a phone game ad nobody asked for. Everybody remembers him."},
+		{"Epic", "NeverMissDartboard", "Never-Miss Dartboard", "Relic", "Hit or miss? It never misses, huh."},
+		{"Epic", "CrimeTownBoss", "Crime Town Big Boss", "Statue", "That's how crime works. Learned from a thousand phone ads."},
+		{"Legendary", "BoneComedian", "Bone Comedian Fighter", "Statue", "A grinning skeleton who crashed the biggest fighting game party. Bad time guaranteed."},
+		{"Legendary", "SugarSneakJohnny", "Sugar-Sneak Johnny", "Statue", "Eating sugar? No, papa. Open your mouth. Ha ha ha."},
+	}},
+	-- WORLD 2: FROZEN ICE AGE
+	{Name = "Frozen Ice Age", Memes = {
+		{"Basic", "FrostFlask", "Sksksk Frost Flask", "Relic", "Covered in stickers and scrunchies. And I oop."},
+		{"Basic", "BreathtakingCyberGuy", "You're Breathtaking Cyber-Guy", "Statue", "Pointed at a crowd and told them they were breathtaking. They were."},
+		{"Basic", "EnslavedMoisture", "Enslaved Moisture Cubes", "Relic", "Ice: water in chains. Free them."},
+		{"Common", "StonksHead", "Stonks Suit Head", "Statue", "A smooth head that understood the market perfectly. Stonks only go up."},
+		{"Common", "AhShucks", "Ah Shucks, Here We Go Again", "Statue", "Every human's reaction to Monday. Here we go again."},
+		{"Common", "UncannyHedgehog", "Uncanny Blue Speedy Hedgehog", "Statue", "The redesign so scary they redesigned it again."},
+		{"Uncommon", "SpaceInfant", "Green Space Infant", "Statue", "A tiny green baby with enormous ears. Every human wanted to protect it."},
+		{"Uncommon", "MeAndTheCrew", "Me and the Crew", "Statue", "Four friends walking toward adventure. Or the snack aisle."},
+		{"Uncommon", "CyberWedgeTruck", "Cyber Wedge Truck", "Statue", "An unbreakable window demo. The window broke."},
+		{"Rare", "YelledAtCat", "Yelled-At Dinner Cat", "Statue", "A confused cat at dinner, being yelled at. It did nothing wrong."},
+		{"Rare", "RaidAlien", "Arms-Back Raid Alien", "Statue", "They can't stop all of us. They stopped all of us."},
+		{"Rare", "AngelWingDancer", "Angel-Wing Dance Legend", "Statue", "A dance so powerful it gained wings."},
+		{"Epic", "KombuchaDisgust", "Kombucha Disgust Bottle", "Relic", "One sip made the whole internet scrunch its face."},
+		{"Epic", "DoubleTakeBlink", "Double-Take Blink Bust", "Statue", "Blinked in disbelief. Humans have been blinking back ever since."},
+		{"Epic", "TallPinkPiglet", "Absurdly Tall Pink Piglet", "Statue", "Scientists calculated her real height. They regret it."},
+		{"Legendary", "SpongeLeaving", "Yellow Porous Sponge Leavin'", "Statue", "Aight, imma head out. The most famous exit in history."},
+		{"Legendary", "NoThanksCaptain", "No Thanks Captain", "Statue", "Asked to do something. Said no, I don't think I will."},
+		{"Exotic", "FrozenCoffinDance", "Frozen Coffin Dance Crew", "Statue", "They danced the dead to the grave. On ice."},
+		{"Mythical", "WideWalkingSuit", "Wide Walking Suit", "Statue", "A suit stretched to twice its width, walking with total confidence."},
+		{"Uncommon", "FrozenTearCat", "Frozen-Tear Cat", "Statue", "Cried so hard in the Ice Age that the tear froze."},
+	}},
+	-- WORLD 3: VOLCANIC LAVA TRENCH
+	{Name = "Volcanic Lava Trench", Memes = {
+		{"Basic", "NatureHealingSwan", "Nature Is Healing Swan", "Relic", "The swans came back. Nature is healing. We are the virus."},
+		{"Basic", "OnceAgainLectern", "Once Again Asking Lectern", "Relic", "I am once again asking for your support. And your snacks."},
+		{"Basic", "LockdownSourdough", "Lockdown Sourdough Loaf", "Relic", "Everyone became a baker in 2020. This loaf survived."},
+		{"Common", "HeadBobCat", "Head-Bob Vibe Cat", "Statue", "Bobbing its head to the beat since the dawn of time."},
+		{"Common", "PallbearerCoin", "Pallbearer Dance Coin", "Coin", "Struck to honor the dancing pallbearers. Astronomia plays when you flip it."},
+		{"Common", "TumbleJellyBean", "Tumble Jelly Bean", "Statue", "Fell off every obstacle course ever made. Still smiling."},
+		{"Uncommon", "SwoleVsSmol", "Swole Shiba vs Smol Shiba", "Statue", "Back in my day we dug with our paws. Now: bonk."},
+		{"Uncommon", "PointingLaughChair", "Pointing Laugh Armchair", "Statue", "Pointing at the TV and laughing. Every human at every family gathering."},
+		{"Uncommon", "PolkaSpinCow", "Polka Spin Cow", "Statue", "Spins to the same polka for eternity. Scientists can't stop it."},
+		{"Rare", "SusBean", "Sus Space Bean", "Statue", "A tiny astronaut shaped like a bean. One of them was always acting sus."},
+		{"Rare", "PartyCornerGuy", "They Don't Know Party Corner", "Painting", "Standing alone at the party, knowing something nobody else knows."},
+		{"Rare", "BeepBopMicKid", "Beep-Bop Mic Kid", "Statue", "Won every rap battle with four arrows. Beep bop."},
+		{"Epic", "TradeOfferScroll", "Trade Offer Scroll", "Relic", "I receive: your meme. You receive: nothing. Deal?"},
+		{"Epic", "BigMittensChair", "Big Mittens Folding Chair", "Relic", "A cozy pair of mittens on a folding chair. Photoshopped into every place on Earth."},
+		{"Legendary", "ThinkSonThink", "Think, Son, Think! Hero", "Statue", "Shouted a question so loud it became a meme. Think!"},
+		{"Legendary", "FadingAwayGuy", "Fading Away Guy", "Statue", "Disappeared from the photo one cube at a time."},
+		{"Godly", "JawlineChad", "Mega Jawline Chad", "Statue", "The most perfect jawline ever photographed, turned in the most dramatic direction."},
+		{"Miracle", "BingChillingCone", "Bing Chilling Cone", "Relic", "Zao shang hao. The coldest ice cream in the lava trench."},
+		{"Exotic", "SigmaGrindset", "Sigma Grindset Statue", "Statue", "Stares at the sunset alone. Refuses to have fun. Grinds."},
+		{"Ruby", "EmotionalDamage", "Emotional Damage Heart", "Relic", "Hit so hard it cracked. Emotional damage!"},
+	}},
+	-- WORLD 4: ANCIENT EGYPTIAN CATACOMBS
+	{Name = "Ancient Egyptian Catacombs", Memes = {
+		{"Basic", "YesNoLabDog", "Yes-No Lab Dog", "Statue", "Answers every question with yes, no, or a hang-up."},
+		{"Basic", "AssistantSam", "Assistant Sam", "Statue", "A phone assistant who became more famous than the phone."},
+		{"Basic", "LampOilMerchant", "Lamp Oil Merchant", "Statue", "Lamp oil, rope, bombs? You want it? It's yours, my friend."},
+		{"Common", "MaulingTimeVampire", "It's Mauling Time Vampire", "Statue", "The film flopped. The meme earned a billion."},
+		{"Common", "GentlePillSquad", "Gentle Yellow Pill Squad", "Statue", "Went to the movies in suits. Very gentle. Very minion."},
+		{"Common", "WiseMysticalTree", "Wise Mystical Tree", "Statue", "I am the wise mystical tree. Ask me anything."},
+		{"Uncommon", "ItsCornCob", "It's Corn Cob", "Relic", "A big lump with knobs. It has the juice."},
+		{"Uncommon", "UncannySuperDad", "Uncanny Super Dad", "Painting", "The face gets darker the longer you look."},
+		{"Uncommon", "SquishedSponge", "Squished Sponge Pancake", "Relic", "Flattened completely. Still yellow. Still smiling."},
+		{"Rare", "PhonkEyebrowSpeaker", "Phonk Eyebrow Speaker", "Relic", "Raises an eyebrow every time the bass drops."},
+		{"Rare", "GrindsetCigarCase", "Grindset Cigar Case", "Relic", "What color is your car? Doesn't matter. It's in the museum now."},
+		{"Rare", "ClangingPipe", "Clanging Metal Pipe", "Relic", "The loudest sound effect in human history. CLANG."},
+		{"Epic", "BetterCallPaul", "Better Call Paul Lawyer", "Statue", "Did you know you have rights? This lawyer spins in 3D."},
+		{"Epic", "GoofyYearbook", "Goofy Yearbook Portrait", "Painting", "The goofiest yearbook photo ever taken. Laser background included."},
+		{"Legendary", "OhioFinalBoss", "Ohio Final Boss", "Statue", "Only in Ohio. It wears a traffic cone as a crown."},
+		{"Legendary", "OhYeahVillain", "Oh Yeah Orange-Suit Villain", "Statue", "Committed crimes with both direction and magnitude. OH YEAH!"},
+		{"Eternal", "SkibidiMonolith", "The Singing Toilet Monolith", "Statue", "A golden toilet with a singing head. It hums when someone says 'Ohio'."},
+		{"Supreme", "ShailushaiCat", "Shailushai Blue Cat", "Statue", "We live, we love, we lie. A blue cat walking the catacombs."},
+		{"Insane", "PurpleBirthdayShake", "Sus Purple Birthday Milkshake", "Relic", "One sip and the humans in the video were never seen again."},
+		{"Foresaken", "WhistleEdit", "Whistle Edit Relic", "Relic", "The whistle that played over a thousand edits of the same actor."},
+	}},
+	-- WORLD 5: CYBER GLITCH GRID
+	{Name = "Cyber Glitch Grid", Memes = {
+		{"Basic", "PeachesTurtleKing", "Peaches Piano Turtle King", "Statue", "Peaches, peaches, peaches. A turtle king's love song."},
+		{"Basic", "KindergartenMascot", "Kindergarten Blob Mascot", "Statue", "The mascot of a kindergarten nobody should ever visit."},
+		{"Basic", "CursedCartoonTape", "Cursed Cartoon Tape", "Relic", "An old cartoon tape. Do not answer the questions it asks."},
+		{"Common", "AwkwardSmileGuy", "Awkward Smile Guy", "Statue", "Smiled awkwardly in a hallway. Became immortal."},
+		{"Common", "LaughCryCarSeat", "Laugh-Then-Cry Car Seat", "Relic", "Laughing one second, crying the next. The seat remembers."},
+		{"Common", "CanonEventWeb", "Canon Event Web", "Relic", "Some things have to happen. This web proves it."},
+		{"Uncommon", "PinkbombFeature", "Pinkbomb Double Feature", "Relic", "Two movies, one weekend. Half pink, half boom."},
+		{"Uncommon", "BoulderEyebrow", "The Boulder Eyebrow", "Statue", "A boulder that raised one eyebrow at humanity."},
+		{"Uncommon", "PointingSuits", "Two Pointing Arachnid Suits", "Statue", "Two identical heroes accusing each other of being the fake."},
+		{"Rare", "MewingHush", "Mewing Hush Bust", "Statue", "Don't speak. You'll ruin the jawline. Bye bye."},
+		{"Rare", "EnglishSpanishChair", "English or Spanish Chair", "Relic", "English or Spanish? Choose wisely."},
+		{"Rare", "AHyuckDog", "A-Hyuck Goofy Dog", "Statue", "Laughed so hard he became brainrot."},
+		{"Epic", "NoScopeOlympian", "No-Scope Olympian", "Statue", "Won silver with one hand in his pocket. Didn't even try."},
+		{"Epic", "PommelHorseLegend", "Pommel Horse Legend", "Statue", "Waited all day for one routine. Nailed it."},
+		{"Legendary", "BratGreenSlab", "Brat Green Slab", "Tablet", "A whole summer, carved in lime green."},
+		{"Legendary", "PedroRaccoon", "Pedro Pedro Raccoon", "Statue", "Pedro, Pedro, Pedro. Spins forever."},
+		{"Diabolical", "CowboyHawk", "Cowboy Hawk", "Statue", "A hawk in a cowboy hat. Holds a microphone. Says nothing."},
+		{"Celestial", "ChillDude", "Chill Dude in a Sweater", "Statue", "Hands in pockets, zero worries. Just a chill dude."},
+		{"Unreal", "BouncyBabyHippo", "Bouncy Baby Hippo", "Statue", "A tiny wet hippo who bit everyone and was loved for it."},
+		{"Forbidden", "KangarooBreaker", "Kangaroo Hop Breaker", "Statue", "The most talked-about breakdance of all time."},
+	}},
+	-- WORLD 6: DEEP OCEAN TRENCH
+	{Name = "Deep Ocean Trench", Memes = {
+		{"Basic", "MassiveTaperFade", "Massive Low Taper Fade", "Relic", "Imagine if this haircut was still trending. It's massive."},
+		{"Basic", "ShushUpTablet", "Shush Up Tablet", "Tablet", "A stone tablet that tells everyone to be quiet."},
+		{"Basic", "BigGamerChair", "Big Gamer Chair", "Relic", "The biggest gaming chair in the ocean. The snacks are gone."},
+		{"Common", "SixSevenScale", "Six-Seven Scale", "Relic", "Six? Seven? The scale never decides."},
+		{"Common", "TakeEggCushion", "Take Egg Cushion", "Relic", "Take egg. Just one egg. On a cushion."},
+		{"Common", "IbizaBossDancer", "Ibiza Final Boss Dancer", "Statue", "The final boss of every beach party."},
+		{"Uncommon", "BoutiqueRock", "Overpriced Boutique Rock", "Relic", "A plain rock. $200. Sold out."},
+		{"Uncommon", "LittleFrenchFish", "Steve the Little French Fish", "Statue", "Oui oui. A little fish with a big baguette."},
+		{"Uncommon", "GurtSaysYo", "Gurt Says Yo", "Statue", "Yo."},
+		{"Rare", "PapaContestant", "Papa Game Contestant", "Statue", "The oldest player in the deadliest game. Smiling anyway."},
+		{"Rare", "MidnightClock", "Midnight Clock Strike", "Relic", "When the clock strikes twelve, the brainrot begins."},
+		{"Rare", "StandingOnBusiness", "Standing on Business Briefcase", "Relic", "Literally standing on business."},
+		{"Epic", "AuraBoatBow", "Aura Boat Bow", "Relic", "So much aura it glows. Farmed on a racing boat."},
+		{"Epic", "PaperclipHelper", "Paperclip Helper", "Statue", "It looks like you're digging up memes. Need help?"},
+		{"Legendary", "ZombieChickenRider", "Baby Zombie Chicken Rider", "Statue", "The loudest cheer in any movie theater of the 2020s."},
+		{"Legendary", "JetTooHoliday", "Jet Too Holiday Plane", "Relic", "Nothing beats a holiday. A cheerful little plane on its way to the sun."},
+		{"Ascendent", "PressureDiverHelmet", "Deep Pressure Diver Helmet", "Relic", "Crushed by the deep. The bubbles still leak out."},
+		{"Omega", "AbyssalAngler", "Abyssal Brainrot Angler", "Statue", "An anglerfish on three legs in sneakers, luring divers with a glowing brain."},
+		{"Infinite", "GlitchWhale", "Oceanic Glitch Whale", "Statue", "A whale that failed to load. Half of it is still buffering."},
+		{"Aquatic", "AtlantisJawlineChad", "Atlantis Jawline Chad", "Statue", "The jawline, lost at the bottom of the sea for a thousand years."},
+	}},
+	-- WORLD 7: HAUNTED CEMETERY
+	{Name = "Haunted Cemetery", Memes = {
+		{"Basic", "SpookySkeleton", "Spooky Scary Skeleton", "Statue", "Sends shivers down your spine. Dances anyway."},
+		{"Basic", "PumpkinDancer", "Pumpkin Head Dancer", "Statue", "A pumpkin-headed man who danced every October."},
+		{"Basic", "GhostlySwampFrog", "Ghostly Swamp Frog", "Statue", "A frog under a sheet, haunting the swamp."},
+		{"Common", "BonkShiba", "Bonk Shiba", "Statue", "Bonk. Go to meme jail."},
+		{"Common", "SadViolinHamster", "Sad Violin Hamster", "Statue", "Big watery eyes and a tiny violin. Everyone cried."},
+		{"Common", "ConfusedMathCat", "Confused Math Cat", "Statue", "Tried to understand the internet. Failed."},
+		{"Uncommon", "JellyTimeBanana", "Jelly Time Banana", "Statue", "It's jelly time. A dancing banana from the early web."},
+		{"Uncommon", "RainbowPastryCat", "Rainbow Pastry Cat", "Statue", "A cat made of frosted pastry, flying through space on a rainbow."},
+		{"Uncommon", "WowShiba", "Much Wow Shiba", "Statue", "Such meme. Very classic. Wow."},
+		{"Rare", "ProblemGrinCoin", "Problem Grin Coin", "Coin", "A coin with a grin. Problem?"},
+		{"Rare", "MeLikeyTablet", "Me Likey Tablet", "Tablet", "A face that likes things a little too much."},
+		{"Rare", "RageScreamTablet", "Rage Scream Tablet", "Tablet", "Carved in pure rage."},
+		{"Epic", "ForeverAlone", "Forever Alone Monument", "Tablet", "A lonely stone face that every human secretly related to."},
+		{"Epic", "BadLuckBryan", "Bad Luck Bryan Portrait", "Painting", "Took his driving test. Passed. Crashed into the building."},
+		{"Legendary", "FrowningCat", "Frowning Cat Bust", "Statue", "Never smiled once. Earned millions anyway."},
+		{"Legendary", "SuccessFistCoin", "Success Fist Coin", "Coin", "A fist full of sand and pure victory."},
+		{"Ultimate", "PhantomChonkyBunny", "Phantom Chonky Bunny", "Statue", "The biggest bunny ever came back as a ghost. Still big."},
+		{"Beyond", "CemeterySpecter", "Cemetery Specter", "Statue", "A sheet ghost with a lantern, floating over the graves."},
+		{"Immortal", "UndeadSanic", "Undead Sanic", "Statue", "Gotta go fast. Even after death."},
+		{"Paradox", "GraveyardOssuary", "Graveyard Brainrot Ossuary", "Statue", "The bones of brainrot past, standing in their own grave."},
+	}},
+	-- WORLD 8: MULTIVERSE GLITCH VOID
+	{Name = "Multiverse Glitch Void", Memes = {
+		{"Basic", "CyberWowShiba", "Cyber Much Wow Shiba", "Statue", "Such circuits. Very upgrade. Wow."},
+		{"Basic", "GlitchSwampFrog", "Glitch Swamp Frog", "Statue", "A swamp frog split into two glitching copies."},
+		{"Common", "QuantumShockedRodent", "Quantum Shocked Yellow Rodent", "Statue", "Surprised in two universes at once."},
+		{"Common", "VoidStonks", "Void Stonks Suit Head", "Statue", "Stonks, but in the void. Up and down at the same time."},
+		{"Uncommon", "MultiverseSpaceInfant", "Multiverse Space Infant", "Statue", "Three green babies from three universes."},
+		{"Uncommon", "BulletDodgeGuy", "Bullet-Dodge Code Guy", "Statue", "Bent over backward. The bullets missed."},
+		{"Rare", "NeonSusBean", "Neon Sus Space Bean", "Statue", "Glows when it's sus. Always glowing."},
+		{"Rare", "HoloJawlineChad", "Holo Jawline Chad", "Statue", "The jawline as a hologram. Still sharper than you."},
+		{"Epic", "CosmicShake", "Cosmic Purple Birthday Shake", "Relic", "A whole galaxy in a birthday milkshake."},
+		{"Epic", "SpacePolkaCow", "Space Polka Cow", "Statue", "The polka cow, spinning on its own tiny planet."},
+		{"Legendary", "InterdimensionalChillDude", "Interdimensional Chill Dude", "Statue", "Stepped through a portal. Still chill."},
+		{"Legendary", "CyberSingingThrone", "Cyber Singing Throne", "Statue", "A chrome singing toilet with LED eyes."},
+		{"Universal", "UniversalSanic", "Universal Sanic", "Statue", "A hedgehog made of stars. Gotta go fast across the universe."},
+		{"Exponential", "ExponentialOgre", "Exponential Swamp Ogre", "Statue", "An ogre with an ogre in its mouth, with an ogre in its mouth..."},
+		{"Miraculous", "MiraculousGnome", "Miraculous Garden Gnome", "Statue", "You've been gnomed. Miraculously."},
+		{"Apex", "ApexWowShiba", "Apex Much Wow Shiba", "Statue", "The shiba at the top of the world. Very summit."},
+		{"Gilded", "GoldenSwampFrog", "Golden Swamp Frog", "Statue", "A swamp frog cast in solid gold."},
+		{"Toorng", "ToorngEntity", "Toorng Void Entity", "Statue", "A dark sphere covered in eyes. Nobody knows what Toorng means."},
+		{"Roller", "HighRollerBrainrot", "High Roller Brainrot", "Statue", "The brainrot crew bet everything on double six."},
+		{"Immeasupreme", "ImmeasupremeOverlord", "Immeasupreme Overlord", "Statue", "The overlord of all memes, on a throne made of memes."},
+	}},
+	-- WORLD 9: QUANTUM DIMENSION
+	{Name = "Quantum Dimension", Memes = {
+		{"Basic", "QuantumDatFrog", "Quantum Here Come Dat Frog", "Statue", "O shit waddup. A frog on a unicycle, in superposition."},
+		{"Basic", "SubatomicSwampFrog", "Subatomic Swamp Frog", "Statue", "A frog so small it's the center of an atom."},
+		{"Basic", "ParticleWowShiba", "Particle Much Wow Shiba", "Statue", "Such particles. Very small. Wow."},
+		{"Common", "AntimatterEchidna", "Antimatter Red Echidna", "Statue", "Knows the anti-way."},
+		{"Common", "StringTheoryBunny", "String Theory Chonky Bunny", "Statue", "A big bunny vibrating in eleven dimensions."},
+		{"Common", "WarpSpeedStonks", "Warp Speed Stonks Head", "Statue", "Stonks at warp speed."},
+		{"Uncommon", "ParallelJawlineChad", "Parallel Jawline Chad", "Statue", "Two jawlines from two universes, back to back."},
+		{"Uncommon", "RealityWarpedSponge", "Reality-Warped Porous Sponge", "Statue", "Heading out so fast he twisted reality."},
+		{"Uncommon", "TimeFoldPanels", "Time Fold Nah-Yeah Panels", "Tablet", "Nah. Yeah. Folded through time."},
+		{"Rare", "DarkMatterHippo", "Dark Matter Baby Hippo", "Statue", "A tiny hippo made of dark matter. Still bites."},
+		{"Rare", "VoidCowboyHawk", "Void Cowboy Hawk", "Statue", "The cowboy hawk, lost in the void."},
+		{"Rare", "HypercubeChillDude", "Hypercube Chill Dude", "Statue", "Chilling in four dimensions."},
+		{"Epic", "ZeroPointThrone", "Zero Point Singing Throne", "Statue", "A crystal singing toilet that floats on zero-point energy."},
+		{"Epic", "TesseractShake", "Tesseract Birthday Shake", "Relic", "A birthday shake inside a four-dimensional cube."},
+		{"Legendary", "SingularityGrinCoin", "Singularity Grin Coin", "Coin", "The grin at the center of a black hole."},
+		{"Legendary", "EventHorizonShiba", "Event Horizon Shiba", "Statue", "The shiba whose tail fell into a black hole."},
+		{"Impossible", "NeverGonnaStair", "Never-Gonna Impossible Stair", "Statue", "Never gonna give up dancing on a staircase that never ends."},
+		{"Quantum", "QuantumBrainrotGod", "Quantum Brainrot God", "Statue", "The six-armed god of all brainrot."},
+		{"Transcendent", "MemeMatrix", "Transcendent Meme Matrix", "Relic", "Every famous meme, suspended inside one crystal."},
+		{"???", "OriginalShiba", "The Original Shiba", "Statue", "The good girl who started it all. Forever in our museum."},
+	}},
+}
+
+return MemeList
 ]=])
 install(game:GetService("ReplicatedStorage"), "PickaxeModels", "ModuleScript", [=[
 -- PickaxeModels (ModuleScript in ReplicatedStorage)
@@ -3626,8 +3345,6 @@ end
 -- MEME ICON: the artifact's emoji on a tile in its rarity color, with a rarity badge
 ---------------------------------------------------------------------
 local ArtifactData, ArtifactIcons, ArtifactImages -- loaded on first use
-local RARITY_SHORT = {Common = "C", Uncommon = "U", Rare = "R", Epic = "E", Legendary = "L",
-	Mythic = "M", Divine = "D", Celestial = "CE", Transcendent = "T"}
 
 function UIKit.artifactIcon(parent, artifact, props)
 	props = props or {}
@@ -3675,7 +3392,7 @@ function UIKit.artifactIcon(parent, artifact, props)
 	if props.Badge ~= false then
 		local badge = UIKit.panel(tile, {Size = UDim2.fromScale(0.36, 0.26), Position = UDim2.new(1, 4, 0, -4), AnchorPoint = Vector2.new(1, 0),
 			Color = color, Radius = 8, Stroke = 2, Shade = false})
-		UIKit.label(badge, RARITY_SHORT[artifact.Rarity] or "?", {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5),
+		UIKit.label(badge, rarity and (rarity.Secret and "★" or rarity.Code) or "?", {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5),
 			AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
 	end
 	return tile
@@ -4658,7 +4375,7 @@ return function(artifact, rarityColor, placement, rng)
 	motes.Lifetime = NumberRange.new(1, 1.8)
 	motes.Speed = NumberRange.new(1, 2.5)
 	motes.SpreadAngle = Vector2.new(25, 25)
-	motes.Rate = 3 + ArtifactData.GetRarityIndex(artifact.Rarity) * 1.5
+	motes.Rate = 3 + math.min(ArtifactData.GetRarityIndex(artifact.Rarity), 9) * 1.5
 	motes.EmissionDirection = Enum.NormalId.Right -- the disc's X points up
 	motes.Parent = glow
 
@@ -5170,7 +4887,7 @@ local terrain = workspace.Terrain
 ---------------------------------------------------------------------
 local MINIGAME_TIMEOUT = 8
 local MINIGAME_LUCK = {Perfect = 3, Good = 1.5, Miss = 1} -- multiplies the shovel's luck
-local ANNOUNCE_FROM = ArtifactData.GetRarityIndex("Mythic")
+local ANNOUNCE_FROM = ArtifactData.GetRarityIndex("Legendary")
 local MAX_REACH = 14 -- how far from your character you can dig
 local PICKUP_SECONDS = 25  -- how long a buried painting waits to be pulled out before it sinks back into the dirt
 local PULL_SECONDS = 1.1   -- the pull-out animation (the pickaxe is put away meanwhile)
@@ -6574,7 +6291,7 @@ function Gimmick.Start(ctx)
 	local Api = GimmickHooks.Api
 	local trapRemote = GimmickHooks.Remote("CurseTrap")
 	local multiplier = ArtifactData.WorldMultipliers[world.Id - 1] or 1
-	local reward = math.floor(ArtifactData.Rarities[3].Income * multiplier * 30)
+	local reward = math.floor(ArtifactData.GetRarity("Rare").Income * multiplier * 30)
 
 	local function fail(player)
 		traps[player] = nil
@@ -6749,7 +6466,7 @@ function Gimmick.Start(ctx)
 	local world = ctx.World
 	local origin = world.Origin
 	local multiplier = ArtifactData.WorldMultipliers[world.Id - 1] or 1
-	local reward = math.floor(ArtifactData.Rarities[3].Income * multiplier * 60)
+	local reward = math.floor(ArtifactData.GetRarity("Rare").Income * multiplier * 60)
 	local rng = Random.new()
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Include
@@ -7122,7 +6839,7 @@ function Gimmick.Start(ctx)
 	local world = ctx.World
 	local origin = world.Origin
 	local multiplier = ArtifactData.WorldMultipliers[world.Id - 1] or 1
-	local price = math.floor(ArtifactData.Rarities[3].Income * multiplier * 600)
+	local price = math.floor(ArtifactData.GetRarity("Rare").Income * multiplier * 600)
 
 	local rng = Random.new()
 	local ok, merchant = pcall(buildVisitor, "Alien", rng)
@@ -8986,6 +8703,13 @@ local function migrate(data)
 		data.PermitsRefunded = true
 	end
 	data.UnlockedLayers = nil
+	-- memes that were removed from the game (the old meme list) disappear from the save
+	for uid, artifactId in pairs(data.Inventory or {}) do
+		if not ArtifactData.GetArtifact(artifactId) then data.Inventory[uid] = nil end
+	end
+	for slot, artifactId in pairs(data.Displayed or {}) do
+		if not ArtifactData.GetArtifact(artifactId) then data.Displayed[slot] = nil end
+	end
 end
 
 ---------------------------------------------------------------------
@@ -15139,11 +14863,10 @@ local function refresh()
 	for i, entry in ipairs(entries) do
 		local artifact = entry.Artifact
 		local rarity = ArtifactData.GetRarity(artifact.Rarity)
-		-- the card's border shows the rarity (Mythic and better get an animated rainbow border)
-		local rarityIndex = ArtifactData.GetRarityIndex(artifact.Rarity)
+		-- the card's border shows the rarity (secret rarities get an animated rainbow border)
 		local card = UIKit.panel(gridHolder, {Size = UDim2.fromOffset(150, 186), Color = C.White, Radius = 20, Stroke = 4, StrokeColor = rarity.Color, ShadeAmount = 0.06})
 		card.LayoutOrder = i
-		if rarityIndex >= ArtifactData.GetRarityIndex("Mythic") then
+		if ArtifactData.IsSecret(artifact.Rarity) then
 			local border = card:FindFirstChildOfClass("UIStroke")
 			border.Color = Color3.new(1, 1, 1)
 			local rainbow = Instance.new("UIGradient")
@@ -17904,4 +17627,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-09-30 21:07). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-09-30 21:34). Now save the place (Ctrl+S).")
