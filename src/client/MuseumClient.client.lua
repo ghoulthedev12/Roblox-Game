@@ -345,20 +345,45 @@ end)
 -- FLOOR ARROWS (only while you're inside a museum)
 ---------------------------------------------------------------------
 -- a bright elevator bar pinned to the top center of the screen:  [▼ DOWN]  🛗 FLOOR 2/3  [UP ▲]
+-- (flat pills with no shading strips, so there are no stray lines)
 local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(360, 62), Position = UDim2.new(0.5, 0, 0, 8), AnchorPoint = Vector2.new(0.5, 0),
-	Color = C.Panel, Radius = 31, StrokeColor = C.Violet, Stroke = 4, ShadeAmount = 0.12})
+	Color = C.Panel, Radius = 31, StrokeColor = C.Violet, Stroke = 4, Shade = false})
 floorPanel.Visible = false
-local downButton = UIKit.button(floorPanel, "▼ DOWN", {Size = UDim2.fromOffset(104, 48), Position = UDim2.new(0, 7, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Violet, Radius = 24, MaxText = 18})
-local upButton = UIKit.button(floorPanel, "UP ▲", {Size = UDim2.fromOffset(104, 48), Position = UDim2.new(1, -7, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Color = C.Sky, Radius = 24, MaxText = 18})
-local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -236, 0, 26), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0, MaxText = 22})
+
+local function pillButton(text, color, position, anchor)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.fromOffset(104, 46)
+	b.Position = position
+	b.AnchorPoint = anchor
+	b.BackgroundColor3 = color
+	b.AutoButtonColor = false
+	b.Text = ""
+	b.Parent = floorPanel
+	UIKit.corner(b, 23)
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 2
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = b
+	local label = UIKit.label(b, text, {Size = UDim2.new(1, -18, 0, 20), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+		Color = C.White, Stroke = 1.5, MaxText = 18})
+	label.Name = "Label"
+	label.Font = Enum.Font.GothamBlack
+	local labelStroke = label:FindFirstChildOfClass("UIStroke")
+	local function paint()
+		stroke.Color = UIKit.shadeColor(b.BackgroundColor3, 0.35)
+		if labelStroke then labelStroke.Color = UIKit.shadeColor(b.BackgroundColor3, 0.55) end
+	end
+	b:GetPropertyChangedSignal("BackgroundColor3"):Connect(paint)
+	paint()
+	return b
+end
+local downButton = pillButton("▼ DOWN", C.Violet, UDim2.new(0, 8, 0.5, 0), Vector2.new(0, 0.5))
+local upButton = pillButton("UP ▲", C.Sky, UDim2.new(1, -8, 0.5, 0), Vector2.new(1, 0.5))
+local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -236, 0, 24), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0, MaxText = 22})
 -- the price of the next floor hangs under the bar when it's still locked
-local pricePill = UIKit.panel(floorPanel, {Size = UDim2.fromOffset(190, 28), Position = UDim2.new(0.5, 0, 1, 6), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Radius = 14, Stroke = 2.5})
+local pricePill = UIKit.panel(floorPanel, {Size = UDim2.fromOffset(190, 28), Position = UDim2.new(0.5, 0, 1, 6), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Radius = 14, Stroke = 2.5, Shade = false})
 local upPrice = UIKit.label(pricePill, "", {Size = UDim2.new(1, -16, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
 pricePill.Visible = false
-for _, b in ipairs({upButton, downButton}) do
-	local arrow = b:FindFirstChild("Label")
-	if arrow then arrow.Font = Enum.Font.GothamBlack end
-end
 -- a soft glow pulsing around the bar so it's easy to spot
 local barStroke = floorPanel:FindFirstChildOfClass("UIStroke")
 task.spawn(function()
