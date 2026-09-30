@@ -14,6 +14,8 @@ local ShovelModels = require(ReplicatedStorage:WaitForChild("PickaxeModels"))
 local ShopBuilder = require(script.Parent:WaitForChild("ShopBuilder"))
 local WorldGate = require(script.Parent:WaitForChild("WorldGate"))
 local WorldBuilder = require(script.Parent:WaitForChild("WorldBuilder"))
+local BuriedPainting = require(script.Parent:WaitForChild("BuriedPainting"))
+local TweenService = game:GetService("TweenService")
 
 local terrain = workspace.Terrain
 
@@ -24,7 +26,8 @@ local MINIGAME_TIMEOUT = 8
 local MINIGAME_LUCK = {Perfect = 3, Good = 1.5, Miss = 1} -- multiplies the shovel's luck
 local ANNOUNCE_FROM = ArtifactData.GetRarityIndex("Mythic")
 local MAX_REACH = 14 -- how far from your character you can dig
-local PICKUP_SECONDS = 20  -- how long a find waits for "pick up" before it's left in the dirt
+local PICKUP_SECONDS = 25  -- how long a buried painting waits to be pulled out before it sinks back into the dirt
+local PULL_SECONDS = 2.9   -- the pull-out animation (the pickaxe is put away meanwhile)
 local COMBO_WINDOW = 1.4   -- seconds between digs to keep a combo going
 local COMBO_MAX = 10
 local COMBO_LUCK = 0.04    -- each combo step adds +4% find chance (x10 combo = +36%)
@@ -52,7 +55,8 @@ local announceRemote = getRemote("Announcement")
 local swingRemote = getRemote("DigSwing")          -- client -> server: swing at a position
 local swingFxRemote = getRemote("ShovelSwingFx")   -- server -> other clients: play this player's swing
 local digHitRemote = getRemote("DigHit")           -- server -> digger: impact info for juice (combo, color, spot)
-local claimRemote = getRemote("ClaimFind")         -- client -> server: pick up (true) or leave (false) the find
+local claimRemote = getRemote("ClaimFind")         -- client -> server: leave (false) the find
+local pullRemote = getRemote("PullFind")           -- server -> all clients: (finder, painting, info) play the pull-out animation
 local inventoryChangedRemote = getRemote("InventoryChanged") -- server -> client: inventory changed, refresh UI
 local getInventory = remotes:FindFirstChild("GetInventory") or Instance.new("RemoteFunction")
 getInventory.Name = "GetInventory"
@@ -186,26 +190,75 @@ local function isSolid(position)
 	return false
 end
 
--- A find waits in pending[player] until the player picks it up or leaves it
-local pending = {} -- [player] = {Artifact = artifact}
+-- A find is a framed painting lying in the crater. It waits in pending[player] until the
+-- player pulls it out (ProximityPrompt) or it sinks back into the dirt.
+local pending = {} -- [player] = {Artifact = artifact, Model = painting, Info = info for the client}
+local findsFolder = workspace:FindFirstChild("BuriedFinds") or Instance.new("Folder")
+findsFolder.Name = "BuriedFinds"
+findsFolder.Parent = workspace
+
+-- the painting slides back under the dirt and disappears
+local function sink(model)
+	if not model or not model.Parent then return end
+	local canvas = model.PrimaryPart
+	if canvas then
+		local prompt = canvas:FindFirstChildOfClass("ProximityPrompt")
+		if prompt then prompt.Enabled = false end
+		local start = model:GetPivot()
+		local value = Instance.new("NumberValue")
+		value.Changed:Connect(function(v)
+			if model.Parent then model:PivotTo(start - Vector3.new(0, v, 0)) end
+		end)
+		TweenService:Create(value, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Value = 4}):Play()
+	end
+	Debris:AddItem(model, 1.3)
+end
+
+-- puts the pickaxe back in the player's hands after the pull-out animation
+local function reequip(player)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local backpack = player:FindFirstChild("Backpack")
+	if not humanoid or not backpack or character:FindFirstChildOfClass("Tool") then return end
+	for _, item in ipairs(backpack:GetChildren()) do
+		if item:IsA("Tool") and item:GetAttribute("ShovelId") then
+			humanoid:EquipTool(item)
+			return
+		end
+	end
+end
 
 local function resolveFind(player, take)
 	local find = pending[player]
 	if not find then return end
 	pending[player] = nil
 	local data = PlayerData.Get(player)
-	if take and data then
+	if take and data and player.Parent then
 		PlayerData.AddArtifact(player, find.Artifact.Id)
 		data.Stats.TotalDigs += 1
 		inventoryChangedRemote:FireClient(player)
-		shopMessageRemote:FireClient(player, find.Artifact.Name .. " added to your inventory!", true)
+		local prompt = find.Model.PrimaryPart and find.Model.PrimaryPart:FindFirstChildOfClass("ProximityPrompt")
+		if prompt then prompt.Enabled = false end
+		-- hands free for the pull: put the pickaxe away, then give it back
+		local character = player.Character
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		local hadTool = character and character:FindFirstChildOfClass("Tool") ~= nil
+		if humanoid then humanoid:UnequipTools() end
+		pullRemote:FireAllClients(player, find.Model, find.Info)
+		Debris:AddItem(find.Model, PULL_SECONDS + 1)
+		if hadTool then
+			task.delay(PULL_SECONDS, reequip, player)
+		end
 	else
-		digMessageRemote:FireClient(player, "You left the " .. find.Artifact.Name .. " in the dirt.", Color3.fromRGB(200, 200, 215))
+		sink(find.Model)
+		if player.Parent then
+			digMessageRemote:FireClient(player, "The " .. find.Artifact.Name .. " sank back into the dirt.", Color3.fromRGB(200, 200, 215))
+		end
 	end
 end
 
 claimRemote.OnServerEvent:Connect(function(player, take)
-	resolveFind(player, take == true)
+	if take == false then resolveFind(player, false) end
 end)
 
 getInventory.OnServerInvoke = function(player)
@@ -221,23 +274,55 @@ getInventory.OnServerInvoke = function(player)
 	return list
 end
 
+-- Where the painting lies: on the crater floor, face up, propped toward the finder and
+-- half sunk into the soil
+local function paintingCFrame(player, position)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = {terrain}
+	local hit = workspace:Raycast(position + Vector3.new(0, 4, 0), Vector3.new(0, -24, 0), params)
+	local floor = hit and hit.Position or position
+	local up = hit and hit.Normal or Vector3.yAxis
+	if up.Y < 0.5 then up = Vector3.yAxis end
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local toPlayer = root and (root.Position - floor) * Vector3.new(1, 0, 1) or Vector3.zero
+	toPlayer = toPlayer.Magnitude > 0.1 and toPlayer.Unit or Vector3.zAxis
+	local away = -toPlayer
+	local yAxis = (away - up * away:Dot(up)).Unit -- the picture's top edge points away from the finder
+	local zAxis = -up                              -- the picture faces the sky
+	local xAxis = yAxis:Cross(zAxis)
+	return CFrame.fromMatrix(floor + up * 0.05, xAxis, yAxis, zAxis) * CFrame.Angles(math.rad(-16), 0, 0)
+end
+
+-- the painting is revealed: a burst of dirt, a flash of light in the rarity's color
+local function revealFx(cf, color)
+	burst(cf.Position, color, 24, 12)
+	local beam = Instance.new("Part")
+	beam.Name = "RevealBeam"
+	beam.Shape = Enum.PartType.Cylinder
+	beam.Material = Enum.Material.Neon
+	beam.Color = color
+	beam.Transparency = 0.45
+	beam.Anchored = true
+	beam.CanCollide = false
+	beam.CanQuery = false
+	beam.CanTouch = false
+	beam.CastShadow = false
+	beam.Size = Vector3.new(18, 3.4, 3.4)
+	beam.CFrame = CFrame.new(cf.Position + Vector3.new(0, 9, 0)) * CFrame.Angles(0, 0, math.rad(90))
+	beam.Parent = findsFolder
+	TweenService:Create(beam, TweenInfo.new(1.4, Enum.EasingStyle.Quad), {Transparency = 1, Size = Vector3.new(22, 0.4, 0.4)}):Play()
+	Debris:AddItem(beam, 1.5)
+end
+
 local function giveArtifact(player, zone, luck, grade, position)
 	local artifact = ArtifactData.RollForZone(zone, luck)
 	local data = PlayerData.Get(player)
-	if not artifact or not data then return end
-
-	-- don't add it yet: the player chooses to pick it up or leave it
-	local find = {Artifact = artifact}
-	pending[player] = find
-	task.delay(PICKUP_SECONDS, function()
-		if pending[player] == find then
-			resolveFind(player, false)
-		end
-	end)
+	if not artifact or not data or pending[player] then return end
 
 	local rarity = ArtifactData.GetRarity(artifact.Rarity)
 	local rarityIndex = ArtifactData.GetRarityIndex(artifact.Rarity)
-	resultRemote:FireClient(player, {
+	local info = {
 		Name = artifact.Name,
 		Rarity = artifact.Rarity,
 		RarityIndex = rarityIndex,
@@ -245,11 +330,43 @@ local function giveArtifact(player, zone, luck, grade, position)
 		Income = ArtifactData.GetIncome(artifact),
 		Description = artifact.Description,
 		Grade = grade,
-		Position = position, -- where it popped out of the ground
+		Position = position,
 		Id = artifact.Id,
-		Pickup = true,
 		Timeout = PICKUP_SECONDS,
-	})
+	}
+
+	-- the framed painting lies in the crater, waiting to be pulled out
+	local cf = paintingCFrame(player, position)
+	local model = BuriedPainting(artifact, rarity.Color, cf, rng)
+	model:SetAttribute("Owner", player.UserId)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = "Pull Out"
+	prompt.ObjectText = artifact.Name
+	prompt.HoldDuration = 0.35
+	prompt.MaxActivationDistance = 16
+	prompt.RequiresLineOfSight = false
+	prompt.KeyboardKeyCode = Enum.KeyCode.E
+	prompt.Parent = model.PrimaryPart
+	model.Parent = findsFolder
+	revealFx(cf, rarity.Color)
+
+	local find = {Artifact = artifact, Model = model, Info = info}
+	pending[player] = find
+	info.Painting = model
+	prompt.Triggered:Connect(function(who)
+		if who == player and pending[player] == find then
+			resolveFind(player, true)
+		elseif who ~= player then
+			digMessageRemote:FireClient(who, "That's " .. player.DisplayName .. "'s find!")
+		end
+	end)
+	task.delay(PICKUP_SECONDS, function()
+		if pending[player] == find then
+			resolveFind(player, false)
+		end
+	end)
+
+	resultRemote:FireClient(player, info)
 	if rarityIndex >= ANNOUNCE_FROM then
 		announceRemote:FireAllClients(player.DisplayName .. " found a " .. string.upper(artifact.Rarity) .. " " .. artifact.Name .. " in " .. zone.Name .. "!", rarity.Color)
 	end
@@ -294,10 +411,6 @@ end
 
 swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	if resetting or sessions[player] then return end
-	if pending[player] then
-		digMessageRemote:FireClient(player, "Pick up your find or leave it first!")
-		return
-	end
 	local data = PlayerData.Get(player)
 	if not data then return end
 
@@ -321,15 +434,26 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	end
 
 	-- Where to dig: where the player clicked, or just in front of their feet
+	local inFront = root.Position + root.CFrame.LookVector * 3 - Vector3.new(0, 3, 0)
 	if typeof(target) ~= "Vector3" or (target - root.Position).Magnitude > MAX_REACH then
-		target = root.Position + root.CFrame.LookVector * 3 - Vector3.new(0, 3, 0)
+		target = inFront
 	end
 
 	local origin = world.Origin
-	local flat = Vector3.new(target.X - origin.X, 0, target.Z - origin.Z).Magnitude
-	if flat > world.PitRadius or flat < world.CenterNoDigRadius or target.Y > origin.Y + 5 then
-		digMessageRemote:FireClient(player, "Dig inside the pit!")
-		return
+	local function diggable(point)
+		local flat = Vector3.new(point.X - origin.X, 0, point.Z - origin.Z).Magnitude
+		return flat <= world.PitRadius and flat >= world.CenterNoDigRadius and point.Y <= origin.Y + 5
+	end
+	if not diggable(target) then
+		-- standing inside the pit volume? Then never nag: dig at your feet instead
+		-- (clicking the sky, the wall or the hard drive from inside the pit used to say "Dig inside the pit!")
+		if GameConfig.IsInPit(world, character) then
+			target = diggable(inFront) and inFront or root.Position - Vector3.new(0, 3.5, 0)
+			if not diggable(target) then return end
+		else
+			digMessageRemote:FireClient(player, "Jump into the pit to dig!")
+			return
+		end
 	end
 
 	-- Aim into the ground: a bit past the clicked point, snapped to the 4-stud terrain grid
@@ -383,7 +507,7 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	digHitRemote:FireClient(player, {Combo = combo, Position = carveAt, Color = zone.Color})
 
 	-- Did we find something?
-	if rng:NextNumber() < def.FindChance * (1 + COMBO_LUCK * (combo - 1)) then
+	if not pending[player] and rng:NextNumber() < def.FindChance * (1 + COMBO_LUCK * (combo - 1)) then
 		onFind(player, def, zone, carveAt + Vector3.new(0, 2, 0))
 	end
 end)
@@ -435,6 +559,9 @@ end
 
 local function resetPits()
 	resetting = true
+	for player in pairs(pending) do
+		resolveFind(player, false) -- unclaimed paintings sink with the old dirt
+	end
 	for _, player in ipairs(Players:GetPlayers()) do
 		local character = player.Character
 		local root = character and character:FindFirstChild("HumanoidRootPart")
@@ -644,6 +771,7 @@ Players.PlayerRemoving:Connect(function(player)
 	lastSwing[player] = nil
 	lastHit[player] = nil
 	combos[player] = nil
+	if pending[player] then sink(pending[player].Model) end
 	pending[player] = nil
 	sessions[player] = nil
 	currentWorld[player] = nil

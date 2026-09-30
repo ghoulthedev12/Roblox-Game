@@ -53,6 +53,20 @@ local function showHint(text, color)
 	end)
 end
 
+---------------------------------------------------------------------
+-- "JUMP INTO THE PIT" PROMPT: shows while you hold a pickaxe outside the pit and vanishes the
+-- instant your character enters the pit volume (GameConfig.IsInPit uses GetPartBoundsInBox)
+---------------------------------------------------------------------
+local pitPrompt = UIKit.panel(gui, {
+	Size = UDim2.fromOffset(330, 44), Position = UDim2.new(0.5, 0, 1, -250), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Ink, Radius = 22, Stroke = 2.5, StrokeColor = C.Sky, ShadeAmount = 0.2,
+})
+pitPrompt.BackgroundTransparency = 0.12
+pitPrompt.Visible = false
+UIKit.label(pitPrompt, "⛏  Jump into the pit to dig!", {Size = UDim2.new(1, -28, 1, -14), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+	Color = C.White, Stroke = 0, MaxText = 20})
+local insidePit = false
+
 digMessageRemote.OnClientEvent:Connect(function(message, color)
 	if typeof(message) == "string" then
 		showHint(message, typeof(color) == "Color3" and color or nil)
@@ -155,6 +169,18 @@ local function gaugeY(world, depth)
 	return 50 + math.clamp(depth / total, 0, 1) * GAUGE_H
 end
 
+RunService.Heartbeat:Connect(function()
+	local character = player.Character
+	local wasInside = insidePit
+	insidePit = GameConfig.IsInPit(currentWorld(), character)
+	if insidePit and not wasInside and hint.Visible and hintText.Text:find("pit") then
+		hint.Visible = false -- the old "get in the pit" nag disappears the moment you're in
+	end
+	local show = equippedDef ~= nil and not insidePit and character ~= nil
+	if show and not pitPrompt.Visible then UIKit.pop(pitPrompt, 0.7) end
+	pitPrompt.Visible = show
+end)
+
 task.spawn(function()
 	while true do
 		task.wait(0.15)
@@ -165,8 +191,7 @@ task.spawn(function()
 			if world ~= gaugeWorld then drawBands(world) end
 			local feetY = root.Position.Y - 3
 			local depth = math.max(0, math.floor(world.Origin.Y - feetY + 0.5))
-			local offset = root.Position - world.Origin
-			local inPit = Vector3.new(offset.X, 0, offset.Z).Magnitude < world.PitRadius + 7
+			local inPit = insidePit
 
 			local _, zone = GameConfig.GetZoneAt(world, feetY)
 			zone = zone or {Name = "Bedrock", Color = Color3.fromRGB(150, 150, 160)}
@@ -500,6 +525,64 @@ local function tossDirt(position, color)
 	end
 end
 
+-- the moment the pickaxe bites the ground: a burst of dirt chunks, a puff of dust and a
+-- ring of dust rolling out across the ground (plus camera shake for our own swings)
+local TweenService = game:GetService("TweenService")
+local impactShake -- set further down, once the camera shake exists
+local function impactBurst(position, color)
+	local anchor = Instance.new("Part")
+	anchor.Anchored = true
+	anchor.CanCollide = false
+	anchor.CanQuery = false
+	anchor.CanTouch = false
+	anchor.Transparency = 1
+	anchor.Size = Vector3.one
+	anchor.CFrame = CFrame.new(position)
+	anchor.Parent = puppetFolder
+	local chunks = Instance.new("ParticleEmitter")
+	chunks.Enabled = false
+	chunks.Color = ColorSequence.new(color, color:Lerp(Color3.new(0, 0, 0), 0.3))
+	chunks.Size = NumberSequence.new(0.32, 0.1)
+	chunks.Lifetime = NumberRange.new(0.35, 0.7)
+	chunks.Speed = NumberRange.new(10, 20)
+	chunks.SpreadAngle = Vector2.new(55, 55)
+	chunks.EmissionDirection = Enum.NormalId.Top
+	chunks.Acceleration = Vector3.new(0, -60, 0)
+	chunks.Rotation = NumberRange.new(0, 360)
+	chunks.RotSpeed = NumberRange.new(-300, 300)
+	chunks.Parent = anchor
+	chunks:Emit(16)
+	local puff = Instance.new("ParticleEmitter")
+	puff.Enabled = false
+	puff.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.35))
+	puff.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 2.6)})
+	puff.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1)})
+	puff.Lifetime = NumberRange.new(0.5, 0.8)
+	puff.Speed = NumberRange.new(2, 5)
+	puff.SpreadAngle = Vector2.new(80, 80)
+	puff.EmissionDirection = Enum.NormalId.Top
+	puff.Drag = 4
+	puff.Parent = anchor
+	puff:Emit(8)
+	Debris:AddItem(anchor, 1.2)
+
+	local ring = Instance.new("Part")
+	ring.Shape = Enum.PartType.Cylinder
+	ring.Anchored = true
+	ring.CanCollide = false
+	ring.CanQuery = false
+	ring.CanTouch = false
+	ring.CastShadow = false
+	ring.Material = Enum.Material.SmoothPlastic
+	ring.Color = color:Lerp(Color3.new(1, 1, 1), 0.3)
+	ring.Transparency = 0.45
+	ring.Size = Vector3.new(0.15, 1, 1)
+	ring.CFrame = CFrame.new(position + Vector3.new(0, 0.15, 0)) * CFrame.Angles(0, 0, math.rad(90))
+	ring.Parent = puppetFolder
+	TweenService:Create(ring, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = Vector3.new(0.15, 7, 7), Transparency = 1}):Play()
+	Debris:AddItem(ring, 0.4)
+end
+
 local function dirtColorAt(position)
 	local world = GameConfig.GetWorldAt(position)
 	local _, zone = GameConfig.GetZoneAt(world, position.Y - 3)
@@ -536,7 +619,12 @@ local function poseRig(character, rig, clock, dt)
 				rig.Struck = true
 				rig.ImpactAt = clock
 				if rig.Blade then
-					tossDirt(rig.Blade.Position, dirtColorAt(rig.Root.Position))
+					local color = dirtColorAt(rig.Root.Position)
+					tossDirt(rig.Blade.Position, color)
+					impactBurst(rig.Blade.Position, color)
+				end
+				if character == player.Character and impactShake then
+					impactShake()
 				end
 			end
 		end
@@ -682,6 +770,9 @@ local function shake(strength, duration)
 	shakeStrength = math.max(shakeStrength, strength)
 	shakeUntil = math.max(shakeUntil, os.clock() + duration)
 end
+impactShake = function()
+	shake(0.16, 0.1) -- a crisp little jolt right on the strike
+end
 RunService:BindToRenderStep("DigShake", Enum.RenderPriority.Camera.Value + 1, function()
 	local left = shakeUntil - os.clock()
 	if left <= 0 then
@@ -712,7 +803,7 @@ digHitRemote.OnClientEvent:Connect(function(info)
 		return
 	end
 	local combo = tonumber(info.Combo) or 1
-	shake(0.12 + combo * 0.012, 0.12)
+	shake(0.05 + combo * 0.01, 0.1) -- the strike already shook; big combos shake a bit more
 	playSound(GameConfig.Sounds.Dig, 0.5, 0.9 + math.random() * 0.2 + combo * 0.02)
 	if typeof(info.Position) == "Vector3" and typeof(info.Color) == "Color3" then
 		tossDirt(info.Position + Vector3.new(0, 1.5, 0), info.Color)

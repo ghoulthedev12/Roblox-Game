@@ -18,6 +18,7 @@
 -- Returns a function() -> Model (PlotManager clones it for each player).
 
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
+local TutorialSign = require(script.Parent:WaitForChild("TutorialSign"))
 local P = Architecture.Palette
 
 local rgb = Color3.fromRGB
@@ -316,6 +317,9 @@ local function build()
 		d:pill("AlienAntenna", Vector3.new(x * 0.8, 9.8, 0.4), Vector3.new(x * 1.6, 11.2, 0.4), 0.25, "AlienSkin")
 		d:bulb("AntennaTip", 0.6, CFrame.new(x * 1.6, 11.3, 0.4), "GlowSun", 0)
 	end
+
+	-- HOW TO DIG sign on the other side of the plaza, right by the spawn, facing the pit
+	TutorialSign(museum, CFrame.new(24, 0.6, -HALF - 10) * CFrame.Angles(0, math.rad(20), 0))
 
 	-- MARKERS for scripts
 	local interior = marker(museum, "Interior", CFrame.new(0, ROOF_Y / 2, 0), Vector3.new(HALF * 2 - 3, ROOF_Y, HALF * 2 - 3))

@@ -48,6 +48,144 @@ local function recolor(root)
 	end
 end
 
+---------------------------------------------------------------------
+-- PIT ATMOSPHERE: glowing crystal veins in the walls, floating dust, soft rim lighting
+---------------------------------------------------------------------
+local rgb = Color3.fromRGB
+local VEIN_COLORS = {rgb(110, 230, 255), rgb(255, 130, 220), rgb(170, 140, 255), rgb(120, 255, 200)}
+
+local function invisible(name, size, cf, parent)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Transparency = 1
+	p.Size = size
+	p.CFrame = cf
+	p.Parent = parent
+	return p
+end
+
+local function crystalVeins(folder, world, rng)
+	local origin = world.Origin
+	local colors = VEIN_COLORS
+	if world.Look and world.Look.Glow then
+		colors = {world.Look.Glow, world.Look.Glow:Lerp(Color3.new(1, 1, 1), 0.35), VEIN_COLORS[1]}
+	end
+	local deepest = -world.Zones[#world.Zones].Bottom
+	local VEINS = 18
+	for v = 1, VEINS do
+		local vein = Instance.new("Model")
+		vein.Name = "CrystalVein"
+		vein.Parent = folder
+		local color = colors[(v - 1) % #colors + 1]
+		-- spread evenly around the pit and down through every zone (a few near the top)
+		local angle = (v / VEINS) * math.pi * 2 + rng:NextNumber(-0.12, 0.12)
+		local depth = v <= 4 and rng:NextNumber(3, 12) or rng:NextNumber(14, deepest - 12)
+		local slope = rng:NextNumber(-0.35, 0.35) -- how the streak runs sideways as it goes down
+		local steps = rng:NextInteger(6, 9)
+		for i = 1, steps do
+			local a = angle + slope * i * 0.03
+			local y = origin.Y - depth - i * 1.3
+			local r = world.PitRadius + 3.2 + rng:NextNumber(-0.4, 0.6)
+			local pos = origin + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
+			pos = Vector3.new(pos.X, y, pos.Z)
+			local inward = Vector3.new(origin.X, y, origin.Z)
+			local length = rng:NextNumber(1.4, 3.2)
+			local cf = CFrame.lookAt(pos, inward) * CFrame.Angles(math.rad(-90) + rng:NextNumber(-0.6, 0.6), 0, rng:NextNumber(-0.6, 0.6))
+				* CFrame.new(0, length * 0.3, 0)
+			local core = Instance.new("Part")
+			core.Name = "VeinCrystal"
+			core.Size = Vector3.new(0.45, length, 0.45)
+			core.CFrame = cf
+			core.Color = color
+			core.Material = Enum.Material.Neon
+			core.Parent = vein
+			local shell = Instance.new("Part")
+			shell.Name = "VeinShell"
+			shell.Size = Vector3.new(0.85, length * 0.75, 0.85)
+			shell.CFrame = cf * CFrame.new(0, -length * 0.1, 0) * CFrame.Angles(0, math.rad(45), 0)
+			shell.Color = color:Lerp(Color3.new(1, 1, 1), 0.25)
+			shell.Material = Enum.Material.Glass
+			shell.Transparency = 0.45
+			shell.Reflectance = 0.2
+			shell.Parent = vein
+			if i == math.ceil(steps / 2) then
+				local light = Instance.new("PointLight")
+				light.Color = color
+				light.Range = 14
+				light.Brightness = 0.8
+				light.Shadows = false
+				light.Parent = core
+			end
+		end
+		for _, p in ipairs(vein:GetChildren()) do
+			p.Anchored = true
+			p.CanCollide = false
+			p.CanQuery = false
+			p.CanTouch = false
+			p.CastShadow = false
+		end
+	end
+end
+
+local function floatingDust(folder, world)
+	local origin = world.Origin
+	local width = world.PitRadius * 2
+	-- one cloud over the pit, one filling the upper dig layers
+	for _, layer in ipairs({{Y = 8, Height = 18, Rate = 14}, {Y = -40, Height = 70, Rate = 18}}) do
+		local volume = invisible("PitDust", Vector3.new(width, layer.Height, width), CFrame.new(origin + Vector3.new(0, layer.Y, 0)), folder)
+		local dust = Instance.new("ParticleEmitter")
+		dust.Shape = Enum.ParticleEmitterShape.Box
+		dust.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+		dust.Color = ColorSequence.new(rgb(255, 236, 200), rgb(200, 220, 255))
+		dust.LightEmission = 0.45
+		dust.LightInfluence = 0.4
+		dust.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 0.22), NumberSequenceKeypoint.new(1, 0)})
+		dust.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.35), NumberSequenceKeypoint.new(1, 1)})
+		dust.Lifetime = NumberRange.new(6, 10)
+		dust.Rate = layer.Rate
+		dust.Speed = NumberRange.new(0.2, 0.7)
+		dust.SpreadAngle = Vector2.new(180, 180)
+		dust.Acceleration = Vector3.new(0, 0.12, 0)
+		dust.RotSpeed = NumberRange.new(-30, 30)
+		dust.Parent = volume
+	end
+end
+
+local function rimLighting(folder, world)
+	local origin = world.Origin
+	-- a soft glowing strip right at the lip of the pit
+	local lip = Instance.new("Model")
+	lip.Name = "RimGlow"
+	lip.Parent = folder
+	local lb = Architecture.builder(lip, CFrame.new(origin))
+	lb:ring("RimGlowRing", CFrame.new(0, 0.35, 0) * CFrame.Angles(math.rad(90), 0, 0), world.PitRadius + 2.6, 0.5, "GlowCyan", 64)
+	for _, p in ipairs(lip:GetChildren()) do
+		p.CanCollide = false
+		p.CanQuery = false
+		if world.Look and world.Look.Glow then p.Color = world.Look.Glow end
+	end
+	-- lamps on the rim that wash the top of the pit walls with soft light
+	local LAMPS = 12
+	for i = 0, LAMPS - 1 do
+		local a = (i + 0.5) / LAMPS * math.pi * 2
+		local pos = origin + Vector3.new(math.cos(a) * (world.PitRadius + 4.5), 5.6, math.sin(a) * (world.PitRadius + 4.5))
+		local aim = origin + Vector3.new(math.cos(a) * world.PitRadius * 0.4, -14, math.sin(a) * world.PitRadius * 0.4)
+		local holder = invisible("RimLight", Vector3.new(0.6, 0.6, 0.6), CFrame.lookAt(pos, aim), folder)
+		local spot = Instance.new("SpotLight")
+		spot.Face = Enum.NormalId.Front
+		spot.Angle = 75
+		spot.Range = 16
+		spot.Brightness = 0.8
+		spot.Color = i % 2 == 0 and rgb(255, 238, 210) or rgb(200, 230, 255)
+		spot.Shadows = false
+		spot.Parent = holder
+	end
+end
+
 return function(digSite, world)
 	if digSite:GetAttribute("Cartoon2050") then return end
 	recolor(digSite)
@@ -122,6 +260,14 @@ return function(digSite, world)
 			part.CanCollide = false
 		end
 	end
+
+	-- the pit itself: crystal veins, dust in the air, soft light around the lip
+	local atmosphere = Instance.new("Model")
+	atmosphere.Name = "PitAtmosphere"
+	atmosphere.Parent = folder
+	crystalVeins(atmosphere, world, Random.new(world.Id * 104729))
+	floatingDust(atmosphere, world)
+	rimLighting(atmosphere, world)
 
 	for _, d in ipairs(folder:GetDescendants()) do
 		if d:IsA("BasePart") and d.Name == "PartyBulb" then

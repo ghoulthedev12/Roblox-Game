@@ -16,6 +16,10 @@
 -- direction the pick's arms point (the swing plane). Returns function(def) -> Tool.
 
 local SCALE = 0.7
+-- the crystal-tech look every pickaxe shares: cyan neon cutting edges, dark handles with a
+-- glowing inlay, floating crystals and a spark trail off the tips
+local NEON_EDGE = Color3.fromRGB(90, 235, 255)
+local DARK_HANDLE = Color3.fromRGB(22, 22, 32)
 
 local function rgb(r, g, b)
 	return Color3.fromRGB(r, g, b)
@@ -127,6 +131,9 @@ local function arm(tool, H, side, look, opts)
 			end
 			table.insert(parts, voxel)
 		end
+		-- cyan neon cutting edge along the outside of the arm
+		local outer = R + ((rows - 1) / 2) * size * 0.85
+		newPart(tool, "BladeEdge", Vector3.new(size * 0.7, size * 0.9, 0.09), CFrame.new(center + radial * (outer + size / 2 + 0.02)) * rot, NEON_EDGE, Enum.Material.Neon)
 		-- spikes sticking out of the outer row
 		if opts.Spikes and i % 2 == 0 then
 			local pos = center + radial * (R + size * 1.2)
@@ -136,8 +143,8 @@ local function arm(tool, H, side, look, opts)
 	-- the pointed tip
 	local phiEnd = 0.22 + reach + 0.12
 	local tipPos = center + Vector3.new(0, side * math.sin(phiEnd), -math.cos(phiEnd)) * R
-	newPart(tool, "HeadTip", Vector3.new(opts.Size * 0.36, opts.Size * 0.4, opts.Size * 0.4), CFrame.new(tipPos) * CFrame.Angles(side * phiEnd, 0, 0) * DIAMOND, look.Edge)
-	return parts
+	local tip = newPart(tool, "HeadTip", Vector3.new(opts.Size * 0.36, opts.Size * 0.4, opts.Size * 0.4), CFrame.new(tipPos) * CFrame.Angles(side * phiEnd, 0, 0) * DIAMOND, NEON_EDGE, Enum.Material.Neon)
+	return parts, tip
 end
 
 -- a chunky hammer block made of voxels (the other side of a "Hammer" head)
@@ -156,8 +163,19 @@ end
 ---------------------------------------------------------------------
 -- BUILD A PICKAXE TOOL
 ---------------------------------------------------------------------
+-- a crystal shard: a stretched diamond, glassy on the outside with a neon heart
+local function crystal(tool, name, cf, length, color)
+	local shell = newPart(tool, name, Vector3.new(length * 0.42, length * 0.42, length), cf * CFrame.Angles(0, 0, math.rad(45)), color:Lerp(Color3.new(1, 1, 1), 0.3), Enum.Material.Glass)
+	shell.Transparency = 0.3
+	shell.Reflectance = 0.25
+	local core = newPart(tool, name .. "Core", Vector3.new(length * 0.2, length * 0.2, length * 0.8), cf * CFrame.Angles(0, 0, math.rad(45)), color, Enum.Material.Neon)
+	return shell, core
+end
+
 return function(def)
-	local look = lookFor(def)
+	local look = table.clone(lookFor(def))
+	-- dark handles everywhere (a hint of the pickaxe's own color stays in them)
+	look.Handle = look.Handle:Lerp(DARK_HANDLE, 0.6)
 	local tier = math.clamp(def.Power or 1, 1, 12)
 	local growth = 1 + (tier - 1) * 0.035
 	local glowing = tier >= 2
@@ -177,6 +195,10 @@ return function(def)
 	local HEAD_Z, END_Z = -2.6, 2.2
 	local RIGHT_Z, LEFT_Z = 1.55, 0.55 -- where the hands hold it (right hand low, left hand above)
 	newPart(tool, "Shaft", Vector3.new(0.26, 0.26, END_Z - HEAD_Z), CFrame.new(0, 0, (END_Z + HEAD_Z) / 2), look.Handle)
+	-- glowing cyan inlay lines down both sides of the shaft (between the head and the grip)
+	for _, sx in ipairs({-1, 1}) do
+		newPart(tool, "ShaftGlow", Vector3.new(0.04, 0.08, 2.7), CFrame.new(sx * 0.135, 0, -0.95), NEON_EDGE, Enum.Material.Neon)
+	end
 	-- grip wrap: stacked cubes, alternating shades
 	for i = 0, 4 do
 		newPart(tool, "GripWrap", Vector3.new(0.34, 0.34, 0.24), CFrame.new(0, 0, 1.05 + i * 0.24), shade(look.Wrap, i))
@@ -203,11 +225,19 @@ return function(def)
 	end
 
 	-- HEAD
+	local tips = {}
 	local H = Vector3.new(0, 0, HEAD_Z)
 	local socket = newPart(tool, "Blade", Vector3.new(0.72, 1, 1), CFrame.new(H) * DIAMOND, look.Frame)
 	local gem = newPart(tool, "HeadGem", Vector3.new(0.86, 0.5, 0.5), CFrame.new(H) * DIAMOND, look.Gem, glowing and Enum.Material.Neon or Enum.Material.Glass)
 	newPart(tool, "Crown", Vector3.new(0.4, 0.42, 0.42), CFrame.new(H + Vector3.new(0, 0, -0.78)) * DIAMOND, look.Edge)
 	local style = look.Head
+	local arm = function(...)
+		local parts, tip = arm(...)
+		if (select(4, ...)).Frame then -- not the glowing core inside a crystal head
+			table.insert(tips, tip)
+		end
+		return parts, tip
+	end
 	if style == "Wide" then
 		for _, s in ipairs({-1, 1}) do
 			arm(tool, H, s, look, {Radius = 3.4, Reach = 0.62, Count = 8, Rows = 3, Size = 0.58})
@@ -245,6 +275,39 @@ return function(def)
 			cube:SetAttribute("OrbitCenter", center)
 			cube:SetAttribute("OrbitSpeed", 2.6)
 		end
+	end
+
+	-- FLOATING CRYSTALS: glassy shards hovering around the shaft under the head, orbiting it
+	-- (every pickaxe has one; better ones have up to four)
+	do
+		local center = Vector3.new(0, 0, -1.15)
+		local n = math.clamp(1 + math.floor(tier / 3), 1, 4)
+		for i = 1, n do
+			local a = math.pi * 2 * i / n + 0.4
+			local pos = center + Vector3.new(math.cos(a) * 0.95, math.sin(a) * 0.95, 0)
+			local shell, core = crystal(tool, "FloatCrystal", CFrame.new(pos) * CFrame.Angles(0.35, 0.2, a), 0.55 + tier * 0.02, i % 2 == 0 and look.Gem or NEON_EDGE)
+			for _, p in ipairs({shell, core}) do
+				p:SetAttribute("OrbitCenter", center)
+				p:SetAttribute("OrbitSpeed", 1.4)
+			end
+		end
+	end
+
+	-- SPARK TRAIL: cyan sparks stream off both tips; they're left behind in the air while the
+	-- pickaxe moves, so every swing draws a glittering arc (denser on better pickaxes)
+	for _, tip in ipairs(tips) do
+		local sparks = Instance.new("ParticleEmitter")
+		sparks.Name = "TipSparks"
+		sparks.Rate = 6 + tier * 2
+		sparks.LightEmission = 0.85
+		sparks.Color = ColorSequence.new(Color3.new(1, 1, 1), NEON_EDGE)
+		sparks.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.12), NumberSequenceKeypoint.new(1, 0)})
+		sparks.Transparency = NumberSequence.new(0, 1)
+		sparks.Lifetime = NumberRange.new(0.25, 0.45)
+		sparks.Speed = NumberRange.new(0.2, 0.8)
+		sparks.SpreadAngle = Vector2.new(180, 180)
+		sparks.Drag = 3
+		sparks.Parent = tip
 	end
 
 	-- VFX: gem light and sparkles that grow with the tier

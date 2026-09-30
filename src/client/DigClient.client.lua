@@ -159,7 +159,6 @@ minigameRemote.OnClientEvent:Connect(startMinigame)
 ---------------------------------------------------------------------
 -- "YOU FOUND" POPUP
 ---------------------------------------------------------------------
-local claimRemote = remotes:WaitForChild("ClaimFind")
 
 local popup, foundLabel, paintPopupHeader = headerCard(UDim2.fromOffset(460, 368), UDim2.fromScale(0.5, 0.45), C.Violet, "YOU FOUND")
 popup.Visible = false
@@ -194,113 +193,54 @@ flash.ZIndex = 0
 flash.Parent = gui
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local pullRemote = remotes:WaitForChild("PullFind")
 
--- the find visibly pops out of the hole: a glowing orb in the rarity's color jumps out of
--- the ground and arcs into the player's hands, then the popup shows
-local heldOrb -- the orb floating above the player while they decide
+-- The popup is now the "what you pulled out" card: one button, closes by itself
+leaveButton.Visible = false
+pickButton.Size = UDim2.new(1, -44, 0, 56)
+local pickLabel = pickButton:FindFirstChild("Label", true)
+if pickLabel and pickLabel:IsA("TextLabel") then pickLabel.Text = "AWESOME!" end
 
--- what happens to the floating orb: picked up (flies into the player) or left (drops and fades)
-local function finishOrb(take)
-	local orb = heldOrb
-	heldOrb = nil
-	if not orb then return end
-	orb:SetAttribute("Done", true)
-	local character = player.Character
-	local root = character and character:FindFirstChild("HumanoidRootPart")
-	local goal = take and root and root.Position or (orb.Position - Vector3.new(0, 6, 0))
-	local tween = TweenService:Create(orb, TweenInfo.new(take and 0.3 or 0.6, Enum.EasingStyle.Back, Enum.EasingDirection.In),
-		{Position = goal, Size = Vector3.one * (take and 0.2 or 0.6), Transparency = take and 0 or 1})
-	tween:Play()
-	tween.Completed:Once(function() orb:Destroy() end)
+---------------------------------------------------------------------
+-- BURIED PAINTING: a banner + outline while your find waits in the crater
+---------------------------------------------------------------------
+local buriedCard = UIKit.panel(gui, {Size = UDim2.fromOffset(470, 60), Position = UDim2.new(0.5, 0, 0, 14), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Ink, Radius = 30, Stroke = 3, StrokeColor = C.Sun, ShadeAmount = 0.2})
+buriedCard.BackgroundTransparency = 0.08
+buriedCard.Visible = false
+local buriedStroke = buriedCard:FindFirstChildOfClass("UIStroke")
+local buriedBadge = UIKit.badge(buriedCard, "🖼", C.Sun, {Diameter = 46, Position = UDim2.new(0, 7, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+local buriedTitle = UIKit.label(buriedCard, "", {Size = UDim2.new(1, -78, 0, 24), Position = UDim2.new(0, 64, 0, 7), Align = "Left", Color = C.White, Stroke = 0, MaxText = 22})
+UIKit.label(buriedCard, "Hold  E  (or tap it) to pull it out of the dirt!", {Size = UDim2.new(1, -78, 0, 18), Position = UDim2.new(0, 64, 0, 33), Align = "Left",
+	Color = C.Sky, Stroke = 0, Font = UIKit.BodyFont, MaxText = 16})
+local buriedTimer = UIKit.panel(buriedCard, {Size = UDim2.new(1, -90, 0, 4), Position = UDim2.new(0, 64, 1, -6), Color = C.Sun, Radius = 2, Stroke = false, Shade = false})
+
+local buriedToken = 0
+local buriedHighlight
+local function clearBuried()
+	buriedToken += 1
+	buriedCard.Visible = false
+	if buriedHighlight then
+		buriedHighlight:Destroy()
+		buriedHighlight = nil
+	end
 end
 
-local function treasurePop(position, color, onArrive)
-	local character = player.Character
-	local root = character and character:FindFirstChild("HumanoidRootPart")
-	if typeof(position) ~= "Vector3" or not root then
-		onArrive()
-		return
-	end
-	local orb = Instance.new("Part")
-	orb.Shape = Enum.PartType.Ball
-	orb.Size = Vector3.one * 1.6
-	orb.Material = Enum.Material.Neon
-	orb.Color = color
-	orb.Anchored = true
-	orb.CanCollide = false
-	orb.CanQuery = false
-	orb.CanTouch = false
-	orb.CastShadow = false
-	orb.CFrame = CFrame.new(position)
-	orb.Parent = workspace
-	local light = Instance.new("PointLight")
-	light.Color = color
-	light.Range = 10
-	light.Brightness = 1
-	light.Parent = orb
-	local sparkle = Instance.new("ParticleEmitter")
-	sparkle.Color = ColorSequence.new(color)
-	sparkle.LightEmission = 0.6
-	sparkle.Size = NumberSequence.new(0.35, 0)
-	sparkle.Lifetime = NumberRange.new(0.4, 0.7)
-	sparkle.Rate = 40
-	sparkle.Speed = NumberRange.new(1, 3)
-	sparkle.SpreadAngle = Vector2.new(180, 180)
-	sparkle.Parent = orb
-
-	local start = os.clock()
-	local DURATION = 0.6
-	local conn
-	conn = RunService.RenderStepped:Connect(function()
-		local t = (os.clock() - start) / DURATION
-		local goal = root.Parent and (root.Position + Vector3.new(0, 4.5, 0)) or position
-		if t >= 1 then
-			conn:Disconnect()
-			-- float above the player's head, bobbing, until they pick it up or leave it
-			heldOrb = orb
-			local bob
-			bob = RunService.RenderStepped:Connect(function()
-				if orb:GetAttribute("Done") or not orb.Parent or not root.Parent then
-					bob:Disconnect()
-					return
-				end
-				local c = os.clock()
-				orb.CFrame = CFrame.new(root.Position + Vector3.new(0, 4.5 + math.sin(c * 3) * 0.3, 0)) * CFrame.Angles(0, c * 2, 0)
-			end)
-			onArrive()
-			return
+-- other players' paintings can't be pulled by us: hide their prompts on this screen
+local findsFolder = workspace:WaitForChild("BuriedFinds", 30)
+if findsFolder then
+	local function check(d)
+		if d:IsA("ProximityPrompt") then
+			local model = d:FindFirstAncestorOfClass("Model")
+			local owner = model and model:GetAttribute("Owner")
+			if owner and owner ~= player.UserId then d.Enabled = false end
 		end
-		-- pop straight up first, then arc over into the player
-		local ease = t * t * (3 - 2 * t)
-		local pos = position:Lerp(goal, ease) + Vector3.new(0, math.sin(t * math.pi) * 7, 0)
-		local spin = CFrame.Angles(0, t * 12, 0)
-		local size = 1.6 * (1 + math.sin(t * math.pi) * 0.5) * (1 - t * 0.5)
-		orb.Size = Vector3.one * size
-		orb.CFrame = CFrame.new(pos) * spin
-	end)
-end
-
-local popupToken = 0
-local awaiting -- popup token of the find waiting for a choice
-
-local function choose(take)
-	if not awaiting then return end
-	awaiting = nil
-	claimRemote:FireServer(take)
-	popup.Visible = false
-	finishOrb(take)
-end
-pickButton.MouseButton1Click:Connect(function() choose(true) end)
-leaveButton.MouseButton1Click:Connect(function() choose(false) end)
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if not gameProcessed and input.KeyCode == Enum.KeyCode.E and awaiting then
-		choose(true)
 	end
-end)
+	findsFolder.DescendantAdded:Connect(check)
+	for _, d in ipairs(findsFolder:GetDescendants()) do check(d) end
+end
 
-resultRemote.OnClientEvent:Connect(function(info)
-	popupToken += 1
-	local myToken = popupToken
+local function playFindSound()
 	local sound = GameConfig.Sounds and GameConfig.Sounds.Find
 	if sound and sound ~= "" then
 		local s = Instance.new("Sound")
@@ -310,52 +250,90 @@ resultRemote.OnClientEvent:Connect(function(info)
 		s:Play()
 		game:GetService("Debris"):AddItem(s, 4)
 	end
-	treasurePop(info.Position, info.Color, function()
-		if popupToken ~= myToken then return end
+end
 
-		for _, child in ipairs(iconHolder:GetChildren()) do child:Destroy() end
-		UIKit.artifactIcon(iconHolder, {Id = info.Id, Rarity = info.Rarity}, {Size = UDim2.fromScale(1, 1), Radius = 20})
-		nameLabel.Text = info.Name
-		rarityLabel.Text = string.upper(info.Rarity)
-		rarityTag.BackgroundColor3 = info.Color
-		popupStroke.Color = info.Color:Lerp(C.Ink, 0.45)
-		paintPopupHeader(info.Color:Lerp(C.Violet, 0.25))
-		incomeLabel.Text = "💵 " .. ArtifactData.FormatMoney(info.Income) .. "/s"
-		descLabel.Text = info.Description
-		foundLabel.Text = (info.Grade == "Perfect" and "✨ PERFECT DIG! ✨") or "YOU FOUND A MEME!"
-
-		-- pop-in animation
-		popup.Visible = true
-		popupScale.Scale = 0.3
-		TweenService:Create(popupScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
-
-		-- big finds (Legendary and up) flash the screen
-		local big = info.RarityIndex >= ArtifactData.GetRarityIndex("Legendary")
-		if big then
-			flash.BackgroundColor3 = info.Color
-			flash.BackgroundTransparency = 0.55
-			TweenService:Create(flash, TweenInfo.new(1.2), {BackgroundTransparency = 1}):Play()
-		end
-
-		-- wait for the player's choice; the countdown bar shrinks until the find is left behind
-		local timeout = tonumber(info.Timeout) or 20
-		timerFill.Size = UDim2.fromScale(1, 1)
-		TweenService:Create(timerFill, TweenInfo.new(timeout, Enum.EasingStyle.Linear), {Size = UDim2.fromScale(0, 1)}):Play()
-		awaiting = myToken
-		task.delay(timeout, function()
-			if awaiting == myToken then
-				awaiting = nil
-				popup.Visible = false
-				finishOrb(false)
-			end
+resultRemote.OnClientEvent:Connect(function(info)
+	clearBuried()
+	local myToken = buriedToken
+	playFindSound()
+	buriedTitle.Text = "You uncovered a " .. string.upper(info.Rarity) .. " painting!"
+	buriedTitle.TextColor3 = info.Color:Lerp(C.White, 0.35)
+	buriedStroke.Color = info.Color
+	buriedBadge.BackgroundColor3 = info.Color
+	buriedCard.Visible = true
+	UIKit.pop(buriedCard, 0.6)
+	local timeout = tonumber(info.Timeout) or 25
+	buriedTimer.Size = UDim2.new(1, -90, 0, 4)
+	TweenService:Create(buriedTimer, TweenInfo.new(timeout, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 4)}):Play()
+	if typeof(info.Painting) == "Instance" then
+		buriedHighlight = Instance.new("Highlight")
+		buriedHighlight.FillTransparency = 0.85
+		buriedHighlight.FillColor = info.Color
+		buriedHighlight.OutlineColor = info.Color:Lerp(C.White, 0.3)
+		buriedHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		buriedHighlight.Adornee = info.Painting
+		buriedHighlight.Parent = gui
+		info.Painting.AncestryChanged:Connect(function()
+			if not info.Painting:IsDescendantOf(workspace) and buriedToken == myToken then clearBuried() end
 		end)
+	end
+	task.delay(timeout, function()
+		if buriedToken == myToken then clearBuried() end
 	end)
+end)
+
+---------------------------------------------------------------------
+-- "YOU FOUND" CARD: shows once the painting is pulled out and in your hands
+---------------------------------------------------------------------
+local popupToken = 0
+local function closePopup()
+	popupToken += 1
+	popup.Visible = false
+end
+pickButton.MouseButton1Click:Connect(closePopup)
+
+local function showFound(info)
+	popupToken += 1
+	local myToken = popupToken
+	for _, child in ipairs(iconHolder:GetChildren()) do child:Destroy() end
+	UIKit.artifactIcon(iconHolder, {Id = info.Id, Rarity = info.Rarity}, {Size = UDim2.fromScale(1, 1), Radius = 20})
+	nameLabel.Text = info.Name
+	rarityLabel.Text = string.upper(info.Rarity)
+	rarityTag.BackgroundColor3 = info.Color
+	popupStroke.Color = info.Color:Lerp(C.Ink, 0.45)
+	paintPopupHeader(info.Color:Lerp(C.Violet, 0.25))
+	incomeLabel.Text = "💵 " .. ArtifactData.FormatMoney(info.Income) .. "/s"
+	descLabel.Text = info.Description
+	foundLabel.Text = (info.Grade == "Perfect" and "✨ PERFECT DIG! ✨") or "ADDED TO YOUR INVENTORY!"
+
+	popup.Visible = true
+	popupScale.Scale = 0.3
+	TweenService:Create(popupScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+	-- big finds (Legendary and up) flash the screen
+	if info.RarityIndex >= ArtifactData.GetRarityIndex("Legendary") then
+		flash.BackgroundColor3 = info.Color
+		flash.BackgroundTransparency = 0.55
+		TweenService:Create(flash, TweenInfo.new(1.2), {BackgroundTransparency = 1}):Play()
+	end
+	local SHOW = 6
+	timerFill.Size = UDim2.fromScale(1, 1)
+	TweenService:Create(timerFill, TweenInfo.new(SHOW, Enum.EasingStyle.Linear), {Size = UDim2.fromScale(0, 1)}):Play()
+	task.delay(SHOW, function()
+		if popupToken == myToken then closePopup() end
+	end)
+end
+
+pullRemote.OnClientEvent:Connect(function(finder, _painting, info)
+	if finder ~= player or typeof(info) ~= "table" then return end
+	clearBuried()
+	-- the card pops up once the painting is out of the ground and in your hands
+	task.delay(1.25, showFound, info)
 end)
 
 ---------------------------------------------------------------------
 -- RARE FIND ANNOUNCEMENTS (whole server)
 ---------------------------------------------------------------------
-local banner = UIKit.panel(gui, {Size = UDim2.fromOffset(640, 54), Position = UDim2.new(0.5, 0, 0, 14), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Radius = 27, Stroke = 3, StrokeColor = C.Sun, ShadeAmount = 0.2})
+local banner = UIKit.panel(gui, {Size = UDim2.fromOffset(640, 54), Position = UDim2.new(0.5, 0, 0, 92), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Radius = 27, Stroke = 3, StrokeColor = C.Sun, ShadeAmount = 0.2})
 banner.BackgroundTransparency = 0.08
 banner.Visible = false
 local bannerStroke = banner:FindFirstChildOfClass("UIStroke")

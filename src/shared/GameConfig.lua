@@ -197,6 +197,8 @@ for i, info in ipairs(WorldsData.Worlds) do
 end
 
 GameConfig.BedrockThickness = 8
+-- rock strata in the pit: a layer this thick every Gap studs, reaching this far into the walls
+local STRATA = {First = 14, Gap = 18, Thickness = 4, IntoWall = 8}
 
 -- Crater size: every point of Power adds half a stud to the radius of the hole a swing digs
 function GameConfig.DigRadiusForPower(power)
@@ -263,6 +265,31 @@ function GameConfig.GetFirstShovelForZone(world, zoneIndex)
 	return nil
 end
 
+-- THE PIT VOLUME: a box around a world's pit, from a little above the ground down to bedrock.
+-- Scripts ask "is this character inside the pit?" with workspace:GetPartBoundsInBox, so the
+-- answer is right the moment you step over the edge (no distance guessing).
+function GameConfig.GetPitBox(world)
+	local lastZone = world.Zones[#world.Zones]
+	local top, bottom = world.Origin.Y + 6, world.Origin.Y + lastZone.Bottom - GameConfig.BedrockThickness
+	local size = Vector3.new(world.PitRadius * 2 + 2, top - bottom, world.PitRadius * 2 + 2)
+	return CFrame.new(world.Origin.X, (top + bottom) / 2, world.Origin.Z), size
+end
+
+-- Is this character standing in (or falling through) the pit of this world?
+function GameConfig.IsInPit(world, character)
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then return false end
+	local params = OverlapParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.MaxParts = 1
+	params.FilterDescendantsInstances = {character} -- any body part inside the box counts
+	local cf, size = GameConfig.GetPitBox(world)
+	if #workspace:GetPartBoundsInBox(cf, size, params) == 0 then return false end
+	-- the pit is round: trim the box's corners
+	local offset = root.Position - world.Origin
+	return Vector3.new(offset.X, 0, offset.Z).Magnitude <= world.PitRadius + 1
+end
+
 -- Fills a world's dig site with terrain: ground around, the 4 zones in the pit, bedrock below.
 -- Used on server start and every pit reset.
 function GameConfig.FillDigTerrain(terrain, world)
@@ -301,6 +328,17 @@ function GameConfig.FillDigTerrain(terrain, world)
 	for _, zone in ipairs(world.Zones) do
 		local height = zone.Top - zone.Bottom
 		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, zone.Bottom + height / 2, 0)), height, radius, Enum.Material[zone.Material])
+	end
+	-- rock strata: thin layers of other rock run through the dirt and on into the pit walls,
+	-- so every crater wall and the edge of the pit show stripes like a real dig site
+	for i, zone in ipairs(world.Zones) do
+		local nextZone = world.Zones[i + 1]
+		local k = 0
+		for d = -zone.Top + STRATA.First, -zone.Bottom - STRATA.Gap / 2, STRATA.Gap do
+			k += 1
+			local material = (k % 2 == 1 or not nextZone) and wall or Enum.Material[nextZone.Material]
+			terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -d, 0)), STRATA.Thickness, radius + STRATA.IntoWall, material)
+		end
 	end
 	-- bedrock
 	terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, lastZone.Bottom - GameConfig.BedrockThickness / 2, 0)),

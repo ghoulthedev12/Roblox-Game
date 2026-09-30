@@ -4,7 +4,7 @@
 --     player's museum, so visitors can see your collection too)
 --   * the Display window: pick a meme from your inventory to put on a slot, or take it back
 --   * the Alien Art Dealer window: sell memes for cash
---   * up/down arrows on the left while you're inside a museum, to change floors
+--   * small up/down arrows at the top center while you're inside a museum, to change floors
 --     (the up arrow also buys the next floor in your own museum)
 -- Slot prompts only show up in your own museum.
 
@@ -320,15 +320,24 @@ end)
 ---------------------------------------------------------------------
 -- FLOOR ARROWS (only while you're inside a museum)
 ---------------------------------------------------------------------
-local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(96, 196), Position = UDim2.fromOffset(18, 268), Color = C.Panel, Radius = 22, StrokeColor = C.Ink, Stroke = 3})
+-- a slim bar pinned to the top center of the screen:  [▼]  FLOOR 2/3  [▲]
+local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(212, 44), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Ink, Radius = 22, StrokeColor = C.Sky, Stroke = 2, ShadeAmount = 0.2})
+floorPanel.BackgroundTransparency = 0.1
 floorPanel.Visible = false
-local upButton = UIKit.button(floorPanel, "▲", {Size = UDim2.fromOffset(72, 60), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sky, Radius = 16, MaxText = 30})
-local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -12, 0, 22), Position = UDim2.new(0.5, 0, 0.5, 4), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0, MaxText = 18})
-local upPrice = UIKit.label(floorPanel, "", {Size = UDim2.new(1, -8, 0, 16), Position = UDim2.new(0.5, 0, 0, 74), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Stroke = 0, MaxText = 14})
-local downButton = UIKit.button(floorPanel, "▼", {Size = UDim2.fromOffset(72, 60), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), Color = C.Violet, Radius = 16, MaxText = 30})
+local downButton = UIKit.button(floorPanel, "▼", {Size = UDim2.fromOffset(36, 36), Position = UDim2.new(0, 4, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Violet, Radius = 18, MaxText = 16})
+local upButton = UIKit.button(floorPanel, "▲", {Size = UDim2.fromOffset(36, 36), Position = UDim2.new(1, -4, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Color = C.Sky, Radius = 18, MaxText = 16})
+local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -96, 0, 20), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 0, MaxText = 17})
+-- the price of the next floor hangs under the bar when it's still locked
+local pricePill = UIKit.panel(floorPanel, {Size = UDim2.fromOffset(150, 24), Position = UDim2.new(0.5, 0, 1, 6), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Radius = 12, Stroke = 2})
+local upPrice = UIKit.label(pricePill, "", {Size = UDim2.new(1, -14, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 1.5, MaxText = 13})
+pricePill.Visible = false
 for _, b in ipairs({upButton, downButton}) do
 	local arrow = b:FindFirstChild("Label")
-	if arrow then arrow.Font = Enum.Font.GothamBlack end
+	if arrow then
+		arrow.Font = Enum.Font.GothamBlack
+		arrow.Size = UDim2.new(1, -10, 1, -12)
+	end
 end
 
 local function currentMuseumFloor()
@@ -353,14 +362,15 @@ task.spawn(function()
 			local opened = string.split(museum:GetAttribute("UnlockedFloors") or "1", ",")
 			local owned = museum:GetAttribute("OwnerUserId") == player.UserId
 			local nextOpen = table.find(opened, tostring(floor + 1)) ~= nil
-			floorLabel.Text = "FLOOR " .. floor
+			floorLabel.Text = "FLOOR " .. floor .. "/" .. topFloor
 			upButton.Visible = floor < topFloor and (nextOpen or owned)
 			downButton.Visible = floor > 1
 			if upButton.Visible and not nextOpen then
-				upPrice.Text = "🔒 " .. ArtifactData.FormatMoney(GameConfig.FloorPrices[floor + 1])
+				upPrice.Text = "🔒 Unlock " .. ArtifactData.FormatMoney(GameConfig.FloorPrices[floor + 1])
+				pricePill.Visible = true
 				upButton.BackgroundColor3 = C.Coral
 			else
-				upPrice.Text = ""
+				pricePill.Visible = false
 				upButton.BackgroundColor3 = C.Sky
 			end
 		end
