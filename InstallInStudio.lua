@@ -10828,17 +10828,41 @@ local swingFxRemote = remotes:WaitForChild("ShovelSwingFx")
 --         180 = head straight up, 225 = head up and back over the shoulder
 -- Turn  = yaw (+ = to the left), Roll = sideways lean of the pickaxe (+ = head leans left)
 -- Lean  = torso pitch (+ = bend forward), Twist = torso yaw (+ = turn left)
-local IDLE = {Hand = Vector3.new(0.65, -0.45, -0.75), Tilt = 168, Turn = 0, Lean = 2, Twist = 8, Roll = 32}
--- {time, hand, tilt, turn, lean, twist, roll}
+-- Bend  = torso side bend (+ = lean left), Look = head pitch (+ = look down)
+local CHANNELS = {"Tilt", "Turn", "Roll", "Lean", "Twist", "Bend", "Look"}
+local IDLE = {Hand = Vector3.new(0.65, -0.45, -0.75), Tilt = 168, Turn = 0, Roll = 32, Lean = 2, Twist = 8, Bend = 0, Look = 0}
+
+-- easing curves: how each part of the swing speeds up and slows down
+local function easeInOutSine(u) return -(math.cos(math.pi * u) - 1) / 2 end
+local function easeOutCubic(u) return 1 - (1 - u) ^ 3 end
+local function easeOutSine(u) return math.sin(u * math.pi / 2) end
+local function easeInQuad(u) return u * u end
+local function easeOutBack(u)
+	local c1 = 1.9
+	return 1 + (c1 + 1) * (u - 1) ^ 3 + c1 * (u - 1) ^ 2
+end
+local function easeInOutCubic(u) return u < 0.5 and 4 * u * u * u or 1 - (-2 * u + 2) ^ 3 / 2 end
+
+-- The swing, key by key. Ease = how the motion INTO that key is timed.
 local SWING = {
-	{0.00, IDLE.Hand, 168, 0, 2, 8, 32},                       -- ready: held diagonally across the body
-	{0.30, Vector3.new(0.35, 2.0, 0.25), 215, -8, -10, 14, 12}, -- anticipation: heaved up behind the head, leaning back
-	{0.50, Vector3.new(0.25, 0.0, -1.3), 72, -4, 28, -18, 0},   -- strike: slammed down into the ground in front
-	{0.68, Vector3.new(0.3, 0.35, -1.2), 100, -4, 16, -10, 4},  -- recovery: bounces back up out of the dirt
-	{1.00, IDLE.Hand, 168, 0, 2, 8, 32},
+	{T = 0.00, Pose = IDLE},
+	-- load: a little dip and a cock of the wrists before the big lift
+	{T = 0.12, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.6, -0.56, -0.64), Tilt = 176, Turn = -2, Roll = 26, Lean = 8, Twist = 14, Bend = -3, Look = 4}},
+	-- lift: heaved up behind the head fast, slowing as it gets to the top
+	{T = 0.34, Ease = easeOutCubic, Pose = {Hand = Vector3.new(0.35, 2.0, 0.25), Tilt = 215, Turn = -8, Roll = 12, Lean = -10, Twist = 16, Bend = -6, Look = -12}},
+	-- hang: the pickaxe floats at the very top for a beat, stretching back
+	{T = 0.42, Ease = easeOutSine, Pose = {Hand = Vector3.new(0.32, 2.1, 0.35), Tilt = 222, Turn = -9, Roll = 10, Lean = -12, Twist = 18, Bend = -7, Look = -14}},
+	-- strike: accelerates all the way down into the ground
+	{T = 0.52, Ease = easeInQuad, Pose = {Hand = Vector3.new(0.25, 0.0, -1.3), Tilt = 72, Turn = -4, Roll = 0, Lean = 28, Twist = -18, Bend = 5, Look = 22}},
+	-- rebound: kicks back up out of the dirt (with a little overshoot)
+	{T = 0.64, Ease = easeOutBack, Pose = {Hand = Vector3.new(0.3, 0.4, -1.15), Tilt = 102, Turn = -4, Roll = 4, Lean = 16, Twist = -10, Bend = 3, Look = 12}},
+	-- settle back into the ready stance
+	{T = 1.00, Ease = easeInOutCubic, Pose = IDLE},
 }
-local STRIKE_TIME = 0.5
+local STRIKE_TIME = 0.52
 local HIT_STOP = 0.06 -- the pose freezes this long on impact, which makes hits feel heavy
+local TRAIL_FROM, TRAIL_TO = 0.4, 0.62 -- the head leaves a swoosh trail during the down-swing
+local WOBBLE = {Degrees = 7, Decay = 9, Speed = 38} -- the handle vibrates after the impact
 
 -- tool axes when upright: grip end (+Z) points up (head down), pick arms (+Y) point forward
 local UPRIGHT = CFrame.fromMatrix(Vector3.zero, Vector3.xAxis, -Vector3.zAxis, Vector3.yAxis)
@@ -10852,26 +10876,27 @@ end
 local function samplePose(t)
 	t = math.clamp(t, 0, 1)
 	local i = 1
-	while i < #SWING - 1 and t > SWING[i + 1][1] do i += 1 end
+	while i < #SWING - 1 and t > SWING[i + 1].T do i += 1 end
 	local k0, k1, k2, k3 = SWING[math.max(i - 1, 1)], SWING[i], SWING[i + 1], SWING[math.min(i + 2, #SWING)]
-	local u = (t - k1[1]) / (k2[1] - k1[1])
-	return {
-		Hand = catmull(k0[2], k1[2], k2[2], k3[2], u),
-		Tilt = catmull(k0[3], k1[3], k2[3], k3[3], u),
-		Turn = catmull(k0[4], k1[4], k2[4], k3[4], u),
-		Lean = catmull(k0[5], k1[5], k2[5], k3[5], u),
-		Twist = catmull(k0[6], k1[6], k2[6], k3[6], u),
-		Roll = catmull(k0[7], k1[7], k2[7], k3[7], u),
-	}
+	local u = (t - k1.T) / (k2.T - k1.T)
+	u = k2.Ease and k2.Ease(u) or u
+	local pose = {Hand = catmull(k0.Pose.Hand, k1.Pose.Hand, k2.Pose.Hand, k3.Pose.Hand, u)}
+	for _, c in ipairs(CHANNELS) do
+		pose[c] = catmull(k0.Pose[c], k1.Pose[c], k2.Pose[c], k3.Pose[c], u)
+	end
+	return pose
 end
 
--- gentle breathing sway while holding the pickaxe ready
-local function idlePose(clock)
+-- the ready stance is never frozen: breathing, a slow weight shift, and a bob while walking
+local function idlePose(clock, moving)
 	local breathe = math.sin(clock * 2.2)
+	local sway = math.sin(clock * 0.8)
+	local step = math.sin(clock * 11) * moving
 	return {
-		Hand = IDLE.Hand + Vector3.new(0, breathe * 0.04, 0),
-		Tilt = IDLE.Tilt + breathe * 2, Turn = IDLE.Turn,
-		Lean = IDLE.Lean + breathe * 0.6, Twist = IDLE.Twist, Roll = IDLE.Roll + breathe * 1.5,
+		Hand = IDLE.Hand + Vector3.new(sway * 0.05, breathe * 0.04 + math.abs(step) * 0.08, 0),
+		Tilt = IDLE.Tilt + breathe * 2 + step * 4, Turn = IDLE.Turn + sway * 2,
+		Roll = IDLE.Roll + sway * 3, Lean = IDLE.Lean + breathe * 0.6 + moving * 5,
+		Twist = IDLE.Twist + sway * 2, Bend = sway * 1.5 + step * 1.2, Look = -breathe * 2,
 	}
 end
 
@@ -10909,6 +10934,8 @@ local function destroyRig(character)
 		thing:Destroy()
 	end
 	if rig.Waist and rig.Waist.Parent then rig.Waist.C0 = rig.WaistC0 end
+	if rig.Neck and rig.Neck.Parent then rig.Neck.C0 = rig.NeckC0 end
+	if rig.Hips and rig.Hips.Parent then rig.Hips.C0 = rig.HipsC0 end
 	if rig.Tool then
 		for _, d in ipairs(rig.Tool:GetDescendants()) do
 			if d:IsA("BasePart") then d.LocalTransparencyModifier = 0 end
@@ -10991,7 +11018,37 @@ local function createRig(character, tool)
 	end
 	rayParams.FilterDescendantsInstances = ignore
 
+	-- a swoosh trail from one arm tip of the head to the other (on during the down-swing)
+	local trail
+	if bladePart then
+		local reach = bladePart.Size.Y * 1.7
+		local a0 = Instance.new("Attachment")
+		a0.Position = bladePart.CFrame:PointToObjectSpace(bladePart.Position + Vector3.new(0, reach, 0))
+		a0.Parent = bladePart
+		local a1 = Instance.new("Attachment")
+		a1.Position = bladePart.CFrame:PointToObjectSpace(bladePart.Position - Vector3.new(0, reach, 0))
+		a1.Parent = bladePart
+		local gem = holder:FindFirstChild("HeadGem")
+		local glow = gem and gem.Color or Color3.new(1, 1, 1)
+		trail = Instance.new("Trail")
+		trail.Attachment0 = a0
+		trail.Attachment1 = a1
+		trail.Lifetime = 0.16
+		trail.MinLength = 0.05
+		trail.FaceCamera = true
+		trail.LightEmission = 0.5
+		trail.Color = ColorSequence.new(Color3.new(1, 1, 1), glow)
+		trail.Transparency = NumberSequence.new(0.35, 1)
+		trail.WidthScale = NumberSequence.new(1, 0.3)
+		trail.Enabled = false
+		trail.Parent = bladePart
+	end
+
 	local waist = upperTorso:FindFirstChild("Waist")
+	local head = character:FindFirstChild("Head")
+	local neck = head and head:FindFirstChild("Neck")
+	local lowerTorso = character:FindFirstChild("LowerTorso")
+	local hips = lowerTorso and lowerTorso:FindFirstChild("Root")
 	local rig = {
 		Tool = tool, Root = root, Puppet = puppet, Blade = bladePart or (puppet[#puppet] and puppet[#puppet].Part),
 		HoldZ = (tool:GetAttribute("RightHoldZ") or tool:GetAttribute("TopHoldZ") or 1.1) - 0.12, -- right hand near the end
@@ -11001,6 +11058,11 @@ local function createRig(character, tool)
 		LeftTarget = leftIK and leftTarget or nil,
 		Waist = waist and waist:IsA("Motor6D") and waist or nil,
 		WaistC0 = waist and waist:IsA("Motor6D") and waist.C0 or nil,
+		Neck = neck and neck:IsA("Motor6D") and neck or nil,
+		NeckC0 = neck and neck:IsA("Motor6D") and neck.C0 or nil,
+		Hips = hips and hips:IsA("Motor6D") and hips or nil,
+		HipsC0 = hips and hips:IsA("Motor6D") and hips.C0 or nil,
+		Humanoid = humanoid, Trail = trail, ImpactAt = nil, Smooth = nil,
 		SwingStart = nil, SwingLength = 0.4, Struck = true,
 		GripOffset = gripAttachment and gripAttachment.CFrame or CFrame.new(0, -0.15, 0) * CFrame.Angles(math.rad(-90), 0, 0),
 		RayParams = rayParams,
@@ -11043,8 +11105,10 @@ local function startSwing(character, length)
 	rig.Struck = false
 end
 
-local function poseRig(character, rig, clock)
-	local pose
+local function poseRig(character, rig, clock, dt)
+	local moving = rig.Humanoid and math.clamp(rig.Humanoid.MoveDirection.Magnitude, 0, 1) or 0
+	local target
+	local trailOn = false
 	if rig.SwingStart then
 		-- hit-stop: time stands still for a moment right at the impact
 		local elapsed = clock - rig.SwingStart
@@ -11055,19 +11119,46 @@ local function poseRig(character, rig, clock)
 		local t = elapsed / rig.SwingLength
 		if t >= 1 then
 			rig.SwingStart = nil
-			pose = idlePose(clock)
+			target = idlePose(clock, moving)
 		else
-			pose = samplePose(t)
+			target = samplePose(t)
+			trailOn = t > TRAIL_FROM and t < TRAIL_TO
 			if not rig.Struck and t >= STRIKE_TIME then
 				rig.Struck = true
+				rig.ImpactAt = clock
 				if rig.Blade then
 					tossDirt(rig.Blade.Position, dirtColorAt(rig.Root.Position))
 				end
 			end
 		end
 	else
-		pose = idlePose(clock)
+		target = idlePose(clock, moving)
 	end
+	if rig.Trail then rig.Trail.Enabled = trailOn end
+
+	-- impact wobble: the handle rings for a moment after the head bites the ground
+	if rig.ImpactAt then
+		local since = clock - rig.ImpactAt - HIT_STOP
+		if since > 0 and since < 0.6 then
+			local ring = math.exp(-WOBBLE.Decay * since) * math.sin(WOBBLE.Speed * since)
+			target.Tilt += ring * WOBBLE.Degrees
+			target.Hand += Vector3.new(0, ring * 0.06, 0)
+		end
+	end
+
+	-- smoothing: every channel eases toward its target, so switching between idle and
+	-- swinging (or starting a new swing mid-way) never snaps. Swings stay crisp.
+	local smooth = rig.Smooth
+	if not smooth then
+		smooth = table.clone(target)
+		rig.Smooth = smooth
+	end
+	local alpha = 1 - math.exp(-(rig.SwingStart and 45 or 12) * (dt or 1 / 60))
+	smooth.Hand = smooth.Hand:Lerp(target.Hand, alpha)
+	for _, c in ipairs(CHANNELS) do
+		smooth[c] += ((target[c] or 0) - (smooth[c] or 0)) * alpha
+	end
+	local pose = smooth
 
 	-- where the shovel goes (in root space): rotate the upright shovel by tilt and turn,
 	-- then slide it along its shaft so the grip sits exactly in the hand
@@ -11114,12 +11205,20 @@ local function poseRig(character, rig, clock)
 	if rig.LeftTarget then
 		rig.LeftTarget.Position = rig.Root.CFrame:PointToObjectSpace((shovelCF * CFrame.new(0, 0, rig.LeftHoldZ)).Position)
 	end
+	-- whole body: the torso bends and twists with the swing, the hips counter-turn a little,
+	-- and the head follows the pickaxe (looks up at the top, down at the impact)
 	if rig.Waist then
-		rig.Waist.C0 = rig.WaistC0 * CFrame.Angles(math.rad(-pose.Lean), math.rad(pose.Twist), 0)
+		rig.Waist.C0 = rig.WaistC0 * CFrame.Angles(math.rad(-pose.Lean), math.rad(pose.Twist), math.rad(pose.Bend))
+	end
+	if rig.Hips then
+		rig.Hips.C0 = rig.HipsC0 * CFrame.Angles(0, math.rad(-pose.Twist * 0.35), 0)
+	end
+	if rig.Neck then
+		rig.Neck.C0 = rig.NeckC0 * CFrame.Angles(math.rad(-pose.Look), math.rad(-pose.Twist * 0.4), 0)
 	end
 end
 
-RunService.RenderStepped:Connect(function()
+RunService.RenderStepped:Connect(function(dt)
 	local clock = os.clock()
 	-- find every character holding a shovel; build or tear down rigs to match
 	for _, plr in ipairs(Players:GetPlayers()) do
@@ -11141,7 +11240,7 @@ RunService.RenderStepped:Connect(function()
 		if not character.Parent or not rig.Root.Parent then
 			destroyRig(character)
 		else
-			poseRig(character, rig, clock)
+			poseRig(character, rig, clock, dt)
 		end
 	end
 end)
