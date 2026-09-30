@@ -44,7 +44,7 @@ for _, world in ipairs(GameConfig.Worlds) do
 	local planet = UIKit.panel(card, {Size = UDim2.fromOffset(62, 62), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = planetColor, Radius = 31, ShadeAmount = 0.25})
 	UIKit.label(planet, tostring(world.Id), {Size = UDim2.fromScale(0.56, 0.56), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3, StrokeColor = UIKit.shadeColor(planetColor, 0.6), MaxText = 30})
 	UIKit.label(card, world.Name, {Size = UDim2.new(0.62, -90, 0, 28), Position = UDim2.fromOffset(88, 12), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
-	local sub = world.Enabled and (world.Tagline or (#world.Shovels .. " shovels  •  digs down to " .. -world.Zones[#world.Zones].Bottom .. "m  •  your museum is here"))
+	local sub = world.Enabled and (world.Tagline or (#world.Shovels .. " pickaxes  •  digs down to " .. -world.Zones[#world.Zones].Bottom .. "m  •  your museum is here"))
 		or "Still being excavated... coming soon!"
 	UIKit.label(card, sub, {Size = UDim2.new(0.62, -90, 0, 34), Position = UDim2.fromOffset(88, 42), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
 

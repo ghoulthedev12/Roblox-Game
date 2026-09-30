@@ -46,11 +46,16 @@ paid every second.
 visit 2-4 displayed memes (riding to upper floors), react with an emoji bubble, and leave.
 They never give money. Tune the numbers at the top of `VisitorManager.server.lua`.
 
-## Shovels
-`GameConfig.ShovelLook = "Crystal"`: every shovel is the blocky/crystal design, upgraded by its
-`Power` (1-9): bigger, new crystal color, more shards, spinning orbit crystals, stronger particles.
-Set it to `"Classic"` for the older hand-made models. `Power` also sets the crater size:
+## Pickaxes
+Every digging tool is a blocky voxel pickaxe built by `src/shared/PickaxeModels.lua`: a head of
+little cubes (Crescent, Wide, Spiked, Crystal or Hammer shape), a gem socket, gem nodes on the
+handle, a diamond cage, a wrapped grip and a gem pommel. World 1's pickaxes each have their own
+colors (`LOOKS` in that file); worlds 2-9 use their theme colors. Better pickaxes (higher `Power`)
+are bigger, glow, sparkle and get orbiting cubes. `Power` also sets the crater size:
 radius = `GameConfig.DigRadiusForPower(Power)`.
+Players hold them with both hands (`ShovelClient`): a ready stance across the body, an overhead
+wind-up, a slam into the ground and a bounce back. (Internally the tables are still called
+`Shovels` and the ids are the old ones, so saves keep working.)
 
 ## Sky
 - `BackgroundWeather` (client): giant cubes, spheres and cones fall far in the background.

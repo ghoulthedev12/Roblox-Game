@@ -221,26 +221,30 @@ end)
 -- Other players' swings arrive through ShovelSwingFx, so everyone sees everyone dig.
 ---------------------------------------------------------------------
 local Debris = game:GetService("Debris")
-local ShovelModels = require(ReplicatedStorage:WaitForChild("ShovelModels"))
+local ShovelModels = require(ReplicatedStorage:WaitForChild("PickaxeModels"))
 local swingFxRemote = remotes:WaitForChild("ShovelSwingFx")
 
--- Pose values, all relative to the HumanoidRootPart (+X right, +Y up, -Z forward):
--- Hand  = where the right hand holds the grip (studs); the left arm stays free
--- Tilt  = shaft angle from straight down, degrees (+ = blade pushed forward, 90 = level)
--- Turn  = shovel yaw, degrees (+ = swings to the left, - = to the right)
+-- TWO-HANDED PICKAXE POSE. Values are relative to the HumanoidRootPart (+X right, +Y up,
+-- -Z forward). The right hand holds the bottom of the handle, the left hand holds it a bit
+-- higher up (both by IK, so the grip always matches the pickaxe).
+-- Hand  = where the right hand holds the handle (studs)
+-- Tilt  = handle pitch, degrees: 0 = head pointing straight down, 90 = head pointing forward,
+--         180 = head straight up, 225 = head up and back over the shoulder
+-- Turn  = yaw (+ = to the left), Roll = sideways lean of the pickaxe (+ = head leans left)
 -- Lean  = torso pitch (+ = bend forward), Twist = torso yaw (+ = turn left)
-local IDLE = {Hand = Vector3.new(1.05, 0, -0.55), Tilt = 55, Turn = -10, Lean = 0, Twist = 0}
+local IDLE = {Hand = Vector3.new(0.65, -0.45, -0.75), Tilt = 168, Turn = 0, Lean = 2, Twist = 8, Roll = 32}
+-- {time, hand, tilt, turn, lean, twist, roll}
 local SWING = {
-	{0.00, IDLE.Hand, 55, -10, 0, 0},                          -- carried at the side, blade forward
-	{0.30, Vector3.new(1.0, 1.05, -0.15), 12, -8, -8, 10},     -- quick wind up: yank it back and up
-	{0.50, Vector3.new(0.9, 0.1, -1.25), 44, -4, 22, -4},      -- slam: blade bites the dirt in front
-	{0.70, Vector3.new(0.95, 0.4, -1.05), 62, -8, 12, -6},     -- small recoil bounce
-	{1.00, IDLE.Hand, 55, -10, 0, 0},
+	{0.00, IDLE.Hand, 168, 0, 2, 8, 32},                       -- ready: held diagonally across the body
+	{0.30, Vector3.new(0.35, 2.0, 0.25), 215, -8, -10, 14, 12}, -- anticipation: heaved up behind the head, leaning back
+	{0.50, Vector3.new(0.25, 0.0, -1.3), 72, -4, 28, -18, 0},   -- strike: slammed down into the ground in front
+	{0.68, Vector3.new(0.3, 0.35, -1.2), 100, -4, 16, -10, 4},  -- recovery: bounces back up out of the dirt
+	{1.00, IDLE.Hand, 168, 0, 2, 8, 32},
 }
 local STRIKE_TIME = 0.5
 local HIT_STOP = 0.06 -- the pose freezes this long on impact, which makes hits feel heavy
 
--- tool axes when upright: shaft (+Z) points up, blade face (+Y) points forward
+-- tool axes when upright: grip end (+Z) points up (head down), pick arms (+Y) point forward
 local UPRIGHT = CFrame.fromMatrix(Vector3.zero, Vector3.xAxis, -Vector3.zAxis, Vector3.yAxis)
 
 -- smooth Catmull-Rom curve through the swing keyframes (never jerky)
@@ -261,16 +265,17 @@ local function samplePose(t)
 		Turn = catmull(k0[4], k1[4], k2[4], k3[4], u),
 		Lean = catmull(k0[5], k1[5], k2[5], k3[5], u),
 		Twist = catmull(k0[6], k1[6], k2[6], k3[6], u),
+		Roll = catmull(k0[7], k1[7], k2[7], k3[7], u),
 	}
 end
 
--- gentle breathing sway while holding the shovel
+-- gentle breathing sway while holding the pickaxe ready
 local function idlePose(clock)
 	local breathe = math.sin(clock * 2.2)
 	return {
 		Hand = IDLE.Hand + Vector3.new(0, breathe * 0.04, 0),
 		Tilt = IDLE.Tilt + breathe * 2, Turn = IDLE.Turn,
-		Lean = IDLE.Lean + breathe * 0.6, Twist = IDLE.Twist,
+		Lean = IDLE.Lean + breathe * 0.6, Twist = IDLE.Twist, Roll = IDLE.Roll + breathe * 1.5,
 	}
 end
 
@@ -375,6 +380,11 @@ local function createRig(character, tool)
 	-- match the hand's rotation too, so the fist closes around the shaft
 	rightIK.Type = Enum.IKControlType.Transform
 	local gripAttachment = parts.RH:FindFirstChild("RightGripAttachment")
+	-- the left hand holds the handle higher up (two-handed grip)
+	local leftTarget = newAttachment(root, "ShovelLeftHand")
+	local leftPole = newAttachment(root, "ShovelLeftElbow")
+	leftPole.Position = Vector3.new(-2.2, -1.2, 0.6)
+	local leftIK = parts.LU and parts.LH and newArmIK(humanoid, "ShovelLeftArm", parts.LU, parts.LH, leftTarget, leftPole)
 
 	local rayParams = RaycastParams.new()
 	rayParams.FilterType = Enum.RaycastFilterType.Exclude
@@ -388,15 +398,17 @@ local function createRig(character, tool)
 	local waist = upperTorso:FindFirstChild("Waist")
 	local rig = {
 		Tool = tool, Root = root, Puppet = puppet, Blade = bladePart or (puppet[#puppet] and puppet[#puppet].Part),
-		HoldZ = (tool:GetAttribute("TopHoldZ") or 1.3) - 0.12, -- just under the grip
+		HoldZ = (tool:GetAttribute("RightHoldZ") or tool:GetAttribute("TopHoldZ") or 1.1) - 0.12, -- right hand near the end
+		LeftHoldZ = tool:GetAttribute("LeftHoldZ") or 0.4, -- left hand higher up the handle
 		TipZ = tipZ,
 		RightTarget = rightTarget,
+		LeftTarget = leftIK and leftTarget or nil,
 		Waist = waist and waist:IsA("Motor6D") and waist or nil,
 		WaistC0 = waist and waist:IsA("Motor6D") and waist.C0 or nil,
 		SwingStart = nil, SwingLength = 0.4, Struck = true,
 		GripOffset = gripAttachment and gripAttachment.CFrame or CFrame.new(0, -0.15, 0) * CFrame.Angles(math.rad(-90), 0, 0),
 		RayParams = rayParams,
-		Cleanup = {holder, rightTarget, rightPole, rightIK},
+		Cleanup = {holder, rightTarget, rightPole, rightIK, leftTarget, leftPole, leftIK or nil},
 	}
 	rigs[character] = rig
 	return rig
@@ -463,7 +475,8 @@ local function poseRig(character, rig, clock)
 
 	-- where the shovel goes (in root space): rotate the upright shovel by tilt and turn,
 	-- then slide it along its shaft so the grip sits exactly in the hand
-	local rotation = CFrame.Angles(0, math.rad(pose.Turn), 0) * CFrame.Angles(math.rad(pose.Tilt), 0, 0) * UPRIGHT
+	local rotation = CFrame.Angles(0, math.rad(pose.Turn), 0) * CFrame.Angles(0, 0, math.rad(pose.Roll or 0))
+		* CFrame.Angles(math.rad(pose.Tilt), 0, 0) * UPRIGHT
 	local up = rotation.ZVector
 	local hand = pose.Hand
 	local origin = hand - up * rig.HoldZ
@@ -502,6 +515,9 @@ local function poseRig(character, rig, clock)
 	-- handle = hand * gripAttachment * grip^-1, so hand = handle * grip * gripAttachment^-1
 	local handCF = shovelCF * CFrame.new(0, 0, rig.HoldZ) * rig.GripOffset:Inverse()
 	rig.RightTarget.CFrame = rig.Root.CFrame:ToObjectSpace(handCF)
+	if rig.LeftTarget then
+		rig.LeftTarget.Position = rig.Root.CFrame:PointToObjectSpace((shovelCF * CFrame.new(0, 0, rig.LeftHoldZ)).Position)
+	end
 	if rig.Waist then
 		rig.Waist.C0 = rig.WaistC0 * CFrame.Angles(math.rad(-pose.Lean), math.rad(pose.Twist), 0)
 	end
@@ -622,7 +638,7 @@ local function trySwing(def)
 	if now - lastSwing < def.Cooldown then return end
 	lastSwing = now
 
-	local length = math.clamp(def.Cooldown * 0.9, 0.28, 0.45)
+	local length = math.clamp(def.Cooldown, 0.3, 0.5) -- overhead two-handed swing
 	startSwing(player.Character, length)
 
 	-- the dig happens exactly when the blade hits the ground
@@ -676,7 +692,7 @@ end
 ---------------------------------------------------------------------
 -- SHOVEL SHOP WINDOW
 ---------------------------------------------------------------------
-local window, content = UIKit.window(gui, "SHOVEL SHOP", UDim2.fromOffset(780, 580), C.Violet, "⛏️")
+local window, content = UIKit.window(gui, "PICKAXE SHOP", UDim2.fromOffset(780, 580), C.Violet, "⛏️")
 
 local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(180, 38), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 19})
 local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -24, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, StrokeColor = UIKit.shadeColor(C.Money, 0.6), MaxText = 24})

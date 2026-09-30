@@ -5,7 +5,7 @@
 --   * glossy "candy" buttons with a darker bottom lip, white bubbly text and a bounce
 --   * windows with a full-width colored header bar, an icon, and the close button inside it
 --   * text that scales with its box but never past a sensible size (so nothing looks huge)
---   * live 3D shovel icons (ViewportFrames that render the real shovel model)
+--   * live 3D pickaxe icons (ViewportFrames that render the real pickaxe model)
 
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -375,12 +375,12 @@ function UIKit.statBar(parent, name, fraction, valueText, color, props)
 end
 
 ---------------------------------------------------------------------
--- 3D SHOVEL ICON: renders the real shovel model inside a ViewportFrame
+-- 3D PICKAXE ICON: renders the real pickaxe model inside a ViewportFrame
 ---------------------------------------------------------------------
 local ShovelModels -- loaded on first use (only needed where icons are drawn)
 function UIKit.shovelIcon(parent, def, props)
 	props = props or {}
-	ShovelModels = ShovelModels or require(ReplicatedStorage:WaitForChild("ShovelModels"))
+	ShovelModels = ShovelModels or require(ReplicatedStorage:WaitForChild("PickaxeModels"))
 	local vp = Instance.new("ViewportFrame")
 	vp.Size = props.Size or UDim2.fromOffset(80, 80)
 	vp.Position = props.Position or UDim2.new()
@@ -391,10 +391,11 @@ function UIKit.shovelIcon(parent, def, props)
 	vp.LightDirection = Vector3.new(-1, -1.5, -1)
 	vp.Parent = parent
 
-	-- lay the shovel diagonally: blade at the bottom-left, grip at the top-right
+	-- show the pickaxe diagonally: head at the top-left, grip at the bottom-right, with the
+	-- head's arms facing the camera (tool Y/Z in the screen plane) and a slight 3D turn
+	local pose = CFrame.Angles(0, math.rad(22), 0) * CFrame.fromMatrix(Vector3.zero, Vector3.new(0, 0, -1), Vector3.new(1, 1, 0).Unit)
 	local tool = ShovelModels(def)
 	local model = Instance.new("Model")
-	local pose = CFrame.Angles(0, math.rad(20), 0) * CFrame.Angles(0, 0, math.rad(135)) * CFrame.Angles(math.rad(90), 0, 0)
 	local minV, maxV = Vector3.new(math.huge, math.huge, math.huge), -Vector3.new(math.huge, math.huge, math.huge)
 	for _, piece in ipairs(tool:GetChildren()) do
 		if piece:IsA("BasePart") and piece.Name ~= "Handle" then

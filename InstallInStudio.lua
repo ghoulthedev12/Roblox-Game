@@ -15,6 +15,7 @@ end
 pcall(function() game:GetService("Lighting").Technology = Enum.Technology.Future end)
 do local old = game:GetService("ServerScriptService"):FindFirstChild("DataManager") if old then old:Destroy() print("Removed DataManager") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
+do local old = game:GetService("ReplicatedStorage"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("MuseumStyle") if old then old:Destroy() print("Removed MuseumStyle") end end
 install(game:GetService("ReplicatedStorage"), "ArtifactData", "ModuleScript", [=[
 -- ArtifactData (ModuleScript in ReplicatedStorage)
@@ -859,16 +860,12 @@ end
 -- Optional sound effects. Paste a sound's id from the Toolbox (e.g. "rbxassetid://123456")
 -- and it plays; leave "" for silence.
 GameConfig.Sounds = {
-	Dig = "",    -- every time the shovel hits the dirt
-	Clang = "",  -- shovel bounces off a zone that's too hard
+	Dig = "",    -- every time the pickaxe hits the dirt
+	Clang = "",  -- pickaxe bounces off a zone that's too hard
 	Find = "",   -- an artifact pops out of the ground
 	Combo = "",  -- combo goes up
 }
 
--- How shovels look: "Crystal" = the blocky/crystal design, upgraded procedurally by each
--- shovel's Power (size, crystal color, spinning orbiters, particles). "Classic" = the older
--- hand-made models (World 1 cartoon shovels + themed world shovels).
-GameConfig.ShovelLook = "Crystal"
 
 -- Chance that a find becomes a "Lucky Dig" with the bonus minigame (0.1 = 1 in 10)
 GameConfig.MinigameChance = 0.1
@@ -919,46 +916,46 @@ GameConfig.Worlds = {
 			{Name = "The Abyss", Era = "Abyss", Areas = {15, 21}, Rarities = ABYSS,
 				Material = "Glacier", Color = Color3.fromRGB(150, 196, 214)},
 		}),
-		-- SHOVELS (shop order). MaxZone: 1 = Shallow, 2 = Mid, 3 = Deep, 4 = Abyss.
+		-- PICKAXES (shop order; the table is still called Shovels and the ids are the old save ids). MaxZone: 1 = Shallow, 2 = Mid, 3 = Deep, 4 = Abyss.
 		-- Power = how big a crater each swing carves (radius = GameConfig.DigRadiusForPower), FindChance = chance per swing to find something (0.02 = 1 in 50),
 		-- Luck = rare find multiplier, Cooldown = seconds between swings
 		Shovels = {
-			{Id = "RustyShovel", Name = "Rusty Shovel", Price = 0, MaxZone = 1,
+			{Id = "RustyShovel", Name = "Rusty Pickaxe", Price = 0, MaxZone = 1,
 				Power = 1, FindChance = 0.012, Luck = 1, Cooldown = 0.5,
 				Color = Color3.fromRGB(150, 85, 50), Material = "CorrodedMetal",
-				Description = "Found in a dumpster in 2049. Still works. Mostly."},
-			{Id = "PlasticShovel", Name = "Plastic Beach Shovel", Price = 500, MaxZone = 2,
+				Description = "Found in a dumpster in 2049. Still swings. Mostly."},
+			{Id = "PlasticShovel", Name = "Stone Pickaxe", Price = 500, MaxZone = 2,
 				Power = 2, FindChance = 0.013, Luck = 1.1, Cooldown = 0.47,
 				Color = Color3.fromRGB(255, 200, 40), Material = "SmoothPlastic",
-				Description = "Built for sandcastles. Somehow better than rust."},
-			{Id = "GardenSpade", Name = "Garden Spade", Price = 3000, MaxZone = 2,
+				Description = "Two slabs of rock tied to a stick. A true classic."},
+			{Id = "GardenSpade", Name = "Copper Pickaxe", Price = 3000, MaxZone = 2,
 				Power = 3, FindChance = 0.015, Luck = 1.2, Cooldown = 0.45,
 				Color = Color3.fromRGB(90, 170, 80), Material = "Metal",
-				Description = "Borrowed from a grandma. She wants it back."},
-			{Id = "IronShovel", Name = "Iron Shovel", Price = 15000, MaxZone = 2,
+				Description = "Shiny orange, and a little green around the edges."},
+			{Id = "IronShovel", Name = "Iron Spikebreaker", Price = 15000, MaxZone = 2,
 				Power = 4, FindChance = 0.017, Luck = 1.35, Cooldown = 0.42,
 				Color = Color3.fromRGB(175, 180, 190), Material = "Metal",
-				Description = "A real tool for a real archaeologist."},
-			{Id = "SteelSpade", Name = "Steel Spade", Price = 60000, MaxZone = 3,
+				Description = "A spiky iron head. Cracks ancient comment sections."},
+			{Id = "SteelSpade", Name = "Emerald Pickaxe", Price = 60000, MaxZone = 3,
 				Power = 5, FindChance = 0.018, Luck = 1.5, Cooldown = 0.39,
 				Color = Color3.fromRGB(120, 140, 170), Material = "Metal",
-				Description = "Sharp enough to cut through ancient comment sections."},
-			{Id = "GoldenShovel", Name = "Golden Shovel", Price = 200000, MaxZone = 3,
+				Description = "Mossy stone with a glowing emerald heart."},
+			{Id = "GoldenShovel", Name = "Golden Pick-Hammer", Price = 200000, MaxZone = 3,
 				Power = 6, FindChance = 0.02, Luck = 1.7, Cooldown = 0.37,
 				Color = Color3.fromRGB(255, 200, 60), Material = "Metal",
-				Description = "Shiny. Heavy. Completely unnecessary. Perfect."},
-			{Id = "GamerShovel", Name = "RGB Gamer Shovel", Price = 750000, MaxZone = 3,
+				Description = "A pick on one side, a hammer on the other. All gold."},
+			{Id = "GamerShovel", Name = "Diamond Pickaxe", Price = 750000, MaxZone = 3,
 				Power = 7, FindChance = 0.022, Luck = 2, Cooldown = 0.35,
 				Color = Color3.fromRGB(255, 60, 200), Material = "Neon",
-				Description = "The RGB lights add +200% digging power. Science."},
-			{Id = "TectonicAuger", Name = "Tectonic Auger", Price = 3000000, MaxZone = 4,
+				Description = "Pure cyan crystal. The one everybody wants."},
+			{Id = "TectonicAuger", Name = "Magma Pickaxe", Price = 3000000, MaxZone = 4,
 				Power = 8, FindChance = 0.024, Luck = 2.4, Cooldown = 0.33,
 				Color = Color3.fromRGB(128, 132, 138), Material = "Foil",
-				Description = "Legendary. Rated for bedrock, permafrost and 2049-era server racks."},
-			{Id = "SingularitySpade", Name = "Singularity Spade", Price = 10000000, MaxZone = 4,
+				Description = "Legendary. Forged in the Deep Zone and still glowing hot."},
+			{Id = "SingularitySpade", Name = "Singularity Pickaxe", Price = 10000000, MaxZone = 4,
 				Power = 9, FindChance = 0.027, Luck = 3, Cooldown = 0.31,
 				Color = Color3.fromRGB(62, 64, 70), Material = "Foil",
-				Description = "Mythic. Folds the Abyss around the blade. Do not dig near pets."},
+				Description = "Mythic. Folds the Abyss around its crystals."},
 		},
 	},
 }
@@ -985,12 +982,12 @@ for i, info in ipairs(WorldsData.Worlds) do
 	for t, entry in ipairs(info.Shovels) do
 		local tier = WorldsData.ShovelTiers[t]
 		table.insert(shovels, {
-			Id = (entry[1]:gsub("[^%w]", "")), Name = entry[1], Description = entry[2],
+			Id = entry.Id or (entry[1]:gsub("[^%w]", "")), Name = entry[1], Description = entry[2],
 			Price = tier.PriceFactor * info.Price, MaxZone = tier.MaxZone,
 			Power = tier.Power, FindChance = tier.FindChance, Luck = tier.Luck, Cooldown = tier.Cooldown,
 			Color = t % 2 == 1 and info.Look.Main or info.Look.Second, Material = "SmoothPlastic",
-			-- ShovelModels builds these from the world's colors (Theme decides the decorations)
-			Look = {Theme = info.Theme, Tier = t, Blade = entry[3], Grip = entry[4], Colors = info.Look},
+			-- PickaxeModels builds these from the world's colors (the tier picks the head shape)
+			Look = {Theme = info.Theme, Tier = t, Colors = info.Look},
 		})
 	end
 	table.insert(GameConfig.Worlds, {
@@ -1120,975 +1117,170 @@ end
 
 return GameConfig
 ]=])
-install(game:GetService("ReplicatedStorage"), "ShovelModels", "ModuleScript", [=[
--- ShovelModels (ModuleScript in ReplicatedStorage)
--- Builds a detailed, individually styled model for every shovel.
--- World 1's shovels each have a hand-made cartoon design (see CUSTOM below); any other
--- shovel is built from its STYLES entry. The server uses it for the tools and the shop
--- displays, the client uses it to draw 3D shovel icons in the UI.
+install(game:GetService("ReplicatedStorage"), "PickaxeModels", "ModuleScript", [=[
+-- PickaxeModels (ModuleScript in ReplicatedStorage)
+-- Builds every digging tool as a blocky voxel pickaxe: a head made of little cubes that arc
+-- out to both sides (two-tone rows, pixel shading), a diamond socket with a glowing gem in the
+-- middle, a dark handle with diamond gem nodes, an optional diamond cage around a floating
+-- gem, a wrapped grip and a gem pommel.
+--
+-- Every pickaxe is unique: its own colors and a head shape
+--   Crescent  classic curved pick          Wide    long, flat, three rows deep
+--   Spiked    crescent with spikes         Crystal glassy shards over a glowing core
+--   Hammer    a pick on one side, a chunky hammer on the other
+-- and it gets fancier with its Power (tier 1-9): bigger, glowing gems, more gem nodes, the
+-- cage, sparkling particles, and orbiting cubes (spun by ShovelClient / ShovelSpinner through
+-- the OrbitCenter / OrbitSpeed attributes).
+--
+-- Tool space: the handle runs along Z, the head is at -Z, the grip end at +Z; +Y is the
+-- direction the pick's arms point (the swing plane). Returns function(def) -> Tool.
 
-local GameConfig = require(script.Parent:WaitForChild("GameConfig"))
-
-local SCALE = 0.62 -- overall size of the shovels
-local ALONG_Z = CFrame.Angles(0, math.rad(90), 0) -- points a cylinder along the shaft
+local SCALE = 0.7
 
 local function rgb(r, g, b)
 	return Color3.fromRGB(r, g, b)
 end
 
 ---------------------------------------------------------------------
--- LOOK OF EACH SHOVEL
--- Blade shapes: "Spade" (classic), "Scoop" (round toy), "Spoon", "Trowel"
--- Grip: "D" (D-shaped handle) or "T" (T-bar handle)
+-- LOOKS: World 1's pickaxes by id (ids are the old save ids, so nobody loses a tool)
+-- Main/Edge = the two rows of the head, Frame = sockets, Gem = gems, Handle, Wrap = grip
 ---------------------------------------------------------------------
-local STYLES = {
-	RustyShovel = {
-		Shape = "Spade", Grip = "D",
-		Shaft = rgb(92, 64, 42), ShaftMat = "Wood",
-		Blade = rgb(150, 82, 45), BladeMat = "CorrodedMetal",
-		Metal = rgb(105, 68, 45), MetalMat = "CorrodedMetal",
-		GripColor = rgb(75, 75, 78), GripMat = "Fabric",
-		Tape = true, Rust = true,
-	},
-	PlasticShovel = {
-		Shape = "Scoop", Grip = "T",
-		Shaft = rgb(40, 120, 255), ShaftMat = "SmoothPlastic",
-		Blade = rgb(255, 205, 40), BladeMat = "SmoothPlastic", Shine = 0.12,
-		Metal = rgb(255, 75, 75), MetalMat = "SmoothPlastic",
-		GripColor = rgb(255, 75, 75), GripMat = "SmoothPlastic",
-	},
-	GardenSpade = {
-		Shape = "Spade", Grip = "D",
-		Shaft = rgb(70, 130, 60), ShaftMat = "SmoothPlastic",
-		Blade = rgb(165, 170, 178), BladeMat = "Metal", Shine = 0.15,
-		Metal = rgb(55, 110, 50), MetalMat = "SmoothPlastic",
-		GripColor = rgb(45, 90, 40), GripMat = "SmoothPlastic",
-		Rivets = true,
-	},
-	IronShovel = {
-		Shape = "Spade", Grip = "D",
-		Shaft = rgb(170, 125, 82), ShaftMat = "Wood",
-		Blade = rgb(118, 122, 132), BladeMat = "Metal", Shine = 0.2,
-		Metal = rgb(58, 60, 66), MetalMat = "Metal",
-		GripColor = rgb(30, 30, 32), GripMat = "Fabric",
-		Rivets = true,
-	},
-	SteelSpade = {
-		Shape = "Spade", Grip = "T",
-		Shaft = rgb(45, 50, 60), ShaftMat = "Metal",
-		Blade = rgb(190, 200, 215), BladeMat = "Metal", Shine = 0.35,
-		Metal = rgb(120, 140, 170), MetalMat = "Metal",
-		GripColor = rgb(20, 20, 24), GripMat = "Fabric",
-		Rivets = true,
-	},
-	GoldenShovel = {
-		Shape = "Spade", Grip = "D",
-		Shaft = rgb(35, 32, 30), ShaftMat = "Wood",
-		Blade = rgb(255, 196, 55), BladeMat = "Metal", Shine = 0.4,
-		Metal = rgb(255, 205, 80), MetalMat = "Metal",
-		GripColor = rgb(130, 25, 35), GripMat = "Fabric",
-		Rivets = true, Sparkles = rgb(255, 220, 120),
-	},
-	GamerShovel = {
-		Shape = "Spade", Grip = "T",
-		Shaft = rgb(24, 24, 30), ShaftMat = "Metal",
-		Blade = rgb(30, 30, 40), BladeMat = "Metal", Shine = 0.25,
-		Metal = rgb(40, 40, 50), MetalMat = "Metal",
-		GripColor = rgb(15, 15, 18), GripMat = "Fabric",
-		Edge = rgb(255, 60, 200), Glow = rgb(255, 60, 200),
-		Strips = {rgb(255, 60, 200), rgb(0, 225, 255), rgb(90, 255, 120)},
-	},
-	PixelSpade = {
-		Shape = "Spade", Grip = "T",
-		Shaft = rgb(60, 60, 200), ShaftMat = "SmoothPlastic",
-		Blade = rgb(80, 200, 255), BladeMat = "SmoothPlastic",
-		Metal = rgb(255, 255, 255), MetalMat = "SmoothPlastic",
-		GripColor = rgb(255, 80, 80), GripMat = "SmoothPlastic",
-		Pixels = true,
-	},
-	RainbowShovel = {
-		Shape = "Spade", Grip = "D",
-		Shaft = rgb(245, 245, 250), ShaftMat = "SmoothPlastic",
-		Blade = rgb(255, 120, 220), BladeMat = "Glass", Shine = 0.3,
-		Metal = rgb(255, 255, 255), MetalMat = "Metal",
-		GripColor = rgb(120, 90, 255), GripMat = "SmoothPlastic",
-		Strips = {rgb(255, 60, 60), rgb(255, 200, 40), rgb(80, 220, 120), rgb(60, 140, 255)},
-		Glow = rgb(255, 150, 230), Sparkles = rgb(255, 200, 255),
-	},
-	DiamondShovel = {
-		Shape = "Spade", Grip = "D",
-		Shaft = rgb(235, 238, 245), ShaftMat = "Metal",
-		Blade = rgb(150, 240, 255), BladeMat = "Glass", Shine = 0.45, BladeTransparency = 0.2,
-		Metal = rgb(205, 210, 225), MetalMat = "Metal",
-		GripColor = rgb(60, 110, 160), GripMat = "Fabric",
-		Core = rgb(120, 240, 255), Glow = rgb(120, 240, 255), Sparkles = rgb(200, 250, 255),
-	},
-	FidgetDrill = {
-		Shape = "Trowel", Grip = "T",
-		Shaft = rgb(40, 40, 45), ShaftMat = "Metal",
-		Blade = rgb(255, 140, 40), BladeMat = "Metal", Shine = 0.3,
-		Metal = rgb(255, 140, 40), MetalMat = "Metal",
-		GripColor = rgb(20, 20, 20), GripMat = "Fabric",
-		Rings = rgb(255, 140, 40),
-	},
-	LaserExcavator = {
-		Shape = "Spade", Grip = "T",
-		Shaft = rgb(240, 242, 248), ShaftMat = "SmoothPlastic",
-		Blade = rgb(255, 50, 50), BladeMat = "Neon", BladeTransparency = 0.15,
-		Metal = rgb(55, 58, 68), MetalMat = "Metal",
-		GripColor = rgb(40, 40, 48), GripMat = "SmoothPlastic",
-		Edge = rgb(255, 180, 180), Glow = rgb(255, 60, 60), Field = rgb(255, 60, 60),
-	},
-	PlasmaSpade = {
-		Shape = "Spade", Grip = "T",
-		Shaft = rgb(30, 34, 50), ShaftMat = "Metal",
-		Blade = rgb(80, 140, 255), BladeMat = "Neon", BladeTransparency = 0.2,
-		Metal = rgb(120, 180, 255), MetalMat = "Metal",
-		GripColor = rgb(20, 22, 30), GripMat = "Fabric",
-		Glow = rgb(80, 140, 255), Field = rgb(120, 180, 255), Sparkles = rgb(160, 200, 255),
-	},
-	HoverScoop = {
-		Shape = "Scoop", Grip = "T",
-		Shaft = rgb(235, 240, 245), ShaftMat = "SmoothPlastic",
-		Blade = rgb(60, 255, 200), BladeMat = "Glass", Shine = 0.3, BladeTransparency = 0.15,
-		Metal = rgb(60, 255, 200), MetalMat = "Neon",
-		GripColor = rgb(40, 45, 55), GripMat = "SmoothPlastic",
-		Glow = rgb(60, 255, 200), Rings = rgb(60, 255, 200),
-	},
-	QuantumSpoon = {
-		Shape = "Spoon", Grip = "T",
-		Shaft = rgb(30, 22, 50), ShaftMat = "Metal",
-		Blade = rgb(170, 90, 255), BladeMat = "ForceField",
-		Metal = rgb(200, 150, 255), MetalMat = "Neon",
-		GripColor = rgb(25, 18, 40), GripMat = "Fabric",
-		Core = rgb(200, 140, 255), Glow = rgb(170, 90, 255), Rings = rgb(200, 150, 255), Sparkles = rgb(220, 180, 255),
-	},
-	DialUpDigger = {
-		Shape = "Spade", Grip = "D",
-		Shaft = rgb(215, 205, 175), ShaftMat = "SmoothPlastic",
-		Blade = rgb(200, 190, 160), BladeMat = "SmoothPlastic",
-		Metal = rgb(120, 115, 100), MetalMat = "SmoothPlastic",
-		GripColor = rgb(90, 85, 75), GripMat = "SmoothPlastic",
-		Edge = rgb(90, 255, 120), Pixels = true,
-	},
-	BlackHoleShovel = {
-		Shape = "Spoon", Grip = "D",
-		Shaft = rgb(15, 12, 20), ShaftMat = "Metal",
-		Blade = rgb(10, 5, 20), BladeMat = "Glass", Shine = 0.5,
-		Metal = rgb(140, 60, 255), MetalMat = "Neon",
-		GripColor = rgb(10, 10, 12), GripMat = "Fabric",
-		Core = rgb(140, 60, 255), Glow = rgb(140, 60, 255), Rings = rgb(255, 150, 60),
-	},
-	CosmicTrowel = {
-		Shape = "Trowel", Grip = "T",
-		Shaft = rgb(20, 24, 50), ShaftMat = "Metal",
-		Blade = rgb(120, 200, 255), BladeMat = "Glass", Shine = 0.35, BladeTransparency = 0.1,
-		Metal = rgb(255, 220, 140), MetalMat = "Metal",
-		GripColor = rgb(20, 24, 50), GripMat = "Fabric",
-		Core = rgb(255, 255, 255), Glow = rgb(120, 200, 255), Sparkles = rgb(255, 255, 255),
-	},
-	VoidExcavator = {
-		Shape = "Spade", Grip = "T",
-		Shaft = rgb(20, 10, 30), ShaftMat = "Metal",
-		Blade = rgb(110, 40, 160), BladeMat = "ForceField",
-		Metal = rgb(110, 40, 160), MetalMat = "Neon",
-		GripColor = rgb(15, 8, 22), GripMat = "Fabric",
-		Core = rgb(60, 0, 90), Edge = rgb(200, 120, 255), Glow = rgb(150, 60, 220), Sparkles = rgb(180, 100, 255),
-	},
-	AlgorithmTrowel = {
-		Shape = "Trowel", Grip = "D",
-		Shaft = rgb(30, 26, 20), ShaftMat = "Metal",
-		Blade = rgb(255, 205, 70), BladeMat = "Metal", Shine = 0.4,
-		Metal = rgb(255, 225, 120), MetalMat = "Metal",
-		GripColor = rgb(40, 30, 15), GripMat = "Fabric",
-		Edge = rgb(255, 240, 150), Strips = {rgb(255, 230, 120), rgb(255, 230, 120)},
-		Glow = rgb(255, 210, 80), Sparkles = rgb(255, 240, 170), Rivets = true,
-	},
-	-- World 1 Abyss shovels: industrial, desaturated, built for bedrock
-	TectonicAuger = {
-		Shape = "Trowel", Grip = "T",
-		Shaft = rgb(58, 60, 64), ShaftMat = "CorrodedMetal",
-		Blade = rgb(150, 154, 160), BladeMat = "Foil", Shine = 0.25,
-		Metal = rgb(92, 95, 100), MetalMat = "Metal",
-		GripColor = rgb(28, 28, 30), GripMat = "Fabric",
-		Rings = rgb(170, 160, 140), Rivets = true,
-	},
-	SingularitySpade = {
-		Shape = "Spade", Grip = "D",
-		Shaft = rgb(30, 31, 34), ShaftMat = "Metal",
-		Blade = rgb(52, 54, 60), BladeMat = "Foil", Shine = 0.45,
-		Metal = rgb(140, 144, 150), MetalMat = "Foil",
-		GripColor = rgb(18, 18, 20), GripMat = "Fabric",
-		Edge = rgb(200, 205, 212), Core = rgb(150, 196, 214), Glow = rgb(150, 196, 214),
-		Sparkles = rgb(190, 215, 225),
-	},
+local LOOKS = {
+	RustyShovel = {Head = "Crescent", Main = rgb(150, 96, 62), Edge = rgb(112, 70, 46), Frame = rgb(120, 110, 104), Gem = rgb(255, 150, 70), Handle = rgb(84, 58, 40), Wrap = rgb(150, 150, 156)},
+	PlasticShovel = {Head = "Wide", Main = rgb(150, 156, 160), Edge = rgb(104, 110, 116), Frame = rgb(132, 136, 142), Gem = rgb(235, 240, 250), Handle = rgb(70, 52, 40), Wrap = rgb(196, 110, 60)},
+	GardenSpade = {Head = "Crescent", Main = rgb(214, 124, 72), Edge = rgb(170, 86, 50), Frame = rgb(190, 150, 110), Gem = rgb(70, 230, 210), Handle = rgb(60, 42, 34), Wrap = rgb(90, 190, 170)},
+	IronShovel = {Head = "Spiked", Main = rgb(196, 200, 210), Edge = rgb(140, 146, 160), Frame = rgb(170, 174, 184), Gem = rgb(255, 70, 90), Handle = rgb(48, 40, 38), Wrap = rgb(150, 40, 50)},
+	SteelSpade = {Head = "Crescent", Main = rgb(150, 160, 156), Edge = rgb(110, 200, 60), Frame = rgb(150, 160, 156), Gem = rgb(60, 255, 120), Handle = rgb(56, 36, 36), Wrap = rgb(214, 120, 80)},
+	GoldenShovel = {Head = "Hammer", Main = rgb(255, 208, 72), Edge = rgb(226, 158, 40), Frame = rgb(255, 224, 140), Gem = rgb(255, 60, 110), Handle = rgb(60, 40, 30), Wrap = rgb(150, 30, 50)},
+	GamerShovel = {Head = "Crystal", Main = rgb(110, 230, 255), Edge = rgb(180, 246, 255), Frame = rgb(170, 240, 255), Gem = rgb(90, 220, 255), Handle = rgb(40, 44, 64), Wrap = rgb(70, 80, 110)},
+	TectonicAuger = {Head = "Spiked", Main = rgb(64, 62, 74), Edge = rgb(255, 120, 40), Frame = rgb(90, 88, 100), Gem = rgb(255, 140, 50), Handle = rgb(30, 28, 34), Wrap = rgb(255, 120, 40)},
+	SingularitySpade = {Head = "Crystal", Main = rgb(58, 34, 96), Edge = rgb(190, 120, 255), Frame = rgb(90, 70, 140), Gem = rgb(235, 220, 255), Handle = rgb(20, 16, 30), Wrap = rgb(150, 90, 255)},
 }
+-- worlds 2-9: head shape per tier, colors from the world's theme
+local WORLD_HEADS = {"Crescent", "Wide", "Spiked", "Crescent", "Crystal", "Hammer", "Crystal"}
 
--- A decent look for any shovel that has no style above (e.g. new shovels you add later)
-local function defaultStyle(def)
-	local fancy = def.Material == "Neon" or def.Material == "ForceField" or def.Material == "Glass"
-	return {
-		Shape = "Spade", Grip = "D",
-		Shaft = fancy and rgb(28, 30, 42) or rgb(150, 108, 70), ShaftMat = fancy and "Metal" or "Wood",
-		Blade = def.Color, BladeMat = def.Material or "Metal", Shine = 0.2,
-		Metal = fancy and def.Color or rgb(80, 82, 90), MetalMat = fancy and "Neon" or "Metal",
-		GripColor = rgb(30, 30, 34), GripMat = "Fabric",
-		Glow = fancy and def.Color or nil, Rivets = not fancy,
-	}
+local function lookFor(def)
+	if LOOKS[def.Id] then return LOOKS[def.Id] end
+	local look = def.Look
+	if look and look.Colors then
+		local c = look.Colors
+		return {
+			Head = look.Head or WORLD_HEADS[look.Tier] or "Crescent",
+			Main = c.Main, Edge = look.Tier % 2 == 0 and c.Accent or c.Second,
+			Frame = c.Second:Lerp(rgb(170, 170, 180), 0.4), Gem = c.Glow,
+			Handle = c.Dark:Lerp(rgb(30, 28, 36), 0.4), Wrap = c.Accent,
+		}
+	end
+	return LOOKS.RustyShovel
 end
 
 ---------------------------------------------------------------------
--- BUILDING HELPERS
+-- BUILDING BLOCKS
 ---------------------------------------------------------------------
-local function mat(name)
-	return Enum.Material[name] or Enum.Material.SmoothPlastic
-end
-
-local function newPart(tool, name, size, cframe, color, material, shape)
+local function newPart(tool, name, size, cf, color, material, shape)
 	local p = Instance.new("Part")
 	p.Name = name
 	p.Size = size
-	p.CFrame = cframe
+	p.CFrame = cf
 	p.Color = color
-	p.Material = mat(material)
+	p.Material = material or Enum.Material.SmoothPlastic
 	if shape then p.Shape = shape end
 	p.CanCollide = false
 	p.CanQuery = false
 	p.CanTouch = false
 	p.Massless = true
-	p.CastShadow = p.Material ~= Enum.Material.Neon and p.Material ~= Enum.Material.ForceField
+	p.CastShadow = p.Material ~= Enum.Material.Neon
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
 	p.Parent = tool
 	return p
 end
 
-local function ellipsoid(tool, name, size, cframe, color, material)
-	local p = newPart(tool, name, size, cframe, color, material)
-	local mesh = Instance.new("SpecialMesh")
-	mesh.MeshType = Enum.MeshType.Sphere
-	mesh.Parent = p
-	return p
+-- pixel shading: a voxel is a touch lighter or darker than its neighbours
+local function shade(color, i)
+	local k = ({0, 0.1, -0.1, 0.05})[i % 4 + 1]
+	if k > 0 then return color:Lerp(Color3.new(1, 1, 1), k) end
+	return color:Lerp(Color3.new(0, 0, 0), -k)
 end
 
-local function cylinderZ(tool, name, length, diameter, z, color, material)
-	return newPart(tool, name, Vector3.new(length, diameter, diameter), CFrame.new(0, 0, z) * ALONG_Z, color, material, Enum.PartType.Cylinder)
+local DIAMOND = CFrame.Angles(math.rad(45), 0, 0) -- a cube seen along X becomes a diamond
+
+-- a diamond frame with a glowing gem poking through both faces
+local function gemNode(tool, name, z, size, look, glowing)
+	local frame = newPart(tool, name, Vector3.new(size * 0.8, size, size), CFrame.new(0, 0, z) * DIAMOND, look.Frame)
+	newPart(tool, name .. "Gem", Vector3.new(size * 0.96, size * 0.46, size * 0.46), CFrame.new(0, 0, z) * DIAMOND,
+		look.Gem, glowing and Enum.Material.Neon or Enum.Material.Glass)
+	return frame
 end
 
--- a round bar from point a to point b
 local function bar(tool, name, a, b, thickness, color, material)
 	local length = (b - a).Magnitude
-	return newPart(tool, name, Vector3.new(thickness, thickness, length), CFrame.lookAt((a + b) / 2, b), color, material)
+	-- a CFrame whose Z axis runs from a to b (built from its axes, so it's exact in any direction)
+	local z = (a - b).Unit
+	local helper = math.abs(z.X) < 0.9 and Vector3.xAxis or Vector3.yAxis
+	local y = z:Cross(helper).Unit
+	local x = y:Cross(z)
+	return newPart(tool, name, Vector3.new(thickness, thickness, length), CFrame.fromMatrix((a + b) / 2, x, y, z), color, material)
 end
 
----------------------------------------------------------------------
--- BLADES (built in "blade space": 0 = top of the blade, -Z = toward the tip)
----------------------------------------------------------------------
-local function buildSpade(tool, s, b)
-	local plate = newPart(tool, "Blade", Vector3.new(1.3, 0.08, 1.25), b * CFrame.new(0, 0, -0.62), s.Blade, s.BladeMat)
-	newPart(tool, "BladeTip", Vector3.new(0.08, 1.3, 1.3), b * CFrame.new(0, 0, -1.25) * CFrame.Angles(0, 0, math.rad(90)), s.Blade, s.BladeMat, Enum.PartType.Cylinder) -- rounded end
-	newPart(tool, "LipL", Vector3.new(0.26, 0.08, 1.25), b * CFrame.new(-0.72, 0.06, -0.62) * CFrame.Angles(0, 0, math.rad(-22)), s.Blade, s.BladeMat)
-	newPart(tool, "LipR", Vector3.new(0.26, 0.08, 1.25), b * CFrame.new(0.72, 0.06, -0.62) * CFrame.Angles(0, 0, math.rad(22)), s.Blade, s.BladeMat)
-	-- raised spine down the back of the blade
-	newPart(tool, "Spine", Vector3.new(0.16, 0.07, 1.0), b * CFrame.new(0, 0.07, -0.5), s.Metal, s.MetalMat)
-	-- rolled foot step on top
-	newPart(tool, "FootStep", Vector3.new(1.45, 0.13, 0.13), b, s.Metal, s.MetalMat, Enum.PartType.Cylinder)
-	if s.Edge then
-		newPart(tool, "EdgeL", Vector3.new(0.05, 0.1, 1.2), b * CFrame.new(-0.86, 0.12, -0.62) * CFrame.Angles(0, 0, math.rad(-22)), s.Edge, "Neon")
-		newPart(tool, "EdgeR", Vector3.new(0.05, 0.1, 1.2), b * CFrame.new(0.86, 0.12, -0.62) * CFrame.Angles(0, 0, math.rad(22)), s.Edge, "Neon")
-		newPart(tool, "EdgeTip", Vector3.new(0.7, 0.1, 0.05), b * CFrame.new(0, 0.02, -1.88), s.Edge, "Neon")
-	end
-	return plate
-end
-
-local function buildScoop(tool, s, b)
-	local bowl = ellipsoid(tool, "Blade", Vector3.new(1.6, 0.14, 1.75), b * CFrame.new(0, 0, -0.85), s.Blade, s.BladeMat)
-	ellipsoid(tool, "BowlRim", Vector3.new(1.7, 0.2, 1.85), b * CFrame.new(0, 0.05, -0.85), s.Blade, s.BladeMat).Transparency = 0.6
-	newPart(tool, "Spine", Vector3.new(0.18, 0.08, 1.1), b * CFrame.new(0, 0.08, -0.55), s.Metal, s.MetalMat)
-	return bowl
-end
-
-local function buildSpoon(tool, s, b)
-	local bowl = ellipsoid(tool, "Blade", Vector3.new(1.35, 0.4, 1.8), b * CFrame.new(0, 0.05, -0.95), s.Blade, s.BladeMat)
-	ellipsoid(tool, "BowlShell", Vector3.new(1.45, 0.3, 1.9), b * CFrame.new(0, 0, -0.95), s.Metal, s.MetalMat).Transparency = 0.5
-	return bowl
-end
-
-local function buildTrowel(tool, s, b)
-	local plate = newPart(tool, "Blade", Vector3.new(1.0, 0.07, 0.7), b * CFrame.new(0, 0, -0.35), s.Blade, s.BladeMat)
-	newPart(tool, "BladeTip", Vector3.new(0.07, 1.0, 1.0), b * CFrame.new(0, 0, -0.7) * CFrame.Angles(0, 0, math.rad(90)), s.Blade, s.BladeMat, Enum.PartType.Cylinder) -- rounded end
-	newPart(tool, "Spine", Vector3.new(0.14, 0.08, 1.4), b * CFrame.new(0, 0.07, -0.75), s.Metal, s.MetalMat)
-	newPart(tool, "Guard", Vector3.new(1.1, 0.14, 0.14), b, s.Metal, s.MetalMat, Enum.PartType.Cylinder)
-	if s.Edge then
-		newPart(tool, "EdgeL", Vector3.new(0.05, 0.1, 1.1), b * CFrame.new(-0.4, 0.06, -1.0) * CFrame.Angles(0, math.rad(-45), 0), s.Edge, "Neon")
-		newPart(tool, "EdgeR", Vector3.new(0.05, 0.1, 1.1), b * CFrame.new(0.4, 0.06, -1.0) * CFrame.Angles(0, math.rad(45), 0), s.Edge, "Neon")
-	end
-	return plate
-end
-
-local BLADES = {Spade = buildSpade, Scoop = buildScoop, Spoon = buildSpoon, Trowel = buildTrowel}
-
-
----------------------------------------------------------------------
--- HAND-MADE CARTOON SHOVELS FOR WORLD 1
--- Tool space: the shaft runs along Z, the grip is at +Z, the blade at -Z.
--- `k.blade` is "blade space": 0 = top of the blade, -Z = toward the tip, +Y = the front face.
----------------------------------------------------------------------
-local function kit(tool)
-	local k = {}
-	function k.part(name, size, cf, color, material, shape)
-		return newPart(tool, name, size, cf, color, material or "SmoothPlastic", shape)
-	end
-	function k.ball(name, d, cf, color, material)
-		return newPart(tool, name, Vector3.new(d, d, d), cf, color, material or "SmoothPlastic", Enum.PartType.Ball)
-	end
-	function k.blob(name, size, cf, color, material)
-		return ellipsoid(tool, name, size, cf, color, material or "SmoothPlastic")
-	end
-	function k.rodZ(name, length, diameter, z, color, material) -- round bar on the shaft line
-		return cylinderZ(tool, name, length, diameter, z, color, material or "SmoothPlastic")
-	end
-	function k.rodX(name, length, diameter, cf, color, material) -- round bar across (along X of cf)
-		return newPart(tool, name, Vector3.new(length, diameter, diameter), cf, color, material or "SmoothPlastic", Enum.PartType.Cylinder)
-	end
-	function k.bar(name, a, b, thickness, color, material)
-		return bar(tool, name, a, b, thickness, color, material or "SmoothPlastic")
-	end
-	k.blade = CFrame.new(0, -0.05, -2.7) * CFrame.Angles(math.rad(-14), 0, 0)
-	k.tool = tool
-	return k
-end
-
--- shared pieces ------------------------------------------------------
--- World 1 shovels are short and chunky: the shaft runs from the socket (-2.3) to TOP
-local TOP = 1.6
-local function shaft(k, color, material, diameter)
-	k.rodZ("Shaft", TOP + 2.3, diameter or 0.3, (TOP - 2.3) / 2, color, material)
-end
-
-local function socket(k, color, material)
-	k.rodZ("Socket", 0.9, 0.44, -2.35, color, material)
-	k.rodZ("SocketLip", 0.14, 0.5, -1.95, color, material)
-end
-
-local function dGrip(k, frameColor, frameMat, barColor, barMat)
-	k.bar("GripSideL", Vector3.new(0, 0, TOP - 0.15), Vector3.new(-0.5, 0, TOP + 0.5), 0.2, frameColor, frameMat)
-	k.bar("GripSideR", Vector3.new(0, 0, TOP - 0.15), Vector3.new(0.5, 0, TOP + 0.5), 0.2, frameColor, frameMat)
-	k.rodX("GripBar", 1.15, 0.28, CFrame.new(0, 0, TOP + 0.52), barColor, barMat)
-	k.hold = TOP + 0.5 -- the right hand holds the D bar
-end
-
-local function tGrip(k, barColor, barMat, capColor, capMat)
-	k.rodX("TBar", 1.2, 0.3, CFrame.new(0, 0, TOP), barColor, barMat)
-	k.ball("TCapL", 0.4, CFrame.new(-0.62, 0, TOP), capColor, capMat)
-	k.ball("TCapR", 0.4, CFrame.new(0.62, 0, TOP), capColor, capMat)
-	k.hold = TOP -- the right hand holds the T bar
-end
-
--- a chunky cartoon spade blade: wide plate, rounded end, curled-up sides, a foot step
-local function spade(k, color, material, width, stepColor)
-	width = width or 1.7
-	local b = k.blade
-	local plate = k.part("Blade", Vector3.new(width, 0.12, 1.5), b * CFrame.new(0, 0, -0.75), color, material)
-	k.part("BladeTip", Vector3.new(0.12, width, width), b * CFrame.new(0, 0, -1.5) * CFrame.Angles(0, 0, math.rad(90)), color, material, Enum.PartType.Cylinder) -- rounded end
-	k.part("LipL", Vector3.new(0.32, 0.12, 1.5), b * CFrame.new(-width / 2 - 0.1, 0.08, -0.75) * CFrame.Angles(0, 0, math.rad(-25)), color, material)
-	k.part("LipR", Vector3.new(0.32, 0.12, 1.5), b * CFrame.new(width / 2 + 0.1, 0.08, -0.75) * CFrame.Angles(0, 0, math.rad(25)), color, material)
-	k.rodX("FootStep", width + 0.3, 0.2, b, stepColor or color, material)
-	return plate
-end
-
-local function light(part, color, range)
-	local l = Instance.new("PointLight")
-	l.Color = color
-	l.Range = range or 6
-	l.Brightness = 0.6
-	l.Parent = part
-end
-
-local CUSTOM = {}
-
--- Rusty Shovel: taped-up wooden shaft, chipped rusty blade with a bolted-on patch
-CUSTOM.RustyShovel = function(k)
-	local wood, tape, rust = rgb(128, 88, 58), rgb(170, 170, 176), rgb(168, 92, 52)
-	shaft(k, wood, "Wood")
-	dGrip(k, wood, "Wood", rgb(80, 80, 86), "Fabric")
-	k.rodZ("Tape", 0.5, 0.35, 0.4, tape, "Fabric")
-	k.rodZ("Tape", 0.35, 0.35, -1.2, tape, "Fabric")
-	socket(k, rgb(112, 72, 48), "CorrodedMetal")
-	local b = k.blade
-	spade(k, rust, "CorrodedMetal")
-	for i, pos in ipairs({Vector3.new(-0.4, 0.07, -0.5), Vector3.new(0.45, 0.07, -1.05), Vector3.new(-0.15, 0.07, -1.45)}) do
-		k.blob("RustSpot", Vector3.new(0.34 + i * 0.05, 0.03, 0.26), b * CFrame.new(pos), rgb(110, 58, 34))
-	end
-	k.part("Patch", Vector3.new(0.62, 0.05, 0.5), b * CFrame.new(0.35, 0.08, -0.55), rgb(150, 152, 158), "Metal")
-	for _, o in ipairs({Vector3.new(-0.22, 0, -0.18), Vector3.new(0.22, 0, -0.18), Vector3.new(-0.22, 0, 0.18), Vector3.new(0.22, 0, 0.18)}) do
-		k.ball("PatchBolt", 0.1, b * CFrame.new(Vector3.new(0.35, 0.12, -0.55) + o), rgb(200, 200, 205), "Metal")
-	end
-	k.part("Chip", Vector3.new(0.34, 0.14, 0.34), b * CFrame.new(-0.72, 0, -1.28) * CFrame.Angles(0, math.rad(45), 0), rgb(46, 36, 30))
-end
-
--- Plastic Beach Shovel: chunky toy with a scoop, ball-ended T grip and a bucket charm
-CUSTOM.PlasticShovel = function(k)
-	local blue, red, yellow = rgb(70, 150, 255), rgb(255, 96, 96), rgb(255, 212, 70)
-	shaft(k, blue, "SmoothPlastic", 0.38)
-	tGrip(k, red, "SmoothPlastic", yellow, "SmoothPlastic")
-	socket(k, red, "SmoothPlastic")
-	local b = k.blade
-	local bowl = k.blob("Blade", Vector3.new(2.1, 0.3, 2.3), b * CFrame.new(0, 0, -1.05), yellow)
-	bowl.Reflectance = 0.1
-	k.blob("ScoopRim", Vector3.new(2.25, 0.16, 2.45), b * CFrame.new(0, -0.06, -1.05), red)
-	k.ball("Star", 0.3, b * CFrame.new(0.45, 0.16, -0.7), rgb(255, 255, 255))
-	-- little bucket charm hanging off the shaft
-	k.part("CharmString", Vector3.new(0.04, 0.56, 0.04), CFrame.new(0, -0.47, 0.6), rgb(255, 255, 255))
-	k.part("Bucket", Vector3.new(0.4, 0.5, 0.5), CFrame.new(0, -0.95, 0.6) * CFrame.Angles(0, 0, math.rad(90)), rgb(96, 226, 190), "SmoothPlastic", Enum.PartType.Cylinder)
-end
-
--- Garden Spade: green painted shaft, shiny pointed blade with little painted flowers
-CUSTOM.GardenSpade = function(k)
-	local green, dark = rgb(90, 176, 96), rgb(58, 128, 66)
-	shaft(k, green, "SmoothPlastic")
-	for z = -1.4, 0.9, 0.75 do
-		k.rodZ("Stripe", 0.12, 0.32, z, rgb(246, 247, 252))
-	end
-	dGrip(k, dark, "SmoothPlastic", dark, "SmoothPlastic")
-	socket(k, dark, "SmoothPlastic")
-	local b = k.blade
-	spade(k, rgb(200, 206, 216), "Metal", 1.55, dark).Reflectance = 0.15
-	for _, spot in ipairs({Vector3.new(-0.35, 0.09, -0.55), Vector3.new(0.35, 0.09, -1.05)}) do
-		k.ball("FlowerCore", 0.22, b * CFrame.new(spot), rgb(255, 212, 70))
-		for i = 0, 4 do
-			local a = math.rad(i * 72)
-			k.ball("Petal", 0.2, b * CFrame.new(spot + Vector3.new(math.cos(a) * 0.19, -0.02, math.sin(a) * 0.19)), rgb(255, 140, 190))
-		end
-	end
-	k.blob("Leaf", Vector3.new(0.55, 0.07, 0.28), CFrame.new(0.2, 0.12, -1.6) * CFrame.Angles(0, math.rad(30), math.rad(20)), rgb(110, 200, 110))
-end
-
--- Iron Shovel: sturdy dark wood, leather wrap, iron bands, riveted heavy blade
-CUSTOM.IronShovel = function(k)
-	local wood, iron = rgb(98, 68, 46), rgb(76, 78, 86)
-	shaft(k, wood, "Wood", 0.33)
-	k.rodZ("LeatherWrap", 1.1, 0.38, 0.8, rgb(128, 84, 52), "Fabric")
-	for _, z in ipairs({0.6, -0.9}) do
-		k.rodZ("IronBand", 0.16, 0.4, z, iron, "Metal")
-	end
-	dGrip(k, iron, "Metal", wood, "Wood")
-	socket(k, iron, "Metal")
-	local b = k.blade
-	k.part("BladeBacking", Vector3.new(1.95, 0.08, 1.7), b * CFrame.new(0, -0.05, -0.8), iron, "Metal")
-	spade(k, rgb(128, 132, 142), "Metal", 1.75, iron).Reflectance = 0.1
-	for i = -2, 2 do
-		k.ball("Rivet", 0.14, b * CFrame.new(i * 0.34, 0.08, -0.18), rgb(190, 192, 198), "Metal")
-	end
-end
-
--- Steel Spade: sleek dark shaft, polished pointed blade with a sky-blue racing stripe
-CUSTOM.SteelSpade = function(k)
-	local dark, steel, sky = rgb(52, 58, 72), rgb(206, 214, 228), rgb(92, 186, 255)
-	shaft(k, dark, "Metal", 0.28)
-	k.rodZ("Grip", 1, 0.34, 0.95, rgb(30, 32, 40), "Fabric")
-	tGrip(k, rgb(30, 32, 40), "Fabric", steel, "Metal")
-	socket(k, steel, "Metal")
-	local b = k.blade
-	local plate = spade(k, steel, "Metal", 1.5)
-	plate.Reflectance = 0.3
-	k.part("RacingStripe", Vector3.new(0.2, 0.13, 1.7), b * CFrame.new(0, 0.02, -0.9), sky)
-	k.part("TipGuard", Vector3.new(0.14, 0.6, 0.6), b * CFrame.new(0, 0.01, -1.95) * CFrame.Angles(0, 0, math.rad(90)), sky, "SmoothPlastic", Enum.PartType.Cylinder)
-	k.ball("StatusLight", 0.16, CFrame.new(0, 0.22, -2.1), sky, "Neon")
-end
-
--- Golden Shovel: gold everything, a jeweled socket, a little crown on the foot step
-CUSTOM.GoldenShovel = function(k)
-	local gold, deep = rgb(255, 202, 72), rgb(214, 156, 40)
-	shaft(k, gold, "Metal", 0.3)
-	for _, z in ipairs({1.0, 0.7}) do
-		k.rodZ("Wrap", 0.2, 0.34, z, rgb(150, 30, 50), "Fabric")
-	end
-	dGrip(k, gold, "Metal", rgb(150, 30, 50), "Fabric")
-	socket(k, deep, "Metal")
-	local gems = {rgb(230, 50, 80), rgb(70, 130, 255), rgb(60, 205, 130)}
-	for i, color in ipairs(gems) do
-		local a = math.rad(i * 120)
-		k.ball("Gem", 0.2, CFrame.new(math.cos(a) * 0.22, math.sin(a) * 0.22, -2.3), color, "Glass")
-	end
-	local b = k.blade
-	spade(k, gold, "Metal", 1.7, deep).Reflectance = 0.35
-	for i = -1, 1 do
-		k.part("CrownSpike", Vector3.new(0.18, 0.12, 0.3), b * CFrame.new(i * 0.45, 0.05, 0.22) * CFrame.Angles(0, math.rad(45), 0), deep, "Metal")
-		k.ball("CrownJewel", 0.12, b * CFrame.new(i * 0.45, 0.1, 0.35), gems[i + 2], "Glass")
-	end
-	local sparkles = Instance.new("ParticleEmitter")
-	sparkles.Rate = 4
-	sparkles.Lifetime = NumberRange.new(0.6, 1.2)
-	sparkles.Speed = NumberRange.new(0.3, 0.8)
-	sparkles.SpreadAngle = Vector2.new(180, 180)
-	sparkles.LightEmission = 0.6
-	sparkles.Color = ColorSequence.new(rgb(255, 230, 150))
-	sparkles.Parent = k.ball("SparkleSource", 0.05, b * CFrame.new(0, 0.1, -0.8), gold)
-end
-
--- RGB Gamer Shovel: black with RGB strips, a controller grip and WASD keycaps on the blade
-CUSTOM.GamerShovel = function(k)
-	local black = rgb(30, 30, 38)
-	shaft(k, black, "Metal", 0.3)
-	local strips = {rgb(230, 90, 200), rgb(80, 200, 230), rgb(110, 225, 130)}
-	for i, color in ipairs(strips) do
-		local a = math.rad(i * 120)
-		k.part("RGBStrip", Vector3.new(0.05, 0.05, 2.8), CFrame.new(math.cos(a) * 0.15, math.sin(a) * 0.15, -0.4), color, "Neon")
-	end
-	-- controller-shaped grip with thumbsticks and buttons
-	k.blob("Controller", Vector3.new(1.5, 0.4, 0.7), CFrame.new(0, 0, TOP + 0.15), rgb(44, 44, 54))
-	k.hold = TOP + 0.15
-	k.ball("StickL", 0.2, CFrame.new(-0.35, 0.2, TOP + 0.15), rgb(120, 122, 132))
-	for i, color in ipairs({rgb(110, 225, 130), rgb(230, 90, 110), rgb(80, 160, 240), rgb(240, 200, 80)}) do
-		local a = math.rad(i * 90)
-		k.ball("Button", 0.11, CFrame.new(0.38 + math.cos(a) * 0.12, 0.2, TOP + 0.15 + math.sin(a) * 0.12), color)
-	end
-	socket(k, black, "Metal")
-	local b = k.blade
-	spade(k, rgb(40, 40, 52), "Metal", 1.7)
-	k.part("EdgeL", Vector3.new(0.06, 0.14, 1.4), b * CFrame.new(-0.95, 0.14, -0.75) * CFrame.Angles(0, 0, math.rad(-25)), strips[1], "Neon")
-	k.part("EdgeR", Vector3.new(0.06, 0.14, 1.4), b * CFrame.new(0.95, 0.14, -0.75) * CFrame.Angles(0, 0, math.rad(25)), strips[2], "Neon")
-	for _, key in ipairs({Vector3.new(0, 0, -0.55), Vector3.new(-0.34, 0, -0.9), Vector3.new(0, 0, -0.9), Vector3.new(0.34, 0, -0.9)}) do
-		k.part("Keycap", Vector3.new(0.28, 0.14, 0.28), b * CFrame.new(key + Vector3.new(0, 0.1, 0)), rgb(236, 236, 244))
-	end
-end
-
--- Tectonic Auger: industrial drill with hazard bands, a motor and a spiral auger bit
-CUSTOM.TectonicAuger = function(k)
-	local steel, hazard, ink = rgb(172, 176, 186), rgb(240, 196, 60), rgb(44, 44, 54)
-	shaft(k, rgb(78, 80, 88), "Metal", 0.34)
-	for i = 0, 5 do
-		k.rodZ("Hazard", 0.18, 0.38, 1.1 - i * 0.18, i % 2 == 0 and hazard or ink)
-	end
-	tGrip(k, rgb(36, 36, 42), "Fabric", hazard, "SmoothPlastic")
-	local motor = k.part("Motor", Vector3.new(0.75, 0.65, 1), CFrame.new(0, 0, -1.35), hazard)
-	k.part("MotorVent", Vector3.new(0.5, 0.04, 0.6), CFrame.new(0, 0.34, -1.35), rgb(230, 130, 70), "Neon")
-	light(motor, rgb(230, 150, 90), 5)
-	k.rodZ("Core", 2.6, 0.26, -2.95, steel, "Metal")
-	-- spiral flights: shrinking discs, each turned a bit more
-	for i = 0, 7 do
-		local d = 1.4 - i * 0.14
-		k.part("Flight", Vector3.new(0.1, d, d), CFrame.new(0, 0, -2.1 - i * 0.3) * CFrame.Angles(0, math.rad(90), 0) * CFrame.Angles(math.rad(i * 25), 0, math.rad(12)), steel, "Metal", Enum.PartType.Cylinder)
-	end
-	k.ball("DrillTip", 0.3, CFrame.new(0, 0, -4.35), hazard)
-end
-
--- Singularity Spade: dark foil blade holding a tiny black hole with a glowing disk
-CUSTOM.SingularitySpade = function(k)
-	local dark, lilac, chrome = rgb(34, 35, 42), rgb(178, 158, 255), rgb(150, 154, 162)
-	shaft(k, dark, "Metal", 0.3)
-	for _, z in ipairs({1, 0, -1}) do
-		k.rodZ("Ring", 0.12, 0.38, z, lilac)
-	end
-	dGrip(k, chrome, "Foil", dark, "Fabric")
-	socket(k, chrome, "Foil")
-	local b = k.blade
-	spade(k, rgb(56, 58, 66), "Foil", 1.75, chrome).Reflectance = 0.3
-	local hole = b * CFrame.new(0, 0.22, -0.85)
-	k.ball("BlackHole", 0.7, hole, rgb(6, 6, 10))
-	k.part("AccretionDisk", Vector3.new(0.04, 1.5, 1.5), hole * CFrame.Angles(math.rad(18), 0, math.rad(90)), rgb(220, 140, 100), "Neon", Enum.PartType.Cylinder)
-	k.part("InnerDisk", Vector3.new(0.05, 1.05, 1.05), hole * CFrame.Angles(math.rad(18), 0, math.rad(90)), lilac, "Neon", Enum.PartType.Cylinder)
-	for i = 0, 2 do
-		local a = math.rad(i * 120 + 30)
-		k.ball("Orbiter", 0.12, hole * CFrame.new(math.cos(a) * 0.95, 0.1, math.sin(a) * 0.95), lilac, "Neon")
-	end
-	light(k.ball("HoleGlow", 0.05, hole, dark), rgb(200, 170, 255), 6)
-end
-
----------------------------------------------------------------------
--- THEMED SHOVELS FOR WORLDS 2-9
--- Built from the world's colors (def.Look, see WorldsData). The blade shape and grip come
--- from the shovel, the decorations from the world's theme, and higher tiers get fancier:
--- tier 3+ more decorations, 5+ a glowing rim, 6+ a light, 7 sparkles and a halo.
----------------------------------------------------------------------
-local function sparkle(part, color, rate)
-	local e = Instance.new("ParticleEmitter")
-	e.Rate = rate or 5
-	e.Lifetime = NumberRange.new(0.6, 1.2)
-	e.Speed = NumberRange.new(0.3, 0.8)
-	e.SpreadAngle = Vector2.new(180, 180)
-	e.LightEmission = 0.6
-	e.Color = ColorSequence.new(color)
-	e.Parent = part
-end
-
--- a disc lying flat on the blade's front face (radius r, at blade position x, z)
-local function faceDisc(k, name, d, x, z, color, material, lift)
-	return k.part(name, Vector3.new(0.05, d, d), k.blade * CFrame.new(x, lift or 0.09, z) * CFrame.Angles(0, 0, math.rad(90)), color, material, Enum.PartType.Cylinder)
-end
-
-local DECO = {}
-
--- little five-petal blossoms, and a paper lantern charm on fancier ones
-DECO.Sakura = function(k, c, tier)
-	local b = k.blade
-	local spots = {Vector3.new(-0.35, 0, -0.5), Vector3.new(0.4, 0, -1.05), Vector3.new(-0.2, 0, -1.4), Vector3.new(0.3, 0, -0.35)}
-	for i = 1, math.min(#spots, 1 + tier // 2) do
-		local spot = spots[i] + Vector3.new(0, 0.1, 0)
-		k.ball("FlowerCore", 0.16, b * CFrame.new(spot), c.Accent)
-		for p = 0, 4 do
-			local a = math.rad(p * 72 + i * 20)
-			k.ball("Petal", 0.2, b * CFrame.new(spot + Vector3.new(math.cos(a) * 0.17, -0.02, math.sin(a) * 0.17)), i % 2 == 0 and c.Second or c.Main)
-		end
-	end
-	k.rodZ("Wrap", 0.5, 0.36, 0.9, c.Second, "Fabric")
-	if tier >= 4 then
-		k.part("LanternString", Vector3.new(0.04, 0.5, 0.04), CFrame.new(0, -0.45, 0.3), c.Dark)
-		k.blob("Lantern", Vector3.new(0.5, 0.62, 0.5), CFrame.new(0, -0.95, 0.3), rgb(255, 110, 110))
-		k.ball("LanternGlow", 0.3, CFrame.new(0, -0.95, 0.3), c.Accent, "Neon")
-	end
-end
-
--- stars on the blade, a ringed planet on the socket, an orbiting moon on fancy ones
-DECO.Galaxy = function(k, c, tier)
-	local b = k.blade
-	for i = 1, 3 + tier do
-		local x = math.sin(i * 2.4) * 0.6
-		local z = -0.3 - (i * 0.37) % 1.3
-		k.ball("Star", 0.1 + (i % 3) * 0.04, b * CFrame.new(x, 0.1, z), i % 2 == 0 and c.Accent or rgb(255, 255, 255), "Neon")
-	end
-	k.ball("Planet", 0.5, CFrame.new(0, 0.32, -1.7), c.Main)
-	k.part("PlanetRing", Vector3.new(0.04, 0.95, 0.95), CFrame.new(0, 0.32, -1.7) * CFrame.Angles(0, 0, math.rad(90)) * CFrame.Angles(math.rad(20), 0, 0), c.Accent, "SmoothPlastic", Enum.PartType.Cylinder)
-	if tier >= 3 then
-		k.ball("Moon", 0.26, CFrame.new(0.55, 0.2, 0.3), rgb(220, 224, 240))
-		for i = 0, 7 do
-			local a = math.rad(i * 45)
-			k.ball("OrbitDot", 0.06, CFrame.new(math.cos(a) * 0.55, math.sin(a) * 0.55, 0.3), c.Glow, "Neon")
-		end
-	end
-end
-
--- ice shards sticking out of the blade and the socket
-DECO.Frost = function(k, c, tier)
-	local b = k.blade
-	for i = 1, 2 + tier do
-		local side = i % 2 == 0 and 1 or -1
-		local z = -0.3 - (i * 0.29) % 1.2
-		k.part("IceShard", Vector3.new(0.16, 0.16, 0.45 + (i % 3) * 0.12), b * CFrame.new(side * (0.35 + (i % 3) * 0.12), 0.18, z) * CFrame.Angles(math.rad(-55), side * math.rad(20), math.rad(45)), c.Main, "Glass").Transparency = 0.15
-	end
-	for i = 0, 2 do
-		local a = math.rad(i * 120)
-		k.part("SocketShard", Vector3.new(0.14, 0.14, 0.5), CFrame.new(math.cos(a) * 0.25, math.sin(a) * 0.25, -1.9) * CFrame.Angles(math.sin(a) * 0.6, -math.cos(a) * 0.6, 0), c.Second, "Glass")
-	end
-	k.rodZ("FurWrap", 0.6, 0.4, 0.85, c.Second, "Fabric")
-end
-
--- a golden sun on the blade with rays; chrome bands on the shaft
-DECO.Dunes = function(k, c, tier)
-	local b = k.blade
-	faceDisc(k, "Sun", 0.6, 0, -0.85, c.Main, "Metal", 0.1).Reflectance = 0.25
-	for i = 0, 7 do
-		local a = math.rad(i * 45)
-		k.part("SunRay", Vector3.new(0.08, 0.06, 0.28), b * CFrame.new(math.cos(a) * 0.48, 0.1, -0.85 + math.sin(a) * 0.48) * CFrame.Angles(0, -a + math.pi / 2, 0), c.Accent)
-	end
-	for _, z in ipairs({0.9, -0.2, -1.2}) do
-		k.rodZ("ChromeBand", 0.14, 0.38, z, c.Second, "Metal").Reflectance = 0.3
-	end
-	if tier >= 4 then
-		k.part("Pyramid", Vector3.new(0.5, 0.4, 0.5), CFrame.new(0, 0, TOP + 0.8), c.Main, "Metal", Enum.PartType.Wedge)
-	end
-end
-
--- bubbles floating off the blade, a seashell, and a pearl
-DECO.Coral = function(k, c, tier)
-	local b = k.blade
-	for i = 1, 3 + tier do
-		local bubble = k.ball("Bubble", 0.12 + (i % 3) * 0.08, b * CFrame.new(math.sin(i * 1.7) * 0.7, 0.25 + (i % 4) * 0.12, -0.3 - (i * 0.31) % 1.3), rgb(220, 250, 255), "Glass")
-		bubble.Transparency = 0.35
-	end
-	k.blob("Shell", Vector3.new(0.6, 0.18, 0.5), b * CFrame.new(0.35, 0.1, -0.5), c.Main)
-	for i = -1, 1 do
-		k.part("ShellRidge", Vector3.new(0.05, 0.08, 0.42), b * CFrame.new(0.35 + i * 0.14, 0.18, -0.52) * CFrame.Angles(0, i * 0.35, 0), c.Accent)
-	end
-	k.ball("Pearl", 0.26, b * CFrame.new(-0.3, 0.16, -1.05), rgb(250, 246, 255), "SmoothPlastic").Reflectance = 0.3
-	k.rodZ("Seaweed", 0.6, 0.36, 0.85, c.Second, "Fabric")
-end
-
--- candy stripes on the shaft, sprinkles on the blade, a lollipop on the grip
-DECO.Candy = function(k, c, tier)
-	local b = k.blade
-	for z = -1.6, 1.3, 0.36 do
-		k.rodZ("CandyStripe", 0.14, 0.34, z, c.Main)
-	end
-	local sprinkleColors = {c.Main, c.Second, c.Accent, rgb(120, 170, 255), rgb(255, 255, 255)}
-	for i = 1, 6 + tier * 2 do
-		local x = math.sin(i * 2.1) * 0.65
-		local z = -0.2 - (i * 0.23) % 1.35
-		k.part("Sprinkle", Vector3.new(0.06, 0.06, 0.2), b * CFrame.new(x, 0.09, z) * CFrame.Angles(0, i, 0), sprinkleColors[i % #sprinkleColors + 1])
-	end
-	if tier >= 3 then
-		k.part("LollipopStick", Vector3.new(0.06, 0.06, 0.6), CFrame.new(0.62, 0, TOP + 0.3), rgb(255, 255, 255))
-		k.part("Lollipop", Vector3.new(0.12, 0.6, 0.6), CFrame.new(0.62, 0, TOP + 0.7) * CFrame.Angles(0, math.rad(90), 0), c.Main, "SmoothPlastic", Enum.PartType.Cylinder)
-		k.part("LollipopSwirl", Vector3.new(0.13, 0.32, 0.32), CFrame.new(0.62, 0, TOP + 0.7) * CFrame.Angles(0, math.rad(90), 0), c.Accent, "SmoothPlastic", Enum.PartType.Cylinder)
-	end
-end
-
--- glowing lava cracks across a dark blade, embers, and a molten core on fancy ones
-DECO.Forge = function(k, c, tier)
-	local b = k.blade
-	local path = {Vector3.new(-0.5, 0, -0.2), Vector3.new(-0.2, 0, -0.6), Vector3.new(-0.45, 0, -1.0), Vector3.new(0, 0, -1.35), Vector3.new(0.3, 0, -0.9), Vector3.new(0.55, 0, -1.2)}
-	for i = 1, #path - 1 do
-		local p, q = path[i] + Vector3.new(0, 0.08, 0), path[i + 1] + Vector3.new(0, 0.08, 0)
-		k.bar("LavaCrack", b * p, b * q, 0.07, c.Glow, "Neon")
-	end
-	for i = 0, 3 do
-		k.rodZ("ObsidianBand", 0.14, 0.36, 0.9 - i * 0.7, c.Dark, "Glass")
-	end
-	if tier >= 3 then
-		k.ball("MoltenCore", 0.36, CFrame.new(0, 0.28, -2.2), c.Glow, "Neon")
-	end
-	if tier >= 5 then
-		for i = -1, 1, 2 do
-			k.part("Horn", Vector3.new(0.14, 0.14, 0.55), CFrame.new(i * 0.32, 0.12, -2.15) * CFrame.Angles(math.rad(-30), i * math.rad(35), 0), c.Accent, "Metal")
-		end
-	end
-end
-
--- a magenta/black "missing texture" checker, floating pixel cubes that don't line up
-DECO.Glitch = function(k, c, tier)
-	local b = k.blade
-	for i = 0, 3 do
-		local x, z = (i % 2) * 0.36 - 0.18, -0.55 - math.floor(i / 2) * 0.36
-		k.part("MissingTexture", Vector3.new(0.34, 0.06, 0.34), b * CFrame.new(x, 0.08, z), (i == 0 or i == 3) and c.Second or c.Dark)
-	end
-	for i = 1, 2 + tier do
-		local side = i % 2 == 0 and 1 or -1
-		k.part("PixelCube", Vector3.new(0.2, 0.2, 0.2), CFrame.new(side * (0.35 + (i % 3) * 0.18), 0.1 + (i % 2) * 0.2, -0.4 - (i * 0.53) % 2.4), i % 3 == 0 and c.Second or c.Main, "Neon")
-	end
-	-- a ghost copy of the blade, slightly off, like a bad render
-	local ghost = k.part("GhostBlade", Vector3.new(1.6, 0.05, 1.4), b * CFrame.new(0.14, 0.2, -0.8), c.Main, "ForceField")
-	ghost.Transparency = 0.3
-end
-
-local function themed(k, def)
-	local look = def.Look
-	local c, tier = look.Colors, look.Tier
-	local fancy = tier >= 5
-	local shaftColor = (tier % 2 == 1) and c.Dark or c.Second
-	local bladeColor = (tier % 2 == 1) and c.Main or c.Second
-	if look.Theme == "Glitch" or look.Theme == "Forge" then
-		shaftColor, bladeColor = c.Dark, (tier % 2 == 1) and c.Second or c.Dark
-	end
-	shaft(k, shaftColor, fancy and "Metal" or "SmoothPlastic", 0.3)
-	if look.Grip == "T" then
-		tGrip(k, c.Dark, "Fabric", c.Accent, "SmoothPlastic")
-	else
-		dGrip(k, shaftColor, "SmoothPlastic", c.Accent, "SmoothPlastic")
-	end
-	socket(k, c.Accent, fancy and "Metal" or "SmoothPlastic")
-
-	local b = k.blade
-	local plate
-	if look.Blade == "Scoop" then
-		plate = k.blob("Blade", Vector3.new(2.1, 0.3, 2.3), b * CFrame.new(0, 0, -1.05), bladeColor)
-		k.blob("ScoopRim", Vector3.new(2.25, 0.16, 2.45), b * CFrame.new(0, -0.06, -1.05), c.Accent)
-	elseif look.Blade == "Spoon" then
-		plate = k.blob("Blade", Vector3.new(1.8, 0.4, 2.3), b * CFrame.new(0, 0, -1.1), bladeColor)
-		k.blob("SpoonShell", Vector3.new(1.95, 0.3, 2.45), b * CFrame.new(0, -0.08, -1.1), c.Dark)
-	else
-		plate = spade(k, bladeColor, "SmoothPlastic", 1.7, c.Accent)
-		if fancy then
-			-- glowing rim peeking out around the round end
-			k.part("GlowRim", Vector3.new(0.06, 1.85, 1.85), b * CFrame.new(0, -0.05, -1.5) * CFrame.Angles(0, 0, math.rad(90)), c.Glow, "Neon", Enum.PartType.Cylinder)
-		end
-	end
-	plate.Reflectance = fancy and 0.15 or 0.05
-
-	local deco = DECO[look.Theme]
-	if deco then deco(k, c, tier) end
-
-	if tier >= 6 then
-		light(plate, c.Glow, 7)
-	end
-	if tier >= 7 then
-		sparkle(plate, c.Glow, 6)
-		for i = 0, 9 do
-			local a = math.rad(i * 36)
-			k.ball("Halo", 0.1, CFrame.new(math.cos(a) * 0.62, math.sin(a) * 0.62, TOP + 1.1), c.Accent, "Neon")
-		end
-	end
-end
-
----------------------------------------------------------------------
--- CRYSTAL SHOVELS (the default look, see GameConfig.ShovelLook)
--- One blocky/crystal base design: a dark square-section handle with metal bands, a
--- T-grip with crystal caps, and a cyan crystal blade (glassy plate, glowing core, round
--- tip, faceted shards). Every shovel is this base, upgraded procedurally by its tier
--- (its Power, 1-9):
---   * Size:      the whole shovel grows 4% per tier
---   * Color:     the crystals shift cyan -> aqua -> lime -> gold -> orange -> rose -> violet -> royal blue -> prismatic
---   * Shards:    2 + tier faceted crystals on the blade
---   * Orbits:    tier 3+ a ring of crystals spins around the collar, tier 6+ a second ring
---                around the blade, tier 8+ a halo over the grip (they spin in ShovelClient /
---                ShovelSpinner using the OrbitCenter/OrbitSpeed attributes)
---   * VFX:       particles whose Rate, LightEmission and Size rise with the tier, plus a light
--- Shovels from worlds 2-9 tint their dark metal and orbiters with their world's colors.
----------------------------------------------------------------------
-local CRYSTAL_TIERS = {
-	rgb(90, 230, 255),  -- 1 cyan (the base design)
-	rgb(60, 255, 205),  -- 2 aqua
-	rgb(150, 255, 90),  -- 3 lime
-	rgb(255, 215, 70),  -- 4 gold
-	rgb(255, 140, 60),  -- 5 orange
-	rgb(255, 80, 150),  -- 6 rose
-	rgb(170, 90, 255),  -- 7 violet
-	rgb(80, 110, 255),  -- 8 royal blue
-	rgb(236, 244, 255), -- 9 prismatic white
-}
-
--- visual numbers for a tier (exposed so other scripts could reuse them)
-local function tierStats(tier)
-	return {
-		Scale = 1 + (tier - 1) * 0.04,
-		Crystal = CRYSTAL_TIERS[math.clamp(tier, 1, #CRYSTAL_TIERS)],
-		Shards = 2 + tier,
-		ParticleRate = 2 + tier * 3,                  -- particles per second
-		ParticleLight = math.min(0.15 + tier * 0.095, 1), -- LightEmission 0.25 .. 1
-		ParticleSize = 0.08 + tier * 0.03,            -- starting particle size (studs, before SCALE)
-		LightBrightness = 0.4 + tier * 0.12,
-		LightRange = 4 + tier,
-	}
-end
-
-local function orbit(part, center, speed)
-	part:SetAttribute("OrbitCenter", center)
-	part:SetAttribute("OrbitSpeed", speed)
-	return part
-end
-
-local function crystal(k, def)
-	local tier = math.clamp(def.Power or 1, 1, 12)
-	local t = tierStats(tier)
-	local c = t.Crystal
-	local bright = c:Lerp(Color3.new(1, 1, 1), 0.45)
-	local look = def.Look and def.Look.Colors
-	local dark = look and look.Dark:Lerp(rgb(34, 34, 44), 0.5) or rgb(38, 38, 50)
-	local metal = look and look.Second:Lerp(rgb(120, 124, 140), 0.55) or rgb(118, 122, 138)
-	local accent = look and look.Glow or bright
-
-	-- HANDLE: blocky dark shaft with metal bands (glowing seams from tier 4)
-	k.part("Shaft", Vector3.new(0.3, 0.3, TOP + 2.3), CFrame.new(0, 0, (TOP - 2.3) / 2), dark)
-	for i, z in ipairs({1.05, -0.15, -1.35}) do
-		k.part("Band", Vector3.new(0.4, 0.4, 0.16), CFrame.new(0, 0, z), metal, "Metal")
-		if tier >= 4 then
-			k.part("BandGlow", Vector3.new(0.42, 0.42, 0.04), CFrame.new(0, 0, z + (i == 1 and 0.1 or -0.1)), c, "Neon")
-		end
-	end
-	k.part("GripWrap", Vector3.new(0.36, 0.36, 0.7), CFrame.new(0, 0, TOP - 0.55), rgb(24, 24, 30), "Fabric")
-	-- T-grip with a crystal cap on each end and one on top
-	k.part("TBar", Vector3.new(1.2, 0.3, 0.3), CFrame.new(0, 0, TOP), dark)
-	for _, side in ipairs({-1, 1}) do
-		k.part("GripCrystal", Vector3.new(0.34, 0.34, 0.34), CFrame.new(side * 0.68, 0, TOP) * CFrame.Angles(math.rad(45), math.rad(45), 0), c, "Glass")
-	end
-	k.part("Pommel", Vector3.new(0.3, 0.3, 0.3), CFrame.new(0, 0, TOP + 0.34) * CFrame.Angles(math.rad(45), math.rad(35), 0), c, "Glass")
-	k.hold = TOP
-
-	-- COLLAR where the blade meets the handle
-	k.part("Socket", Vector3.new(0.56, 0.56, 0.9), CFrame.new(0, 0, -2.35), dark, "Metal")
-	k.part("CollarGlow", Vector3.new(0.6, 0.6, 0.08), CFrame.new(0, 0, -1.98), c, "Neon")
-
-	-- BLADE: glassy crystal plate with a glowing core, a round tip and dark side guards
-	local b = k.blade
-	local plate = k.part("Blade", Vector3.new(1.7, 0.16, 1.4), b * CFrame.new(0, 0, -0.7), c, "Glass")
-	plate.Transparency = 0.12
-	plate.Reflectance = 0.2
-	local tip = k.part("BladeTip", Vector3.new(0.16, 1.7, 1.7), b * CFrame.new(0, 0, -1.4) * CFrame.Angles(0, 0, math.rad(90)), c, "Glass", Enum.PartType.Cylinder)
-	tip.Transparency = 0.12
-	tip.Reflectance = 0.2
-	k.part("CrystalCore", Vector3.new(0.5, 0.18, 0.9), b * CFrame.new(0, 0.005, -0.85) * CFrame.Angles(0, math.rad(45), 0), bright, "Neon")
-	k.part("CrystalCoreTip", Vector3.new(0.18, 0.55, 0.55), b * CFrame.new(0, 0.005, -1.45) * CFrame.Angles(0, 0, math.rad(90)), bright, "Neon", Enum.PartType.Cylinder)
-	k.part("FootStep", Vector3.new(1.95, 0.26, 0.26), b, dark, "Metal")
-	for _, side in ipairs({-1, 1}) do
-		k.part("SideGuard", Vector3.new(0.14, 0.24, 0.9), b * CFrame.new(side * 0.9, 0.02, -0.45), dark, "Metal")
-	end
-
-	-- faceted crystal shards growing out of the blade (more every tier)
-	for i = 1, t.Shards do
-		local row = (i - 1) % 4
-		local col = math.floor((i - 1) / 4)
-		local x = (row - 1.5) * 0.36 + (col % 2) * 0.12
-		local z = -0.25 - col * 0.42
-		local h = 0.24 + ((i * 7) % 5) * 0.05
-		k.part("Shard", Vector3.new(0.2, h, 0.2), b * CFrame.new(x, 0.1 + h * 0.3, z) * CFrame.Angles(math.rad(-20 + (i % 3) * 10), math.rad(i * 37), math.rad(45)),
-			i % 3 == 0 and bright or c, "Glass")
-	end
-
-	-- ROTATING DECORATIONS
-	if tier >= 3 then
-		local center = Vector3.new(0, 0, -1.9)
-		local n = 2 + math.floor(tier / 3)
-		for i = 1, n do
-			local a = math.pi * 2 * i / n
-			orbit(k.part("OrbitCrystal", Vector3.new(0.2, 0.2, 0.2), CFrame.new(center + Vector3.new(math.cos(a) * 0.75, math.sin(a) * 0.75, 0)) * CFrame.Angles(math.rad(45), math.rad(45), 0), accent, "Neon"), center, 2.4)
-		end
-	end
-	if tier >= 6 then
-		local center = Vector3.new(0, -0.2, -3.5)
-		local n = 3 + (tier - 6)
-		for i = 1, n do
-			local a = math.pi * 2 * i / n
-			orbit(k.part("OrbitShard", Vector3.new(0.16, 0.34, 0.16), CFrame.new(center + Vector3.new(math.cos(a) * 1.35, math.sin(a) * 1.35, 0)) * CFrame.Angles(0, 0, a), c, "Glass"), center, -1.7)
-		end
-	end
-	if tier >= 8 then
-		local center = Vector3.new(0, 0, TOP + 0.75)
-		for i = 1, 8 do
-			local a = math.pi * 2 * i / 8
-			orbit(k.part("Halo", Vector3.new(0.12, 0.12, 0.12), CFrame.new(center + Vector3.new(math.cos(a) * 0.55, math.sin(a) * 0.55, 0)), bright, "Neon", Enum.PartType.Ball), center, 3.2)
-		end
-	end
-
-	-- VFX: particles and light that grow with the tier
-	local emitter = Instance.new("ParticleEmitter")
-	emitter.Name = "CrystalDust"
-	emitter.Rate = t.ParticleRate
-	emitter.LightEmission = t.ParticleLight
-	emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, t.ParticleSize), NumberSequenceKeypoint.new(1, 0)})
-	emitter.Lifetime = NumberRange.new(0.5, 0.9 + tier * 0.05)
-	emitter.Speed = NumberRange.new(0.4, 0.8 + tier * 0.1)
-	emitter.SpreadAngle = Vector2.new(180, 180)
-	emitter.Color = ColorSequence.new(bright, c)
-	emitter.Transparency = NumberSequence.new(0.1, 1)
-	emitter.Parent = plate
-	if tier >= 5 then
-		local sparks = Instance.new("ParticleEmitter")
-		sparks.Name = "CrystalSparks"
-		sparks.Rate = (tier - 4) * 4
-		sparks.LightEmission = 1
-		sparks.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, t.ParticleSize * 0.6), NumberSequenceKeypoint.new(1, 0)})
-		sparks.Lifetime = NumberRange.new(0.3, 0.6)
-		sparks.Speed = NumberRange.new(2, 4)
-		sparks.Acceleration = Vector3.new(0, -6, 0)
-		sparks.SpreadAngle = Vector2.new(60, 60)
-		sparks.Color = ColorSequence.new(accent)
-		sparks.Parent = tip
-	end
-	light(plate, c, t.LightRange)
-	local l = plate:FindFirstChildOfClass("PointLight")
-	if l then l.Brightness = t.LightBrightness end
-
-	-- SIZE UPGRADE: scale everything up around the tool's origin
-	if t.Scale ~= 1 then
-		for _, part in ipairs(k.tool:GetChildren()) do
-			if part:IsA("BasePart") and part.Name ~= "Handle" then
-				local rotation = part.CFrame.Rotation
-				part.Size = part.Size * t.Scale
-				part.CFrame = CFrame.new(part.Position * t.Scale) * rotation
-				local center = part:GetAttribute("OrbitCenter")
-				if center then part:SetAttribute("OrbitCenter", center * t.Scale) end
+-- one arm of the head: voxels along an arc that starts at the socket and bends toward the grip
+-- side = +1 / -1 (which way along Y), rows = how many layers deep
+local function arm(tool, H, side, look, opts)
+	local R, reach, count, rows = opts.Radius, opts.Reach, opts.Count, opts.Rows
+	local center = H + Vector3.new(0, 0, R)
+	local parts = {}
+	for i = 1, count do
+		local t = (i - 0.3) / count
+		local phi = 0.22 + t * reach
+		local size = opts.Size * (1 - t * 0.5)
+		local radial = Vector3.new(0, side * math.sin(phi), -math.cos(phi))
+		local rot = CFrame.Angles(side * phi, 0, 0)
+		for row = 0, rows - 1 do
+			local r = R + (row - (rows - 1) / 2) * size * 0.85
+			local pos = center + radial * r
+			local color = (row == rows - 1) and look.Edge or look.Main
+			local material = opts.Material or Enum.Material.SmoothPlastic
+			local voxel = newPart(tool, row == rows - 1 and "HeadEdge" or "HeadVoxel", Vector3.new(size * 0.9, size, size), CFrame.new(pos) * rot, shade(color, i + row), material)
+			if opts.Glass then
+				voxel.Transparency = 0.15
+				voxel.Reflectance = 0.2
 			end
+			table.insert(parts, voxel)
 		end
-		k.hold = TOP * t.Scale
-		emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, t.ParticleSize * t.Scale), NumberSequenceKeypoint.new(1, 0)})
+		-- spikes sticking out of the outer row
+		if opts.Spikes and i % 2 == 0 then
+			local pos = center + radial * (R + size * 1.2)
+			newPart(tool, "HeadSpike", Vector3.new(size * 0.5, size * 0.5, size * 0.8), CFrame.new(pos) * rot, look.Edge)
+		end
 	end
+	-- the pointed tip
+	local phiEnd = 0.22 + reach + 0.12
+	local tipPos = center + Vector3.new(0, side * math.sin(phiEnd), -math.cos(phiEnd)) * R
+	newPart(tool, "HeadTip", Vector3.new(opts.Size * 0.36, opts.Size * 0.4, opts.Size * 0.4), CFrame.new(tipPos) * CFrame.Angles(side * phiEnd, 0, 0) * DIAMOND, look.Edge)
+	return parts
+end
+
+-- a chunky hammer block made of voxels (the other side of a "Hammer" head)
+local function hammer(tool, H, side, look)
+	local v = 0.5
+	for y = 1, 3 do
+		for z = -1, 1 do
+			local pos = H + Vector3.new(0, side * (0.45 + y * v * 0.95), z * v * 0.95)
+			local edge = y == 3 or math.abs(z) == 1
+			newPart(tool, "HammerVoxel", Vector3.new(v * 1.7, v, v), CFrame.new(pos), shade(edge and look.Edge or look.Main, y + z))
+		end
+	end
+	newPart(tool, "HammerFace", Vector3.new(v * 1.8, 0.12, v * 3), CFrame.new(H + Vector3.new(0, side * (0.45 + 3.55 * v), 0)), look.Frame, Enum.Material.Metal)
 end
 
 ---------------------------------------------------------------------
--- BUILD A SHOVEL TOOL
+-- BUILD A PICKAXE TOOL
 ---------------------------------------------------------------------
 return function(def)
-	local s = STYLES[def.Id] or defaultStyle(def)
+	local look = lookFor(def)
+	local tier = math.clamp(def.Power or 1, 1, 12)
+	local growth = 1 + (tier - 1) * 0.035
+	local glowing = tier >= 2
 
 	local tool = Instance.new("Tool")
 	tool.Name = def.Name
@@ -2098,144 +1290,132 @@ return function(def)
 	tool:SetAttribute("ShovelId", def.Id)
 
 	-- invisible handle the hand holds; everything else is welded to it
-	local handle = newPart(tool, "Handle", Vector3.new(0.3, 0.3, 4.4), CFrame.new(), s.Shaft, s.ShaftMat)
+	local handle = newPart(tool, "Handle", Vector3.new(0.3, 0.3, 4.6), CFrame.new(), look.Handle)
 	handle.Transparency = 1
 
-	local custom
-	if GameConfig.ShovelLook == "Crystal" then
-		custom = crystal
-	else
-		custom = CUSTOM[def.Id] or (def.Look and themed)
+	-- HANDLE: a square dark shaft from the head down to the pommel
+	local HEAD_Z, END_Z = -2.6, 2.2
+	local RIGHT_Z, LEFT_Z = 1.55, 0.55 -- where the hands hold it (right hand low, left hand above)
+	newPart(tool, "Shaft", Vector3.new(0.26, 0.26, END_Z - HEAD_Z), CFrame.new(0, 0, (END_Z + HEAD_Z) / 2), look.Handle)
+	-- grip wrap: stacked cubes, alternating shades
+	for i = 0, 4 do
+		newPart(tool, "GripWrap", Vector3.new(0.34, 0.34, 0.24), CFrame.new(0, 0, 1.05 + i * 0.24), shade(look.Wrap, i))
 	end
-	local rightZ, leftZ -- where the right and left hands hold the shaft (before scaling)
-	if custom then
-		local k = kit(tool)
-		custom(k, def)
-		rightZ = k.hold or TOP
-	else
-		rightZ = s.Grip == "T" and 2.3 or 2.8
+	for _, z in ipairs({0.88, 2.28 - 0.1}) do
+		newPart(tool, "Collar", Vector3.new(0.4, 0.4, 0.14), CFrame.new(0, 0, z), look.Frame, Enum.Material.Metal)
 	end
-	leftZ = rightZ - 1.3 -- the other hand holds the shaft a little lower
-	if not custom then
-		-- SHAFT with metal collars
-		cylinderZ(tool, "Shaft", 4.4, 0.22, 0, s.Shaft, s.ShaftMat)
-		cylinderZ(tool, "CollarTop", 0.14, 0.27, 0.95, s.Metal, s.MetalMat)
-		cylinderZ(tool, "CollarMid", 0.14, 0.27, -1.0, s.Metal, s.MetalMat)
-		cylinderZ(tool, "GripWrap", 0.9, 0.27, 1.45, s.GripColor, s.GripMat)
-		if s.Tape then
-			cylinderZ(tool, "DuctTape", 0.45, 0.25, -0.2, rgb(150, 150, 155), "Fabric")
+	gemNode(tool, "Pommel", END_Z + 0.25, 0.62, look, glowing)
+	-- gem nodes up the handle (more on better pickaxes)
+	local nodes = tier >= 7 and {-1.75, -0.1} or (tier >= 3 and {-1.6} or {})
+	for _, z in ipairs(nodes) do
+		gemNode(tool, "HandleNode", z, 0.5, look, glowing)
+	end
+	-- the diamond cage with a floating gem (tier 4+)
+	if tier >= 4 then
+		local top, bottom, mid, w = -1.35, -0.35, -0.85, 0.42
+		local a, b2 = Vector3.new(0, 0, top), Vector3.new(0, 0, bottom)
+		for _, s in ipairs({-1, 1}) do
+			local side = Vector3.new(0, s * w, mid)
+			bar(tool, "CageBar", a, side, 0.12, look.Handle)
+			bar(tool, "CageBar", side, b2, 0.12, look.Handle)
 		end
-
-		-- accent strips along the shaft (RGB lights, rainbow, circuits...)
-		if s.Strips then
-			local offsets = {Vector3.new(0, 0.115, 0), Vector3.new(0.115, 0, 0), Vector3.new(0, -0.115, 0), Vector3.new(-0.115, 0, 0)}
-			for i, color in ipairs(s.Strips) do
-				local o = offsets[(i - 1) % 4 + 1]
-				newPart(tool, "Strip", Vector3.new(0.04, 0.04, 2.6), CFrame.new(o + Vector3.new(0, 0, -0.45)), color, "Neon")
-			end
-		end
-
-		-- HANDLE GRIP at the top
-		if s.Grip == "T" then
-			newPart(tool, "TBar", Vector3.new(0.95, 0.2, 0.2), CFrame.new(0, 0, 2.3), s.GripColor, s.GripMat, Enum.PartType.Cylinder)
-			newPart(tool, "TCapL", Vector3.new(0.08, 0.24, 0.24), CFrame.new(-0.5, 0, 2.3), s.Metal, s.MetalMat, Enum.PartType.Cylinder)
-			newPart(tool, "TCapR", Vector3.new(0.08, 0.24, 0.24), CFrame.new(0.5, 0, 2.3), s.Metal, s.MetalMat, Enum.PartType.Cylinder)
-		else
-			bar(tool, "GripSideL", Vector3.new(0, 0, 2.15), Vector3.new(-0.42, 0, 2.8), 0.15, s.Shaft, s.ShaftMat)
-			bar(tool, "GripSideR", Vector3.new(0, 0, 2.15), Vector3.new(0.42, 0, 2.8), 0.15, s.Shaft, s.ShaftMat)
-			newPart(tool, "GripBar", Vector3.new(0.95, 0.19, 0.19), CFrame.new(0, 0, 2.82), s.GripColor, s.GripMat, Enum.PartType.Cylinder)
-		end
-
-		-- SOCKET where the blade meets the shaft
-		cylinderZ(tool, "Socket", 0.8, 0.3, -2.35, s.Metal, s.MetalMat)
-		if s.Rivets then
-			newPart(tool, "RivetL", Vector3.new(0.09, 0.09, 0.09), CFrame.new(-0.15, 0, -2.35), rgb(200, 200, 205), "Metal", Enum.PartType.Ball)
-			newPart(tool, "RivetR", Vector3.new(0.09, 0.09, 0.09), CFrame.new(0.15, 0, -2.35), rgb(200, 200, 205), "Metal", Enum.PartType.Ball)
-		end
-
-		-- BLADE (slightly angled like a real spade)
-		local bladeCF = CFrame.new(0, -0.05, -2.7) * CFrame.Angles(math.rad(-14), 0, 0)
-		local blade = (BLADES[s.Shape] or buildSpade)(tool, s, bladeCF)
-		for _, part in ipairs(tool:GetChildren()) do
-			if part:IsA("BasePart") and (part.Name:find("Blade") or part.Name:find("Lip")) then
-				part.Reflectance = s.Shine or 0
-				part.Transparency = math.max(part.Transparency, s.BladeTransparency or 0)
-			end
-		end
-
-		-- EXTRAS
-		if s.Rust then
-			local spots = {Vector3.new(-0.3, 0.05, -0.4), Vector3.new(0.35, 0.05, -0.85), Vector3.new(-0.1, 0.05, -1.1), Vector3.new(0.2, 0.05, -0.25)}
-			for i, pos in ipairs(spots) do
-				newPart(tool, "RustSpot", Vector3.new(0.18 + i * 0.03, 0.02, 0.16), bladeCF * CFrame.new(pos) * CFrame.Angles(0, i, 0), rgb(95, 52, 30), "CorrodedMetal")
-			end
-		end
-		if s.Pixels then
-			for i = 0, 3 do
-				newPart(tool, "Pixel", Vector3.new(0.22, 0.1, 0.22), bladeCF * CFrame.new(-0.35 + (i % 2) * 0.7, 0.06, -0.35 - math.floor(i / 2) * 0.5), s.Edge or rgb(255, 255, 255), "SmoothPlastic")
-			end
-		end
-		if s.Core then
-			ellipsoid(tool, "Core", Vector3.new(0.5, 0.12, 0.7), bladeCF * CFrame.new(0, 0.05, -0.8), s.Core, "Neon")
-		end
-		if s.Field then
-			local field = newPart(tool, "EnergyField", Vector3.new(1.5, 0.3, 2.1), bladeCF * CFrame.new(0, 0, -0.9), s.Field, "ForceField")
-			field.Transparency = 0.2
-		end
-		if s.Rings then
-			for i, z in ipairs({-1.4, -1.8}) do
-				newPart(tool, "Ring", Vector3.new(0.05, 0.42 + i * 0.05, 0.42 + i * 0.05), CFrame.new(0, 0, z) * ALONG_Z, s.Rings, "Neon", Enum.PartType.Cylinder).Transparency = 0.3
-			end
-		end
-		if s.Glow then
-			local light = Instance.new("PointLight")
-			light.Color = s.Glow
-			light.Range = 8
-			light.Brightness = 1.3
-			light.Parent = blade
-		end
-		if s.Sparkles then
-			local sparkles = Instance.new("ParticleEmitter")
-			sparkles.Rate = 5
-			sparkles.Lifetime = NumberRange.new(0.6, 1.2)
-			sparkles.Speed = NumberRange.new(0.3, 0.8)
-			sparkles.SpreadAngle = Vector2.new(180, 180)
-			sparkles.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.12), NumberSequenceKeypoint.new(1, 0)})
-			sparkles.LightEmission = 1
-			sparkles.Color = ColorSequence.new(s.Sparkles)
-			sparkles.Parent = blade
-		end
-
+		newPart(tool, "CageGem", Vector3.new(0.3, 0.34, 0.34), CFrame.new(0, 0, mid) * DIAMOND, look.Gem, Enum.Material.Neon)
 	end
 
-	-- SIZE: shrink the whole shovel evenly
+	-- HEAD
+	local H = Vector3.new(0, 0, HEAD_Z)
+	local socket = newPart(tool, "Blade", Vector3.new(0.72, 1, 1), CFrame.new(H) * DIAMOND, look.Frame)
+	local gem = newPart(tool, "HeadGem", Vector3.new(0.86, 0.5, 0.5), CFrame.new(H) * DIAMOND, look.Gem, glowing and Enum.Material.Neon or Enum.Material.Glass)
+	newPart(tool, "Crown", Vector3.new(0.4, 0.42, 0.42), CFrame.new(H + Vector3.new(0, 0, -0.78)) * DIAMOND, look.Edge)
+	local style = look.Head
+	if style == "Wide" then
+		for _, s in ipairs({-1, 1}) do
+			arm(tool, H, s, look, {Radius = 3.4, Reach = 0.62, Count = 8, Rows = 3, Size = 0.58})
+		end
+	elseif style == "Spiked" then
+		for _, s in ipairs({-1, 1}) do
+			arm(tool, H, s, look, {Radius = 2.3, Reach = 1.1, Count = 7, Rows = 2, Size = 0.66, Spikes = true})
+		end
+	elseif style == "Crystal" then
+		for _, s in ipairs({-1, 1}) do
+			arm(tool, H, s, look, {Radius = 2.4, Reach = 1.05, Count = 7, Rows = 3, Size = 0.6, Glass = true, Material = Enum.Material.Glass})
+			-- glowing core running inside the glass
+			arm(tool, H, s, {Main = look.Gem, Edge = look.Gem}, {Radius = 2.4, Reach = 0.95, Count = 6, Rows = 1, Size = 0.3, Material = Enum.Material.Neon})
+		end
+	elseif style == "Hammer" then
+		arm(tool, H, 1, look, {Radius = 2.3, Reach = 1.15, Count = 7, Rows = 2, Size = 0.66})
+		hammer(tool, H, -1, look)
+	else -- Crescent
+		for _, s in ipairs({-1, 1}) do
+			arm(tool, H, s, look, {Radius = 2.3, Reach = 1.15, Count = 7, Rows = tier >= 5 and 3 or 2, Size = 0.66})
+		end
+	end
+	-- side plates that hold the head on the shaft
+	for _, s in ipairs({-1, 1}) do
+		newPart(tool, "HeadBracket", Vector3.new(0.5, 0.3, 0.7), CFrame.new(H + Vector3.new(0, s * 0.42, 0.55)), look.Handle)
+	end
+
+	-- ORBITING CUBES around the handle below the head (tier 6+), spun by the client
+	if tier >= 6 then
+		local center = Vector3.new(0, 0, -1.9)
+		local n = tier - 3
+		for i = 1, n do
+			local a = math.pi * 2 * i / n
+			local cube = newPart(tool, "OrbitCube", Vector3.new(0.2, 0.2, 0.2), CFrame.new(center + Vector3.new(math.cos(a) * 0.62, math.sin(a) * 0.62, 0)) * CFrame.Angles(0.6, 0.6, 0), look.Gem, Enum.Material.Neon)
+			cube:SetAttribute("OrbitCenter", center)
+			cube:SetAttribute("OrbitSpeed", 2.6)
+		end
+	end
+
+	-- VFX: gem light and sparkles that grow with the tier
+	if glowing then
+		local light = Instance.new("PointLight")
+		light.Color = look.Gem
+		light.Range = 4 + tier
+		light.Brightness = 0.35 + tier * 0.1
+		light.Parent = gem
+		local sparkle = Instance.new("ParticleEmitter")
+		sparkle.Name = "GemSparkle"
+		sparkle.Rate = tier * 2.5
+		sparkle.LightEmission = math.min(0.2 + tier * 0.09, 1)
+		sparkle.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.06 + tier * 0.025), NumberSequenceKeypoint.new(1, 0)})
+		sparkle.Lifetime = NumberRange.new(0.4, 0.8 + tier * 0.05)
+		sparkle.Speed = NumberRange.new(0.3, 0.8 + tier * 0.1)
+		sparkle.SpreadAngle = Vector2.new(180, 180)
+		sparkle.Color = ColorSequence.new(look.Gem:Lerp(Color3.new(1, 1, 1), 0.4), look.Gem)
+		sparkle.Transparency = NumberSequence.new(0.1, 1)
+		sparkle.Parent = socket
+	end
+
+	-- SIZE: better pickaxes are a little bigger, then everything is scaled to character size
+	local s = SCALE * growth
 	for _, part in ipairs(tool:GetChildren()) do
 		if part:IsA("BasePart") then
 			local rotation = part.CFrame.Rotation
-			part.Size = part.Size * SCALE
-			part.CFrame = CFrame.new(part.Position * SCALE) * rotation
+			part.Size = part.Size * s
+			part.CFrame = CFrame.new(part.Position * s) * rotation
 			local center = part:GetAttribute("OrbitCenter")
-			if center then part:SetAttribute("OrbitCenter", center * SCALE) end
+			if center then part:SetAttribute("OrbitCenter", center * s) end
 		end
 	end
 	for _, emitter in ipairs(tool:GetDescendants()) do
 		if emitter:IsA("ParticleEmitter") then
 			local keys = {}
 			for _, key in ipairs(emitter.Size.Keypoints) do
-				table.insert(keys, NumberSequenceKeypoint.new(key.Time, key.Value * SCALE, key.Envelope * SCALE))
+				table.insert(keys, NumberSequenceKeypoint.new(key.Time, key.Value * s, key.Envelope * s))
 			end
 			emitter.Size = NumberSequence.new(keys)
 		end
 	end
 
-	-- how it sits in the hand (points forward and down)
-	tool.Grip = CFrame.new(0, 0, rightZ * SCALE) * CFrame.Angles(math.rad(50), 0, 0)
-	-- ShovelClient's two-handed pose reads these (distance along the shaft from the handle):
-	-- one hand on top of the grip, the other a bit lower on the shaft
-	tool:SetAttribute("TopHoldZ", rightZ * SCALE)
-	tool:SetAttribute("LowHoldZ", leftZ * SCALE)
+	-- how Roblox holds it if the two-handed pose can't run (e.g. R6 bodies)
+	tool.Grip = CFrame.new(0, 0, RIGHT_Z * s) * CFrame.Angles(math.rad(-30), 0, 0)
+	-- ShovelClient's two-handed pose: where each hand grips the handle (along Z)
+	tool:SetAttribute("RightHoldZ", RIGHT_Z * s)
+	tool:SetAttribute("LeftHoldZ", LEFT_Z * s)
+	tool:SetAttribute("TopHoldZ", RIGHT_Z * s)
+	tool:SetAttribute("LowHoldZ", LEFT_Z * s)
 
-	-- weld everything to the handle
 	for _, part in ipairs(tool:GetChildren()) do
 		if part:IsA("BasePart") and part ~= handle then
 			local weld = Instance.new("WeldConstraint")
@@ -2244,7 +1424,6 @@ return function(def)
 			weld.Parent = handle
 		end
 	end
-
 	return tool
 end
 ]=])
@@ -2256,7 +1435,7 @@ install(game:GetService("ReplicatedStorage"), "UIKit", "ModuleScript", [=[
 --   * glossy "candy" buttons with a darker bottom lip, white bubbly text and a bounce
 --   * windows with a full-width colored header bar, an icon, and the close button inside it
 --   * text that scales with its box but never past a sensible size (so nothing looks huge)
---   * live 3D shovel icons (ViewportFrames that render the real shovel model)
+--   * live 3D pickaxe icons (ViewportFrames that render the real pickaxe model)
 
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -2626,12 +1805,12 @@ function UIKit.statBar(parent, name, fraction, valueText, color, props)
 end
 
 ---------------------------------------------------------------------
--- 3D SHOVEL ICON: renders the real shovel model inside a ViewportFrame
+-- 3D PICKAXE ICON: renders the real pickaxe model inside a ViewportFrame
 ---------------------------------------------------------------------
 local ShovelModels -- loaded on first use (only needed where icons are drawn)
 function UIKit.shovelIcon(parent, def, props)
 	props = props or {}
-	ShovelModels = ShovelModels or require(ReplicatedStorage:WaitForChild("ShovelModels"))
+	ShovelModels = ShovelModels or require(ReplicatedStorage:WaitForChild("PickaxeModels"))
 	local vp = Instance.new("ViewportFrame")
 	vp.Size = props.Size or UDim2.fromOffset(80, 80)
 	vp.Position = props.Position or UDim2.new()
@@ -2642,10 +1821,11 @@ function UIKit.shovelIcon(parent, def, props)
 	vp.LightDirection = Vector3.new(-1, -1.5, -1)
 	vp.Parent = parent
 
-	-- lay the shovel diagonally: blade at the bottom-left, grip at the top-right
+	-- show the pickaxe diagonally: head at the top-left, grip at the bottom-right, with the
+	-- head's arms facing the camera (tool Y/Z in the screen plane) and a slight 3D turn
+	local pose = CFrame.Angles(0, math.rad(22), 0) * CFrame.fromMatrix(Vector3.zero, Vector3.new(0, 0, -1), Vector3.new(1, 1, 0).Unit)
 	local tool = ShovelModels(def)
 	local model = Instance.new("Model")
-	local pose = CFrame.Angles(0, math.rad(20), 0) * CFrame.Angles(0, 0, math.rad(135)) * CFrame.Angles(math.rad(90), 0, 0)
 	local minV, maxV = Vector3.new(math.huge, math.huge, math.huge), -Vector3.new(math.huge, math.huge, math.huge)
 	for _, piece in ipairs(tool:GetChildren()) do
 		if piece:IsA("BasePart") and piece.Name ~= "Handle" then
@@ -2863,7 +2043,7 @@ function VehicleModels.drone(rng)
 end
 
 -- Advertising blimp: huge soft balloon with fins, a gondola and a glowing banner
-local SLOGANS = {"DIG DEEPER!", "MEMES 4 SALE", "VISIT THE ABYSS", "RATE MY MUSEUM", "SHOVEL SALE 50% OFF", "NO BRAINROT ZONE"}
+local SLOGANS = {"DIG DEEPER!", "MEMES 4 SALE", "VISIT THE ABYSS", "RATE MY MUSEUM", "PICKAXE SALE 50% OFF", "NO BRAINROT ZONE"}
 function VehicleModels.blimp(rng)
 	local model = Instance.new("Model")
 	model.Name = "AdBlimp"
@@ -2918,7 +2098,7 @@ install(game:GetService("ReplicatedStorage"), "WorldsData", "ModuleScript", [=[
 --                   Tint/Saturation/Contrast (color grade), Bloom {Intensity, Size, Threshold},
 --                   SunRays {Intensity, Spread}, Clouds (cover). Lighting.Technology is set to
 --                   Future by the installer for realistic lights and reflections.
---   Shovels         {name, description, blade shape, grip}; stats come from SHOVEL_TIERS
+--   Shovels         the world's 7 pickaxes: {name, description, Id = save id}; stats come from ShovelTiers
 
 local rgb = Color3.fromRGB
 
@@ -2963,13 +2143,13 @@ WorldsData.Worlds = {
 			Fog = rgb(255, 200, 225), Decay = rgb(200, 130, 170), Density = 0.32, Clouds = 0.55,
 			Brightness = 2.6, Exposure = 0.15, Latitude = 30, Offset = 0.25, Haze = 1.6, Glare = 0.6, Saturation = 0.12, Contrast = 0.08, Bloom = {0.35, 24, 1.9}, SunRays = {0.12, 0.25}},
 		Shovels = {
-			{"Blossom Trowel", "A little pink trowel. Leaves petals everywhere it digs.", "Spade", "D"},
-			{"Bamboo Spade", "Light, strong and grown in a week.", "Spade", "T"},
-			{"Koi Scoop", "Shaped like a koi fin. Scoops dirt like water.", "Scoop", "T"},
-			{"Lantern Spade", "A paper lantern lights every swing.", "Spade", "D"},
-			{"Katana Shovel", "Folded 1000 times. Cuts through bricks like tofu.", "Spade", "T"},
-			{"Petal Excavator", "Blows a storm of petals into the Abyss.", "Spoon", "D"},
-			{"Hanami Harvester", "Mythic. Blossoms bloom wherever it strikes.", "Spade", "T"},
+			{"Blossom Pickaxe", "A little pink pickaxe. Leaves petals everywhere it digs.", Id = "BlossomTrowel"},
+			{"Bamboo Pick", "Light, strong and grown in a week.", Id = "BambooSpade"},
+			{"Koi Pickaxe", "Shaped like a koi fin. Cuts dirt like water.", Id = "KoiScoop"},
+			{"Lantern Pick", "A paper lantern lights every swing.", Id = "LanternSpade"},
+			{"Katana Pickaxe", "Folded 1000 times. Cuts through bricks like tofu.", Id = "KatanaShovel"},
+			{"Petal Crusher", "Blows a storm of petals into the Abyss.", Id = "PetalExcavator"},
+			{"Hanami Pickaxe", "Mythic. Blossoms bloom wherever it strikes.", Id = "HanamiHarvester"},
 		},
 	},
 	-----------------------------------------------------------------
@@ -2983,13 +2163,13 @@ WorldsData.Worlds = {
 			Fog = rgb(80, 60, 160), Decay = rgb(40, 30, 100), Density = 0.32, Clouds = 0,
 			Brightness = 1.2, Exposure = 0.35, Latitude = 20, Offset = 0.3, Haze = 0.3, Glare = 0, Saturation = 0.15, Contrast = 0.12, Bloom = {0.5, 28, 1.4}, SunRays = {0, 0.1}},
 		Shovels = {
-			{"Meteor Scoop", "Made from a meteor that landed on a meme.", "Scoop", "T"},
-			{"Rocket Spade", "Has tiny thrusters. Mostly for style.", "Spade", "T"},
-			{"Orbit Shovel", "A little moon orbits the handle.", "Spade", "D"},
-			{"Nebula Trowel", "Swirls with space dust.", "Spoon", "D"},
-			{"Comet Crusher", "Leaves a sparkly tail with every swing.", "Spade", "T"},
-			{"Supernova Spade", "Legendary. Hot as a dying star.", "Spade", "D"},
-			{"Event Horizon", "Mythic. Nothing escapes it. Not even the Abyss.", "Spoon", "T"},
+			{"Meteor Pick", "Made from a meteor that landed on a meme.", Id = "MeteorScoop"},
+			{"Rocket Pickaxe", "Has tiny thrusters. Mostly for style.", Id = "RocketSpade"},
+			{"Orbit Pickaxe", "A little moon orbits the handle.", Id = "OrbitShovel"},
+			{"Nebula Pick", "Swirls with space dust.", Id = "NebulaTrowel"},
+			{"Comet Crusher", "Leaves a sparkly tail with every swing.", Id = "CometCrusher"},
+			{"Supernova Pickaxe", "Legendary. Hot as a dying star.", Id = "SupernovaSpade"},
+			{"Event Horizon", "Mythic. Nothing escapes it. Not even the Abyss.", Id = "EventHorizon"},
 		},
 	},
 	-----------------------------------------------------------------
@@ -3003,13 +2183,13 @@ WorldsData.Worlds = {
 			Fog = rgb(215, 235, 255), Decay = rgb(140, 170, 220), Density = 0.3, Clouds = 0.7,
 			Brightness = 3.2, Exposure = 0.05, Latitude = 65, Offset = 0.2, Haze = 2.2, Glare = 0.3, Saturation = -0.05, Contrast = 0.1, Bloom = {0.3, 20, 2.2}, SunRays = {0.06, 0.2}},
 		Shovels = {
-			{"Snowball Scoop", "Packs perfect snowballs. Also digs.", "Scoop", "T"},
-			{"Icicle Spade", "Sharp, shiny and a bit drippy.", "Spade", "D"},
-			{"Penguin Paddle", "Waddles through snow at top speed.", "Scoop", "D"},
-			{"Frostbite Shovel", "Cold enough to freeze a lag spike.", "Spade", "T"},
-			{"Blizzard Breaker", "Every swing is a tiny snowstorm.", "Spade", "D"},
-			{"Aurora Auger", "Legendary. Glows with northern lights.", "Spoon", "T"},
-			{"Absolute Zero Spade", "Mythic. So cold the Abyss shatters.", "Spade", "T"},
+			{"Snowball Pick", "Packs perfect snowballs. Also digs.", Id = "SnowballScoop"},
+			{"Icicle Pickaxe", "Sharp, shiny and a bit drippy.", Id = "IcicleSpade"},
+			{"Penguin Pick", "Waddles through snow at top speed.", Id = "PenguinPaddle"},
+			{"Frostbite Pickaxe", "Cold enough to freeze a lag spike.", Id = "FrostbiteShovel"},
+			{"Blizzard Breaker", "Every swing is a tiny snowstorm.", Id = "BlizzardBreaker"},
+			{"Aurora Pickaxe", "Legendary. Glows with northern lights.", Id = "AuroraAuger"},
+			{"Absolute Zero Pickaxe", "Mythic. So cold the Abyss shatters.", Id = "AbsoluteZeroSpade"},
 		},
 	},
 	-----------------------------------------------------------------
@@ -3023,13 +2203,13 @@ WorldsData.Worlds = {
 			Fog = rgb(255, 222, 170), Decay = rgb(220, 160, 110), Density = 0.3, Clouds = 0.2,
 			Brightness = 3.6, Exposure = 0.1, Latitude = 15, Offset = 0.2, Haze = 2.6, Glare = 0.9, Saturation = 0.08, Contrast = 0.14, Bloom = {0.3, 24, 2.1}, SunRays = {0.1, 0.3}},
 		Shovels = {
-			{"Sandy Scoop", "Full of sand. Always. Forever.", "Scoop", "T"},
-			{"Cactus Spade", "Hug it at your own risk.", "Spade", "D"},
-			{"Mirage Shovel", "Is it really there? Yes. Probably.", "Spade", "T"},
-			{"Pharaoh Spade", "Once dug a pyramid in an afternoon.", "Spade", "D"},
-			{"Solar Sifter", "Solar powered. Works best at noon.", "Spoon", "T"},
-			{"Sandstorm Drill", "Legendary. Spins up a sandstorm on every swing.", "Spade", "T"},
-			{"Sun King Shovel", "Mythic. Blazes like a second sun.", "Spade", "D"},
+			{"Sandy Pick", "Full of sand. Always. Forever.", Id = "SandyScoop"},
+			{"Cactus Pickaxe", "Hug it at your own risk.", Id = "CactusSpade"},
+			{"Mirage Pickaxe", "Is it really there? Yes. Probably.", Id = "MirageShovel"},
+			{"Pharaoh Pickaxe", "Once dug a pyramid in an afternoon.", Id = "PharaohSpade"},
+			{"Solar Pick", "Solar powered. Works best at noon.", Id = "SolarSifter"},
+			{"Sandstorm Pickaxe", "Legendary. Spins up a sandstorm on every swing.", Id = "SandstormDrill"},
+			{"Sun King Pickaxe", "Mythic. Blazes like a second sun.", Id = "SunKingShovel"},
 		},
 	},
 	-----------------------------------------------------------------
@@ -3043,13 +2223,13 @@ WorldsData.Worlds = {
 			Fog = rgb(120, 210, 230), Decay = rgb(60, 140, 180), Density = 0.35, Clouds = 0.4,
 			Brightness = 2.8, Exposure = 0.1, Latitude = 25, Offset = 0.3, Haze = 1.8, Glare = 0.2, Saturation = 0.18, Contrast = 0.06, Bloom = {0.35, 24, 1.9}, SunRays = {0.15, 0.35}},
 		Shovels = {
-			{"Seashell Scoop", "Hold it to your ear: you hear dirt.", "Scoop", "D"},
-			{"Anchor Spade", "Heavy. Very heavy. Digs straight down.", "Spade", "T"},
-			{"Pearl Shovel", "A perfect pearl sits on the blade.", "Spade", "D"},
-			{"Trident Trowel", "Borrowed from a sea king. No returns.", "Spoon", "T"},
-			{"Kraken Claw", "Eight times the grip.", "Scoop", "T"},
-			{"Tidal Excavator", "Legendary. Moves dirt like a wave.", "Spade", "D"},
-			{"Atlantis Spade", "Mythic. Found at the bottom of a lost city.", "Spade", "T"},
+			{"Seashell Pick", "Hold it to your ear: you hear dirt.", Id = "SeashellScoop"},
+			{"Anchor Pickaxe", "Heavy. Very heavy. Digs straight down.", Id = "AnchorSpade"},
+			{"Pearl Pickaxe", "A perfect pearl sits in the head.", Id = "PearlShovel"},
+			{"Trident Pick", "Borrowed from a sea king. No returns.", Id = "TridentTrowel"},
+			{"Kraken Claw", "Eight times the grip.", Id = "KrakenClaw"},
+			{"Tidal Pickaxe", "Legendary. Moves dirt like a wave.", Id = "TidalExcavator"},
+			{"Atlantis Pickaxe", "Mythic. Found at the bottom of a lost city.", Id = "AtlantisSpade"},
 		},
 	},
 	-----------------------------------------------------------------
@@ -3063,13 +2243,13 @@ WorldsData.Worlds = {
 			Fog = rgb(255, 214, 240), Decay = rgb(220, 160, 210), Density = 0.32, Clouds = 0.6,
 			Brightness = 3, Exposure = 0.05, Latitude = 35, Offset = 0.25, Haze = 1.2, Glare = 0.3, Saturation = 0.2, Contrast = 0.05, Bloom = {0.3, 24, 2}, SunRays = {0.08, 0.25}},
 		Shovels = {
-			{"Lollipop Scoop", "Swirly, sticky and surprisingly strong.", "Scoop", "T"},
-			{"Candy Cane Spade", "Minty fresh digging.", "Spade", "D"},
-			{"Gummy Shovel", "Bends a lot. Never breaks.", "Scoop", "D"},
-			{"Sprinkle Spade", "Leaves sprinkles in every hole.", "Spade", "T"},
-			{"Choco Crusher", "Solid chocolate. Please don't eat it.", "Spade", "D"},
-			{"Jawbreaker Auger", "Legendary. Harder than any rock.", "Spoon", "T"},
-			{"Sugar Rush Spade", "Mythic. Digs at 1000% speed. Crashes later.", "Spade", "T"},
+			{"Lollipop Pick", "Swirly, sticky and surprisingly strong.", Id = "LollipopScoop"},
+			{"Candy Cane Pickaxe", "Minty fresh digging.", Id = "CandyCaneSpade"},
+			{"Gummy Pickaxe", "Bends a lot. Never breaks.", Id = "GummyShovel"},
+			{"Sprinkle Pick", "Leaves sprinkles in every hole.", Id = "SprinkleSpade"},
+			{"Choco Crusher", "Solid chocolate. Please don't eat it.", Id = "ChocoCrusher"},
+			{"Jawbreaker Pickaxe", "Legendary. Harder than any rock.", Id = "JawbreakerAuger"},
+			{"Sugar Rush Pickaxe", "Mythic. Digs at 1000% speed. Crashes later.", Id = "SugarRushSpade"},
 		},
 	},
 	-----------------------------------------------------------------
@@ -3083,13 +2263,13 @@ WorldsData.Worlds = {
 			Fog = rgb(200, 110, 80), Decay = rgb(120, 60, 50), Density = 0.35, Clouds = 0.5,
 			Brightness = 2.2, Exposure = 0.2, Latitude = 40, Offset = 0.2, Haze = 2.4, Glare = 1.2, Saturation = 0.1, Contrast = 0.18, Bloom = {0.5, 28, 1.6}, SunRays = {0.2, 0.3}},
 		Shovels = {
-			{"Ember Spade", "Always a little bit warm.", "Spade", "D"},
-			{"Anvil Shovel", "Forged on an anvil. Kind of shaped like one too.", "Spade", "T"},
-			{"Magma Scoop", "Scoops lava like soup.", "Scoop", "T"},
-			{"Obsidian Blade", "Glassy black and razor sharp.", "Spade", "D"},
-			{"Dragonbone Spade", "Made from a dragon's lost tooth.", "Spade", "T"},
-			{"Inferno Auger", "Legendary. Melts straight through rock.", "Spoon", "D"},
-			{"Core Breaker", "Mythic. Forged in the heart of the volcano.", "Spade", "T"},
+			{"Ember Pick", "Always a little bit warm.", Id = "EmberSpade"},
+			{"Anvil Pickaxe", "Forged on an anvil. Kind of shaped like one too.", Id = "AnvilShovel"},
+			{"Magma Pick", "Chews through lava like soup.", Id = "MagmaScoop"},
+			{"Obsidian Pickaxe", "Glassy black and razor sharp.", Id = "ObsidianBlade"},
+			{"Dragonbone Pickaxe", "Made from a dragon's lost tooth.", Id = "DragonboneSpade"},
+			{"Inferno Pickaxe", "Legendary. Melts straight through rock.", Id = "InfernoAuger"},
+			{"Core Breaker", "Mythic. Forged in the heart of the volcano.", Id = "CoreBreaker"},
 		},
 	},
 	-----------------------------------------------------------------
@@ -3103,13 +2283,13 @@ WorldsData.Worlds = {
 			Fog = rgb(40, 60, 70), Decay = rgb(90, 40, 110), Density = 0.32, Clouds = 0,
 			Brightness = 1.4, Exposure = 0.3, Latitude = 0, Offset = 0.25, Haze = 0.8, Glare = 0, Saturation = 0.25, Contrast = 0.2, Bloom = {0.6, 30, 1.3}, SunRays = {0, 0.1}},
 		Shovels = {
-			{"Placeholder Spade", "TODO: add a description.", "Spade", "D"},
-			{"Pixel Shovel", "Rendered at 8 pixels. Works anyway.", "Spade", "T"},
-			{"Lag Spade", "Hits the ground a second after you swing.", "Scoop", "T"},
-			{"Wireframe Shovel", "The texture never loaded.", "Spade", "D"},
-			{"Error 404 Scoop", "Scoop not found. Digging anyway.", "Scoop", "D"},
-			{"Debug Drill", "Legendary. Has admin commands built in.", "Spoon", "T"},
-			{"The Final Patch", "Mythic. Fixes the simulation, one hole at a time.", "Spade", "T"},
+			{"Placeholder Pickaxe", "TODO: add a description.", Id = "PlaceholderSpade"},
+			{"Pixel Pickaxe", "Rendered at 8 pixels. Works anyway.", Id = "PixelShovel"},
+			{"Lag Pick", "Hits the ground a second after you swing.", Id = "LagSpade"},
+			{"Wireframe Pickaxe", "The texture never loaded.", Id = "WireframeShovel"},
+			{"Error 404 Pick", "Pick not found. Digging anyway.", Id = "Error404Scoop"},
+			{"Debug Pickaxe", "Legendary. Has admin commands built in.", Id = "DebugDrill"},
+			{"The Final Patch", "Mythic. Fixes the simulation, one hole at a time.", Id = "TheFinalPatch"},
 		},
 	},
 }
@@ -3765,7 +2945,7 @@ local Debris = game:GetService("Debris")
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
-local ShovelModels = require(ReplicatedStorage:WaitForChild("ShovelModels"))
+local ShovelModels = require(ReplicatedStorage:WaitForChild("PickaxeModels"))
 local ShopBuilder = require(script.Parent:WaitForChild("ShopBuilder"))
 local WorldGate = require(script.Parent:WaitForChild("WorldGate"))
 local WorldBuilder = require(script.Parent:WaitForChild("WorldBuilder"))
@@ -4405,7 +3585,7 @@ Players.PlayerRemoving:Connect(function(player)
 	lastBounceMessage[player] = nil
 end)
 
-print("DigManager ready: " .. #enabledWorlds() .. " world(s), 560-stud pits, shovel depth zones active")
+print("DigManager ready: " .. #enabledWorlds() .. " world(s), 560-stud pits, pickaxe depth zones active")
 ]=])
 install(game:GetService("ServerScriptService"), "DigSiteStyle", "ModuleScript", [=[
 -- DigSiteStyle (ModuleScript in ServerScriptService)
@@ -8722,19 +7902,19 @@ end)
 return ProfileService]=])
 install(game:GetService("ServerScriptService"), "ShopBuilder", "ModuleScript", [=[
 -- ShopBuilder (ModuleScript in ServerScriptService)
--- Builds a world's Shovel Shop: a cartoony 2050 pavilion on a round tiered platform,
+-- Builds a world's Pickaxe Shop: a cartoony 2050 pavilion on a round tiered platform,
 -- with a flying-saucer roof held up by chunky capsule pillars, a curved back wall,
--- glass display capsules on stepped pedestals (one shovel per depth zone), a floating
--- robot shopkeeper, a big glowing sign with a giant shovel, and a depth meter.
+-- glass display capsules on stepped pedestals (one pickaxe per depth zone), a floating
+-- robot shopkeeper, a big glowing sign with a giant pickaxe, and a depth meter.
 -- DigManager calls this once per world on server start.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
-local ShovelModels = require(ReplicatedStorage:WaitForChild("ShovelModels"))
+local ShovelModels = require(ReplicatedStorage:WaitForChild("PickaxeModels"))
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
 
--- Places a copy of a shovel model at `target` (blade down), scaled up
+-- Places a copy of a pickaxe model at `target` (target's axes = the tool's axes), scaled
 local function displayShovel(parent, def, target, scale)
 	local tool = ShovelModels(def)
 	local handle = tool:FindFirstChild("Handle")
@@ -8845,20 +8025,14 @@ return function(parent, world, base)
 	b:pill("SignPost", Vector3.new(5, 16.5, -6), Vector3.new(5, 19.5, -6), 0.7, "Chrome")
 	b:roundedBlock("SignBack", Vector3.new(19, 5.2, 1.2), CFrame.new(0, 21.8, -6), 2.2, "Violet")
 	local sign = b:roundedBlock("Sign", Vector3.new(18, 4.4, 1.4), CFrame.new(0, 21.8, -6.1), 1.9, "Navy")
-	Architecture.sign(sign, "SHOVEL SHOP", "DIG DEEPER, FIND WEIRDER!")
+	Architecture.sign(sign, "PICKAXE SHOP", "DIG DEEPER, FIND WEIRDER!")
 	b:box("SignGlow", Vector3.new(18.4, 0.3, 1.5), CFrame.new(0, 19.35, -6.1), "GlowSun")
-	-- a giant cartoon shovel leaning against the sign
-	local grip = Vector3.new(8, 26, -4.6)
-	local tip = Vector3.new(11.4, 17.2, -4.6)
-	local dir = (tip - grip).Unit
-	b:pill("GiantHandle", grip, tip - dir * 3.4, 0.9, "Violet")
-	b:rod("GiantGrip", 2.4, 0.7, Architecture.alongX(grip, dir:Cross(Vector3.zAxis)), "Sun")
-	b:ball("GiantGripEndA", 0.9, CFrame.new(grip + dir:Cross(Vector3.zAxis).Unit * 1.2), "Sun")
-	b:ball("GiantGripEndB", 0.9, CFrame.new(grip - dir:Cross(Vector3.zAxis).Unit * 1.2), "Sun")
-	local bladeCF = Architecture.alongX(tip - dir * 1.6, dir)
-	b:ellipsoid("GiantBlade", Vector3.new(4.4, 3.4, 0.7), bladeCF, "Sun")
-	b:ellipsoid("GiantBladeShine", Vector3.new(2.6, 1.4, 0.75), bladeCF * CFrame.new(-0.6, 0.5, 0), "White")
-	b:rod("GiantCollar", 0.8, 1.2, Architecture.alongX(tip - dir * 3.5, dir), "Chrome")
+	-- a giant copy of this world's best pickaxe standing beside the sign (head up, arms facing out)
+	local HEAD_UP = CFrame.Angles(0, math.rad(90), 0) * CFrame.Angles(math.rad(90), 0, 0)
+	local best = world.Shovels[#world.Shovels]
+	if best then
+		displayShovel(shop, best, base * CFrame.new(12, 22, -5) * CFrame.Angles(0, 0, math.rad(-24)) * HEAD_UP, 2.2)
+	end
 
 	-----------------------------------------------------------------
 	-- COUNTER (rounded, two-tone) with the shop prompt
@@ -8872,7 +8046,7 @@ return function(parent, world, base)
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Browse"
-	prompt.ObjectText = "Shovels"
+	prompt.ObjectText = "Pickaxes"
 	prompt.HoldDuration = 0
 	prompt.MaxActivationDistance = 12
 	prompt.RequiresLineOfSight = false
@@ -8915,8 +8089,8 @@ return function(parent, world, base)
 		local tag = b:roundedBlock("ZoneTag", Vector3.new(3.2, 1.1, 0.4), cf * CFrame.new(0, h - 0.9, -1.75), 0.2, "Navy")
 		Architecture.sign(tag, string.upper(zone.Name), -zone.Top .. "-" .. -zone.Bottom .. "m")
 		if def then
-			-- blade down, facing out; raised a little so the blade clears the capsule floor
-			displayShovel(shop, def, base * mid * CFrame.new(0, 0.6, 0) * CFrame.Angles(math.rad(-90), 0, math.rad(8)), 1.3)
+			-- head up, arms facing out of the capsule
+			displayShovel(shop, def, base * mid * CFrame.new(0, 0.2, 0) * CFrame.Angles(0, math.rad(90), 0) * CFrame.Angles(math.rad(90), 0, 0), 0.85)
 		end
 	end
 
@@ -11643,26 +10817,30 @@ end)
 -- Other players' swings arrive through ShovelSwingFx, so everyone sees everyone dig.
 ---------------------------------------------------------------------
 local Debris = game:GetService("Debris")
-local ShovelModels = require(ReplicatedStorage:WaitForChild("ShovelModels"))
+local ShovelModels = require(ReplicatedStorage:WaitForChild("PickaxeModels"))
 local swingFxRemote = remotes:WaitForChild("ShovelSwingFx")
 
--- Pose values, all relative to the HumanoidRootPart (+X right, +Y up, -Z forward):
--- Hand  = where the right hand holds the grip (studs); the left arm stays free
--- Tilt  = shaft angle from straight down, degrees (+ = blade pushed forward, 90 = level)
--- Turn  = shovel yaw, degrees (+ = swings to the left, - = to the right)
+-- TWO-HANDED PICKAXE POSE. Values are relative to the HumanoidRootPart (+X right, +Y up,
+-- -Z forward). The right hand holds the bottom of the handle, the left hand holds it a bit
+-- higher up (both by IK, so the grip always matches the pickaxe).
+-- Hand  = where the right hand holds the handle (studs)
+-- Tilt  = handle pitch, degrees: 0 = head pointing straight down, 90 = head pointing forward,
+--         180 = head straight up, 225 = head up and back over the shoulder
+-- Turn  = yaw (+ = to the left), Roll = sideways lean of the pickaxe (+ = head leans left)
 -- Lean  = torso pitch (+ = bend forward), Twist = torso yaw (+ = turn left)
-local IDLE = {Hand = Vector3.new(1.05, 0, -0.55), Tilt = 55, Turn = -10, Lean = 0, Twist = 0}
+local IDLE = {Hand = Vector3.new(0.65, -0.45, -0.75), Tilt = 168, Turn = 0, Lean = 2, Twist = 8, Roll = 32}
+-- {time, hand, tilt, turn, lean, twist, roll}
 local SWING = {
-	{0.00, IDLE.Hand, 55, -10, 0, 0},                          -- carried at the side, blade forward
-	{0.30, Vector3.new(1.0, 1.05, -0.15), 12, -8, -8, 10},     -- quick wind up: yank it back and up
-	{0.50, Vector3.new(0.9, 0.1, -1.25), 44, -4, 22, -4},      -- slam: blade bites the dirt in front
-	{0.70, Vector3.new(0.95, 0.4, -1.05), 62, -8, 12, -6},     -- small recoil bounce
-	{1.00, IDLE.Hand, 55, -10, 0, 0},
+	{0.00, IDLE.Hand, 168, 0, 2, 8, 32},                       -- ready: held diagonally across the body
+	{0.30, Vector3.new(0.35, 2.0, 0.25), 215, -8, -10, 14, 12}, -- anticipation: heaved up behind the head, leaning back
+	{0.50, Vector3.new(0.25, 0.0, -1.3), 72, -4, 28, -18, 0},   -- strike: slammed down into the ground in front
+	{0.68, Vector3.new(0.3, 0.35, -1.2), 100, -4, 16, -10, 4},  -- recovery: bounces back up out of the dirt
+	{1.00, IDLE.Hand, 168, 0, 2, 8, 32},
 }
 local STRIKE_TIME = 0.5
 local HIT_STOP = 0.06 -- the pose freezes this long on impact, which makes hits feel heavy
 
--- tool axes when upright: shaft (+Z) points up, blade face (+Y) points forward
+-- tool axes when upright: grip end (+Z) points up (head down), pick arms (+Y) point forward
 local UPRIGHT = CFrame.fromMatrix(Vector3.zero, Vector3.xAxis, -Vector3.zAxis, Vector3.yAxis)
 
 -- smooth Catmull-Rom curve through the swing keyframes (never jerky)
@@ -11683,16 +10861,17 @@ local function samplePose(t)
 		Turn = catmull(k0[4], k1[4], k2[4], k3[4], u),
 		Lean = catmull(k0[5], k1[5], k2[5], k3[5], u),
 		Twist = catmull(k0[6], k1[6], k2[6], k3[6], u),
+		Roll = catmull(k0[7], k1[7], k2[7], k3[7], u),
 	}
 end
 
--- gentle breathing sway while holding the shovel
+-- gentle breathing sway while holding the pickaxe ready
 local function idlePose(clock)
 	local breathe = math.sin(clock * 2.2)
 	return {
 		Hand = IDLE.Hand + Vector3.new(0, breathe * 0.04, 0),
 		Tilt = IDLE.Tilt + breathe * 2, Turn = IDLE.Turn,
-		Lean = IDLE.Lean + breathe * 0.6, Twist = IDLE.Twist,
+		Lean = IDLE.Lean + breathe * 0.6, Twist = IDLE.Twist, Roll = IDLE.Roll + breathe * 1.5,
 	}
 end
 
@@ -11797,6 +10976,11 @@ local function createRig(character, tool)
 	-- match the hand's rotation too, so the fist closes around the shaft
 	rightIK.Type = Enum.IKControlType.Transform
 	local gripAttachment = parts.RH:FindFirstChild("RightGripAttachment")
+	-- the left hand holds the handle higher up (two-handed grip)
+	local leftTarget = newAttachment(root, "ShovelLeftHand")
+	local leftPole = newAttachment(root, "ShovelLeftElbow")
+	leftPole.Position = Vector3.new(-2.2, -1.2, 0.6)
+	local leftIK = parts.LU and parts.LH and newArmIK(humanoid, "ShovelLeftArm", parts.LU, parts.LH, leftTarget, leftPole)
 
 	local rayParams = RaycastParams.new()
 	rayParams.FilterType = Enum.RaycastFilterType.Exclude
@@ -11810,15 +10994,17 @@ local function createRig(character, tool)
 	local waist = upperTorso:FindFirstChild("Waist")
 	local rig = {
 		Tool = tool, Root = root, Puppet = puppet, Blade = bladePart or (puppet[#puppet] and puppet[#puppet].Part),
-		HoldZ = (tool:GetAttribute("TopHoldZ") or 1.3) - 0.12, -- just under the grip
+		HoldZ = (tool:GetAttribute("RightHoldZ") or tool:GetAttribute("TopHoldZ") or 1.1) - 0.12, -- right hand near the end
+		LeftHoldZ = tool:GetAttribute("LeftHoldZ") or 0.4, -- left hand higher up the handle
 		TipZ = tipZ,
 		RightTarget = rightTarget,
+		LeftTarget = leftIK and leftTarget or nil,
 		Waist = waist and waist:IsA("Motor6D") and waist or nil,
 		WaistC0 = waist and waist:IsA("Motor6D") and waist.C0 or nil,
 		SwingStart = nil, SwingLength = 0.4, Struck = true,
 		GripOffset = gripAttachment and gripAttachment.CFrame or CFrame.new(0, -0.15, 0) * CFrame.Angles(math.rad(-90), 0, 0),
 		RayParams = rayParams,
-		Cleanup = {holder, rightTarget, rightPole, rightIK},
+		Cleanup = {holder, rightTarget, rightPole, rightIK, leftTarget, leftPole, leftIK or nil},
 	}
 	rigs[character] = rig
 	return rig
@@ -11885,7 +11071,8 @@ local function poseRig(character, rig, clock)
 
 	-- where the shovel goes (in root space): rotate the upright shovel by tilt and turn,
 	-- then slide it along its shaft so the grip sits exactly in the hand
-	local rotation = CFrame.Angles(0, math.rad(pose.Turn), 0) * CFrame.Angles(math.rad(pose.Tilt), 0, 0) * UPRIGHT
+	local rotation = CFrame.Angles(0, math.rad(pose.Turn), 0) * CFrame.Angles(0, 0, math.rad(pose.Roll or 0))
+		* CFrame.Angles(math.rad(pose.Tilt), 0, 0) * UPRIGHT
 	local up = rotation.ZVector
 	local hand = pose.Hand
 	local origin = hand - up * rig.HoldZ
@@ -11924,6 +11111,9 @@ local function poseRig(character, rig, clock)
 	-- handle = hand * gripAttachment * grip^-1, so hand = handle * grip * gripAttachment^-1
 	local handCF = shovelCF * CFrame.new(0, 0, rig.HoldZ) * rig.GripOffset:Inverse()
 	rig.RightTarget.CFrame = rig.Root.CFrame:ToObjectSpace(handCF)
+	if rig.LeftTarget then
+		rig.LeftTarget.Position = rig.Root.CFrame:PointToObjectSpace((shovelCF * CFrame.new(0, 0, rig.LeftHoldZ)).Position)
+	end
 	if rig.Waist then
 		rig.Waist.C0 = rig.WaistC0 * CFrame.Angles(math.rad(-pose.Lean), math.rad(pose.Twist), 0)
 	end
@@ -12044,7 +11234,7 @@ local function trySwing(def)
 	if now - lastSwing < def.Cooldown then return end
 	lastSwing = now
 
-	local length = math.clamp(def.Cooldown * 0.9, 0.28, 0.45)
+	local length = math.clamp(def.Cooldown, 0.3, 0.5) -- overhead two-handed swing
 	startSwing(player.Character, length)
 
 	-- the dig happens exactly when the blade hits the ground
@@ -12098,7 +11288,7 @@ end
 ---------------------------------------------------------------------
 -- SHOVEL SHOP WINDOW
 ---------------------------------------------------------------------
-local window, content = UIKit.window(gui, "SHOVEL SHOP", UDim2.fromOffset(780, 580), C.Violet, "⛏️")
+local window, content = UIKit.window(gui, "PICKAXE SHOP", UDim2.fromOffset(780, 580), C.Violet, "⛏️")
 
 local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(180, 38), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 19})
 local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -24, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, StrokeColor = UIKit.shadeColor(C.Money, 0.6), MaxText = 24})
@@ -12403,7 +11593,7 @@ for _, world in ipairs(GameConfig.Worlds) do
 	local planet = UIKit.panel(card, {Size = UDim2.fromOffset(62, 62), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = planetColor, Radius = 31, ShadeAmount = 0.25})
 	UIKit.label(planet, tostring(world.Id), {Size = UDim2.fromScale(0.56, 0.56), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3, StrokeColor = UIKit.shadeColor(planetColor, 0.6), MaxText = 30})
 	UIKit.label(card, world.Name, {Size = UDim2.new(0.62, -90, 0, 28), Position = UDim2.fromOffset(88, 12), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
-	local sub = world.Enabled and (world.Tagline or (#world.Shovels .. " shovels  •  digs down to " .. -world.Zones[#world.Zones].Bottom .. "m  •  your museum is here"))
+	local sub = world.Enabled and (world.Tagline or (#world.Shovels .. " pickaxes  •  digs down to " .. -world.Zones[#world.Zones].Bottom .. "m  •  your museum is here"))
 		or "Still being excavated... coming soon!"
 	UIKit.label(card, sub, {Size = UDim2.new(0.62, -90, 0, 34), Position = UDim2.fromOffset(88, 42), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
 

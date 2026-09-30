@@ -52,16 +52,12 @@ end
 -- Optional sound effects. Paste a sound's id from the Toolbox (e.g. "rbxassetid://123456")
 -- and it plays; leave "" for silence.
 GameConfig.Sounds = {
-	Dig = "",    -- every time the shovel hits the dirt
-	Clang = "",  -- shovel bounces off a zone that's too hard
+	Dig = "",    -- every time the pickaxe hits the dirt
+	Clang = "",  -- pickaxe bounces off a zone that's too hard
 	Find = "",   -- an artifact pops out of the ground
 	Combo = "",  -- combo goes up
 }
 
--- How shovels look: "Crystal" = the blocky/crystal design, upgraded procedurally by each
--- shovel's Power (size, crystal color, spinning orbiters, particles). "Classic" = the older
--- hand-made models (World 1 cartoon shovels + themed world shovels).
-GameConfig.ShovelLook = "Crystal"
 
 -- Chance that a find becomes a "Lucky Dig" with the bonus minigame (0.1 = 1 in 10)
 GameConfig.MinigameChance = 0.1
@@ -112,46 +108,46 @@ GameConfig.Worlds = {
 			{Name = "The Abyss", Era = "Abyss", Areas = {15, 21}, Rarities = ABYSS,
 				Material = "Glacier", Color = Color3.fromRGB(150, 196, 214)},
 		}),
-		-- SHOVELS (shop order). MaxZone: 1 = Shallow, 2 = Mid, 3 = Deep, 4 = Abyss.
+		-- PICKAXES (shop order; the table is still called Shovels and the ids are the old save ids). MaxZone: 1 = Shallow, 2 = Mid, 3 = Deep, 4 = Abyss.
 		-- Power = how big a crater each swing carves (radius = GameConfig.DigRadiusForPower), FindChance = chance per swing to find something (0.02 = 1 in 50),
 		-- Luck = rare find multiplier, Cooldown = seconds between swings
 		Shovels = {
-			{Id = "RustyShovel", Name = "Rusty Shovel", Price = 0, MaxZone = 1,
+			{Id = "RustyShovel", Name = "Rusty Pickaxe", Price = 0, MaxZone = 1,
 				Power = 1, FindChance = 0.012, Luck = 1, Cooldown = 0.5,
 				Color = Color3.fromRGB(150, 85, 50), Material = "CorrodedMetal",
-				Description = "Found in a dumpster in 2049. Still works. Mostly."},
-			{Id = "PlasticShovel", Name = "Plastic Beach Shovel", Price = 500, MaxZone = 2,
+				Description = "Found in a dumpster in 2049. Still swings. Mostly."},
+			{Id = "PlasticShovel", Name = "Stone Pickaxe", Price = 500, MaxZone = 2,
 				Power = 2, FindChance = 0.013, Luck = 1.1, Cooldown = 0.47,
 				Color = Color3.fromRGB(255, 200, 40), Material = "SmoothPlastic",
-				Description = "Built for sandcastles. Somehow better than rust."},
-			{Id = "GardenSpade", Name = "Garden Spade", Price = 3000, MaxZone = 2,
+				Description = "Two slabs of rock tied to a stick. A true classic."},
+			{Id = "GardenSpade", Name = "Copper Pickaxe", Price = 3000, MaxZone = 2,
 				Power = 3, FindChance = 0.015, Luck = 1.2, Cooldown = 0.45,
 				Color = Color3.fromRGB(90, 170, 80), Material = "Metal",
-				Description = "Borrowed from a grandma. She wants it back."},
-			{Id = "IronShovel", Name = "Iron Shovel", Price = 15000, MaxZone = 2,
+				Description = "Shiny orange, and a little green around the edges."},
+			{Id = "IronShovel", Name = "Iron Spikebreaker", Price = 15000, MaxZone = 2,
 				Power = 4, FindChance = 0.017, Luck = 1.35, Cooldown = 0.42,
 				Color = Color3.fromRGB(175, 180, 190), Material = "Metal",
-				Description = "A real tool for a real archaeologist."},
-			{Id = "SteelSpade", Name = "Steel Spade", Price = 60000, MaxZone = 3,
+				Description = "A spiky iron head. Cracks ancient comment sections."},
+			{Id = "SteelSpade", Name = "Emerald Pickaxe", Price = 60000, MaxZone = 3,
 				Power = 5, FindChance = 0.018, Luck = 1.5, Cooldown = 0.39,
 				Color = Color3.fromRGB(120, 140, 170), Material = "Metal",
-				Description = "Sharp enough to cut through ancient comment sections."},
-			{Id = "GoldenShovel", Name = "Golden Shovel", Price = 200000, MaxZone = 3,
+				Description = "Mossy stone with a glowing emerald heart."},
+			{Id = "GoldenShovel", Name = "Golden Pick-Hammer", Price = 200000, MaxZone = 3,
 				Power = 6, FindChance = 0.02, Luck = 1.7, Cooldown = 0.37,
 				Color = Color3.fromRGB(255, 200, 60), Material = "Metal",
-				Description = "Shiny. Heavy. Completely unnecessary. Perfect."},
-			{Id = "GamerShovel", Name = "RGB Gamer Shovel", Price = 750000, MaxZone = 3,
+				Description = "A pick on one side, a hammer on the other. All gold."},
+			{Id = "GamerShovel", Name = "Diamond Pickaxe", Price = 750000, MaxZone = 3,
 				Power = 7, FindChance = 0.022, Luck = 2, Cooldown = 0.35,
 				Color = Color3.fromRGB(255, 60, 200), Material = "Neon",
-				Description = "The RGB lights add +200% digging power. Science."},
-			{Id = "TectonicAuger", Name = "Tectonic Auger", Price = 3000000, MaxZone = 4,
+				Description = "Pure cyan crystal. The one everybody wants."},
+			{Id = "TectonicAuger", Name = "Magma Pickaxe", Price = 3000000, MaxZone = 4,
 				Power = 8, FindChance = 0.024, Luck = 2.4, Cooldown = 0.33,
 				Color = Color3.fromRGB(128, 132, 138), Material = "Foil",
-				Description = "Legendary. Rated for bedrock, permafrost and 2049-era server racks."},
-			{Id = "SingularitySpade", Name = "Singularity Spade", Price = 10000000, MaxZone = 4,
+				Description = "Legendary. Forged in the Deep Zone and still glowing hot."},
+			{Id = "SingularitySpade", Name = "Singularity Pickaxe", Price = 10000000, MaxZone = 4,
 				Power = 9, FindChance = 0.027, Luck = 3, Cooldown = 0.31,
 				Color = Color3.fromRGB(62, 64, 70), Material = "Foil",
-				Description = "Mythic. Folds the Abyss around the blade. Do not dig near pets."},
+				Description = "Mythic. Folds the Abyss around its crystals."},
 		},
 	},
 }
@@ -178,12 +174,12 @@ for i, info in ipairs(WorldsData.Worlds) do
 	for t, entry in ipairs(info.Shovels) do
 		local tier = WorldsData.ShovelTiers[t]
 		table.insert(shovels, {
-			Id = (entry[1]:gsub("[^%w]", "")), Name = entry[1], Description = entry[2],
+			Id = entry.Id or (entry[1]:gsub("[^%w]", "")), Name = entry[1], Description = entry[2],
 			Price = tier.PriceFactor * info.Price, MaxZone = tier.MaxZone,
 			Power = tier.Power, FindChance = tier.FindChance, Luck = tier.Luck, Cooldown = tier.Cooldown,
 			Color = t % 2 == 1 and info.Look.Main or info.Look.Second, Material = "SmoothPlastic",
-			-- ShovelModels builds these from the world's colors (Theme decides the decorations)
-			Look = {Theme = info.Theme, Tier = t, Blade = entry[3], Grip = entry[4], Colors = info.Look},
+			-- PickaxeModels builds these from the world's colors (the tier picks the head shape)
+			Look = {Theme = info.Theme, Tier = t, Colors = info.Look},
 		})
 	end
 	table.insert(GameConfig.Worlds, {

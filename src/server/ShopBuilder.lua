@@ -1,17 +1,17 @@
 -- ShopBuilder (ModuleScript in ServerScriptService)
--- Builds a world's Shovel Shop: a cartoony 2050 pavilion on a round tiered platform,
+-- Builds a world's Pickaxe Shop: a cartoony 2050 pavilion on a round tiered platform,
 -- with a flying-saucer roof held up by chunky capsule pillars, a curved back wall,
--- glass display capsules on stepped pedestals (one shovel per depth zone), a floating
--- robot shopkeeper, a big glowing sign with a giant shovel, and a depth meter.
+-- glass display capsules on stepped pedestals (one pickaxe per depth zone), a floating
+-- robot shopkeeper, a big glowing sign with a giant pickaxe, and a depth meter.
 -- DigManager calls this once per world on server start.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
-local ShovelModels = require(ReplicatedStorage:WaitForChild("ShovelModels"))
+local ShovelModels = require(ReplicatedStorage:WaitForChild("PickaxeModels"))
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
 
--- Places a copy of a shovel model at `target` (blade down), scaled up
+-- Places a copy of a pickaxe model at `target` (target's axes = the tool's axes), scaled
 local function displayShovel(parent, def, target, scale)
 	local tool = ShovelModels(def)
 	local handle = tool:FindFirstChild("Handle")
@@ -122,20 +122,14 @@ return function(parent, world, base)
 	b:pill("SignPost", Vector3.new(5, 16.5, -6), Vector3.new(5, 19.5, -6), 0.7, "Chrome")
 	b:roundedBlock("SignBack", Vector3.new(19, 5.2, 1.2), CFrame.new(0, 21.8, -6), 2.2, "Violet")
 	local sign = b:roundedBlock("Sign", Vector3.new(18, 4.4, 1.4), CFrame.new(0, 21.8, -6.1), 1.9, "Navy")
-	Architecture.sign(sign, "SHOVEL SHOP", "DIG DEEPER, FIND WEIRDER!")
+	Architecture.sign(sign, "PICKAXE SHOP", "DIG DEEPER, FIND WEIRDER!")
 	b:box("SignGlow", Vector3.new(18.4, 0.3, 1.5), CFrame.new(0, 19.35, -6.1), "GlowSun")
-	-- a giant cartoon shovel leaning against the sign
-	local grip = Vector3.new(8, 26, -4.6)
-	local tip = Vector3.new(11.4, 17.2, -4.6)
-	local dir = (tip - grip).Unit
-	b:pill("GiantHandle", grip, tip - dir * 3.4, 0.9, "Violet")
-	b:rod("GiantGrip", 2.4, 0.7, Architecture.alongX(grip, dir:Cross(Vector3.zAxis)), "Sun")
-	b:ball("GiantGripEndA", 0.9, CFrame.new(grip + dir:Cross(Vector3.zAxis).Unit * 1.2), "Sun")
-	b:ball("GiantGripEndB", 0.9, CFrame.new(grip - dir:Cross(Vector3.zAxis).Unit * 1.2), "Sun")
-	local bladeCF = Architecture.alongX(tip - dir * 1.6, dir)
-	b:ellipsoid("GiantBlade", Vector3.new(4.4, 3.4, 0.7), bladeCF, "Sun")
-	b:ellipsoid("GiantBladeShine", Vector3.new(2.6, 1.4, 0.75), bladeCF * CFrame.new(-0.6, 0.5, 0), "White")
-	b:rod("GiantCollar", 0.8, 1.2, Architecture.alongX(tip - dir * 3.5, dir), "Chrome")
+	-- a giant copy of this world's best pickaxe standing beside the sign (head up, arms facing out)
+	local HEAD_UP = CFrame.Angles(0, math.rad(90), 0) * CFrame.Angles(math.rad(90), 0, 0)
+	local best = world.Shovels[#world.Shovels]
+	if best then
+		displayShovel(shop, best, base * CFrame.new(12, 22, -5) * CFrame.Angles(0, 0, math.rad(-24)) * HEAD_UP, 2.2)
+	end
 
 	-----------------------------------------------------------------
 	-- COUNTER (rounded, two-tone) with the shop prompt
@@ -149,7 +143,7 @@ return function(parent, world, base)
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Browse"
-	prompt.ObjectText = "Shovels"
+	prompt.ObjectText = "Pickaxes"
 	prompt.HoldDuration = 0
 	prompt.MaxActivationDistance = 12
 	prompt.RequiresLineOfSight = false
@@ -192,8 +186,8 @@ return function(parent, world, base)
 		local tag = b:roundedBlock("ZoneTag", Vector3.new(3.2, 1.1, 0.4), cf * CFrame.new(0, h - 0.9, -1.75), 0.2, "Navy")
 		Architecture.sign(tag, string.upper(zone.Name), -zone.Top .. "-" .. -zone.Bottom .. "m")
 		if def then
-			-- blade down, facing out; raised a little so the blade clears the capsule floor
-			displayShovel(shop, def, base * mid * CFrame.new(0, 0.6, 0) * CFrame.Angles(math.rad(-90), 0, math.rad(8)), 1.3)
+			-- head up, arms facing out of the capsule
+			displayShovel(shop, def, base * mid * CFrame.new(0, 0.2, 0) * CFrame.Angles(0, math.rad(90), 0) * CFrame.Angles(math.rad(90), 0, 0), 0.85)
 		end
 	end
 

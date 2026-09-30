@@ -128,7 +128,7 @@ function VehicleModels.drone(rng)
 end
 
 -- Advertising blimp: huge soft balloon with fins, a gondola and a glowing banner
-local SLOGANS = {"DIG DEEPER!", "MEMES 4 SALE", "VISIT THE ABYSS", "RATE MY MUSEUM", "SHOVEL SALE 50% OFF", "NO BRAINROT ZONE"}
+local SLOGANS = {"DIG DEEPER!", "MEMES 4 SALE", "VISIT THE ABYSS", "RATE MY MUSEUM", "PICKAXE SALE 50% OFF", "NO BRAINROT ZONE"}
 function VehicleModels.blimp(rng)
 	local model = Instance.new("Model")
 	model.Name = "AdBlimp"
