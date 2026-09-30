@@ -19,7 +19,7 @@ Run from the repo folder (Windows: use "py" instead of "python3"):
     python3 tools/upload_audio.py --group-id 987654      (if the game belongs to a group)
 Only standard Python is needed (no pip installs). The audio itself is made by tools/make_audio.py.
 """
-import argparse, getpass, json, os, subprocess, sys, time, urllib.error, urllib.request, uuid
+import argparse, getpass, json, os, shutil, subprocess, sys, time, urllib.error, urllib.request, uuid
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AUDIO = os.path.join(ROOT, "assets", "audio")
@@ -50,9 +50,7 @@ def request(method, url, key, body=None, content_type=None):
                 print("   Roblox says wait (%d), retrying in %ds..." % (e.code, wait))
                 time.sleep(wait)
                 continue
-            raise SystemExit("\nRoblox refused the request (%d): %s\n"
-                             "Check the API key has Assets Read+Write and the right --user-id/--group-id.\n"
-                             "(Roblox also limits how many audio files you can upload per month.)" % (e.code, text))
+            refused(e.code, text)
         except (urllib.error.URLError, OSError) as e:  # OSError: connection aborted/reset mid-transfer
             wait = min(5 * (attempt + 1), 30)
             print("   Network problem (%s), retrying in %ds..." % (getattr(e, "reason", e), wait))
@@ -64,8 +62,41 @@ class NetworkGaveUp(Exception):
     pass
 
 
+CURL = shutil.which("curl")  # built into Windows 10/11; handles big uploads better than Python does
+
+
+def refused(code, text):
+    raise SystemExit("\nRoblox refused the upload (%s): %s\n"
+                     "Check the API key has Assets Read+Write, its allowed IPs include 0.0.0.0/0,\n"
+                     "and the --user-id is yours. (Roblox also limits audio uploads per month.)" % (code, text))
+
+
+def post_with_curl(url, key, meta, path, name):
+    """Uploads with curl. The key goes to curl through stdin, so it never shows up in a command line or file."""
+    cmd = [CURL, "-sS", "-X", "POST", url, "-H", "@-", "--max-time", "300",
+           "--form-string", "request=" + json.dumps(meta),
+           "-F", "fileContent=@%s;type=audio/ogg;filename=%s.ogg" % (path, name),
+           "-w", "\n%{http_code}"]
+    for attempt in range(10):
+        run = subprocess.run(cmd, input="x-api-key: %s\n" % key, capture_output=True, text=True)
+        if run.returncode == 0:
+            text, _, code = run.stdout.rpartition("\n")
+            code = int(code or 0)
+            if 200 <= code < 300:
+                return json.loads(text or "{}")
+            if code == 429 or code >= 500:
+                wait = 5 * (attempt + 1)
+                print("   Roblox says wait (%d), retrying in %ds..." % (code, wait))
+                time.sleep(wait)
+                continue
+            refused(code, text)
+        wait = min(5 * (attempt + 1), 30)
+        print("   Network problem (%s), retrying in %ds..." % (run.stderr.strip() or "curl exit %d" % run.returncode, wait))
+        time.sleep(wait)
+    raise NetworkGaveUp()
+
+
 def upload(path, name, key, creator):
-    boundary = uuid.uuid4().hex
     title = NICE_NAMES.get(name) or ("Meme Archaeologist World " + name.replace("music_world", "") + " Theme")
     meta = {
         "assetType": "Audio",
@@ -73,6 +104,21 @@ def upload(path, name, key, creator):
         "description": "Meme Archaeologist " + ("sound effect" if name.startswith("sfx") else "background music"),
         "creationContext": {"creator": creator},
     }
+    if CURL:
+        op = post_with_curl(API + "assets", key, meta, path, name)
+    else:
+        op = post_with_urllib(meta, path, name, key)
+    # uploads finish in the background: poll the operation until Roblox gives us the asset id
+    for _ in range(80):
+        if op.get("done") and op.get("response", {}).get("assetId"):
+            return int(op["response"]["assetId"])
+        time.sleep(2)
+        op = request("GET", API + op["path"], key)
+    raise SystemExit("Upload of %s never finished; run the script again to retry." % name)
+
+
+def post_with_urllib(meta, path, name, key):
+    boundary = uuid.uuid4().hex
     with open(path, "rb") as f:
         data = f.read()
     body = b"".join([
@@ -82,14 +128,7 @@ def upload(path, name, key, creator):
          "Content-Type: audio/ogg\r\n\r\n" % (boundary, name)).encode(),
         data, ("\r\n--%s--\r\n" % boundary).encode(),
     ])
-    op = request("POST", API + "assets", key, body, "multipart/form-data; boundary=" + boundary)
-    # uploads finish in the background: poll the operation until Roblox gives us the asset id
-    for _ in range(80):
-        if op.get("done") and op.get("response", {}).get("assetId"):
-            return int(op["response"]["assetId"])
-        time.sleep(2)
-        op = request("GET", API + op["path"], key)
-    raise SystemExit("Upload of %s never finished; run the script again to retry." % name)
+    return request("POST", API + "assets", key, body, "multipart/form-data; boundary=" + boundary)
 
 
 def write_lua(done):
