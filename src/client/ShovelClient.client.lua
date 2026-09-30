@@ -234,7 +234,8 @@ local swingFxRemote = remotes:WaitForChild("ShovelSwingFx")
 -- Lean  = torso pitch (+ = bend forward), Twist = torso yaw (+ = turn left)
 -- Bend  = torso side bend (+ = lean left), Look = head pitch (+ = look down)
 local CHANNELS = {"Tilt", "Turn", "Roll", "Lean", "Twist", "Bend", "Look"}
-local IDLE = {Hand = Vector3.new(0.65, -0.45, -0.75), Tilt = 168, Turn = 0, Roll = 32, Lean = 2, Twist = 8, Bend = 0, Look = 0}
+-- ready stance: pickaxe held low and across the body, head out to the side (clear of the face)
+local IDLE = {Hand = Vector3.new(0.35, -0.15, -0.8), Tilt = 105, Turn = 30, Roll = 15, Lean = 3, Twist = 0, Bend = 0, Look = 2}
 
 -- easing curves: how each part of the swing speeds up and slows down
 local function easeInOutSine(u) return -(math.cos(math.pi * u) - 1) / 2 end
@@ -251,21 +252,25 @@ local function easeInOutCubic(u) return u < 0.5 and 4 * u * u * u or 1 - (-2 * u
 local SWING = {
 	{T = 0.00, Pose = IDLE},
 	-- load: a little dip and a cock of the wrists before the big lift
-	{T = 0.12, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.6, -0.56, -0.64), Tilt = 176, Turn = -2, Roll = 26, Lean = 8, Twist = 14, Bend = -3, Look = 4}},
-	-- lift: heaved up behind the head fast, slowing as it gets to the top
-	{T = 0.34, Ease = easeOutCubic, Pose = {Hand = Vector3.new(0.35, 2.0, 0.25), Tilt = 215, Turn = -8, Roll = 12, Lean = -10, Twist = 16, Bend = -6, Look = -12}},
+	{T = 0.10, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.45, -0.3, -0.7), Tilt = 112, Turn = 20, Roll = 4, Lean = 7, Twist = -8, Bend = 0, Look = 4}},
+	-- raise: the pickaxe swings up past the RIGHT shoulder, not across the face
+	{T = 0.22, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.8, 0.5, -0.5), Tilt = 165, Turn = -6, Roll = -40, Lean = 2, Twist = -26, Bend = -4, Look = -4}},
+	-- top: heaved up over the right shoulder, slowing as it gets there
+	{T = 0.34, Ease = easeOutCubic, Pose = {Hand = Vector3.new(1.0, 1.45, 0.0), Tilt = 215, Turn = -12, Roll = -30, Lean = -6, Twist = -44, Bend = -6, Look = -12}},
 	-- hang: the pickaxe floats at the very top for a beat, stretching back
-	{T = 0.42, Ease = easeOutSine, Pose = {Hand = Vector3.new(0.32, 2.1, 0.35), Tilt = 222, Turn = -9, Roll = 10, Lean = -12, Twist = 18, Bend = -7, Look = -14}},
+	{T = 0.42, Ease = easeOutSine, Pose = {Hand = Vector3.new(1.02, 1.52, 0.06), Tilt = 220, Turn = -13, Roll = -33, Lean = -8, Twist = -46, Bend = -7, Look = -14}},
+	-- swing-over: comes forward beside the head (not over it)
+	{T = 0.48, Ease = easeInQuad, Pose = {Hand = Vector3.new(0.7, 1.05, -0.8), Tilt = 150, Turn = -6, Roll = -22, Lean = 10, Twist = -34, Bend = 0, Look = 8}},
 	-- strike: accelerates all the way down into the ground
-	{T = 0.52, Ease = easeInQuad, Pose = {Hand = Vector3.new(0.25, 0.0, -1.3), Tilt = 72, Turn = -4, Roll = 0, Lean = 28, Twist = -18, Bend = 5, Look = 22}},
+	{T = 0.52, Ease = easeInQuad, Pose = {Hand = Vector3.new(0.1, -0.1, -1.1), Tilt = 78, Turn = 6, Roll = 0, Lean = 28, Twist = -18, Bend = 5, Look = 22}},
 	-- rebound: kicks back up out of the dirt (with a little overshoot)
-	{T = 0.64, Ease = easeOutBack, Pose = {Hand = Vector3.new(0.3, 0.4, -1.15), Tilt = 102, Turn = -4, Roll = 4, Lean = 16, Twist = -10, Bend = 3, Look = 12}},
+	{T = 0.64, Ease = easeOutBack, Pose = {Hand = Vector3.new(0.2, 0.3, -1.0), Tilt = 102, Turn = 4, Roll = 4, Lean = 16, Twist = -10, Bend = 3, Look = 12}},
 	-- settle back into the ready stance
 	{T = 1.00, Ease = easeInOutCubic, Pose = IDLE},
 }
 local STRIKE_TIME = 0.52
 local HIT_STOP = 0.06 -- the pose freezes this long on impact, which makes hits feel heavy
-local TRAIL_FROM, TRAIL_TO = 0.4, 0.62 -- the head leaves a swoosh trail during the down-swing
+local TRAIL_FROM, TRAIL_TO = 0.43, 0.62 -- the head leaves a swoosh trail during the down-swing
 local WOBBLE = {Degrees = 7, Decay = 9, Speed = 38} -- the handle vibrates after the impact
 
 -- tool axes when upright: grip end (+Z) points up (head down), pick arms (+Y) point forward
