@@ -2,7 +2,7 @@
 -- One cartoony 2050 look for every screen in the game:
 --   * rounded panels with a soft top-to-bottom sheen; colored panels get an outline in a
 --     darker shade of their own color (no more black outlines everywhere)
---   * glossy "candy" buttons with a darker bottom lip, white bubbly text and a bounce
+--   * glossy "candy" buttons (one smooth gradient, no strips), white bubbly text and a bounce
 --   * windows with a full-width colored header bar, an icon, and the close button inside it
 --   * text that scales with its box but never past a sensible size (so nothing looks huge)
 --   * live 3D pickaxe icons (ViewportFrames that render the real pickaxe model)
@@ -181,24 +181,6 @@ function UIKit.button(parent, text, props)
 	local gloss = Instance.new("UIGradient")
 	gloss.Rotation = 90
 	gloss.Parent = b
-	-- darker bottom lip, like the edge of a chunky key
-	local lip = Instance.new("Frame")
-	lip.Name = "Lip"
-	lip.BorderSizePixel = 0
-	lip.AnchorPoint = Vector2.new(0, 1)
-	lip.Position = UDim2.fromScale(0, 1)
-	lip.Size = UDim2.new(1, 0, 0, math.min(radius, 7))
-	lip.Parent = b
-	UIKit.corner(lip, radius)
-	local shine = Instance.new("Frame")
-	shine.Name = "Shine"
-	shine.BorderSizePixel = 0
-	shine.BackgroundColor3 = Color3.new(1, 1, 1)
-	shine.BackgroundTransparency = 0.72
-	shine.Position = UDim2.new(0, 6, 0, 4)
-	shine.Size = UDim2.new(1, -12, 0.3, 0)
-	shine.Parent = b
-	UIKit.corner(shine, math.max(radius - 4, 4))
 	local label = UIKit.label(b, text, {
 		Size = UDim2.new(1, -16, 1, -14), Position = UDim2.new(0.5, 0, 0.5, -2), AnchorPoint = Vector2.new(0.5, 0.5),
 		Color = props.TextColor or C.White, Stroke = 2.5, MaxText = props.MaxText or 24,
@@ -209,8 +191,13 @@ function UIKit.button(parent, text, props)
 	local function paint()
 		local c = b.BackgroundColor3
 		stroke.Color = UIKit.shadeColor(c, 0.5)
-		lip.BackgroundColor3 = UIKit.shadeColor(c, 0.28)
-		gloss.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(0.86, 0.86, 0.9))
+			-- one smooth gradient does the gloss: a bright top fading to a darker bottom edge
+		-- (no separate shine or lip pieces, so there are never any lines across the button)
+		gloss.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+			ColorSequenceKeypoint.new(0.45, Color3.new(0.95, 0.95, 0.97)),
+			ColorSequenceKeypoint.new(1, Color3.new(0.76, 0.76, 0.82)),
+		})
 		if labelStroke then labelStroke.Color = UIKit.shadeColor(c, 0.62) end
 	end
 	paint()
@@ -289,21 +276,6 @@ function UIKit.window(gui, title, size, accent, icon)
 	headerFill.Position = UDim2.fromScale(0, 1)
 	headerFill.Size = UDim2.new(1, 0, 0, 22)
 	headerFill.Parent = header
-	local headerEdge = Instance.new("Frame")
-	headerEdge.BorderSizePixel = 0
-	headerEdge.BackgroundColor3 = UIKit.shadeColor(accent, 0.35)
-	headerEdge.AnchorPoint = Vector2.new(0, 1)
-	headerEdge.Position = UDim2.fromScale(0, 1)
-	headerEdge.Size = UDim2.new(1, 0, 0, 4)
-	headerEdge.Parent = header
-	local shine = Instance.new("Frame")
-	shine.BorderSizePixel = 0
-	shine.BackgroundColor3 = Color3.new(1, 1, 1)
-	shine.BackgroundTransparency = 0.8
-	shine.Position = UDim2.new(0, 10, 0, 6)
-	shine.Size = UDim2.new(1, -20, 0, 16)
-	shine.Parent = header
-	UIKit.corner(shine, 8)
 
 	local titleX = 22
 	if icon then
