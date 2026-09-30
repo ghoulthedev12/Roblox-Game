@@ -67,9 +67,11 @@ for folder, parent in TARGETS:
         name, cls = kind(f)
         src = open(os.path.join(folder, f), encoding="utf-8").read()
         out.append(f'install({parent}, "{name}", "{cls}", {long_string(src)})')
+# a stamp so you can see in the Output window which version was installed
+BUILD = __import__("datetime").datetime.now().strftime("%Y-%m-%d %H:%M")
 out += [
     "if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end",
-    'print("Meme Archaeologist: installed " .. count .. " scripts. Now save the place (Ctrl+S).")',
+    'print("Meme Archaeologist: installed " .. count .. " scripts (build %s). Now save the place (Ctrl+S).")' % BUILD,
     "",
 ]
 open("InstallInStudio.lua", "w", encoding="utf-8").write("\n".join(out))
