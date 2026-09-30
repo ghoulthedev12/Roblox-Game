@@ -380,6 +380,37 @@ for areaIndex, list in pairs(AREA_ARTIFACTS) do
 	end
 end
 
+-- CORRUPTED MEMES: Glitch Nexus's data hacking minigame digs up glitched copies of that
+-- world's memes. They're worth 2x on display and never come out of normal digging.
+ArtifactData.CorruptedMultiplier = 2
+do
+	local glitchArea = #ArtifactData.Areas
+	for _, base in ipairs(table.clone(ArtifactData.Artifacts)) do
+		if base.Area == glitchArea then
+			local corrupted = table.clone(base)
+			corrupted.Id = "Corrupted" .. base.Id
+			corrupted.Name = "Corrupted " .. base.Name
+			corrupted.Description = "A glitched copy dug out of a Data Node. Earns 2x. " .. base.Description
+			corrupted.BaseId = base.Id
+			corrupted.Corrupted = true
+			corrupted.IncomeMultiplier = ArtifactData.CorruptedMultiplier
+			artifactById[corrupted.Id] = corrupted
+			table.insert(ArtifactData.Artifacts, corrupted)
+		end
+	end
+end
+
+-- the corrupted copy of a meme (nil if it has none)
+function ArtifactData.GetCorrupted(artifact)
+	return artifact and artifactById["Corrupted" .. (artifact.BaseId or artifact.Id)]
+end
+
+-- which icon/picture an artifact uses (corrupted memes use the original's)
+function ArtifactData.IconId(id)
+	local artifact = artifactById[id]
+	return artifact and artifact.BaseId or id
+end
+
 function ArtifactData.GetArtifact(id)
 	return artifactById[id]
 end
@@ -400,7 +431,7 @@ end
 function ArtifactData.GetIncome(artifact)
 	local rarity = rarityByName[artifact.Rarity]
 	local area = ArtifactData.Areas[artifact.Area] or ArtifactData.Areas[1]
-	return rarity.Income * area.Multiplier
+	return rarity.Income * area.Multiplier * (artifact.IncomeMultiplier or 1)
 end
 
 -- One-time money from selling it to the alien art dealer

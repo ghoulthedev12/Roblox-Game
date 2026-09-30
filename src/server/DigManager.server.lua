@@ -16,6 +16,7 @@ local WorldGate = require(script.Parent:WaitForChild("WorldGate"))
 local WorldBuilder = require(script.Parent:WaitForChild("WorldBuilder"))
 local BuriedPainting = require(script.Parent:WaitForChild("BuriedPainting"))
 local DigBoosts = require(script.Parent:WaitForChild("DigBoosts"))
+local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
 local TweenService = game:GetService("TweenService")
 
 local terrain = workspace.Terrain
@@ -237,7 +238,11 @@ local function resolveFind(player, take)
 	pending[player] = nil
 	local data = PlayerData.Get(player)
 	if take and data and player.Parent then
-		PlayerData.AddArtifact(player, find.Artifact.Id)
+		-- a world gimmick may take over giving it (e.g. a meme ghost that must be captured first)
+		local handled = GimmickHooks.Run("OnPull", getWorld(player).Id, player, find.Artifact, find.Model:GetPivot().Position)
+		if not handled then
+			PlayerData.AddArtifact(player, find.Artifact.Id)
+		end
 		player:SetAttribute("TutorialFound", true)
 		data.Stats.TotalDigs += 1
 		inventoryChangedRemote:FireClient(player)
@@ -319,8 +324,8 @@ local function revealFx(cf, color)
 	Debris:AddItem(beam, 1.5)
 end
 
-local function giveArtifact(player, zone, luck, grade, position)
-	local artifact = ArtifactData.RollForZone(zone, luck)
+local function giveArtifact(player, zone, luck, grade, position, forcedArtifact)
+	local artifact = forcedArtifact or ArtifactData.RollForZone(zone, luck)
 	local data = PlayerData.Get(player)
 	if not artifact or not data or pending[player] then return end
 
@@ -415,6 +420,10 @@ end
 
 swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	if resetting or sessions[player] then return end
+	if GimmickHooks.IsLocked(player) then
+		digMessageRemote:FireClient(player, "☠️ Your pickaxe is cursed! It unlocks in a moment...", Color3.fromRGB(200, 130, 255))
+		return
+	end
 	local data = PlayerData.Get(player)
 	if not data then return end
 
@@ -483,6 +492,11 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 		digMessageRemote:FireClient(player, "Bedrock! This is the bottom of the Abyss.")
 		return
 	end
+	local dig = {Zone = zone, ZoneIndex = zoneIndex, Position = carveAt, Def = def}
+	if zoneIndex <= def.MaxZone and GimmickHooks.Run("BeforeDig", world.Id, player, dig) == "block" then
+		combos[player] = 0
+		return -- a world gimmick stopped this swing (e.g. frozen permafrost)
+	end
 	if zoneIndex > def.MaxZone then
 		bounceOff(player, world, def, zoneIndex, zone, carveAt + Vector3.new(0, 2, 0))
 		digHitRemote:FireClient(player, {Bounced = true, Position = carveAt + Vector3.new(0, 2, 0), Color = zone.Color, Combo = 0})
@@ -518,6 +532,8 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 
 	-- Did we find something?
 	if pending[player] then return end
+	-- a world gimmick may turn this swing into something else (a curse trap, a data node...)
+	if GimmickHooks.Run("AfterDig", world.Id, player, dig) then return end
 	if player:GetAttribute("Tutorial") == 3 then
 		-- first-join tutorial: the first find comes after a few swings, no minigame
 		tutorialDigs[player] = (tutorialDigs[player] or 0) + 1
@@ -527,7 +543,10 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 		end
 	end
 	if rng:NextNumber() < def.FindChance * boost.Find * (1 + COMBO_LUCK * (combo - 1)) then
-		onFind(player, def, zone, carveAt + Vector3.new(0, 2, 0), def.Luck * boost.Luck)
+		-- luck: the pickaxe x world events/boosts x the depth bonus x world gimmicks
+		local luck = def.Luck * boost.Luck * GameConfig.DepthBonus(world, carveAt.Y) * GimmickHooks.Luck(world.Id, player, dig)
+			* (player:GetAttribute("GemLuck") or 1)
+		onFind(player, def, zone, carveAt + Vector3.new(0, 2, 0), luck)
 	end
 end)
 
@@ -744,6 +763,32 @@ for _, world in ipairs(enabledWorlds()) do
 	end
 end
 worldsBuilt = true
+
+---------------------------------------------------------------------
+-- HELPERS FOR THE WORLD GIMMICKS (GimmickHooks.Api)
+---------------------------------------------------------------------
+local Api = GimmickHooks.Api
+Api.Burst = burst
+-- a find that bypasses the normal roll (e.g. a Corrupted meme from a data node)
+function Api.GiveFind(player, zone, luck, position, forcedArtifact)
+	if pending[player] then return false end
+	giveArtifact(player, zone, luck, nil, position, forcedArtifact)
+	return true
+end
+-- straight into the inventory (e.g. a captured meme ghost)
+function Api.AddArtifactNow(player, artifact)
+	PlayerData.AddArtifact(player, artifact.Id)
+	inventoryChangedRemote:FireClient(player)
+end
+function Api.SendToSurface(player)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if root then character:PivotTo(surfaceCFrame(getWorld(player), root.Position)) end
+end
+function Api.Message(player, text, color)
+	digMessageRemote:FireClient(player, text, color)
+end
+Api.GetWorld = getWorld
 
 ---------------------------------------------------------------------
 -- PIT SAFETY: invisible walls around every pit, a solid floor inside the bedrock, a lower

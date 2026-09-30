@@ -130,7 +130,8 @@ local function art(target, artifact, face, opts)
 	end
 
 	local size, y = opts.EmojiSize or 0.7, opts.EmojiY or 0.5
-	local image = ArtifactImages[artifact.Id]
+	local iconId = ArtifactData.IconId(artifact.Id)
+	local image = ArtifactImages[iconId]
 	local function meme(offset, transparency, tint)
 		local item
 		if image then
@@ -141,7 +142,7 @@ local function art(target, artifact, face, opts)
 			if tint then item.ImageColor3 = tint end
 		else
 			item = Instance.new("TextLabel")
-			item.Text = ArtifactIcons[artifact.Id] or "🗿"
+			item.Text = ArtifactIcons[iconId] or "🗿"
 			item.TextScaled = true
 			item.Font = Enum.Font.GothamBold
 			item.TextTransparency = transparency
@@ -341,7 +342,7 @@ function ArtifactModels.addEmojiTag(model, artifact, heightAbove)
 	emoji.Size = UDim2.fromScale(0.74, 0.74)
 	emoji.Position = UDim2.fromScale(0.5, 0.5)
 	emoji.AnchorPoint = Vector2.new(0.5, 0.5)
-	emoji.Text = ArtifactIcons[artifact.Id] or "🗿"
+	emoji.Text = ArtifactIcons[ArtifactData.IconId(artifact.Id)] or "🗿"
 	emoji.TextScaled = true
 	emoji.Font = Enum.Font.GothamBold
 	emoji.Parent = bubble

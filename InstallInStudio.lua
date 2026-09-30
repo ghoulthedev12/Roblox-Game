@@ -403,6 +403,37 @@ for areaIndex, list in pairs(AREA_ARTIFACTS) do
 	end
 end
 
+-- CORRUPTED MEMES: Glitch Nexus's data hacking minigame digs up glitched copies of that
+-- world's memes. They're worth 2x on display and never come out of normal digging.
+ArtifactData.CorruptedMultiplier = 2
+do
+	local glitchArea = #ArtifactData.Areas
+	for _, base in ipairs(table.clone(ArtifactData.Artifacts)) do
+		if base.Area == glitchArea then
+			local corrupted = table.clone(base)
+			corrupted.Id = "Corrupted" .. base.Id
+			corrupted.Name = "Corrupted " .. base.Name
+			corrupted.Description = "A glitched copy dug out of a Data Node. Earns 2x. " .. base.Description
+			corrupted.BaseId = base.Id
+			corrupted.Corrupted = true
+			corrupted.IncomeMultiplier = ArtifactData.CorruptedMultiplier
+			artifactById[corrupted.Id] = corrupted
+			table.insert(ArtifactData.Artifacts, corrupted)
+		end
+	end
+end
+
+-- the corrupted copy of a meme (nil if it has none)
+function ArtifactData.GetCorrupted(artifact)
+	return artifact and artifactById["Corrupted" .. (artifact.BaseId or artifact.Id)]
+end
+
+-- which icon/picture an artifact uses (corrupted memes use the original's)
+function ArtifactData.IconId(id)
+	local artifact = artifactById[id]
+	return artifact and artifact.BaseId or id
+end
+
 function ArtifactData.GetArtifact(id)
 	return artifactById[id]
 end
@@ -423,7 +454,7 @@ end
 function ArtifactData.GetIncome(artifact)
 	local rarity = rarityByName[artifact.Rarity]
 	local area = ArtifactData.Areas[artifact.Area] or ArtifactData.Areas[1]
-	return rarity.Income * area.Multiplier
+	return rarity.Income * area.Multiplier * (artifact.IncomeMultiplier or 1)
 end
 
 -- One-time money from selling it to the alien art dealer
@@ -772,7 +803,8 @@ local function art(target, artifact, face, opts)
 	end
 
 	local size, y = opts.EmojiSize or 0.7, opts.EmojiY or 0.5
-	local image = ArtifactImages[artifact.Id]
+	local iconId = ArtifactData.IconId(artifact.Id)
+	local image = ArtifactImages[iconId]
 	local function meme(offset, transparency, tint)
 		local item
 		if image then
@@ -783,7 +815,7 @@ local function art(target, artifact, face, opts)
 			if tint then item.ImageColor3 = tint end
 		else
 			item = Instance.new("TextLabel")
-			item.Text = ArtifactIcons[artifact.Id] or "🗿"
+			item.Text = ArtifactIcons[iconId] or "🗿"
 			item.TextScaled = true
 			item.Font = Enum.Font.GothamBold
 			item.TextTransparency = transparency
@@ -983,7 +1015,7 @@ function ArtifactModels.addEmojiTag(model, artifact, heightAbove)
 	emoji.Size = UDim2.fromScale(0.74, 0.74)
 	emoji.Position = UDim2.fromScale(0.5, 0.5)
 	emoji.AnchorPoint = Vector2.new(0.5, 0.5)
-	emoji.Text = ArtifactIcons[artifact.Id] or "🗿"
+	emoji.Text = ArtifactIcons[ArtifactData.IconId(artifact.Id)] or "🗿"
 	emoji.TextScaled = true
 	emoji.Font = Enum.Font.GothamBold
 	emoji.Parent = bubble
@@ -1444,6 +1476,14 @@ function GameConfig.GetWorldAt(position)
 		end
 	end
 	return best
+end
+
+-- DEPTH BONUS: the deeper you dig, the luckier your finds: x1 at the surface up to x1.6 at
+-- the very bottom of the Abyss (shown under the depth gauge)
+function GameConfig.DepthBonus(world, y)
+	local total = -world.Zones[#world.Zones].Bottom
+	local depth = math.clamp(world.Origin.Y - y, 0, total)
+	return 1 + 0.6 * depth / total
 end
 
 -- Returns the zone index and zone at a height in a world, or nil if it's bedrock
@@ -2531,7 +2571,8 @@ function UIKit.artifactIcon(parent, artifact, props)
 		Color = color:Lerp(C.White, 0.45), Radius = props.Radius or 16, Stroke = props.Stroke or 3, ShadeAmount = 0.25,
 	})
 	tile.Name = "ArtifactIcon"
-	local image = ArtifactImages[artifact.Id]
+	local iconId = ArtifactData.IconId(artifact.Id) -- corrupted memes use the original's picture
+	local image = ArtifactImages[iconId]
 	if image then
 		-- the uploaded meme picture fills the tile (the emoji is only a fallback)
 		local picture = Instance.new("ImageLabel")
@@ -2556,7 +2597,7 @@ function UIKit.artifactIcon(parent, artifact, props)
 	emoji.Size = UDim2.fromScale(0.72, 0.72)
 	emoji.Position = UDim2.fromScale(0.5, 0.52)
 	emoji.AnchorPoint = Vector2.new(0.5, 0.5)
-	emoji.Text = ArtifactIcons[artifact.Id] or "❓"
+	emoji.Text = ArtifactIcons[iconId] or "❓"
 	emoji.TextScaled = true
 	emoji.Font = Enum.Font.GothamBold
 	emoji.Parent = tile
@@ -2744,26 +2785,32 @@ return VehicleModels
 ]=])
 install(game:GetService("ReplicatedStorage"), "WorldGimmicks", "ModuleScript", [=[
 -- WorldGimmicks (ModuleScript in ReplicatedStorage)
--- Every world from World 3 on has its own twist, so the later worlds never feel the same.
--- Module = which Gimmick_<Module> script in ServerScriptService runs it (WorldGimmickManager
--- starts it and tells it when players come and go); the rest is shown to players by
--- WorldGimmickClient when they arrive.
+-- Every world has its own twist so no two worlds play the same.
+--   Modules = which Gimmick_<Module> scripts in ServerScriptService run it (WorldGimmickManager
+--             starts them and tells them when players come and go)
+--   Tag     = the short label on the world's card in the World Gate menu
+--   Icon, Title, Text = what WorldGimmickClient shows when you arrive
+-- World 1 has no gimmick scripts; its twist (the depth bonus) is built into digging itself.
 
 return {
-	[3] = {Module = "LowGravity", Icon = "🌌", Title = "LOW GRAVITY",
-		Text = "Galaxy Drift barely holds you down. Jump way higher and float down into the pit!"},
-	[4] = {Module = "Blizzard", Icon = "❄️", Title = "BLIZZARDS",
-		Text = "Every few minutes a blizzard rolls in. The storm stirs up relics: 2x luck while it lasts!"},
-	[5] = {Module = "GoldRush", Icon = "🪙", Title = "GOLD RUSH",
-		Text = "Golden sandstorms sweep the dunes. During a Gold Rush you find things 3x as often!"},
-	[6] = {Module = "Oxygen", Icon = "🫧", Title = "LOW OXYGEN",
+	[1] = {Modules = {}, Icon = "⛏️", Tag = "Depth Bonus", Title = "DEPTH BONUS",
+		Text = "The deeper you dig, the luckier your finds: up to 1.6x luck at the bottom of the Abyss!"},
+	[2] = {Modules = {"Spirits"}, Icon = "👻", Tag = "Meme Ghosts", Title = "MEME GHOSTS",
+		Text = "Memes you dig up here escape as ghosts! Click the ghost 4 times to capture it before it gets away."},
+	[3] = {Modules = {"LowGravity", "GravityShift"}, Icon = "🌌", Tag = "Gravity Shift", Title = "LOW GRAVITY + GRAVITY SHIFTS",
+		Text = "Gravity is weak here, and deep down it flips! Hold on during a shift. The deep layers give 1.5x luck."},
+	[4] = {Modules = {"Blizzard", "Permafrost"}, Icon = "🔥", Tag = "Permafrost", Title = "PERMAFROST",
+		Text = "Below the topsoil the ground is frozen solid. Use a Torch Flare [F] to melt it, or get a heated pickaxe (the top 3)."},
+	[5] = {Modules = {"GoldRush", "CurseTraps"}, Icon = "☠️", Tag = "Curse Traps", Title = "CURSE TRAPS + GOLD RUSH",
+		Text = "Cursed blocks hide in the sand. When one goes off, press the key shown in time for gold, or your pickaxe is locked for 3s!"},
+	[6] = {Modules = {"Oxygen"}, Icon = "🫧", Tag = "Oxygen", Title = "LOW OXYGEN",
 		Text = "The deep pit is flooded with toxic fumes. Watch your air meter and refill it at the bubbling air vents!"},
-	[7] = {Module = "Merchant", Icon = "👽", Title = "ALIEN MERCHANT",
+	[7] = {Modules = {"Merchant"}, Icon = "🍭", Tag = "Alien Merchant", Title = "ALIEN MERCHANT",
 		Text = "A candy-loving alien wanders the rim selling Sugar Rush: dig 1.5x faster for 3 minutes!"},
-	[8] = {Module = "Eruption", Icon = "🌋", Title = "ERUPTIONS",
-		Text = "The volcano erupts every few minutes, raining lava bombs. Grab the glowing Forge Nuggets for cash!"},
-	[9] = {Module = "GlitchSurge", Icon = "👾", Title = "GLITCH SURGES",
-		Text = "Reality glitches out every few minutes: swing 2x faster with 1.5x luck during a Glitch Surge!"},
+	[8] = {Modules = {"Eruption", "LavaSurge"}, Icon = "🌋", Tag = "Lava Surge", Title = "LAVA SURGES + ERUPTIONS",
+		Text = "Every few minutes lava rises from the bottom of the pit! Climb up to the glowing safe ledges or the surface before it hits."},
+	[9] = {Modules = {"GlitchSurge", "DataHacking"}, Icon = "💾", Tag = "Data Hacking", Title = "DATA HACKING",
+		Text = "Digging uncovers Data Nodes. Hit the beats to hack them and dig up a Corrupted meme worth 2x!"},
 }
 ]=])
 install(game:GetService("ReplicatedStorage"), "WorldsData", "ModuleScript", [=[
@@ -3961,6 +4008,7 @@ local WorldGate = require(script.Parent:WaitForChild("WorldGate"))
 local WorldBuilder = require(script.Parent:WaitForChild("WorldBuilder"))
 local BuriedPainting = require(script.Parent:WaitForChild("BuriedPainting"))
 local DigBoosts = require(script.Parent:WaitForChild("DigBoosts"))
+local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
 local TweenService = game:GetService("TweenService")
 
 local terrain = workspace.Terrain
@@ -4182,7 +4230,11 @@ local function resolveFind(player, take)
 	pending[player] = nil
 	local data = PlayerData.Get(player)
 	if take and data and player.Parent then
-		PlayerData.AddArtifact(player, find.Artifact.Id)
+		-- a world gimmick may take over giving it (e.g. a meme ghost that must be captured first)
+		local handled = GimmickHooks.Run("OnPull", getWorld(player).Id, player, find.Artifact, find.Model:GetPivot().Position)
+		if not handled then
+			PlayerData.AddArtifact(player, find.Artifact.Id)
+		end
 		player:SetAttribute("TutorialFound", true)
 		data.Stats.TotalDigs += 1
 		inventoryChangedRemote:FireClient(player)
@@ -4264,8 +4316,8 @@ local function revealFx(cf, color)
 	Debris:AddItem(beam, 1.5)
 end
 
-local function giveArtifact(player, zone, luck, grade, position)
-	local artifact = ArtifactData.RollForZone(zone, luck)
+local function giveArtifact(player, zone, luck, grade, position, forcedArtifact)
+	local artifact = forcedArtifact or ArtifactData.RollForZone(zone, luck)
 	local data = PlayerData.Get(player)
 	if not artifact or not data or pending[player] then return end
 
@@ -4360,6 +4412,10 @@ end
 
 swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	if resetting or sessions[player] then return end
+	if GimmickHooks.IsLocked(player) then
+		digMessageRemote:FireClient(player, "☠️ Your pickaxe is cursed! It unlocks in a moment...", Color3.fromRGB(200, 130, 255))
+		return
+	end
 	local data = PlayerData.Get(player)
 	if not data then return end
 
@@ -4428,6 +4484,11 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 		digMessageRemote:FireClient(player, "Bedrock! This is the bottom of the Abyss.")
 		return
 	end
+	local dig = {Zone = zone, ZoneIndex = zoneIndex, Position = carveAt, Def = def}
+	if zoneIndex <= def.MaxZone and GimmickHooks.Run("BeforeDig", world.Id, player, dig) == "block" then
+		combos[player] = 0
+		return -- a world gimmick stopped this swing (e.g. frozen permafrost)
+	end
 	if zoneIndex > def.MaxZone then
 		bounceOff(player, world, def, zoneIndex, zone, carveAt + Vector3.new(0, 2, 0))
 		digHitRemote:FireClient(player, {Bounced = true, Position = carveAt + Vector3.new(0, 2, 0), Color = zone.Color, Combo = 0})
@@ -4463,6 +4524,8 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 
 	-- Did we find something?
 	if pending[player] then return end
+	-- a world gimmick may turn this swing into something else (a curse trap, a data node...)
+	if GimmickHooks.Run("AfterDig", world.Id, player, dig) then return end
 	if player:GetAttribute("Tutorial") == 3 then
 		-- first-join tutorial: the first find comes after a few swings, no minigame
 		tutorialDigs[player] = (tutorialDigs[player] or 0) + 1
@@ -4472,7 +4535,10 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 		end
 	end
 	if rng:NextNumber() < def.FindChance * boost.Find * (1 + COMBO_LUCK * (combo - 1)) then
-		onFind(player, def, zone, carveAt + Vector3.new(0, 2, 0), def.Luck * boost.Luck)
+		-- luck: the pickaxe x world events/boosts x the depth bonus x world gimmicks
+		local luck = def.Luck * boost.Luck * GameConfig.DepthBonus(world, carveAt.Y) * GimmickHooks.Luck(world.Id, player, dig)
+			* (player:GetAttribute("GemLuck") or 1)
+		onFind(player, def, zone, carveAt + Vector3.new(0, 2, 0), luck)
 	end
 end)
 
@@ -4689,6 +4755,32 @@ for _, world in ipairs(enabledWorlds()) do
 	end
 end
 worldsBuilt = true
+
+---------------------------------------------------------------------
+-- HELPERS FOR THE WORLD GIMMICKS (GimmickHooks.Api)
+---------------------------------------------------------------------
+local Api = GimmickHooks.Api
+Api.Burst = burst
+-- a find that bypasses the normal roll (e.g. a Corrupted meme from a data node)
+function Api.GiveFind(player, zone, luck, position, forcedArtifact)
+	if pending[player] then return false end
+	giveArtifact(player, zone, luck, nil, position, forcedArtifact)
+	return true
+end
+-- straight into the inventory (e.g. a captured meme ghost)
+function Api.AddArtifactNow(player, artifact)
+	PlayerData.AddArtifact(player, artifact.Id)
+	inventoryChangedRemote:FireClient(player)
+end
+function Api.SendToSurface(player)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if root then character:PivotTo(surfaceCFrame(getWorld(player), root.Position)) end
+end
+function Api.Message(player, text, color)
+	digMessageRemote:FireClient(player, text, color)
+end
+Api.GetWorld = getWorld
 
 ---------------------------------------------------------------------
 -- PIT SAFETY: invisible walls around every pit, a solid floor inside the bedrock, a lower
@@ -5201,6 +5293,82 @@ return function(digSite, world)
 	digSite:SetAttribute("Cartoon2050", true)
 end
 ]=])
+install(game:GetService("ServerScriptService"), "GimmickHooks", "ModuleScript", [=[
+-- GimmickHooks (ModuleScript in ServerScriptService)
+-- Lets a world's gimmick plug into digging without DigManager knowing about every world.
+-- A gimmick registers functions for its world:
+--   BeforeDig(player, dig)        return "block" to stop this swing (e.g. frozen permafrost)
+--   AfterDig(player, dig)         return true if it took over this swing's find roll
+--                                 (e.g. a curse trap or a data node went off instead)
+--   OnPull(player, artifact, pos) return true if it takes over giving the artifact
+--                                 (e.g. a meme ghost has to be captured first)
+--   LuckMult(player, dig)         return a luck multiplier for this swing
+-- dig = {Zone = zone, ZoneIndex = n, Position = where it hit, Def = the pickaxe}
+-- DigManager fills GimmickHooks.Api with helpers the gimmicks can call (see DigManager).
+
+local GimmickHooks = {}
+GimmickHooks.Api = {}
+
+local registry = {} -- [hookName][worldId] = {functions}
+local locks = {}    -- [player] = time the pickaxe unlocks
+
+function GimmickHooks.Register(worldId, hookName, fn)
+	registry[hookName] = registry[hookName] or {}
+	registry[hookName][worldId] = registry[hookName][worldId] or {}
+	table.insert(registry[hookName][worldId], fn)
+end
+
+-- runs every function for this hook in this world; returns the first truthy answer
+function GimmickHooks.Run(hookName, worldId, ...)
+	local list = registry[hookName] and registry[hookName][worldId]
+	if not list then return nil end
+	for _, fn in ipairs(list) do
+		local ok, result = pcall(fn, ...)
+		if not ok then
+			warn("Gimmick hook " .. hookName .. " failed: " .. tostring(result))
+		elseif result then
+			return result
+		end
+	end
+	return nil
+end
+
+-- multiplies every LuckMult answer together
+function GimmickHooks.Luck(worldId, ...)
+	local list = registry.LuckMult and registry.LuckMult[worldId]
+	local luck = 1
+	for _, fn in ipairs(list or {}) do
+		local ok, result = pcall(fn, ...)
+		if ok and typeof(result) == "number" then luck *= result end
+	end
+	return luck
+end
+
+-- stop a player's pickaxe from digging for a few seconds (curse traps)
+function GimmickHooks.LockDig(player, seconds)
+	locks[player] = os.clock() + seconds
+	player:SetAttribute("DigLockedUntil", os.time() + seconds)
+end
+
+function GimmickHooks.IsLocked(player)
+	return locks[player] ~= nil and os.clock() < locks[player]
+end
+
+-- a RemoteEvent in ReplicatedStorage.Remotes (made if it doesn't exist yet)
+function GimmickHooks.Remote(name)
+	local remotes = game:GetService("ReplicatedStorage"):WaitForChild("Remotes")
+	local r = remotes:FindFirstChild(name) or Instance.new("RemoteEvent")
+	r.Name = name
+	r.Parent = remotes
+	return r
+end
+
+game:GetService("Players").PlayerRemoving:Connect(function(player)
+	locks[player] = nil
+end)
+
+return GimmickHooks
+]=])
 install(game:GetService("ServerScriptService"), "Gimmick_Blizzard", "ModuleScript", [=[
 -- Gimmick_Blizzard (ModuleScript in ServerScriptService) - World 4, Frostbyte Tundra
 -- Every few minutes a blizzard rolls in for 40 seconds: snow and fog on everyone's screen
@@ -5215,6 +5383,153 @@ function Gimmick.Start(ctx)
 		Message = "❄️ A BLIZZARD rolls in! The storm stirs up relics: 2x luck for 40 seconds!",
 		Color = Color3.fromRGB(170, 230, 255),
 	})
+end
+
+return Gimmick
+]=])
+install(game:GetService("ServerScriptService"), "Gimmick_CurseTraps", "ModuleScript", [=[
+-- Gimmick_CurseTraps (ModuleScript in ServerScriptService) - World 5, Chrome Dunes
+-- Cursed blocks are hidden in the sand. When a swing hits one, a quick-time event pops up
+-- (WorldMechanicsClient): press the key shown (or tap the button) before the bar runs out.
+--   success: a pile of gold (about half a minute of a Rare meme's income here)
+--   failure: your pickaxe is cursed and locked for 3 seconds
+-- The client only reports which key was pressed; the server checks it and the timing.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+
+local Gimmick = {}
+local TRAP_CHANCE = 0.06
+local TIME_LIMIT = 1.8
+local LOCK_SECONDS = 3
+local KEYS = {"E", "R", "F", "Q"}
+
+local traps = {} -- [player] = {Key, Deadline}
+
+function Gimmick.Start(ctx)
+	local world = ctx.World
+	local rng = Random.new()
+	local Api = GimmickHooks.Api
+	local trapRemote = GimmickHooks.Remote("CurseTrap")
+	local multiplier = ArtifactData.WorldMultipliers[world.Id - 1] or 1
+	local reward = math.floor(ArtifactData.Rarities[3].Income * multiplier * 30)
+
+	local function fail(player)
+		traps[player] = nil
+		GimmickHooks.LockDig(player, LOCK_SECONDS)
+		Api.Message(player, "☠️ The curse got you! Your pickaxe is locked for 3 seconds.", Color3.fromRGB(200, 120, 255))
+	end
+
+	GimmickHooks.Register(world.Id, "AfterDig", function(player, dig)
+		if traps[player] or rng:NextNumber() > TRAP_CHANCE then return nil end
+		local key = KEYS[rng:NextInteger(1, #KEYS)]
+		local trap = {Key = key, Deadline = os.clock() + TIME_LIMIT + 0.4} -- a little slack for lag
+		traps[player] = trap
+		Api.Burst(dig.Position + Vector3.new(0, 2, 0), Color3.fromRGB(170, 80, 255), 30, 12)
+		trapRemote:FireClient(player, key, TIME_LIMIT)
+		task.delay(TIME_LIMIT + 0.6, function()
+			if traps[player] == trap then fail(player) end
+		end)
+		return true
+	end)
+
+	trapRemote.OnServerEvent:Connect(function(player, pressed)
+		local trap = traps[player]
+		if not trap then return end
+		if pressed == trap.Key and os.clock() <= trap.Deadline then
+			traps[player] = nil
+			PlayerData.AddMoney(player, reward)
+			Api.Message(player, "🪙 Curse broken! +" .. ArtifactData.FormatMoney(reward) .. " in ancient gold!", Color3.fromRGB(255, 214, 90))
+		else
+			fail(player)
+		end
+	end)
+end
+
+function Gimmick.OnLeave(_ctx, player)
+	traps[player] = nil
+end
+
+return Gimmick
+]=])
+install(game:GetService("ServerScriptService"), "Gimmick_DataHacking", "ModuleScript", [=[
+-- Gimmick_DataHacking (ModuleScript in ServerScriptService) - World 9, Glitch Nexus
+-- Digging here sometimes uncovers a DATA NODE. Hack it with the rhythm minigame
+-- (WorldMechanicsClient): tap on the beat 4 times. Hit at least 3 beats and the node gives
+-- you a CORRUPTED meme: a glitched copy of one of this world's memes that earns 2x on
+-- display (see ArtifactData). Miss and the node crashes.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Debris = game:GetService("Debris")
+
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+
+local Gimmick = {}
+local NODE_CHANCE = 0.07
+local BEATS = 4
+local BEAT_SECONDS = 0.9
+local HITS_NEEDED = 3
+
+local nodes = {} -- [player] = {Started, Zone, Position, Luck, Part}
+
+function Gimmick.Start(ctx)
+	local world = ctx.World
+	local rng = Random.new()
+	local Api = GimmickHooks.Api
+	local hackRemote = GimmickHooks.Remote("DataNode")
+
+	GimmickHooks.Register(world.Id, "AfterDig", function(player, dig)
+		if nodes[player] or rng:NextNumber() > NODE_CHANCE then return nil end
+		-- a glowing data cube pops up where the pickaxe hit
+		local cube = Instance.new("Part")
+		cube.Name = "DataNode"
+		cube.Size = Vector3.one * 2
+		cube.Material = Enum.Material.Neon
+		cube.Color = Color3.fromRGB(80, 255, 220)
+		cube.Anchored = true
+		cube.CanCollide = false
+		cube.CanQuery = false
+		cube.CFrame = CFrame.new(dig.Position + Vector3.new(0, 3, 0)) * CFrame.Angles(0.6, 0.6, 0)
+		cube.Parent = ctx.Folder
+		local light = Instance.new("PointLight")
+		light.Color = cube.Color
+		light.Range = 14
+		light.Parent = cube
+		Debris:AddItem(cube, BEATS * BEAT_SECONDS + 3)
+		nodes[player] = {Started = os.clock(), Zone = dig.Zone, Position = dig.Position + Vector3.new(0, 2, 0), Luck = dig.Def.Luck * 1.5, Part = cube}
+		hackRemote:FireClient(player, BEATS, BEAT_SECONDS)
+		task.delay(BEATS * BEAT_SECONDS + 4, function()
+			if nodes[player] and nodes[player].Part == cube then nodes[player] = nil end
+		end)
+		return true
+	end)
+
+	hackRemote.OnServerEvent:Connect(function(player, hits)
+		local node = nodes[player]
+		if not node then return end
+		nodes[player] = nil
+		if node.Part.Parent then node.Part:Destroy() end
+		-- the minigame can't be finished faster than its beats
+		local legit = os.clock() - node.Started >= BEATS * BEAT_SECONDS * 0.8
+		if legit and typeof(hits) == "number" and hits >= HITS_NEEDED then
+			local base = ArtifactData.RollForZone(node.Zone, node.Luck)
+			local corrupted = ArtifactData.GetCorrupted(base) or base
+			if Api.GiveFind(player, node.Zone, node.Luck, node.Position, corrupted) then
+				Api.Message(player, "💾 HACKED! A Corrupted meme (2x income) is waiting in the dirt!", Color3.fromRGB(80, 255, 220))
+			end
+		else
+			Api.Burst(node.Position, Color3.fromRGB(255, 60, 120), 24, 12)
+			Api.Message(player, "💥 Hack failed, the Data Node crashed.", Color3.fromRGB(255, 110, 150))
+		end
+	end)
+end
+
+function Gimmick.OnLeave(_ctx, player)
+	nodes[player] = nil
 end
 
 return Gimmick
@@ -5416,6 +5731,173 @@ function Gimmick.Start(ctx)
 		OnStart = function() glitter.Enabled = true end,
 		OnStop = function() glitter.Enabled = false end,
 	})
+end
+
+return Gimmick
+]=])
+install(game:GetService("ServerScriptService"), "Gimmick_GravityShift", "ModuleScript", [=[
+-- Gimmick_GravityShift (ModuleScript in ServerScriptService) - World 3, Galaxy Drift
+-- Deep in the pit gravity can't make up its mind. Every so often it FLIPS for a few seconds:
+-- either it pulls UP (you float up out of your crater) or SIDEWAYS (you get flung toward a
+-- wall). The shift is announced on the world folder's "GravityShift" attribute and played
+-- on each player's own screen by WorldMechanicsClient (gravity is simulated per player).
+-- Reward for braving it: the deep layers (zone 3+) here give 1.5x luck.
+
+local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+
+local Gimmick = {}
+local EVERY = {18, 30}
+local DURATION = 3
+Gimmick.DEEP_DEPTH = 150 -- only players deeper than this feel it
+
+function Gimmick.Start(ctx)
+	local rng = Random.new()
+	ctx.Container:SetAttribute("GravityShiftDepth", Gimmick.DEEP_DEPTH)
+	GimmickHooks.Register(ctx.World.Id, "LuckMult", function(_player, dig)
+		return dig.ZoneIndex >= 3 and 1.5 or 1
+	end)
+	task.spawn(function()
+		while ctx.Container.Parent do
+			task.wait(rng:NextNumber(EVERY[1], EVERY[2]))
+			if #ctx.PlayersInWorld() > 0 then
+				local mode = rng:NextNumber() < 0.5 and "Up" or "Side"
+				local angle = rng:NextNumber(0, 360)
+				-- the value changes every time, so the client always notices a new shift
+				ctx.Container:SetAttribute("GravityShift", mode .. ":" .. math.floor(angle) .. ":" .. os.clock())
+				task.wait(DURATION)
+				ctx.Container:SetAttribute("GravityShift", "")
+			end
+		end
+	end)
+end
+
+return Gimmick
+]=])
+install(game:GetService("ServerScriptService"), "Gimmick_LavaSurge", "ModuleScript", [=[
+-- Gimmick_LavaSurge (ModuleScript in ServerScriptService) - World 8, Volcano Forge
+-- Every few minutes lava surges up from the bottom of the pit. There's a warning first,
+-- then the glowing lava rises to SURGE_TOP studs below the surface, stays a moment and
+-- sinks back. Anyone it catches is knocked back up to the surface and SCORCHED (swings 1.5x
+-- slower for 20 seconds). Glowing basalt ledges on the pit walls just above the lava line
+-- are safe spots, and so is anywhere near the surface.
+
+local TweenService = game:GetService("TweenService")
+
+local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+
+local Gimmick = {}
+local EVERY = 160
+local WARNING = 8
+local RISE_SECONDS = 12
+local HOLD_SECONDS = 6
+local SURGE_TOP = 45         -- how far below the surface the lava stops
+local LEDGE_DEPTH = 40       -- the safe ledges are just above the lava's highest point
+local SCORCH = {Name = "SCORCHED", CooldownMult = 1.5}
+local SCORCH_SECONDS = 20
+
+local function part(parent, name, size, cf, color, material)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Anchored = true
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Size = size
+	p.CFrame = cf
+	p.Color = color
+	p.Material = material
+	p.Parent = parent
+	return p
+end
+
+function Gimmick.Start(ctx)
+	local world = ctx.World
+	local origin = world.Origin
+	local Api = GimmickHooks.Api
+	local bottom = origin.Y + world.Zones[#world.Zones].Bottom
+
+	-- the safe ledges: glowing basalt shelves around the pit wall
+	for i = 0, 5 do
+		local a = i / 6 * math.pi * 2
+		local r = world.PitRadius - 1
+		local pos = origin + Vector3.new(math.cos(a) * r, -LEDGE_DEPTH, math.sin(a) * r)
+		local cf = CFrame.lookAt(pos, Vector3.new(origin.X, pos.Y, origin.Z))
+		part(ctx.Folder, "SafeLedge", Vector3.new(10, 1.2, 6), cf, Color3.fromRGB(60, 50, 56), Enum.Material.Basalt)
+		local glow = part(ctx.Folder, "SafeLedgeGlow", Vector3.new(10.2, 0.2, 6.2), cf * CFrame.new(0, -0.65, 0), Color3.fromRGB(120, 255, 170), Enum.Material.Neon)
+		glow.CanCollide = false
+	end
+
+	-- the lava column (hidden until a surge)
+	local lava = part(ctx.Folder, "LavaSurge", Vector3.new(1, world.PitRadius * 2 + 4, world.PitRadius * 2 + 4),
+		CFrame.new(origin.X, bottom, origin.Z) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(255, 100, 30), Enum.Material.Neon)
+	lava.Shape = Enum.PartType.Cylinder
+	lava.CanCollide = false
+	lava.Transparency = 1
+	local light = Instance.new("PointLight")
+	light.Color = Color3.fromRGB(255, 110, 40)
+	light.Range = 40
+	light.Brightness = 3
+	light.Enabled = false
+	light.Parent = lava
+
+	local function setTop(top)
+		local height = math.max(top - bottom, 1)
+		lava.Size = Vector3.new(height, lava.Size.Y, lava.Size.Z)
+		lava.CFrame = CFrame.new(origin.X, bottom + height / 2, origin.Z) * CFrame.Angles(0, 0, math.rad(90))
+	end
+
+	local function scorchCaught(top)
+		for _, player in ipairs(ctx.PlayersInWorld()) do
+			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			if root then
+				local offset = root.Position - origin
+				local inPit = Vector3.new(offset.X, 0, offset.Z).Magnitude <= world.PitRadius + 2
+				if inPit and root.Position.Y - 3 < top then
+					Api.SendToSurface(player)
+					ctx.Boosts.GivePersonal(player, table.clone(SCORCH), SCORCH_SECONDS)
+					Api.Message(player, "🔥 The lava got you! Knocked to the surface and SCORCHED (slower swings for 20s).", Color3.fromRGB(255, 130, 70))
+				end
+			end
+		end
+	end
+
+	task.spawn(function()
+		task.wait(EVERY * 0.6)
+		while ctx.Container.Parent do
+			if #ctx.PlayersInWorld() > 0 then
+				ctx.Announce("🌋 LAVA SURGE in " .. WARNING .. " seconds! Get up to a glowing ledge or the surface!", Color3.fromRGB(255, 120, 60))
+				ctx.Container:SetAttribute("Event", "LAVA SURGE")
+				task.wait(WARNING)
+				lava.Transparency = 0.15
+				light.Enabled = true
+				local peak = origin.Y - SURGE_TOP
+				local start = os.clock()
+				while os.clock() - start < RISE_SECONDS do
+					local u = (os.clock() - start) / RISE_SECONDS
+					local top = bottom + (peak - bottom) * (1 - (1 - u) ^ 2)
+					setTop(top)
+					scorchCaught(top)
+					task.wait(0.2)
+				end
+				local holdEnd = os.clock() + HOLD_SECONDS
+				while os.clock() < holdEnd do
+					scorchCaught(peak)
+					task.wait(0.2)
+				end
+				-- sink back down
+				local value = Instance.new("NumberValue")
+				value.Value = peak
+				value.Changed:Connect(setTop)
+				local sink = TweenService:Create(value, TweenInfo.new(6, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Value = bottom})
+				sink:Play()
+				sink.Completed:Wait()
+				value:Destroy()
+				lava.Transparency = 1
+				light.Enabled = false
+				ctx.Container:SetAttribute("Event", "")
+			end
+			task.wait(EVERY)
+		end
+	end)
 end
 
 return Gimmick
@@ -5637,6 +6119,240 @@ function Gimmick.Start(ctx)
 			vent.PrimaryPart = grate
 			vent.Parent = ctx.Folder
 			CollectionService:AddTag(grate, "AirVent")
+		end
+	end
+end
+
+return Gimmick
+]=])
+install(game:GetService("ServerScriptService"), "Gimmick_Permafrost", "ModuleScript", [=[
+-- Gimmick_Permafrost (ModuleScript in ServerScriptService) - World 4, Frostbyte Tundra
+-- Below the first layer the ground is frozen solid: an unheated pickaxe often just skids off
+-- the ice. Two ways to melt through:
+--   * a TORCH FLARE (press F or the flare button, WorldMechanicsClient): 20 seconds of heat,
+--     then it has to recharge
+--   * a heated pickaxe: this world's top three pickaxes run hot and never freeze
+-- The flare's state lives in the player's "HeatUntil" / "FlareReadyAt" attributes (os.time()).
+
+local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+
+local Gimmick = {}
+local FROZEN_CHANCE = 0.5  -- chance an unheated swing skids off the permafrost
+local FLARE_SECONDS = 20
+local FLARE_COOLDOWN = 45
+local HEATED_FROM_POWER = 6 -- pickaxes this strong or better are heated
+
+local lastMessage = {}
+
+function Gimmick.Start(ctx)
+	local world = ctx.World
+	local rng = Random.new()
+	local Api = GimmickHooks.Api
+	local flareRemote = GimmickHooks.Remote("TorchFlare")
+	ctx.Container:SetAttribute("TorchFlare", true)
+
+	local function heated(player, def)
+		return (def and def.Power >= HEATED_FROM_POWER) or (player:GetAttribute("HeatUntil") or 0) > os.time()
+	end
+
+	GimmickHooks.Register(world.Id, "BeforeDig", function(player, dig)
+		if dig.ZoneIndex < 2 or heated(player, dig.Def) then return nil end
+		if rng:NextNumber() > FROZEN_CHANCE then return nil end
+		Api.Burst(dig.Position + Vector3.new(0, 2, 0), Color3.fromRGB(200, 240, 255), 16, 14)
+		if os.clock() - (lastMessage[player] or 0) > 3 then
+			lastMessage[player] = os.clock()
+			Api.Message(player, "🧊 Permafrost! Use a Torch Flare [F] to melt it, or get a heated pickaxe.", Color3.fromRGB(170, 225, 255))
+		end
+		return "block"
+	end)
+
+	flareRemote.OnServerEvent:Connect(function(player)
+		if not ctx.IsHere(player) then return end
+		if (player:GetAttribute("FlareReadyAt") or 0) > os.time() then return end
+		player:SetAttribute("HeatUntil", os.time() + FLARE_SECONDS)
+		player:SetAttribute("FlareReadyAt", os.time() + FLARE_SECONDS + FLARE_COOLDOWN)
+		-- flames around the player while the flare burns
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if root then
+			local fire = Instance.new("Fire")
+			fire.Name = "TorchFlare"
+			fire.Size = 5
+			fire.Heat = 6
+			fire.Color = Color3.fromRGB(255, 160, 60)
+			fire.Parent = root
+			local light = Instance.new("PointLight")
+			light.Color = Color3.fromRGB(255, 170, 80)
+			light.Range = 20
+			light.Brightness = 2
+			light.Parent = root
+			task.delay(FLARE_SECONDS, function()
+				fire:Destroy()
+				light:Destroy()
+			end)
+		end
+		Api.Message(player, "🔥 Torch Flare! You melt through permafrost for 20 seconds.", Color3.fromRGB(255, 170, 80))
+	end)
+end
+
+return Gimmick
+]=])
+install(game:GetService("ServerScriptService"), "Gimmick_Spirits", "ModuleScript", [=[
+-- Gimmick_Spirits (ModuleScript in ServerScriptService) - World 2, Neon Sakura Grove
+-- Memes dug up here escape as MEME GHOSTS: when you pull a find out of the dirt, its spirit
+-- flies up out of it and darts around the pit. Click it (your capture beam) 4 times to catch
+-- it and it goes into your bag. Take too long and it sinks back into the ground for good.
+-- (Clicks come from WorldMechanicsClient through the CaptureGhost remote.)
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
+
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local ArtifactIcons = require(ReplicatedStorage:WaitForChild("ArtifactIcons"))
+local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+
+local Gimmick = {}
+local HITS_NEEDED = 4
+local ESCAPE_SECONDS = 40
+local BEAM_RANGE = 80
+
+local ghosts = {} -- [ghost model] = {Owner, Artifact, Hits}
+
+local function makeGhost(folder, artifact, position)
+	local color = ArtifactData.GetRarity(artifact.Rarity).Color
+	local ghost = Instance.new("Model")
+	ghost.Name = "MemeGhost"
+	local body = Instance.new("Part")
+	body.Name = "GhostBody"
+	body.Shape = Enum.PartType.Ball
+	body.Size = Vector3.one * 3
+	body.Material = Enum.Material.Neon
+	body.Color = color:Lerp(Color3.new(1, 1, 1), 0.5)
+	body.Transparency = 0.35
+	body.Anchored = true
+	body.CanCollide = false
+	body.CanTouch = false
+	body.CastShadow = false
+	body.CFrame = CFrame.new(position)
+	body.Parent = ghost
+	ghost.PrimaryPart = body
+	-- a wispy tail and its meme's face
+	local wisps = Instance.new("ParticleEmitter")
+	wisps.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.6), color)
+	wisps.LightEmission = 1
+	wisps.Size = NumberSequence.new(1.2, 0)
+	wisps.Transparency = NumberSequence.new(0.4, 1)
+	wisps.Lifetime = NumberRange.new(0.6, 1)
+	wisps.Rate = 30
+	wisps.Speed = NumberRange.new(0.5, 1)
+	wisps.Parent = body
+	local face = Instance.new("BillboardGui")
+	face.Size = UDim2.fromScale(2.6, 2.6)
+	face.LightInfluence = 0
+	face.AlwaysOnTop = true
+	face.Parent = body
+	local emoji = Instance.new("TextLabel")
+	emoji.BackgroundTransparency = 1
+	emoji.Size = UDim2.fromScale(1, 1)
+	emoji.Text = ArtifactIcons[ArtifactData.IconId(artifact.Id)] or "👻"
+	emoji.TextScaled = true
+	emoji.Font = Enum.Font.GothamBold
+	emoji.Parent = face
+	local light = Instance.new("PointLight")
+	light.Color = color
+	light.Range = 14
+	light.Brightness = 1.5
+	light.Parent = body
+	local attachment = Instance.new("Attachment")
+	attachment.Name = "BeamTarget"
+	attachment.Parent = body
+	ghost.Parent = folder
+	return ghost
+end
+
+function Gimmick.Start(ctx)
+	local world = ctx.World
+	local origin = world.Origin
+	local rng = Random.new()
+	local captureRemote = GimmickHooks.Remote("CaptureGhost")
+	local Api = GimmickHooks.Api
+
+	local function randomSpot(nearY)
+		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(0, world.PitRadius - 6)
+		local y = math.clamp(nearY + rng:NextNumber(-4, 10), nearY - 4, origin.Y + 16)
+		return origin + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r) * Vector3.new(1, 0, 1) + Vector3.new(0, y - origin.Y, 0)
+	end
+
+	-- the find is pulled out: instead of going into the bag, its ghost escapes
+	GimmickHooks.Register(world.Id, "OnPull", function(player, artifact, position)
+		task.delay(1.2, function()
+			if not player.Parent then return end
+			local ghost = makeGhost(ctx.Folder, artifact, position + Vector3.new(0, 2, 0))
+			local entry = {Owner = player, Artifact = artifact, Hits = 0}
+			ghosts[ghost] = entry
+			Api.Message(player, "👻 The " .. artifact.Name .. " escaped as a ghost! Click it " .. HITS_NEEDED .. " times to capture it!", Color3.fromRGB(255, 170, 230))
+			-- dart around the pit until it's caught or gets away
+			local started = os.clock()
+			task.spawn(function()
+				while ghost.Parent and ghosts[ghost] == entry do
+					if os.clock() - started > ESCAPE_SECONDS then
+						ghosts[ghost] = nil
+						local body = ghost.PrimaryPart
+						TweenService:Create(body, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+							{CFrame = body.CFrame - Vector3.new(0, 20, 0), Transparency = 1}):Play()
+						Debris:AddItem(ghost, 1.3)
+						if player.Parent then Api.Message(player, "The ghost got away... it sank back into the ground.", Color3.fromRGB(200, 200, 215)) end
+						return
+					end
+					local body = ghost.PrimaryPart
+					local goal = randomSpot(body.Position.Y)
+					local move = TweenService:Create(body, TweenInfo.new(1.1, Enum.EasingStyle.Sine), {CFrame = CFrame.new(goal)})
+					move:Play()
+					task.wait(1.15)
+				end
+			end)
+		end)
+		return true -- the ghost gives the artifact once it's captured
+	end)
+
+	captureRemote.OnServerEvent:Connect(function(player, ghost)
+		local entry = typeof(ghost) == "Instance" and ghosts[ghost]
+		if not entry or entry.Owner ~= player or not ghost.PrimaryPart then return end
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if not root or (root.Position - ghost.PrimaryPart.Position).Magnitude > BEAM_RANGE then return end
+		entry.Hits += 1
+		-- the capture beam, from the player's hand to the ghost
+		local hand = player.Character:FindFirstChild("RightHand") or root
+		local a0 = Instance.new("Attachment")
+		a0.Parent = hand
+		local beam = Instance.new("Beam")
+		beam.Attachment0 = a0
+		beam.Attachment1 = ghost.PrimaryPart:FindFirstChild("BeamTarget")
+		beam.Color = ColorSequence.new(Color3.fromRGB(255, 180, 240), Color3.fromRGB(150, 230, 255))
+		beam.LightEmission = 1
+		beam.Width0 = 0.5
+		beam.Width1 = 1.2
+		beam.FaceCamera = true
+		beam.Parent = a0
+		Debris:AddItem(a0, 0.25)
+		local body = ghost.PrimaryPart
+		body.Size = Vector3.one * (3 - entry.Hits * 0.45) -- it shrinks as the beam drains it
+		if entry.Hits >= HITS_NEEDED then
+			ghosts[ghost] = nil
+			Api.Burst(body.Position, body.Color, 40, 14)
+			ghost:Destroy()
+			Api.AddArtifactNow(player, entry.Artifact)
+			Api.Message(player, "👻 Captured! The " .. entry.Artifact.Name .. " is in your bag.", Color3.fromRGB(150, 255, 200))
+		end
+	end)
+end
+
+function Gimmick.OnLeave(_ctx, player)
+	-- ghosts only live while their owner is in the world
+	for ghost, entry in pairs(ghosts) do
+		if entry.Owner == player then
+			ghosts[ghost] = nil
+			ghost:Destroy()
 		end
 	end
 end
@@ -11679,9 +12395,9 @@ end
 ]=])
 install(game:GetService("ServerScriptService"), "WorldGimmickManager", "Script", [=[
 -- WorldGimmickManager (Script in ServerScriptService)
--- Attaches each world's gimmick (see ReplicatedStorage.WorldGimmicks) to that world's folder
+-- Attaches each world's gimmicks (see ReplicatedStorage.WorldGimmicks) to that world's folder
 -- (workspace.Worlds.WorldN gets a "Gimmick" attribute and a Gimmick folder for its parts),
--- starts its Gimmick_<Module> script, and tells it when players enter or leave the world.
+-- starts its Gimmick_<Module> scripts, and tells them when players enter or leave the world.
 --
 -- Each Gimmick_<Module> returns a table with:
 --   Start(ctx)            once, when the world is built
@@ -11701,7 +12417,7 @@ local DigBoosts = require(script.Parent:WaitForChild("DigBoosts"))
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local announceRemote = remotes:WaitForChild("Announcement")
 
-local contexts = {} -- [worldId] = {ctx, module}
+local contexts = {} -- [worldId] = {{Ctx, Module}, ...} (a world can have more than one gimmick)
 
 local function makeContext(world, container, folder)
 	local ctx = {World = world, Container = container, Folder = folder, Boosts = DigBoosts}
@@ -11749,28 +12465,41 @@ end
 local function startWorld(world, info)
 	local worldsFolder = workspace:WaitForChild("Worlds", 60)
 	local container = worldsFolder and worldsFolder:WaitForChild("World" .. world.Id, 60)
-	local moduleScript = script.Parent:FindFirstChild("Gimmick_" .. info.Module)
-	if not container or not moduleScript then
-		warn("World gimmick not started for world " .. world.Id)
+	if not container then
+		warn("World gimmicks not started for world " .. world.Id)
 		return
 	end
-	container:SetAttribute("Gimmick", info.Module)
+	container:SetAttribute("Gimmick", table.concat(info.Modules, ","))
 	local folder = container:FindFirstChild("Gimmick")
 	if folder then folder:Destroy() end
 	folder = Instance.new("Folder")
 	folder.Name = "Gimmick"
 	folder.Parent = container
-	local module = require(moduleScript)
-	local ctx = makeContext(world, container, folder)
-	contexts[world.Id] = {Ctx = ctx, Module = module}
-	local ok, err = pcall(module.Start, ctx)
-	if not ok then warn("World gimmick " .. info.Module .. " failed: " .. tostring(err)) end
+	contexts[world.Id] = {}
+	for _, name in ipairs(info.Modules) do
+		local moduleScript = script.Parent:FindFirstChild("Gimmick_" .. name)
+		if moduleScript then
+			local module = require(moduleScript)
+			local ctx = makeContext(world, container, folder)
+			table.insert(contexts[world.Id], {Ctx = ctx, Module = module})
+			local ok, err = pcall(module.Start, ctx)
+			if not ok then warn("World gimmick " .. name .. " failed: " .. tostring(err)) end
+		else
+			warn("Missing gimmick script Gimmick_" .. name)
+		end
+	end
 end
 
 for worldId, info in pairs(WorldGimmicks) do
 	local world = GameConfig.GetWorld(worldId)
-	if world and world.Enabled then
+	if world and world.Enabled and #info.Modules > 0 then
 		task.spawn(startWorld, world, info)
+	end
+end
+
+local function notify(worldId, hook, player)
+	for _, entry in ipairs(worldId and contexts[worldId] or {}) do
+		if entry.Module[hook] then task.spawn(entry.Module[hook], entry.Ctx, player) end
 	end
 end
 
@@ -11781,10 +12510,8 @@ local function moved(player)
 	local before = where[player]
 	if now == before then return end
 	where[player] = now
-	local old = before and contexts[before]
-	if old and old.Module.OnLeave then task.spawn(old.Module.OnLeave, old.Ctx, player) end
-	local new = now and contexts[now]
-	if new and new.Module.OnEnter then task.spawn(new.Module.OnEnter, new.Ctx, player) end
+	notify(before, "OnLeave", player)
+	notify(now, "OnEnter", player)
 end
 local function watch(player)
 	player:GetAttributeChangedSignal("CurrentWorld"):Connect(function() moved(player) end)
@@ -11795,8 +12522,7 @@ for _, player in ipairs(Players:GetPlayers()) do watch(player) end
 Players.PlayerRemoving:Connect(function(player)
 	local before = where[player]
 	where[player] = nil
-	local old = before and contexts[before]
-	if old and old.Module.OnLeave then task.spawn(old.Module.OnLeave, old.Ctx, player) end
+	notify(before, "OnLeave", player)
 end)
 ]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "BackgroundWeather", "LocalScript", [=[
@@ -13443,6 +14169,10 @@ local depthBubble = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(96, 42), Po
 depthBubble.BackgroundTransparency = 0.1
 local depthLabel = UIKit.label(depthBubble, "0m", {Size = UDim2.new(1, -16, 0.7, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 0, MaxText = 26})
 
+-- the depth bonus (more luck the deeper you are, see GameConfig.DepthBonus) above the bubble
+local bonusLabel = UIKit.label(depthPanel, "", {Size = UDim2.fromOffset(110, 18), Position = UDim2.new(0.5, 0, 0, -22), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Mint, Stroke = 2, MaxText = 15})
+
 -- the tube, filled with one colored band per zone (thicker zones = taller bands)
 local tube = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(30, GAUGE_H), Position = UDim2.new(0.5, 0, 0, 50), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 15, Stroke = 3, StrokeColor = C.Ink, Shade = false})
 -- the zone bands sit in a CanvasGroup, which clips them to the tube's rounded ends
@@ -13606,6 +14336,8 @@ task.spawn(function()
 			zone = zone or {Name = "Bedrock", Color = Color3.fromRGB(150, 150, 160)}
 			updatePitAir(world, inPit and depth or 0, zoneIndex or #world.Zones, zone.Color)
 			depthLabel.Text = depth .. "m"
+			local bonus = GameConfig.DepthBonus(world, feetY)
+			bonusLabel.Text = bonus >= 1.01 and string.format("🍀 x%.2f LUCK", bonus) or ""
 			zoneLabel.Text = string.upper(zone.Name)
 			zoneDot.BackgroundColor3 = zone.Color
 			if zoneStroke then zoneStroke.Color = zone.Color end
@@ -15161,7 +15893,8 @@ RunService.RenderStepped:Connect(function(dt)
 
 	-- gravity
 	local gravity = folder and folder:GetAttribute("Gravity")
-	workspace.Gravity = gravity or DEFAULT_GRAVITY
+	-- a gravity shift (WorldMechanicsClient) overrides it for a few seconds
+	workspace.Gravity = player:GetAttribute("GravityOverride") or gravity or DEFAULT_GRAVITY
 
 	-- events
 	local event = folder and folder:GetAttribute("Event") or ""
@@ -15230,6 +15963,279 @@ RunService.RenderStepped:Connect(function(dt)
 		airPanel.Visible = false
 		air = 1
 	end
+end)
+]=])
+install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "WorldMechanicsClient", "LocalScript", [=[
+-- WorldMechanicsClient (LocalScript in StarterPlayer > StarterPlayerScripts)
+-- The player's side of the interactive world mechanics:
+--   * Neon Sakura:   click a Meme Ghost to hit it with your capture beam (Gimmick_Spirits)
+--   * Galaxy Drift:  gravity shifts deep in the pit (Gimmick_GravityShift)
+--   * Frostbyte:     the Torch Flare button / F key (Gimmick_Permafrost)
+--   * Chrome Dunes:  the curse trap quick-time event (Gimmick_CurseTraps)
+--   * Glitch Nexus:  the data hacking rhythm minigame (Gimmick_DataHacking)
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local C = UIKit.Colors
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+local gui = UIKit.screen(player, "WorldMechanicsGui", 7)
+
+local function currentWorldId()
+	return player:GetAttribute("CurrentWorld") or 1
+end
+local function container()
+	local worlds = workspace:FindFirstChild("Worlds")
+	return worlds and worlds:FindFirstChild("World" .. currentWorldId())
+end
+local function remote(name, callback)
+	task.spawn(function()
+		local r = remotes:WaitForChild(name, 60)
+		if r and callback then r.OnClientEvent:Connect(callback) end
+	end)
+	return function(...)
+		local r = remotes:FindFirstChild(name)
+		if r then r:FireServer(...) end
+	end
+end
+local function isClick(input)
+	return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
+end
+
+-- a big message in the middle of the screen (warnings)
+local warning = UIKit.label(gui, "", {Size = UDim2.fromOffset(600, 50), Position = UDim2.fromScale(0.5, 0.3), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Sun, Stroke = 3, MaxText = 40})
+warning.Visible = false
+local warnToken = 0
+local function alert(text, color, seconds)
+	warnToken += 1
+	local myToken = warnToken
+	warning.Text = text
+	warning.TextColor3 = color or C.Sun
+	warning.Visible = true
+	UIKit.pop(warning, 0.6)
+	task.delay(seconds or 2, function()
+		if warnToken == myToken then warning.Visible = false end
+	end)
+end
+
+---------------------------------------------------------------------
+-- MEME GHOSTS: click (or tap) a ghost to fire the capture beam at it
+---------------------------------------------------------------------
+local captureGhost = remote("CaptureGhost")
+UserInputService.InputBegan:Connect(function(input)
+	if not isClick(input) then return end
+	local folder = container()
+	local ghostFolder = folder and folder:FindFirstChild("Gimmick")
+	if not ghostFolder then return end
+	local point = input.UserInputType == Enum.UserInputType.Touch and input.Position or UserInputService:GetMouseLocation()
+	local ray = input.UserInputType == Enum.UserInputType.Touch and camera:ScreenPointToRay(point.X, point.Y) or camera:ViewportPointToRay(point.X, point.Y)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = {ghostFolder}
+	-- a fat ray, so the fast little ghosts are fair to hit
+	local hit = workspace:Spherecast(ray.Origin, 2, ray.Direction * 250, params)
+	local ghost = hit and hit.Instance:FindFirstAncestor("MemeGhost")
+	if ghost then captureGhost(ghost) end
+end)
+
+---------------------------------------------------------------------
+-- GRAVITY SHIFTS (Galaxy Drift): gravity is simulated on our own screen, so we play it here
+---------------------------------------------------------------------
+local lastShift
+RunService.Heartbeat:Connect(function()
+	local folder = container()
+	local shift = folder and folder:GetAttribute("GravityShift") or ""
+	if shift == lastShift then return end
+	lastShift = shift
+	if shift == "" then
+		player:SetAttribute("GravityOverride", nil)
+		return
+	end
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local world = GameConfig.GetWorld(currentWorldId())
+	local minDepth = folder:GetAttribute("GravityShiftDepth") or 150
+	if not root or not world or world.Origin.Y - root.Position.Y < minDepth then return end
+	local parts = string.split(shift, ":")
+	local mode, angle = parts[1], math.rad(tonumber(parts[2]) or 0)
+	if mode == "Up" then
+		alert("⚠️ GRAVITY SHIFT! Gravity flips upward!", C.Lilac, 2.5)
+		player:SetAttribute("GravityOverride", -30) -- WorldGimmickClient applies it
+	else
+		alert("⚠️ GRAVITY SHIFT! Gravity pulls sideways!", C.Lilac, 2.5)
+		player:SetAttribute("GravityOverride", 25)
+		local push = Vector3.new(math.cos(angle), 0.2, math.sin(angle)) * 40
+		task.spawn(function()
+			for _ = 1, 6 do
+				if root.Parent then root.AssemblyLinearVelocity += push * 0.25 end
+				task.wait(0.1)
+			end
+		end)
+	end
+end)
+
+---------------------------------------------------------------------
+-- TORCH FLARE (Frostbyte Tundra): F key or the button, while in a world that has it
+---------------------------------------------------------------------
+local torchFlare = remote("TorchFlare")
+local flareButton = UIKit.button(gui, "🔥 FLARE [F]", {Size = UDim2.fromOffset(170, 50), Position = UDim2.new(1, -16, 1, -130), AnchorPoint = Vector2.new(1, 1), Color = C.Coral, MaxText = 20})
+flareButton.Visible = false
+local flareLabel = flareButton:FindFirstChild("Label")
+local function fireFlare()
+	if (player:GetAttribute("FlareReadyAt") or 0) <= os.time() then torchFlare() end
+end
+flareButton.MouseButton1Click:Connect(fireFlare)
+UserInputService.InputBegan:Connect(function(input, processed)
+	if not processed and input.KeyCode == Enum.KeyCode.F and flareButton.Visible then fireFlare() end
+end)
+task.spawn(function()
+	while true do
+		local folder = container()
+		flareButton.Visible = folder ~= nil and folder:GetAttribute("TorchFlare") == true
+		if flareButton.Visible and flareLabel then
+			local now = os.time()
+			local heat, ready = player:GetAttribute("HeatUntil") or 0, player:GetAttribute("FlareReadyAt") or 0
+			if heat > now then
+				flareLabel.Text = "🔥 HOT " .. (heat - now) .. "s"
+				flareButton.BackgroundColor3 = C.Sun
+			elseif ready > now then
+				flareLabel.Text = "⏳ " .. (ready - now) .. "s"
+				flareButton.BackgroundColor3 = C.Grey
+			else
+				flareLabel.Text = "🔥 FLARE [F]"
+				flareButton.BackgroundColor3 = C.Coral
+			end
+		end
+		task.wait(0.25)
+	end
+end)
+
+---------------------------------------------------------------------
+-- CURSE TRAP quick-time event (Chrome Dunes)
+---------------------------------------------------------------------
+local qte = UIKit.panel(gui, {Size = UDim2.fromOffset(360, 170), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Radius = 26, Stroke = 4, StrokeColor = C.Violet, Shade = false})
+qte.BackgroundTransparency = 0.05
+qte.Visible = false
+UIKit.label(qte, "☠️ CURSE TRAP!", {Size = UDim2.new(1, -30, 0, 34), Position = UDim2.new(0.5, 0, 0, 12), AnchorPoint = Vector2.new(0.5, 0), Color = C.Lilac, Stroke = 0, MaxText = 30})
+local qteKey = UIKit.button(qte, "PRESS [E]", {Size = UDim2.fromOffset(220, 60), Position = UDim2.new(0.5, 0, 0, 56), AnchorPoint = Vector2.new(0.5, 0), Color = C.Violet, MaxText = 28})
+local qteTrack = UIKit.panel(qte, {Size = UDim2.new(1, -40, 0, 12), Position = UDim2.new(0.5, 0, 1, -24), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 6, Stroke = false, Shade = false})
+local qteFill = UIKit.panel(qteTrack, {Size = UDim2.fromScale(1, 1), Color = C.Coral, Radius = 6, Stroke = false, Shade = false})
+local curseTrap
+local activeKey
+local function answer(pressed)
+	if not activeKey then return end
+	activeKey = nil
+	qte.Visible = false
+	curseTrap(pressed)
+end
+curseTrap = remote("CurseTrap", function(key, limit)
+	activeKey = key
+	local qteLabel = qteKey:FindFirstChild("Label")
+	if qteLabel then qteLabel.Text = "PRESS [" .. key .. "]" end
+	qte.Visible = true
+	UIKit.pop(qte, 0.6)
+	qteFill.Size = UDim2.fromScale(1, 1)
+	local start = os.clock()
+	task.spawn(function()
+		while activeKey == key and os.clock() - start < limit do
+			qteFill.Size = UDim2.fromScale(1 - (os.clock() - start) / limit, 1)
+			RunService.RenderStepped:Wait()
+		end
+		if activeKey == key then
+			activeKey = nil
+			qte.Visible = false -- too slow: the server fails it
+		end
+	end)
+end)
+qteKey.MouseButton1Click:Connect(function() answer(activeKey) end) -- tapping the button counts (mobile)
+UserInputService.InputBegan:Connect(function(input)
+	if not activeKey or input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+	local name = input.KeyCode.Name
+	if #name == 1 then answer(name) end
+end)
+
+---------------------------------------------------------------------
+-- DATA HACKING rhythm minigame (Glitch Nexus)
+---------------------------------------------------------------------
+local hack = UIKit.panel(gui, {Size = UDim2.fromOffset(340, 300), Position = UDim2.fromScale(0.5, 0.45), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Radius = 26, Stroke = 4, StrokeColor = C.Mint, Shade = false})
+hack.BackgroundTransparency = 0.05
+hack.Visible = false
+UIKit.label(hack, "💾 HACKING DATA NODE", {Size = UDim2.new(1, -30, 0, 28), Position = UDim2.new(0.5, 0, 0, 12), AnchorPoint = Vector2.new(0.5, 0), Color = C.Mint, Stroke = 0, MaxText = 24})
+UIKit.label(hack, "Tap / click / Space when the rings line up!", {Size = UDim2.new(1, -30, 0, 18), Position = UDim2.new(0.5, 0, 0, 42), AnchorPoint = Vector2.new(0.5, 0), Color = C.White, Stroke = 0, Font = UIKit.BodyFont, MaxText = 15})
+local function ring(size, color, thickness)
+	local r = Instance.new("Frame")
+	r.BackgroundTransparency = 1
+	r.Size = UDim2.fromOffset(size, size)
+	r.Position = UDim2.new(0.5, 0, 0, 170)
+	r.AnchorPoint = Vector2.new(0.5, 0.5)
+	r.Parent = hack
+	UIKit.corner(r, size)
+	local s = Instance.new("UIStroke")
+	s.Thickness = thickness
+	s.Color = color
+	s.Parent = r
+	return r, s
+end
+ring(90, C.Mint, 6) -- the target ring
+local beatRing, beatStroke = ring(260, C.Sky, 4)
+local hackResult = UIKit.label(hack, "", {Size = UDim2.new(1, -30, 0, 26), Position = UDim2.new(0.5, 0, 1, -40), AnchorPoint = Vector2.new(0.5, 0), Color = C.White, Stroke = 2, MaxText = 22})
+local dataNode = remote("DataNode", nil)
+local hacking = nil -- {Beat, BeatStart, Hits, Tapped}
+local WINDOW = 0.2   -- how close to the beat counts as a hit (seconds)
+local function tap()
+	if not hacking or hacking.Tapped then return end
+	hacking.Tapped = true
+	local off = math.abs(os.clock() - (hacking.BeatStart + hacking.BeatSeconds))
+	if off <= WINDOW then
+		hacking.Hits += 1
+		hackResult.Text = "HIT! (" .. hacking.Hits .. ")"
+		hackResult.TextColor3 = C.Mint
+		beatStroke.Color = C.Mint
+	else
+		hackResult.Text = "MISS"
+		hackResult.TextColor3 = C.Coral
+		beatStroke.Color = C.Coral
+	end
+end
+task.spawn(function()
+	local r = remotes:WaitForChild("DataNode", 60)
+	if not r then return end
+	r.OnClientEvent:Connect(function(beats, beatSeconds)
+		if hacking then return end
+		hack.Visible = true
+		UIKit.pop(hack, 0.6)
+		hackResult.Text = ""
+		hacking = {Hits = 0, BeatSeconds = beatSeconds}
+		for beat = 1, beats do
+			hacking.Beat = beat
+			hacking.BeatStart = os.clock()
+			hacking.Tapped = false
+			beatStroke.Color = C.Sky
+			-- the ring shrinks onto the target; tap when they line up (and a little after)
+			while os.clock() - hacking.BeatStart < beatSeconds + WINDOW do
+				local u = math.clamp((os.clock() - hacking.BeatStart) / beatSeconds, 0, 1.2)
+				local size = 90 + (260 - 90) * (1 - u)
+				beatRing.Size = UDim2.fromOffset(size, size)
+				RunService.RenderStepped:Wait()
+			end
+		end
+		local hits = hacking.Hits
+		hacking = nil
+		task.wait(0.3)
+		hack.Visible = false
+		dataNode(hits)
+	end)
+end)
+UserInputService.InputBegan:Connect(function(input)
+	if not hacking then return end
+	if isClick(input) or input.KeyCode == Enum.KeyCode.Space or input.KeyCode == Enum.KeyCode.ButtonA then tap() end
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end

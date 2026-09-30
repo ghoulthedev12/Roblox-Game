@@ -99,6 +99,10 @@ local depthBubble = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(96, 42), Po
 depthBubble.BackgroundTransparency = 0.1
 local depthLabel = UIKit.label(depthBubble, "0m", {Size = UDim2.new(1, -16, 0.7, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 0, MaxText = 26})
 
+-- the depth bonus (more luck the deeper you are, see GameConfig.DepthBonus) above the bubble
+local bonusLabel = UIKit.label(depthPanel, "", {Size = UDim2.fromOffset(110, 18), Position = UDim2.new(0.5, 0, 0, -22), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Mint, Stroke = 2, MaxText = 15})
+
 -- the tube, filled with one colored band per zone (thicker zones = taller bands)
 local tube = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(30, GAUGE_H), Position = UDim2.new(0.5, 0, 0, 50), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 15, Stroke = 3, StrokeColor = C.Ink, Shade = false})
 -- the zone bands sit in a CanvasGroup, which clips them to the tube's rounded ends
@@ -262,6 +266,8 @@ task.spawn(function()
 			zone = zone or {Name = "Bedrock", Color = Color3.fromRGB(150, 150, 160)}
 			updatePitAir(world, inPit and depth or 0, zoneIndex or #world.Zones, zone.Color)
 			depthLabel.Text = depth .. "m"
+			local bonus = GameConfig.DepthBonus(world, feetY)
+			bonusLabel.Text = bonus >= 1.01 and string.format("🍀 x%.2f LUCK", bonus) or ""
 			zoneLabel.Text = string.upper(zone.Name)
 			zoneDot.BackgroundColor3 = zone.Color
 			if zoneStroke then zoneStroke.Color = zone.Color end

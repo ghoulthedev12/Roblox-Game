@@ -413,7 +413,8 @@ function UIKit.artifactIcon(parent, artifact, props)
 		Color = color:Lerp(C.White, 0.45), Radius = props.Radius or 16, Stroke = props.Stroke or 3, ShadeAmount = 0.25,
 	})
 	tile.Name = "ArtifactIcon"
-	local image = ArtifactImages[artifact.Id]
+	local iconId = ArtifactData.IconId(artifact.Id) -- corrupted memes use the original's picture
+	local image = ArtifactImages[iconId]
 	if image then
 		-- the uploaded meme picture fills the tile (the emoji is only a fallback)
 		local picture = Instance.new("ImageLabel")
@@ -438,7 +439,7 @@ function UIKit.artifactIcon(parent, artifact, props)
 	emoji.Size = UDim2.fromScale(0.72, 0.72)
 	emoji.Position = UDim2.fromScale(0.5, 0.52)
 	emoji.AnchorPoint = Vector2.new(0.5, 0.5)
-	emoji.Text = ArtifactIcons[artifact.Id] or "❓"
+	emoji.Text = ArtifactIcons[iconId] or "❓"
 	emoji.TextScaled = true
 	emoji.Font = Enum.Font.GothamBold
 	emoji.Parent = tile

@@ -256,6 +256,14 @@ function GameConfig.GetWorldAt(position)
 	return best
 end
 
+-- DEPTH BONUS: the deeper you dig, the luckier your finds: x1 at the surface up to x1.6 at
+-- the very bottom of the Abyss (shown under the depth gauge)
+function GameConfig.DepthBonus(world, y)
+	local total = -world.Zones[#world.Zones].Bottom
+	local depth = math.clamp(world.Origin.Y - y, 0, total)
+	return 1 + 0.6 * depth / total
+end
+
 -- Returns the zone index and zone at a height in a world, or nil if it's bedrock
 function GameConfig.GetZoneAt(world, y)
 	local depth = world.Origin.Y - y

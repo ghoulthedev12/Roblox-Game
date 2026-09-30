@@ -118,7 +118,8 @@ RunService.RenderStepped:Connect(function(dt)
 
 	-- gravity
 	local gravity = folder and folder:GetAttribute("Gravity")
-	workspace.Gravity = gravity or DEFAULT_GRAVITY
+	-- a gravity shift (WorldMechanicsClient) overrides it for a few seconds
+	workspace.Gravity = player:GetAttribute("GravityOverride") or gravity or DEFAULT_GRAVITY
 
 	-- events
 	local event = folder and folder:GetAttribute("Event") or ""
