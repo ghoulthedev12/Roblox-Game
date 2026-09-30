@@ -98,4 +98,11 @@ return {
 	AshKeyboard = "🧯", LavaLampPhone = "🌋", ObsidianMouse = "🐭", MagmaMeme = "🌡️", ForgeHammerMod = "🔨", SulfurSpeaker = "🔉", DragonWiFi = "🐉", MoltenCPU = "🌶️", PhoenixReboot = "🐦", AnvilDrop = "⚒️", VolcanoGod = "🗻", EruptionStream = "🎥", CoreOfTheForge = "🔩", MoltenMemeKing = "🤴",
 	-- 29. Glitch Nexus
 	MissingTexture = "🔳", NullPointer = "👉", CorruptedJPEG = "🗾", InfiniteLoopRing = "➿", TPoseStatue = "🙆", LagSwitch = "🎚️", BlueScreenMirror = "📘", NoClipBoots = "🥾", DebugConsole = "🖲️", CtrlZTimeMachine = "⏪", GlitchedCreator = "🧙", SimulationPatchNotes = "📋", VoidRenderer = "🔲", EndOfTheInternet = "🔚",
+	-- Parody meme figures
+	ChillDude = "🐶", ShockedRodent = "😮", PurpleBirthdayShake = "🥤", SpaceInfant = "👶", LogBatGuy = "🏏",
+	CappuccinoBallerina = "☕", CrocBomber = "🐊", JawlineChad = "🗿", SpongeLeaving = "🧽", PurpleTitanBuggy = "🚗",
+	RainbowPastryCat = "🌈", SusBean = "🔴", ChonkyBunny = "🐰", FineDog = "🐕", PointingSuits = "👉",
+	WowShibaCoin = "💰", ChillDudeTablet = "😎",
+	SakuraChillDude = "🌸", ZeroGSusBean = "🚀", FrozenChonkyBunny = "🐇", ChromeTitanBuggy = "🏎️",
+	DeepSeaSneakerShark = "🦈", BubblegumShake = "🍧", MoltenJawlineChad = "🌋", GlitchedShockedRodent = "⚡",
 }

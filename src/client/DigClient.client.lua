@@ -237,10 +237,12 @@ resultRemote.OnClientEvent:Connect(function(info)
 	if typeof(info.Painting) == "Instance" then
 		local model = info.Painting
 		buriedHighlight = Instance.new("Highlight")
-		buriedHighlight.FillTransparency = 0.85
+		buriedHighlight.FillTransparency = 0.9
 		buriedHighlight.FillColor = info.Color
 		buriedHighlight.OutlineColor = info.Color:Lerp(C.White, 0.3)
-		buriedHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		buriedHighlight.OutlineTransparency = 0.35
+		-- occluded: the part that's still under the dirt stays hidden
+		buriedHighlight.DepthMode = Enum.HighlightDepthMode.Occluded
 		buriedHighlight.Adornee = model
 		buriedHighlight.Parent = gui
 		local highlight = buriedHighlight
@@ -256,7 +258,7 @@ end)
 pullRemote.OnClientEvent:Connect(function(finder, _painting, info)
 	if finder ~= player or typeof(info) ~= "table" then return end
 	clearBuried()
-	task.delay(1.1, function()
+	task.delay(0.9, function()
 		say(foundText, foundStroke, "✨ You found " .. info.Name .. "!  " .. string.upper(info.Rarity) .. "  ·  +"
 			.. ArtifactData.FormatMoney(info.Income) .. "/s", info.Color:Lerp(C.White, 0.25), 3.5)
 	end)

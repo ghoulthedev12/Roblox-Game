@@ -1,10 +1,13 @@
 -- ArtifactModels (ModuleScript in ReplicatedStorage)
--- Turns a meme artifact into a real 3D museum object instead of a flat card. Each artifact
--- gets one of five forms (picked from words in its name, otherwise from its id):
+-- Turns a meme artifact into a real 3D museum object instead of a flat card. The famous
+-- memes are real 3D sculptures of the meme itself (MemeFigures: the Chill Dude with his hands
+-- in his pockets, the Shocked Yellow Rodent...). Everything else gets one of five forms
+-- (picked from words in its name, otherwise from its id):
 --   Painting  an old gold frame with the meme on the canvas and a name plate
 --   Statue    a marble (or gold, for the rarest) figure on a plinth with the meme as its face
---   Coin      a big bronze / silver / gold coin with the meme stamped on both faces
---   Tablet    a carved stone tablet with the meme engraved into it
+--   Coin      a big bronze / silver / gold coin with the meme stamped on both faces (a meme
+--             with a figure is struck as a raised 3D relief of its silhouette)
+--   Tablet    a carved stone tablet with the meme engraved into it (or carved in relief)
 --   Crystal   a rough geode with glowing crystals in the rarity's color
 -- Used for finds lying in the crater (BuriedPainting) and for the displays in the museum
 -- (MuseumClient puts them on the pedestals, under glass).
@@ -17,6 +20,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local ArtifactIcons = require(ReplicatedStorage:WaitForChild("ArtifactIcons"))
 local ArtifactImages = require(ReplicatedStorage:WaitForChild("ArtifactImages"))
+local MemeFigures = require(ReplicatedStorage:WaitForChild("MemeFigures"))
 
 local ArtifactModels = {}
 local rgb = Color3.fromRGB
@@ -38,6 +42,8 @@ local FALLBACK = {"Painting", "Painting", "Painting", "Statue", "Statue", "Coin"
 
 -- which form an artifact takes (always the same for the same artifact)
 function ArtifactModels.formOf(artifact)
+	local figure = MemeFigures.For(artifact)
+	if figure then return figure.Form or "Figure" end
 	local name = string.lower(artifact.Name or "")
 	for _, entry in ipairs(KEYWORDS) do
 		for _, word in ipairs(entry[2]) do
@@ -207,21 +213,29 @@ end
 ---------------------------------------------------------------------
 local FORMS = {}
 
-function FORMS.Painting(model, artifact, color)
+function FORMS.Painting(model, artifact, color, rarityIndex)
 	local W, H, BAR = 4.4, 3.4, 0.45
+	-- plain wood for the common finds, gold for the rare ones, ornate gold for the best
+	local frame, frameMaterial = GOLD, Enum.Material.Metal
+	if rarityIndex <= 2 then frame, frameMaterial = rgb(120, 82, 52), Enum.Material.Wood end
 	local canvas = part(model, "Canvas", Vector3.new(W - BAR * 2 + 0.1, H - BAR * 2 + 0.1, 0.12), CFrame.new(), rgb(40, 34, 30))
 	plate(art(canvas, artifact, Enum.NormalId.Front, {Gradient = color, Background = color, EmojiY = 0.44, EmojiSize = 0.62}), artifact)
 	part(model, "Backboard", Vector3.new(W - 0.3, H - 0.3, 0.14), CFrame.new(0, 0, 0.16), rgb(84, 58, 40), Enum.Material.Wood)
 	for _, sy in ipairs({-1, 1}) do
-		part(model, "Frame", Vector3.new(W, BAR, 0.5), CFrame.new(0, sy * (H - BAR) / 2, 0), GOLD, Enum.Material.Metal, {Reflectance = 0.05})
+		part(model, "Frame", Vector3.new(W, BAR, 0.5), CFrame.new(0, sy * (H - BAR) / 2, 0), frame, frameMaterial, {Reflectance = 0.05})
 		part(model, "FrameLip", Vector3.new(W - BAR * 2, 0.1, 0.1), CFrame.new(0, sy * (H / 2 - BAR - 0.02), -0.2), color, Enum.Material.Neon)
 	end
 	for _, sx in ipairs({-1, 1}) do
-		part(model, "Frame", Vector3.new(BAR, H - BAR * 2, 0.5), CFrame.new(sx * (W - BAR) / 2, 0, 0), GOLD, Enum.Material.Metal, {Reflectance = 0.05})
+		part(model, "Frame", Vector3.new(BAR, H - BAR * 2, 0.5), CFrame.new(sx * (W - BAR) / 2, 0, 0), frame, frameMaterial, {Reflectance = 0.05})
 		part(model, "FrameLip", Vector3.new(0.1, H - BAR * 2, 0.1), CFrame.new(sx * (W / 2 - BAR - 0.02), 0, -0.2), color, Enum.Material.Neon)
 		for _, sy in ipairs({-1, 1}) do
-			part(model, "Corner", Vector3.one * 0.72, CFrame.new(sx * (W / 2 - BAR / 2), sy * (H / 2 - BAR / 2), -0.08), GOLD:Lerp(Color3.new(1, 1, 1), 0.15),
-				Enum.Material.Metal, {Shape = Enum.PartType.Ball})
+			part(model, "Corner", Vector3.one * 0.72, CFrame.new(sx * (W / 2 - BAR / 2), sy * (H / 2 - BAR / 2), -0.08), frame:Lerp(Color3.new(1, 1, 1), 0.15),
+				frameMaterial, {Shape = Enum.PartType.Ball})
+			if rarityIndex >= 5 then
+				-- ornate: curled scrollwork on every corner
+				part(model, "Scroll", Vector3.new(0.9, 0.22, 0.22), CFrame.new(sx * (W / 2 - 0.2), sy * (H / 2 + 0.05), -0.12) * CFrame.Angles(0, 0, sx * sy * math.rad(35)),
+					GOLD:Lerp(Color3.new(1, 1, 1), 0.1), Enum.Material.Metal)
+			end
 		end
 	end
 	part(model, "Crest", Vector3.new(0.9, 0.7, 0.35), CFrame.new(0, H / 2 - 0.05, -0.12), color, Enum.Material.Neon)
@@ -249,6 +263,52 @@ function FORMS.Statue(model, artifact, color, rarityIndex)
 	return Vector3.new(2.9, 5, 2.3)
 end
 
+-- a real 3D sculpture of the meme on a marble plinth with a brass name plate
+function FORMS.Figure(model, artifact, color, rarityIndex)
+	local figure = MemeFigures.build(MemeFigures.For(artifact))
+	local W, H, BASE = 3, 3.9, 0.55
+	MemeFigures.fit(figure, W - 0.2, H)
+	local lo, hi = MemeFigures.bounds(figure)
+	local height = hi.Y - lo.Y
+	local total = height + BASE
+	local bottom = -total / 2
+	-- plinth: marble for most, gold-trimmed black stone for the best
+	local plinthColor = rarityIndex >= 6 and rgb(40, 38, 46) or MARBLE:Lerp(STONE, 0.25)
+	local plinth = part(model, "Plinth", Vector3.new(W, BASE, 2.2), CFrame.new(0, bottom + BASE / 2, 0), plinthColor, Enum.Material.Marble)
+	part(model, "PlinthTrim", Vector3.new(W + 0.08, 0.1, 2.28), CFrame.new(0, bottom + BASE - 0.02, 0), rarityIndex >= 6 and GOLD or color,
+		rarityIndex >= 6 and Enum.Material.Metal or Enum.Material.Neon)
+	-- the name plate on the front
+	local plateGui = Instance.new("SurfaceGui")
+	plateGui.Face = Enum.NormalId.Front
+	plateGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	plateGui.PixelsPerStud = 60
+	plateGui.LightInfluence = 1
+	plateGui.Parent = plinth
+	local label = Instance.new("TextLabel")
+	label.BackgroundColor3 = rgb(196, 160, 84)
+	label.Size = UDim2.fromScale(0.9, 0.62)
+	label.Position = UDim2.fromScale(0.5, 0.5)
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Text = string.upper(artifact.Name)
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBlack
+	label.TextColor3 = rgb(60, 40, 20)
+	label.Parent = plateGui
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.2, 0)
+	corner.Parent = label
+	-- the sculpture stands on top
+	local offset = Vector3.new(0, bottom + BASE - lo.Y, 0)
+	for _, p in ipairs(figure:GetChildren()) do
+		if p:IsA("BasePart") then
+			p.CFrame = p.CFrame + offset
+			p.Parent = model
+		end
+	end
+	figure:Destroy()
+	return Vector3.new(math.max(W, hi.X - lo.X), total, math.max(2.2, hi.Z - lo.Z))
+end
+
 function FORMS.Coin(model, artifact, color, rarityIndex)
 	local metal = rarityIndex >= 5 and GOLD or (rarityIndex >= 3 and SILVER or BRONZE)
 	if rarityIndex >= 8 then metal = color:Lerp(Color3.new(1, 1, 1), 0.4) end
@@ -257,9 +317,20 @@ function FORMS.Coin(model, artifact, color, rarityIndex)
 	local coin = cylinder(model, "Coin", D, T, face, metal, Enum.Material.Metal, {Reflectance = 0.15})
 	cylinder(model, "CoinRim", D + 0.2, T * 0.7, face, metal:Lerp(Color3.new(0, 0, 0), 0.25), Enum.Material.Metal)
 	cylinder(model, "CoinGlow", D - 0.5, T + 0.04, face, color, Enum.Material.Neon, {Transparency = 0.6})
-	-- a stamped face on both sides (Right = local +X of the cylinder = world -Z here)
-	for _, normal in ipairs({Enum.NormalId.Right, Enum.NormalId.Left}) do
-		art(coin, artifact, normal, {Style = "Embossed", Round = true, Tint = metal, EmojiSize = 0.62})
+	-- the meme struck into both faces: a raised 3D relief of its silhouette on the front when
+	-- it has a figure, otherwise a stamped picture (Right = local +X of the cylinder = world -Z)
+	local figure = MemeFigures.For(artifact)
+	local relief = figure and MemeFigures.relief(figure, D * 0.62, D * 0.62, 0.16, metal, Enum.Material.Metal)
+	if relief then
+		for _, p in ipairs(relief:GetChildren()) do
+			p.CFrame = p.CFrame + Vector3.new(0, 0, -T / 2 - 0.08)
+			p.Parent = model
+		end
+		art(coin, artifact, Enum.NormalId.Left, {Style = "Embossed", Round = true, Tint = metal, EmojiSize = 0.62})
+	else
+		for _, normal in ipairs({Enum.NormalId.Right, Enum.NormalId.Left}) do
+			art(coin, artifact, normal, {Style = "Embossed", Round = true, Tint = metal, EmojiSize = 0.62})
+		end
 	end
 	-- a little cradle it stands in
 	part(model, "Cradle", Vector3.new(2.2, 0.35, 1), CFrame.new(0, -D / 2 - 0.05, 0), rgb(70, 50, 36), Enum.Material.Wood)
@@ -274,10 +345,22 @@ function FORMS.Tablet(model, artifact, color, rarityIndex)
 	-- a chipped corner and a couple of cracks
 	part(model, "Chip", Vector3.new(0.9, 0.9, T + 0.1), CFrame.new(W / 2 - 0.1, -H / 2 + 0.3, 0) * CFrame.Angles(0, 0, math.rad(45)), STONE:Lerp(Color3.new(0, 0, 0), 0.2), Enum.Material.Slate)
 	part(model, "Crack", Vector3.new(0.06, 1.2, 0.05), CFrame.new(-0.9, -0.6, -T / 2 - 0.01) * CFrame.Angles(0, 0, math.rad(20)), rgb(50, 44, 40))
-	art(slab, artifact, Enum.NormalId.Front, {Style = "Engraved", Tint = STONE, EmojiSize = 0.8})
+	local figure = MemeFigures.For(artifact)
+	local relief = figure and MemeFigures.relief(figure, W * 0.72, 2.4, 0.22, STONE:Lerp(Color3.new(1, 1, 1), 0.12), Enum.Material.Slate)
+	if relief then
+		-- carved in relief: the meme's silhouette stands out of the stone
+		for _, p in ipairs(relief:GetChildren()) do
+			p.CFrame = p.CFrame + Vector3.new(0, -0.25, -T / 2 - 0.11)
+			p.Parent = model
+		end
+	else
+		art(slab, artifact, Enum.NormalId.Front, {Style = "Engraved", Tint = STONE, EmojiSize = 0.8})
+	end
 	-- glowing runes carved around the edge for the rare ones
 	local glow = rarityIndex >= 4 and color or rgb(90, 80, 72)
-	part(model, "RuneLine", Vector3.new(W - 0.5, 0.08, 0.05), CFrame.new(0, H / 2 - W / 2 + 0.2, -T / 2 - 0.01), glow, rarityIndex >= 4 and Enum.Material.Neon or Enum.Material.Slate)
+	if not relief then
+		part(model, "RuneLine", Vector3.new(W - 0.5, 0.08, 0.05), CFrame.new(0, H / 2 - W / 2 + 0.2, -T / 2 - 0.01), glow, rarityIndex >= 4 and Enum.Material.Neon or Enum.Material.Slate)
+	end
 	part(model, "RuneLine", Vector3.new(W - 0.5, 0.08, 0.05), CFrame.new(0, -H / 2 + 0.3, -T / 2 - 0.01), glow, rarityIndex >= 4 and Enum.Material.Neon or Enum.Material.Slate)
 	part(model, "Base", Vector3.new(W + 0.4, 0.3, 1.4), CFrame.new(0, -H / 2 - 0.05, 0), STONE:Lerp(Color3.new(0, 0, 0), 0.3), Enum.Material.Slate)
 	return Vector3.new(W + 0.4, H + 0.3, 1.4)
@@ -306,47 +389,6 @@ function FORMS.Crystal(model, artifact, color)
 	local relief = part(model, "Relief", Vector3.new(1.6, 1.1, 0.3), CFrame.new(0, -1.25, -0.95) * CFrame.Angles(math.rad(-12), 0, 0), STONE:Lerp(Color3.new(1, 1, 1), 0.08), Enum.Material.Slate)
 	art(relief, artifact, Enum.NormalId.Front, {Style = "Engraved", Tint = STONE, EmojiSize = 0.85})
 	return Vector3.new(3, 4.4, 2.2)
-end
-
----------------------------------------------------------------------
--- A round emoji badge floating above the object (the same emoji as in your inventory), so
--- you can tell at a glance which meme a painting, statue, coin or stone is.
--- heightAbove = studs above the object's center, straight up in the world.
-function ArtifactModels.addEmojiTag(model, artifact, heightAbove)
-	local core = model.PrimaryPart
-	if not core then return nil end
-	local old = core:FindFirstChild("EmojiTag")
-	if old then old:Destroy() end
-	local rarity = ArtifactData.GetRarity(artifact.Rarity)
-	local tag = Instance.new("BillboardGui")
-	tag.Name = "EmojiTag"
-	tag.Size = UDim2.fromScale(1.9, 1.9) -- in studs
-	tag.StudsOffsetWorldSpace = Vector3.new(0, heightAbove, 0)
-	tag.LightInfluence = 0
-	tag.MaxDistance = 90
-	tag.Parent = core
-	local bubble = Instance.new("Frame")
-	bubble.Size = UDim2.fromScale(1, 1)
-	bubble.BackgroundColor3 = Color3.new(1, 1, 1)
-	bubble.BackgroundTransparency = 0.05
-	bubble.Parent = tag
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0.5, 0)
-	corner.Parent = bubble
-	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 3
-	stroke.Color = rarity and rarity.Color or rgb(200, 200, 200)
-	stroke.Parent = bubble
-	local emoji = Instance.new("TextLabel")
-	emoji.BackgroundTransparency = 1
-	emoji.Size = UDim2.fromScale(0.74, 0.74)
-	emoji.Position = UDim2.fromScale(0.5, 0.5)
-	emoji.AnchorPoint = Vector2.new(0.5, 0.5)
-	emoji.Text = ArtifactIcons[ArtifactData.IconId(artifact.Id)] or "🗿"
-	emoji.TextScaled = true
-	emoji.Font = Enum.Font.GothamBold
-	emoji.Parent = bubble
-	return tag
 end
 
 function ArtifactModels.build(artifact)

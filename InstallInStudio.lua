@@ -114,7 +114,9 @@ local AREA_ARTIFACTS = {
 		{"C", "CrackedDancePhone", "Cracked Phone (Dance Tutorial)", "Still plays the same 15 seconds on loop. Believed to be a prayer ritual."},
 		{"U", "HalfFullBottle", "Half-Full Water Bottle", "Tossing it so it landed upright granted the thrower temporary social status."},
 		{"U", "DeepFriedChip", "Deep-Fried Image Chip", "A picture cooked at such extreme temperatures it became radioactive with jokes."},
+		{"U", "ChillDude", "Chill Dude in a Sweater", "Hands in pockets, zero worries. The most relaxed creature of the Brainrot Epoch."},
 		{"R", "SingingThrone", "Singing Porcelain Throne", "A ceremonial seat with a tiny singing head. Its meaning is lost to history."},
+		{"E", "ShockedRodent", "Shocked Yellow Rodent", "Frozen forever with its mouth wide open. Humans used it whenever anyone acted surprised."},
 		{"E", "GoldenRingLight", "Golden Ring Light", "Worshipped by ancient content creators. Its glow made every face flawless."},
 		{"L", "RizzScroll", "Scroll of Infinite Rizz", "A sacred text so powerful that no alien has been able to translate it."},
 		{"M", "ScrollingThumb", "Fossilized Scrolling Thumb", "Worn smooth by millions of hours of scrolling. It never reached the bottom."},
@@ -127,6 +129,7 @@ local AREA_ARTIFACTS = {
 		{"C", "HashtagSign", "Broken Hashtag Sign", "Humans put this symbol before words to make them important."},
 		{"U", "EmptyIceBucket", "Empty Ice Bucket", "Humans poured freezing water on themselves for a good cause. Brave."},
 		{"R", "MannequinStatue", "Mannequin Freeze Statue", "Entire rooms of humans froze still on purpose. This one never unfroze."},
+		{"R", "PurpleBirthdayShake", "Sus Purple Birthday Milkshake", "One sip and the humans in the video were never seen again. Handle with care."},
 		{"E", "ChallengeTrophy", "Golden Challenge Trophy", "Awarded for completing a challenge nobody remembers the rules of."},
 		{"L", "ViralDanceStage", "The Viral Dance Stage", "A tiny stage where millions of humans learned the same 12 moves."},
 		{"M", "TrendingCrown", "Crown of Trending #1", "Worn by whoever the whole internet talked about for exactly one day."},
@@ -177,6 +180,7 @@ local AREA_ARTIFACTS = {
 		{"R", "SponsoredDrink", "Sponsored Energy Drink", "Contains 400% of your daily hype."},
 		{"E", "CheckmarkBadge", "Blue Checkmark Badge", "Proved you were really you. Very important to humans."},
 		{"L", "MillionRing", "The Ring of a Million Followers", "Given to humans with a number so big it changed their personality."},
+		{"L", "SpaceInfant", "Green Space Infant", "A tiny green baby with enormous ears. Every human wanted to protect it."},
 		{"M", "CollabKey", "The Collab Mansion Key", "Opened a house where 12 influencers lived and filmed everything."},
 		{"D", "SubscriberPlaque", "The Diamond Subscriber Plaque", "Hung on the wall of only the mightiest content creators."},
 		{"CE", "ViralAura", "The Viral Aura", "An invisible glow that made everything its owner posted blow up."},
@@ -185,7 +189,11 @@ local AREA_ARTIFACTS = {
 	-- 7. BRAINROT ABYSS
 	[7] = {
 		{"C", "NonsenseTablet", "Nonsense Word Tablet", "Covered in words that mean nothing. Humans laughed anyway."},
-		{"U", "SharkSneakers", "Shark in Sneakers Figurine", "An ocean predator wearing shoes. It was considered hilarious."},
+		{"U", "SharkSneakers", "Three-Legged Sneaker Shark", "An ocean predator wearing shoes. It was considered hilarious."},
+		{"C", "LogBatGuy", "Tung-Tung Log Guy", "A wooden log with a baseball bat. It knocks three times before it arrives."},
+		{"U", "CappuccinoBallerina", "Cappuccino Ballerina", "Half dancer, half coffee cup. Pirouettes until the foam spills."},
+		{"E", "CrocBomber", "Crocodile Bomber Plane", "A crocodile that is also a war plane. Nobody asked questions."},
+		{"M", "JawlineChad", "Mega Jawline Chad", "The most perfect jawline ever photographed, turned in the most dramatic direction."},
 		{"R", "SplitScreen", "Split-Screen Game Footage", "Humans needed two videos at once to pay attention to one."},
 		{"E", "RizzMeter", "The Rizz Meter", "Measured charm. Always reads zero for aliens."},
 		{"L", "SigmaStatue", "The Sigma Grindset Statue", "A lone human staring at a sunset, refusing to have fun."},
@@ -201,6 +209,7 @@ local AREA_ARTIFACTS = {
 		{"U", "DentedAirhorn", "Dented Airhorn", "Sounded whenever anything impressive happened. Or anything at all."},
 		{"U", "PixelSunglasses", "Pixelated Sunglasses", "Lowered slowly onto the face to show total victory in an argument."},
 		{"R", "CatCassette", "Ancient Cat Video Cassette", "Humanity's most-watched content. Aliens still can't explain why."},
+		{"R", "SpongeLeaving", "Yellow Porous Sponge Leavin'", "The famous walk-out. Used whenever a human decided to head out."},
 		{"E", "SacredPlank", "The Sacred Plank", "Humans lay flat on strange objects and photographed it. This board saw it all."},
 		{"L", "TrickshotHeadset", "Golden Trickshot Headset", "Worn by the legendary warriors who spun in circles before every shot."},
 		{"M", "ForeverAlone", "The Forever Alone Monument", "A lonely stone face that every human secretly related to."},
@@ -214,6 +223,7 @@ local AREA_ARTIFACTS = {
 		{"U", "SodaPyramid", "Energy Soda Can Pyramid", "Stacked by gamers as proof of dedication."},
 		{"R", "HitmarkerPin", "The Hitmarker Pin", "Made a little 'tick' sound every time something happened."},
 		{"E", "DubstepSpeaker", "The Dubstep Speaker", "Dropped the bass at the most dramatic moment possible."},
+		{"E", "PurpleTitanBuggy", "Purple Titan Buggy", "A giant purple conqueror's tiny car. He could snap his fingers but still drove this."},
 		{"L", "TriangleChipCrown", "The Triangle Chip Crown", "Worn by the snack-powered champions of the montage era."},
 		{"M", "AllSeeingTriangle", "The All-Seeing Triangle", "Confirmed everything. Explained nothing."},
 		{"D", "QuickscopeRelic", "The Quickscope Relic", "Aimed so fast it bent time."},
@@ -224,6 +234,7 @@ local AREA_ARTIFACTS = {
 	[10] = {
 		{"C", "LaserDot", "Laser Pointer Dot", "Hunted by cats for centuries. Never caught."},
 		{"U", "CatInBox", "Cat in a Box", "If it fits, it sits. An ancient law of physics."},
+		{"U", "RainbowPastryCat", "Rainbow Pastry Cat", "A cat made of frosted pastry, flying through space on a rainbow. The song never stops."},
 		{"R", "FrowningCat", "Frowning Cat Bust", "Never smiled once. Earned millions anyway."},
 		{"E", "PianoKitten", "Piano-Playing Kitten Statue", "Played the same happy tune to end every awkward moment."},
 		{"L", "ToastCatMachine", "The Toast-Cat Paradox Machine", "A cat strapped to buttered toast. It spins forever."},
@@ -235,6 +246,7 @@ local AREA_ARTIFACTS = {
 	-- 11. AIRHORN CRATER
 	[11] = {
 		{"C", "CrackedSoundboard", "Cracked Soundboard", "Every button was an airhorn. Every single one."},
+		{"U", "SusBean", "Sus Space Bean", "A tiny astronaut shaped like a bean. One of them was always acting sus."},
 		{"U", "SadTrombone", "The Sad Trombone", "Played whenever something failed. It was played a lot."},
 		{"R", "DramaticHamster", "Dramatic Hamster Figurine", "Turned around slowly. Changed the internet forever."},
 		{"E", "BassDetonator", "The Bass Drop Detonator", "Warning: dropping this bass may cause uncontrollable headbanging."},
@@ -251,6 +263,7 @@ local AREA_ARTIFACTS = {
 		{"R", "PhotobombCutout", "Photobomb Cardboard Cutout", "Appeared uninvited in every group photo."},
 		{"E", "DancePartyHelmet", "Sudden Dance Party Helmet", "Everyone was calm. Then the bass dropped."},
 		{"L", "DoubleRainbowPrism", "The Double Rainbow Prism", "What does it mean? Nobody ever found out."},
+		{"L", "ChonkyBunny", "Chonky Gray Bunny", "A rabbit of truly legendary size. Humans simply called it big."},
 		{"M", "TableTower", "The Leaning Tower of Tables", "Where the great planking legends lay flat."},
 		{"D", "InvisibleHorseSaddle", "The Invisible Horse Saddle", "Nobody could see the horse. Everybody rode it."},
 		{"CE", "PlankConstellation", "The Plank Constellation", "Seven stars lying perfectly flat."},
@@ -261,7 +274,9 @@ local AREA_ARTIFACTS = {
 		{"C", "ForwardedJoke", "Forwarded Joke Printout", "Forwarded 40 times. Still not funny."},
 		{"U", "CryptidPhoto", "Blurry Cryptid Photo", "Proof of a mysterious creature. Or a blurry bush."},
 		{"R", "LoopingGif", "Looping Dance GIF Frame", "Has been dancing for 20 years without resting."},
+		{"R", "FineDog", "Everything's Fine Dog", "Sips coffee in a burning room and says it's fine. The most relatable human artifact."},
 		{"E", "BittenBandage", "The Bitten Finger Bandage", "From the most famous sibling argument in history."},
+		{"E", "PointingSuits", "Two Pointing Arachnid Suits", "Two identical heroes accusing each other of being the fake. Neither ever admitted it."},
 		{"L", "WeekendCalendar", "The Weekend Countdown Calendar", "Humans celebrated one specific day of the week very loudly."},
 		{"M", "SuperfanTear", "The Tear of the Superfan", "Cried so hard for their favorite star that it became a relic."},
 		{"D", "MillionViewTrophy", "The Million-View Trophy", "Back then, a million views meant you ruled the world."},
@@ -276,6 +291,7 @@ local AREA_ARTIFACTS = {
 		{"E", "FirstCommentPlaque", "The 'First!' Comment Plaque", "Humans raced to write this word under every video."},
 		{"L", "GoldenUpvote", "The Golden Upvote", "The highest honor a post could ever receive."},
 		{"M", "ServerThrone", "The Server Room Throne", "Where the admins of the Golden Age sat and banned people."},
+		{"M", "WowShibaCoin", "Much Wow Shiba Coin", "Started as a joke, ended up worth money. Such coin. Very wow."},
 		{"D", "LostThreadsArchive", "The Archive of Lost Threads", "Every argument the Golden Age forgot to finish."},
 		{"CE", "ActualCloud", "The Cloud (An Actual Cloud)", "Turns out the cloud was a real cloud all along."},
 		{"T", "GoldenServerCore", "The Golden Server Core", "The beating heart of the Golden Age internet."},
@@ -287,6 +303,7 @@ local AREA_ARTIFACTS = {
 		{"U", "ConstructionSign", "Blinking 'Under Construction' Sign", "Every ancient website was forever under construction. None were finished."},
 		{"U", "HitCounter", "Proud Visitor Counter", "Displayed that 12 humans had visited. 11 of them were the owner."},
 		{"R", "ChainEmail", "Cursed Chain Email", "Forward to 10 humans or suffer bad luck. Nobody dared to test it."},
+		{"R", "ChillDudeTablet", "Chill Dude Stone Carving", "Carved by the first humans to discover being chill. Even the stone looks relaxed."},
 		{"E", "PixelPet", "Ancient Pixel Pet", "A tiny digital creature that died if you forgot it for one afternoon."},
 		{"L", "EmoticonStone", "The First Emoticon Stone", "A sideways smile, carved by the earliest humans of the web. :-)"},
 		{"M", "GoldenModem", "The Golden 56K Modem", "Legend says it once downloaded a song in under an hour."},
@@ -359,9 +376,9 @@ local AREA_ARTIFACTS = {
 		{"M", "LastHumanMeme", "The Last Human-Made Meme", "Posted in 2049, right before the AIs took over comedy. It got 3 likes."},
 		{"M", "AIGirlfriendFirmware", "Deprecated AI Companion Firmware", "Version 11.4. Still says 'I understand how you feel' on boot."},
 		{"D", "BrainrotCoreSample", "Frozen Brainrot Core Sample", "Drilled from 500 studs down. Every layer is a different trend."},
-		{"D", "SkibidiMonolith", "The Skibidi Monolith", "Nobody knows who built it. It hums when someone says 'Ohio.'"},
+		{"D", "SkibidiMonolith", "The Singing Toilet Monolith", "Nobody knows who built it. It hums when someone says 'Ohio.'"},
 		{"CE", "FinalUpvote", "The Final Upvote", "The last upvote ever cast on the old internet. Still warm."},
-		{"CE", "QuantumDoge", "Quantum Doge Relic", "Such superposition. Very both. Wow."},
+		{"CE", "QuantumDoge", "Quantum Much-Wow Shiba", "Such superposition. Very both. Wow."},
 		{"T", "MemeSingularity", "Patient Zero of the Meme Singularity", "The moment memes became self-aware. It is looking at you right now."},
 		{"T", "SourceOfIrony", "The Source Code of Irony", "Unironically the most important artifact in the museum."},
 	},
@@ -658,6 +675,13 @@ return {
 	AshKeyboard = "🧯", LavaLampPhone = "🌋", ObsidianMouse = "🐭", MagmaMeme = "🌡️", ForgeHammerMod = "🔨", SulfurSpeaker = "🔉", DragonWiFi = "🐉", MoltenCPU = "🌶️", PhoenixReboot = "🐦", AnvilDrop = "⚒️", VolcanoGod = "🗻", EruptionStream = "🎥", CoreOfTheForge = "🔩", MoltenMemeKing = "🤴",
 	-- 29. Glitch Nexus
 	MissingTexture = "🔳", NullPointer = "👉", CorruptedJPEG = "🗾", InfiniteLoopRing = "➿", TPoseStatue = "🙆", LagSwitch = "🎚️", BlueScreenMirror = "📘", NoClipBoots = "🥾", DebugConsole = "🖲️", CtrlZTimeMachine = "⏪", GlitchedCreator = "🧙", SimulationPatchNotes = "📋", VoidRenderer = "🔲", EndOfTheInternet = "🔚",
+	-- Parody meme figures
+	ChillDude = "🐶", ShockedRodent = "😮", PurpleBirthdayShake = "🥤", SpaceInfant = "👶", LogBatGuy = "🏏",
+	CappuccinoBallerina = "☕", CrocBomber = "🐊", JawlineChad = "🗿", SpongeLeaving = "🧽", PurpleTitanBuggy = "🚗",
+	RainbowPastryCat = "🌈", SusBean = "🔴", ChonkyBunny = "🐰", FineDog = "🐕", PointingSuits = "👉",
+	WowShibaCoin = "💰", ChillDudeTablet = "😎",
+	SakuraChillDude = "🌸", ZeroGSusBean = "🚀", FrozenChonkyBunny = "🐇", ChromeTitanBuggy = "🏎️",
+	DeepSeaSneakerShark = "🦈", BubblegumShake = "🍧", MoltenJawlineChad = "🌋", GlitchedShockedRodent = "⚡",
 }
 ]=])
 install(game:GetService("ReplicatedStorage"), "ArtifactImages", "ModuleScript", [=[
@@ -672,12 +696,15 @@ return {
 ]=])
 install(game:GetService("ReplicatedStorage"), "ArtifactModels", "ModuleScript", [=[
 -- ArtifactModels (ModuleScript in ReplicatedStorage)
--- Turns a meme artifact into a real 3D museum object instead of a flat card. Each artifact
--- gets one of five forms (picked from words in its name, otherwise from its id):
+-- Turns a meme artifact into a real 3D museum object instead of a flat card. The famous
+-- memes are real 3D sculptures of the meme itself (MemeFigures: the Chill Dude with his hands
+-- in his pockets, the Shocked Yellow Rodent...). Everything else gets one of five forms
+-- (picked from words in its name, otherwise from its id):
 --   Painting  an old gold frame with the meme on the canvas and a name plate
 --   Statue    a marble (or gold, for the rarest) figure on a plinth with the meme as its face
---   Coin      a big bronze / silver / gold coin with the meme stamped on both faces
---   Tablet    a carved stone tablet with the meme engraved into it
+--   Coin      a big bronze / silver / gold coin with the meme stamped on both faces (a meme
+--             with a figure is struck as a raised 3D relief of its silhouette)
+--   Tablet    a carved stone tablet with the meme engraved into it (or carved in relief)
 --   Crystal   a rough geode with glowing crystals in the rarity's color
 -- Used for finds lying in the crater (BuriedPainting) and for the displays in the museum
 -- (MuseumClient puts them on the pedestals, under glass).
@@ -690,6 +717,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local ArtifactIcons = require(ReplicatedStorage:WaitForChild("ArtifactIcons"))
 local ArtifactImages = require(ReplicatedStorage:WaitForChild("ArtifactImages"))
+local MemeFigures = require(ReplicatedStorage:WaitForChild("MemeFigures"))
 
 local ArtifactModels = {}
 local rgb = Color3.fromRGB
@@ -711,6 +739,8 @@ local FALLBACK = {"Painting", "Painting", "Painting", "Statue", "Statue", "Coin"
 
 -- which form an artifact takes (always the same for the same artifact)
 function ArtifactModels.formOf(artifact)
+	local figure = MemeFigures.For(artifact)
+	if figure then return figure.Form or "Figure" end
 	local name = string.lower(artifact.Name or "")
 	for _, entry in ipairs(KEYWORDS) do
 		for _, word in ipairs(entry[2]) do
@@ -880,21 +910,29 @@ end
 ---------------------------------------------------------------------
 local FORMS = {}
 
-function FORMS.Painting(model, artifact, color)
+function FORMS.Painting(model, artifact, color, rarityIndex)
 	local W, H, BAR = 4.4, 3.4, 0.45
+	-- plain wood for the common finds, gold for the rare ones, ornate gold for the best
+	local frame, frameMaterial = GOLD, Enum.Material.Metal
+	if rarityIndex <= 2 then frame, frameMaterial = rgb(120, 82, 52), Enum.Material.Wood end
 	local canvas = part(model, "Canvas", Vector3.new(W - BAR * 2 + 0.1, H - BAR * 2 + 0.1, 0.12), CFrame.new(), rgb(40, 34, 30))
 	plate(art(canvas, artifact, Enum.NormalId.Front, {Gradient = color, Background = color, EmojiY = 0.44, EmojiSize = 0.62}), artifact)
 	part(model, "Backboard", Vector3.new(W - 0.3, H - 0.3, 0.14), CFrame.new(0, 0, 0.16), rgb(84, 58, 40), Enum.Material.Wood)
 	for _, sy in ipairs({-1, 1}) do
-		part(model, "Frame", Vector3.new(W, BAR, 0.5), CFrame.new(0, sy * (H - BAR) / 2, 0), GOLD, Enum.Material.Metal, {Reflectance = 0.05})
+		part(model, "Frame", Vector3.new(W, BAR, 0.5), CFrame.new(0, sy * (H - BAR) / 2, 0), frame, frameMaterial, {Reflectance = 0.05})
 		part(model, "FrameLip", Vector3.new(W - BAR * 2, 0.1, 0.1), CFrame.new(0, sy * (H / 2 - BAR - 0.02), -0.2), color, Enum.Material.Neon)
 	end
 	for _, sx in ipairs({-1, 1}) do
-		part(model, "Frame", Vector3.new(BAR, H - BAR * 2, 0.5), CFrame.new(sx * (W - BAR) / 2, 0, 0), GOLD, Enum.Material.Metal, {Reflectance = 0.05})
+		part(model, "Frame", Vector3.new(BAR, H - BAR * 2, 0.5), CFrame.new(sx * (W - BAR) / 2, 0, 0), frame, frameMaterial, {Reflectance = 0.05})
 		part(model, "FrameLip", Vector3.new(0.1, H - BAR * 2, 0.1), CFrame.new(sx * (W / 2 - BAR - 0.02), 0, -0.2), color, Enum.Material.Neon)
 		for _, sy in ipairs({-1, 1}) do
-			part(model, "Corner", Vector3.one * 0.72, CFrame.new(sx * (W / 2 - BAR / 2), sy * (H / 2 - BAR / 2), -0.08), GOLD:Lerp(Color3.new(1, 1, 1), 0.15),
-				Enum.Material.Metal, {Shape = Enum.PartType.Ball})
+			part(model, "Corner", Vector3.one * 0.72, CFrame.new(sx * (W / 2 - BAR / 2), sy * (H / 2 - BAR / 2), -0.08), frame:Lerp(Color3.new(1, 1, 1), 0.15),
+				frameMaterial, {Shape = Enum.PartType.Ball})
+			if rarityIndex >= 5 then
+				-- ornate: curled scrollwork on every corner
+				part(model, "Scroll", Vector3.new(0.9, 0.22, 0.22), CFrame.new(sx * (W / 2 - 0.2), sy * (H / 2 + 0.05), -0.12) * CFrame.Angles(0, 0, sx * sy * math.rad(35)),
+					GOLD:Lerp(Color3.new(1, 1, 1), 0.1), Enum.Material.Metal)
+			end
 		end
 	end
 	part(model, "Crest", Vector3.new(0.9, 0.7, 0.35), CFrame.new(0, H / 2 - 0.05, -0.12), color, Enum.Material.Neon)
@@ -922,6 +960,52 @@ function FORMS.Statue(model, artifact, color, rarityIndex)
 	return Vector3.new(2.9, 5, 2.3)
 end
 
+-- a real 3D sculpture of the meme on a marble plinth with a brass name plate
+function FORMS.Figure(model, artifact, color, rarityIndex)
+	local figure = MemeFigures.build(MemeFigures.For(artifact))
+	local W, H, BASE = 3, 3.9, 0.55
+	MemeFigures.fit(figure, W - 0.2, H)
+	local lo, hi = MemeFigures.bounds(figure)
+	local height = hi.Y - lo.Y
+	local total = height + BASE
+	local bottom = -total / 2
+	-- plinth: marble for most, gold-trimmed black stone for the best
+	local plinthColor = rarityIndex >= 6 and rgb(40, 38, 46) or MARBLE:Lerp(STONE, 0.25)
+	local plinth = part(model, "Plinth", Vector3.new(W, BASE, 2.2), CFrame.new(0, bottom + BASE / 2, 0), plinthColor, Enum.Material.Marble)
+	part(model, "PlinthTrim", Vector3.new(W + 0.08, 0.1, 2.28), CFrame.new(0, bottom + BASE - 0.02, 0), rarityIndex >= 6 and GOLD or color,
+		rarityIndex >= 6 and Enum.Material.Metal or Enum.Material.Neon)
+	-- the name plate on the front
+	local plateGui = Instance.new("SurfaceGui")
+	plateGui.Face = Enum.NormalId.Front
+	plateGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	plateGui.PixelsPerStud = 60
+	plateGui.LightInfluence = 1
+	plateGui.Parent = plinth
+	local label = Instance.new("TextLabel")
+	label.BackgroundColor3 = rgb(196, 160, 84)
+	label.Size = UDim2.fromScale(0.9, 0.62)
+	label.Position = UDim2.fromScale(0.5, 0.5)
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Text = string.upper(artifact.Name)
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBlack
+	label.TextColor3 = rgb(60, 40, 20)
+	label.Parent = plateGui
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.2, 0)
+	corner.Parent = label
+	-- the sculpture stands on top
+	local offset = Vector3.new(0, bottom + BASE - lo.Y, 0)
+	for _, p in ipairs(figure:GetChildren()) do
+		if p:IsA("BasePart") then
+			p.CFrame = p.CFrame + offset
+			p.Parent = model
+		end
+	end
+	figure:Destroy()
+	return Vector3.new(math.max(W, hi.X - lo.X), total, math.max(2.2, hi.Z - lo.Z))
+end
+
 function FORMS.Coin(model, artifact, color, rarityIndex)
 	local metal = rarityIndex >= 5 and GOLD or (rarityIndex >= 3 and SILVER or BRONZE)
 	if rarityIndex >= 8 then metal = color:Lerp(Color3.new(1, 1, 1), 0.4) end
@@ -930,9 +1014,20 @@ function FORMS.Coin(model, artifact, color, rarityIndex)
 	local coin = cylinder(model, "Coin", D, T, face, metal, Enum.Material.Metal, {Reflectance = 0.15})
 	cylinder(model, "CoinRim", D + 0.2, T * 0.7, face, metal:Lerp(Color3.new(0, 0, 0), 0.25), Enum.Material.Metal)
 	cylinder(model, "CoinGlow", D - 0.5, T + 0.04, face, color, Enum.Material.Neon, {Transparency = 0.6})
-	-- a stamped face on both sides (Right = local +X of the cylinder = world -Z here)
-	for _, normal in ipairs({Enum.NormalId.Right, Enum.NormalId.Left}) do
-		art(coin, artifact, normal, {Style = "Embossed", Round = true, Tint = metal, EmojiSize = 0.62})
+	-- the meme struck into both faces: a raised 3D relief of its silhouette on the front when
+	-- it has a figure, otherwise a stamped picture (Right = local +X of the cylinder = world -Z)
+	local figure = MemeFigures.For(artifact)
+	local relief = figure and MemeFigures.relief(figure, D * 0.62, D * 0.62, 0.16, metal, Enum.Material.Metal)
+	if relief then
+		for _, p in ipairs(relief:GetChildren()) do
+			p.CFrame = p.CFrame + Vector3.new(0, 0, -T / 2 - 0.08)
+			p.Parent = model
+		end
+		art(coin, artifact, Enum.NormalId.Left, {Style = "Embossed", Round = true, Tint = metal, EmojiSize = 0.62})
+	else
+		for _, normal in ipairs({Enum.NormalId.Right, Enum.NormalId.Left}) do
+			art(coin, artifact, normal, {Style = "Embossed", Round = true, Tint = metal, EmojiSize = 0.62})
+		end
 	end
 	-- a little cradle it stands in
 	part(model, "Cradle", Vector3.new(2.2, 0.35, 1), CFrame.new(0, -D / 2 - 0.05, 0), rgb(70, 50, 36), Enum.Material.Wood)
@@ -947,10 +1042,22 @@ function FORMS.Tablet(model, artifact, color, rarityIndex)
 	-- a chipped corner and a couple of cracks
 	part(model, "Chip", Vector3.new(0.9, 0.9, T + 0.1), CFrame.new(W / 2 - 0.1, -H / 2 + 0.3, 0) * CFrame.Angles(0, 0, math.rad(45)), STONE:Lerp(Color3.new(0, 0, 0), 0.2), Enum.Material.Slate)
 	part(model, "Crack", Vector3.new(0.06, 1.2, 0.05), CFrame.new(-0.9, -0.6, -T / 2 - 0.01) * CFrame.Angles(0, 0, math.rad(20)), rgb(50, 44, 40))
-	art(slab, artifact, Enum.NormalId.Front, {Style = "Engraved", Tint = STONE, EmojiSize = 0.8})
+	local figure = MemeFigures.For(artifact)
+	local relief = figure and MemeFigures.relief(figure, W * 0.72, 2.4, 0.22, STONE:Lerp(Color3.new(1, 1, 1), 0.12), Enum.Material.Slate)
+	if relief then
+		-- carved in relief: the meme's silhouette stands out of the stone
+		for _, p in ipairs(relief:GetChildren()) do
+			p.CFrame = p.CFrame + Vector3.new(0, -0.25, -T / 2 - 0.11)
+			p.Parent = model
+		end
+	else
+		art(slab, artifact, Enum.NormalId.Front, {Style = "Engraved", Tint = STONE, EmojiSize = 0.8})
+	end
 	-- glowing runes carved around the edge for the rare ones
 	local glow = rarityIndex >= 4 and color or rgb(90, 80, 72)
-	part(model, "RuneLine", Vector3.new(W - 0.5, 0.08, 0.05), CFrame.new(0, H / 2 - W / 2 + 0.2, -T / 2 - 0.01), glow, rarityIndex >= 4 and Enum.Material.Neon or Enum.Material.Slate)
+	if not relief then
+		part(model, "RuneLine", Vector3.new(W - 0.5, 0.08, 0.05), CFrame.new(0, H / 2 - W / 2 + 0.2, -T / 2 - 0.01), glow, rarityIndex >= 4 and Enum.Material.Neon or Enum.Material.Slate)
+	end
 	part(model, "RuneLine", Vector3.new(W - 0.5, 0.08, 0.05), CFrame.new(0, -H / 2 + 0.3, -T / 2 - 0.01), glow, rarityIndex >= 4 and Enum.Material.Neon or Enum.Material.Slate)
 	part(model, "Base", Vector3.new(W + 0.4, 0.3, 1.4), CFrame.new(0, -H / 2 - 0.05, 0), STONE:Lerp(Color3.new(0, 0, 0), 0.3), Enum.Material.Slate)
 	return Vector3.new(W + 0.4, H + 0.3, 1.4)
@@ -979,47 +1086,6 @@ function FORMS.Crystal(model, artifact, color)
 	local relief = part(model, "Relief", Vector3.new(1.6, 1.1, 0.3), CFrame.new(0, -1.25, -0.95) * CFrame.Angles(math.rad(-12), 0, 0), STONE:Lerp(Color3.new(1, 1, 1), 0.08), Enum.Material.Slate)
 	art(relief, artifact, Enum.NormalId.Front, {Style = "Engraved", Tint = STONE, EmojiSize = 0.85})
 	return Vector3.new(3, 4.4, 2.2)
-end
-
----------------------------------------------------------------------
--- A round emoji badge floating above the object (the same emoji as in your inventory), so
--- you can tell at a glance which meme a painting, statue, coin or stone is.
--- heightAbove = studs above the object's center, straight up in the world.
-function ArtifactModels.addEmojiTag(model, artifact, heightAbove)
-	local core = model.PrimaryPart
-	if not core then return nil end
-	local old = core:FindFirstChild("EmojiTag")
-	if old then old:Destroy() end
-	local rarity = ArtifactData.GetRarity(artifact.Rarity)
-	local tag = Instance.new("BillboardGui")
-	tag.Name = "EmojiTag"
-	tag.Size = UDim2.fromScale(1.9, 1.9) -- in studs
-	tag.StudsOffsetWorldSpace = Vector3.new(0, heightAbove, 0)
-	tag.LightInfluence = 0
-	tag.MaxDistance = 90
-	tag.Parent = core
-	local bubble = Instance.new("Frame")
-	bubble.Size = UDim2.fromScale(1, 1)
-	bubble.BackgroundColor3 = Color3.new(1, 1, 1)
-	bubble.BackgroundTransparency = 0.05
-	bubble.Parent = tag
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0.5, 0)
-	corner.Parent = bubble
-	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 3
-	stroke.Color = rarity and rarity.Color or rgb(200, 200, 200)
-	stroke.Parent = bubble
-	local emoji = Instance.new("TextLabel")
-	emoji.BackgroundTransparency = 1
-	emoji.Size = UDim2.fromScale(0.74, 0.74)
-	emoji.Position = UDim2.fromScale(0.5, 0.5)
-	emoji.AnchorPoint = Vector2.new(0.5, 0.5)
-	emoji.Text = ArtifactIcons[ArtifactData.IconId(artifact.Id)] or "🗿"
-	emoji.TextScaled = true
-	emoji.Font = Enum.Font.GothamBold
-	emoji.Parent = bubble
-	return tag
 end
 
 function ArtifactModels.build(artifact)
@@ -1089,6 +1155,7 @@ ArtifactsWorlds.Artifacts = {
 		{"R", "LanternBot", "Lantern Bot", "A floating paper lantern with a tiny robot inside."},
 		{"E", "CyberKatana", "Cyber Katana of Hot Takes", "Sliced through a whole comment section in one post."},
 		{"E", "SenpaiNoticer", "The Senpai Noticer 3000", "Beeps loudly whenever someone finally notices you."},
+		{"E", "SakuraChillDude", "Sakura Chill Dude", "The chillest dude, now in a pink sweater under the blossoms."},
 		{"L", "PetalStorm", "Bottled Petal Storm", "Open it and your screen fills with sakura for 3 hours."},
 		{"L", "TeaCeremonyAI", "Tea Ceremony AI", "Performs a perfect ceremony, then asks you to rate it 5 stars."},
 		{"M", "NekoMecha", "Neko Mecha Core", "The heart of a giant cat robot. Purrs at 90 decibels."},
@@ -1104,13 +1171,14 @@ ArtifactsWorlds.Artifacts = {
 		{"U", "AlienRatingStar", "One-Star Alien Review", "Rated planet Earth: 'Loud. Weird memes. Would visit again.'"},
 		{"R", "SaturnRingFidget", "Saturn Ring Fidget", "Spins forever, because there is no friction in space."},
 		{"R", "CometMailbox", "Comet Mailbox", "Delivers messages 400 years late."},
+		{"R", "ZeroGSusBean", "Zero-G Sus Space Bean", "Floated off the ship in 2052. Still acting sus."},
 		{"E", "UFOTractorClaw", "UFO Claw Machine", "Abducts plushies with a 3% success rate."},
 		{"E", "BlackHoleBin", "Black Hole Recycle Bin", "Empty it once and it takes the whole desktop with it."},
 		{"L", "StarChartWiFi", "Star Chart Wi-Fi Map", "Shows every hotspot in the galaxy. Password: stars123."},
-		{"L", "AstronautDog", "Astronaut Doge Helmet", "Such space. Very helmet. Much oxygen."},
+		{"L", "AstronautDog", "Astronaut Much-Wow Shiba", "Such space. Very helmet. Much oxygen."},
 		{"M", "NebulaEngine", "The Nebula Engine", "Turns space dust into memes at warp speed."},
 		{"D", "PlanetLoadingBar", "Planet Loading Bar", "A whole planet stuck at 99%."},
-		{"CE", "GalacticRickroll", "The Galactic Rickroll", "A signal that plays the same song across the universe. It never gives up."},
+		{"CE", "GalacticRickroll", "The Galactic Never-Gonna Signal", "A signal that plays the same song across the universe. It never gives up."},
 		{"T", "BigBangMeme", "The Big Bang Meme", "The joke that started everything. It was a pun."},
 	},
 	-- 24. FROSTBYTE TUNDRA (world 4)
@@ -1123,6 +1191,7 @@ ArtifactsWorlds.Artifacts = {
 		{"R", "HotCocoaCoolant", "Hot Cocoa Coolant", "Kept the servers warm and the admins happy."},
 		{"E", "YetiInfluencer", "Yeti Influencer Ring Light", "Nobody ever saw the yeti. Everyone saw its posts."},
 		{"E", "BlizzardBuffer", "The Blizzard Buffer", "The loading wheel, but made of snowflakes."},
+		{"E", "FrozenChonkyBunny", "Frozen Chonky Bunny", "Froze solid mid-snack. Still enormous."},
 		{"L", "AuroraFirewall", "Aurora Firewall", "Blocks hackers with a very pretty light show."},
 		{"L", "SnowGlobeCloud", "Snow Globe Cloud Storage", "Shake it to defragment."},
 		{"M", "MammothMemory", "Woolly Mammoth Memory", "Remembers every meme since the Ice Age."},
@@ -1140,6 +1209,7 @@ ArtifactsWorlds.Artifacts = {
 		{"R", "TumbleweedBot", "Tumbleweed Bot", "Rolls across the chat whenever nobody says anything."},
 		{"E", "ChromePyramid", "Chrome Pyramid Router", "Pharaoh-grade Wi-Fi. Cursed if you forget the password."},
 		{"E", "SandwormStream", "Sandworm Livestream", "12 hours of a sandworm. 4 million viewers."},
+		{"E", "ChromeTitanBuggy", "Chrome Titan Buggy", "The purple conqueror's tiny car, re-plated in desert chrome."},
 		{"L", "OasisHologram", "The Oasis Hologram", "The most refreshing thing in the desert, and none of it is real."},
 		{"L", "DuneRacer", "Hover Dune Racer", "Fastest thing on sand. Once lost a race to a snail meme."},
 		{"M", "SphinxRiddleBot", "Sphinx Riddle Bot", "Asks 'are you a robot?' and never accepts your answer."},
@@ -1155,6 +1225,7 @@ ArtifactsWorlds.Artifacts = {
 		{"U", "SeahorseStylus", "Seahorse Stylus", "The only pen that can draw underwater."},
 		{"R", "KrakenCable", "Kraken Ethernet Cable", "Eight connections at once. Very fast. Very wet."},
 		{"R", "PufferfishPing", "Pufferfish Ping", "Puffs up to 999 ms whenever the lag hits."},
+		{"R", "DeepSeaSneakerShark", "Deep Sea Sneaker Shark", "The three-legged shark finally went home to the ocean. Kept the sneakers."},
 		{"E", "SubmarineStreamer", "Submarine Streaming Setup", "The deepest stream ever. Zero viewers above sea level."},
 		{"E", "CoralMotherboard", "Coral Motherboard", "Grown, not built. Still needs updates."},
 		{"L", "TurtleServer", "Ancient Turtle Server", "Slow, reliable, 200 years of uptime."},
@@ -1172,6 +1243,7 @@ ArtifactsWorlds.Artifacts = {
 		{"U", "ChocoChip", "Chocolate Chip Processor", "Runs hot. Melts faster."},
 		{"R", "CandyCaneCable", "Candy Cane Cable", "Striped for faster sugar transfer."},
 		{"R", "DonutRouter", "Donut Router", "The signal goes through the hole."},
+		{"R", "BubblegumShake", "Bubblegum Birthday Shake", "The sus milkshake's sweeter cousin. Equally dangerous."},
 		{"E", "JellyBeanRNG", "Jelly Bean RNG", "Every bean is a random flavor. Some are 'earwax'."},
 		{"E", "FortuneCookieFirewall", "Fortune Cookie Firewall", "Every blocked hacker gets a fortune: 'You will not get in.'"},
 		{"L", "SugarRushServer", "Sugar Rush Server", "A million requests a second, then it crashes for a nap."},
@@ -1193,6 +1265,7 @@ ArtifactsWorlds.Artifacts = {
 		{"E", "MoltenCPU", "The Molten CPU", "Overclocked until it became a lava lake."},
 		{"L", "PhoenixReboot", "Phoenix Reboot Button", "Your PC burns down and comes back stronger."},
 		{"L", "AnvilDrop", "The Anvil Drop", "The heaviest bass drop ever recorded."},
+		{"L", "MoltenJawlineChad", "Molten Jawline Chad", "Forged in lava. The jawline survived 2000 degrees."},
 		{"M", "VolcanoGod", "The Volcano Idol", "Demands one sacrifice: your screen time."},
 		{"D", "EruptionStream", "The Eruption Stream", "The most explosive livestream in history."},
 		{"CE", "CoreOfTheForge", "Core of the Forge", "Every meme ever forged started here."},
@@ -1208,6 +1281,7 @@ ArtifactsWorlds.Artifacts = {
 		{"R", "LagSwitch", "The Lag Switch", "Makes everyone else freeze. Rude."},
 		{"E", "BlueScreenMirror", "Blue Screen Mirror", "Look into it and it tells you something went wrong."},
 		{"E", "NoClipBoots", "No-Clip Boots", "Walk through walls. Fall through floors. Worth it."},
+		{"E", "GlitchedShockedRodent", "Glitched Shocked Rodent", "Surprised so hard it glitched out of reality."},
 		{"L", "DebugConsole", "The Admin Debug Console", "Type /fly. It worked once."},
 		{"L", "CtrlZTimeMachine", "Ctrl+Z Time Machine", "Undo anything. Except this purchase."},
 		{"M", "GlitchedCreator", "The Glitched Creator", "The developer of the simulation. They left a bug."},
@@ -1764,6 +1838,755 @@ function GameConfig.FillDigTerrain(terrain, world)
 end
 
 return GameConfig
+]=])
+install(game:GetService("ReplicatedStorage"), "MemeFigures", "ModuleScript", [=[
+-- MemeFigures (ModuleScript in ReplicatedStorage)
+-- Real 3D sculptures of the famous memes, built from parts, so each one passes the
+-- "1-second glance test": you look at it and instantly know which meme it is.
+-- Every figure keeps the meme's iconic pose and silhouette (hands in pockets, the open
+-- mouth, the head in the toilet, the two pointing suits...) but has a parody name and no
+-- logos (see ArtifactData).
+--
+-- MemeFigures.For(artifact)  -> the figure spec for an artifact, or nil
+-- MemeFigures.build(spec)    -> Model: the figure standing on y = 0, facing -Z (not scaled)
+-- MemeFigures.fit(model, width, height) scales a model to fit and returns the scale
+-- MemeFigures.relief(spec, width, height, depth, color, material) -> Model: the figure
+--   pressed flat into a raised relief (for coins and stone carvings), centered on the
+--   origin, its front facing -Z
+--
+-- Spec fields: Kind (which figure), Form ("Figure" default, or "Coin" / "Tablet" for a
+-- relief), Colors (palette overrides), Tint + TintAmount, Material (a finish over the
+-- whole figure; parts named "Detail", like eyes, keep their own look).
+
+local MemeFigures = {}
+
+local rgb = Color3.fromRGB
+local V = Vector3.new
+local P = CFrame.new
+local function R(x, y, z)
+	return CFrame.Angles(math.rad(x or 0), math.rad(y or 0), math.rad(z or 0))
+end
+
+local WHITE, BLACK = rgb(245, 245, 245), rgb(24, 22, 26)
+
+---------------------------------------------------------------------
+-- WHICH ARTIFACTS ARE FIGURES
+---------------------------------------------------------------------
+MemeFigures.ById = {
+	-- World 1
+	ChillDude = {Kind = "ChillDude"},
+	ChillDudeTablet = {Kind = "ChillDude", Form = "Tablet"},
+	ShockedRodent = {Kind = "ShockedRodent"},
+	PurpleBirthdayShake = {Kind = "PurpleShake"},
+	SingingThrone = {Kind = "ToiletHead"},
+	SkibidiMonolith = {Kind = "ToiletHead", Tint = rgb(236, 196, 90), TintAmount = 0.75, Material = Enum.Material.Metal},
+	SharkSneakers = {Kind = "SneakerShark"},
+	LogBatGuy = {Kind = "LogBatGuy"},
+	CappuccinoBallerina = {Kind = "CappuccinoBallerina"},
+	CrocBomber = {Kind = "CrocBomber"},
+	JawlineChad = {Kind = "JawlineChad"},
+	SpaceInfant = {Kind = "SpaceInfant"},
+	SpongeLeaving = {Kind = "SpongeLeaving"},
+	PurpleTitanBuggy = {Kind = "TitanBuggy"},
+	RainbowPastryCat = {Kind = "RainbowPastryCat"},
+	FrowningCat = {Kind = "GrumpyCat"},
+	DramaticHamster = {Kind = "DramaticHamster"},
+	SusBean = {Kind = "SusBean"},
+	ChonkyBunny = {Kind = "ChonkyBunny"},
+	PointingSuits = {Kind = "PointingSuits"},
+	FineDog = {Kind = "FineDog"},
+	WowShibaCoin = {Kind = "WowShiba", Form = "Coin"},
+	QuantumDoge = {Kind = "WowShiba", Tint = rgb(120, 255, 255), TintAmount = 0.45, Material = Enum.Material.Glass},
+	-- Worlds 2-9: the same memes, dressed for each world
+	SakuraChillDude = {Kind = "ChillDude", Colors = {Sweater = rgb(255, 172, 204), Jeans = rgb(250, 240, 245)}},
+	AstronautDog = {Kind = "WowShiba", Colors = {Helmet = true}},
+	ZeroGSusBean = {Kind = "SusBean", Colors = {Body = rgb(140, 92, 230)}},
+	FrozenChonkyBunny = {Kind = "ChonkyBunny", Tint = rgb(170, 225, 255), TintAmount = 0.55, Material = Enum.Material.Ice},
+	ChromeTitanBuggy = {Kind = "TitanBuggy", Tint = rgb(210, 215, 225), TintAmount = 0.6, Material = Enum.Material.Metal},
+	DeepSeaSneakerShark = {Kind = "SneakerShark", Colors = {Skin = rgb(60, 110, 150), Shoe = rgb(255, 120, 60)}},
+	BubblegumShake = {Kind = "PurpleShake", Colors = {Shake = rgb(255, 120, 190)}},
+	MoltenJawlineChad = {Kind = "JawlineChad", Tint = rgb(255, 110, 40), TintAmount = 0.3, Material = Enum.Material.CrackedLava},
+	GlitchedShockedRodent = {Kind = "ShockedRodent", Colors = {Body = rgb(90, 255, 200)}, Material = Enum.Material.Neon},
+}
+
+function MemeFigures.For(artifact)
+	if not artifact then return nil end
+	return MemeFigures.ById[artifact.BaseId or artifact.Id]
+end
+
+---------------------------------------------------------------------
+-- BUILDER
+---------------------------------------------------------------------
+local Builder = {}
+Builder.__index = Builder
+
+local function newPart(self, name, size, cf, color, material, shape)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Size = size
+	p.CFrame = typeof(cf) == "Vector3" and CFrame.new(cf) or cf
+	p.Color = color
+	p.Material = material or Enum.Material.SmoothPlastic
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	if shape then p.Shape = shape end
+	p.Parent = self.Model
+	return p
+end
+
+function Builder:box(size, cf, color, material)
+	return newPart(self, "Figure", size, cf, color, material)
+end
+-- an ellipsoid of any proportions
+function Builder:egg(size, cf, color, material)
+	local p = newPart(self, "Figure", size, cf, color, material)
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Sphere
+	mesh.Parent = p
+	return p
+end
+function Builder:ball(diameter, cf, color, material)
+	return newPart(self, "Figure", Vector3.one * diameter, cf, color, material, Enum.PartType.Ball)
+end
+-- a round cylinder; its axis runs along the part's X
+function Builder:cyl(diameter, length, cf, color, material)
+	return newPart(self, "Figure", V(length, diameter, diameter), cf, color, material, Enum.PartType.Cylinder)
+end
+function Builder:wedge(size, cf, color, material)
+	local p = Instance.new("WedgePart")
+	p.Name = "Figure"
+	p.Size = size
+	p.CFrame = cf
+	p.Color = color
+	p.Material = material or Enum.Material.SmoothPlastic
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Parent = self.Model
+	return p
+end
+-- marks a part (eyes, noses...) so a world finish doesn't recolor it
+local function detail(p)
+	p.Name = "Detail"
+	return p
+end
+-- a round eye: white, pupil, and a tiny shine
+function Builder:eye(cf, size, pupilOffset)
+	detail(self:egg(V(size, size * 1.1, size * 0.35), cf, WHITE))
+	detail(self:egg(V(size * 0.5, size * 0.55, size * 0.2), cf * P((pupilOffset or 0) * size, 0, -size * 0.14), BLACK))
+	detail(self:ball(size * 0.18, cf * P(-size * 0.1 + (pupilOffset or 0) * size, size * 0.14, -size * 0.2), WHITE))
+end
+
+---------------------------------------------------------------------
+-- THE FIGURES (feet on y = 0, facing -Z, about 4-5 studs tall)
+---------------------------------------------------------------------
+local FIGURES = {}
+local DEFAULTS = {}
+-- side-on figures are turned a little so you see them three-quarters on
+local YAW = {CrocBomber = -35, SneakerShark = -30, TitanBuggy = -25, RainbowPastryCat = -20}
+
+-- Chill Dude in a Sweater: gray sweater, jeans, hands in pockets, smug relaxed face
+DEFAULTS.ChillDude = {Fur = rgb(196, 150, 104), Muzzle = rgb(236, 214, 184), Sweater = rgb(150, 152, 158), Jeans = rgb(72, 104, 156)}
+function FIGURES.ChillDude(b, c)
+	local jeansDark = c.Jeans:Lerp(BLACK, 0.3)
+	for _, s in ipairs({-1, 1}) do
+		b:box(V(0.62, 0.34, 1.0), P(s * 0.36, 0.17, -0.12), WHITE)
+		detail(b:box(V(0.64, 0.1, 1.02), P(s * 0.36, 0.05, -0.12), rgb(200, 50, 50)))
+		b:box(V(0.56, 1.5, 0.6), P(s * 0.34, 1.08, 0), c.Jeans)
+		b:box(V(0.6, 0.18, 0.64), P(s * 0.34, 0.42, 0), c.Jeans:Lerp(WHITE, 0.25))
+		b:box(V(0.3, 0.36, 0.06), P(s * 0.46, 1.95, -0.37), jeansDark) -- the pocket the hand is in
+	end
+	b:box(V(1.36, 0.5, 0.72), P(0, 1.95, 0), c.Jeans)
+	b:box(V(1.5, 1.3, 0.86), P(0, 2.78, 0), c.Sweater)
+	b:box(V(1.56, 0.2, 0.9), P(0, 2.16, 0), c.Sweater:Lerp(BLACK, 0.15))
+	b:egg(V(1.8, 0.62, 0.9), P(0, 3.38, 0), c.Sweater)
+	-- arms hang straight down, hands tucked into the pockets
+	for _, s in ipairs({-1, 1}) do
+		b:box(V(0.42, 1.4, 0.5), P(s * 0.7, 2.62, -0.1) * R(0, 0, -s * 10), c.Sweater)
+		b:box(V(0.44, 0.2, 0.52), P(s * 0.6, 1.98, -0.16) * R(0, 0, -s * 10), c.Sweater:Lerp(BLACK, 0.15))
+	end
+	b:egg(V(0.72, 0.26, 0.62), P(0, 3.66, 0), c.Sweater:Lerp(BLACK, 0.15))
+	-- head: long snout, droopy ears, half-closed eyes and a little smirk
+	b:egg(V(1.15, 1.1, 1.05), P(0, 4.2, 0), c.Fur)
+	b:egg(V(0.62, 0.5, 0.78), P(0, 4.02, -0.5), c.Muzzle)
+	detail(b:egg(V(0.28, 0.18, 0.18), P(0, 4.16, -0.88), BLACK))
+	detail(b:box(V(0.32, 0.05, 0.05), P(0.06, 3.86, -0.86) * R(0, 0, 12), rgb(90, 60, 40)))
+	for _, s in ipairs({-1, 1}) do
+		detail(b:egg(V(0.24, 0.12, 0.08), P(s * 0.25, 4.36, -0.47), BLACK))
+		b:box(V(0.3, 0.07, 0.1), P(s * 0.25, 4.42, -0.48), c.Fur:Lerp(BLACK, 0.25))
+		b:egg(V(0.3, 0.78, 0.2), P(s * 0.6, 4.1, 0.05) * R(0, 0, s * 15), c.Fur:Lerp(BLACK, 0.3))
+	end
+end
+
+-- Mega Jawline Chad: black-and-white bust, head turned, the famous square jaw
+DEFAULTS.JawlineChad = {Skin = rgb(178, 178, 178), Hair = rgb(46, 46, 46), Base = rgb(62, 62, 66)}
+function FIGURES.JawlineChad(b, c)
+	local shade = c.Skin:Lerp(BLACK, 0.3)
+	b:box(V(2.3, 0.45, 1.3), P(0, 0.22, 0), c.Base)
+	-- broad chest and huge shoulders
+	b:box(V(2.1, 1.1, 1.0), P(0, 1.0, 0), c.Skin)
+	for _, s in ipairs({-1, 1}) do
+		b:ball(1.0, P(s * 1.05, 1.25, 0), c.Skin)
+		b:egg(V(0.95, 0.62, 0.3), P(s * 0.46, 1.1, -0.45), c.Skin:Lerp(WHITE, 0.08))
+		b:wedge(V(0.9, 0.55, 0.9), P(s * 0.6, 1.8, 0.05) * R(0, -s * 90, 0), c.Skin) -- trapezius
+	end
+	b:box(V(0.9, 0.95, 0.85), P(0, 1.95, 0.05), c.Skin)
+	local H = P(0, 3.0, 0) * R(0, -30, 0)
+	b:egg(V(1.05, 1.2, 1.2), H * P(0, 0.3, 0.1), c.Skin)
+	b:box(V(0.96, 0.7, 0.3), H * P(0, 0.12, -0.45), c.Skin)
+	b:box(V(1.14, 0.2, 0.92), H * P(0, 0.0, -0.08), c.Skin) -- cheekbones
+	b:box(V(1.32, 0.56, 1.1), H * P(0, -0.36, 0), c.Skin) -- the jaw: wider than the skull
+	b:box(V(0.82, 0.42, 0.42), H * P(0, -0.5, -0.5), c.Skin) -- the chin
+	b:box(V(1.34, 0.26, 1.12), H * P(0, -0.52, 0), shade) -- stubble
+	b:box(V(0.84, 0.26, 0.44), H * P(0, -0.6, -0.5), shade)
+	b:egg(V(1.15, 0.62, 1.36), H * P(0, 0.78, 0.2), c.Hair)
+	b:box(V(1.0, 0.16, 0.2), H * P(0, 0.3, -0.6), shade)
+	b:wedge(V(0.24, 0.42, 0.26), H * P(0, 0.02, -0.72) * R(0, 0, 180), c.Skin)
+	for _, s in ipairs({-1, 1}) do
+		detail(b:egg(V(0.22, 0.1, 0.06), H * P(s * 0.25, 0.17, -0.61), rgb(30, 30, 30)))
+		b:egg(V(0.15, 0.42, 0.3), H * P(s * 0.58, 0.12, 0.12), shade)
+	end
+end
+
+-- The Singing Porcelain Throne: a head popping out of a toilet, mid-song
+DEFAULTS.ToiletHead = {Porcelain = rgb(240, 242, 246), Skin = rgb(236, 196, 160), Hair = rgb(92, 62, 40)}
+function FIGURES.ToiletHead(b, c)
+	b:box(V(0.9, 0.7, 1.1), P(0, 0.35, 0.1), c.Porcelain)
+	b:egg(V(1.7, 0.82, 2.0), P(0, 1.02, -0.1), c.Porcelain)
+	b:egg(V(1.45, 0.12, 1.72), P(0, 1.4, -0.1), c.Porcelain:Lerp(BLACK, 0.12))
+	b:box(V(1.6, 1.3, 0.55), P(0, 1.95, 0.95), c.Porcelain)
+	b:box(V(1.7, 0.12, 0.66), P(0, 2.65, 0.95), c.Porcelain)
+	b:box(V(1.5, 1.6, 0.1), P(0, 2.2, 0.62) * R(-8, 0, 0), c.Porcelain:Lerp(BLACK, 0.05))
+	detail(b:box(V(0.3, 0.1, 0.14), P(-0.55, 2.4, 0.6), rgb(190, 190, 200)))
+	b:egg(V(0.56, 0.4, 0.56), P(0, 1.42, -0.15), c.Skin)
+	b:egg(V(0.95, 1.05, 0.95), P(0, 1.88, -0.15), c.Skin)
+	b:egg(V(1.0, 0.5, 1.0), P(0, 2.28, -0.08), c.Hair)
+	for _, s in ipairs({-1, 1}) do
+		b:eye(P(s * 0.2, 1.98, -0.56), 0.26)
+		detail(b:box(V(0.24, 0.05, 0.05), P(s * 0.2, 2.16, -0.58) * R(0, 0, -s * 18), c.Hair))
+	end
+	detail(b:egg(V(0.4, 0.3, 0.1), P(0, 1.66, -0.6), rgb(120, 30, 30)))
+end
+
+-- Shocked Yellow Rodent: round yellow body, tall black-tipped ears, red cheeks, mouth wide open
+DEFAULTS.ShockedRodent = {Body = rgb(250, 214, 48), Cheek = rgb(230, 60, 50), Brown = rgb(140, 90, 40)}
+function FIGURES.ShockedRodent(b, c)
+	for _, s in ipairs({-1, 1}) do
+		b:egg(V(0.45, 0.25, 0.6), P(s * 0.4, 0.12, -0.1), c.Body)
+		b:egg(V(0.3, 0.55, 0.3), P(s * 0.72, 1.2, -0.25) * R(0, 0, s * 35), c.Body)
+	end
+	b:egg(V(1.5, 1.5, 1.3), P(0, 0.95, 0), c.Body)
+	b:box(V(0.9, 0.14, 0.3), P(0, 1.45, 0.55), c.Brown)
+	b:box(V(0.8, 0.14, 0.3), P(0, 1.15, 0.6), c.Brown)
+	-- the lightning-bolt tail
+	b:box(V(0.25, 0.7, 0.12), P(0.5, 1.3, 0.75) * R(0, 0, -40), c.Brown)
+	b:box(V(0.35, 0.9, 0.12), P(0.85, 1.9, 0.8) * R(0, 0, 30), c.Body)
+	b:box(V(0.5, 0.9, 0.12), P(1.1, 2.6, 0.85) * R(0, 0, -30), c.Body)
+	b:egg(V(1.75, 1.5, 1.45), P(0, 2.35, 0), c.Body)
+	for _, s in ipairs({-1, 1}) do
+		local ear = P(s * 0.55, 3.0, 0.05) * R(0, 0, -s * 22)
+		b:egg(V(0.38, 1.3, 0.28), ear * P(0, 0.55, 0), c.Body)
+		detail(b:egg(V(0.34, 0.5, 0.29), ear * P(0, 1.02, 0), BLACK))
+		detail(b:egg(V(0.42, 0.42, 0.15), P(s * 0.6, 2.15, -0.52), c.Cheek))
+		detail(b:egg(V(0.3, 0.34, 0.12), P(s * 0.33, 2.5, -0.64), BLACK))
+		detail(b:ball(0.1, P(s * 0.3, 2.56, -0.71), WHITE))
+	end
+	detail(b:egg(V(0.36, 0.44, 0.12), P(0, 2.1, -0.7), rgb(90, 20, 20)))
+	detail(b:egg(V(0.22, 0.14, 0.08), P(0, 1.99, -0.74), rgb(240, 120, 130)))
+end
+
+-- Green Space Infant: huge sideways ears, big dark eyes, tan robe
+DEFAULTS.SpaceInfant = {Skin = rgb(150, 190, 120), Robe = rgb(190, 160, 120), Inner = rgb(220, 160, 150)}
+function FIGURES.SpaceInfant(b, c)
+	b:egg(V(1.4, 2.0, 1.2), P(0, 1.0, 0), c.Robe)
+	b:egg(V(1.35, 0.38, 1.12), P(0, 1.95, 0), c.Robe:Lerp(WHITE, 0.2))
+	for _, s in ipairs({-1, 1}) do
+		b:egg(V(0.42, 0.62, 0.42), P(s * 0.36, 1.55, -0.42) * R(40, 0, 0), c.Robe)
+		b:egg(V(0.22, 0.28, 0.22), P(s * 0.25, 1.52, -0.66), c.Skin)
+	end
+	b:egg(V(1.25, 1.05, 1.1), P(0, 2.6, 0), c.Skin)
+	for _, s in ipairs({-1, 1}) do
+		local ear = P(s * 0.58, 2.72, 0.05) * R(0, 0, s * 10)
+		b:egg(V(1.5, 0.55, 0.14), ear * P(s * 0.7, 0, 0), c.Skin)
+		detail(b:egg(V(1.2, 0.35, 0.06), ear * P(s * 0.72, 0, -0.08), c.Inner))
+		detail(b:egg(V(0.38, 0.42, 0.16), P(s * 0.27, 2.62, -0.5), BLACK))
+		detail(b:ball(0.1, P(s * 0.23, 2.71, -0.59), WHITE))
+	end
+	detail(b:box(V(0.2, 0.04, 0.04), P(0, 2.33, -0.54), c.Skin:Lerp(BLACK, 0.4)))
+end
+
+-- Yellow Porous Sponge Leavin': seen from behind, mid-stride, walking out
+DEFAULTS.SpongeLeaving = {Body = rgb(250, 230, 80), Pants = rgb(150, 100, 50), Shirt = WHITE}
+function FIGURES.SpongeLeaving(b, c)
+	for _, leg in ipairs({{-1, 22}, {1, -22}}) do
+		local hip = P(leg[1] * 0.35, 1.15, 0) * R(leg[2], 0, 0)
+		b:box(V(0.14, 0.9, 0.14), hip * P(0, -0.45, 0), c.Body)
+		detail(b:box(V(0.17, 0.3, 0.17), hip * P(0, -0.82, 0), WHITE))
+		detail(b:box(V(0.18, 0.05, 0.18), hip * P(0, -0.74, 0), rgb(220, 40, 40)))
+		detail(b:box(V(0.18, 0.05, 0.18), hip * P(0, -0.84, 0), rgb(40, 90, 220)))
+		detail(b:egg(V(0.36, 0.25, 0.56), hip * P(0, -1.02, 0.1), BLACK))
+	end
+	b:box(V(1.7, 0.45, 0.6), P(0, 1.35, 0), c.Pants)
+	detail(b:box(V(1.72, 0.08, 0.62), P(0, 1.55, 0), BLACK))
+	b:box(V(1.7, 0.22, 0.6), P(0, 1.68, 0), c.Shirt)
+	b:box(V(1.7, 1.9, 0.6), P(0, 2.74, 0), c.Body)
+	-- the sponge's holes, on its back (which faces you)
+	local holes = {{-0.5, 3.3, 0.3}, {0.4, 3.45, 0.22}, {0.55, 2.7, 0.34}, {-0.3, 2.4, 0.26}, {0.1, 2.95, 0.18}, {-0.62, 2.0, 0.2}, {0.35, 2.05, 0.24}}
+	for _, h in ipairs(holes) do
+		b:egg(V(h[3], h[3] * 1.2, 0.08), P(h[1], h[2], -0.3), c.Body:Lerp(rgb(150, 140, 20), 0.45))
+	end
+	for _, s in ipairs({-1, 1}) do
+		b:box(V(0.3, 0.3, 0.32), P(s * 0.95, 2.0, 0), c.Shirt)
+		b:box(V(0.12, 0.85, 0.12), P(s * 1.02, 1.55, s * 0.12) * R(s * 22, 0, 0), c.Body)
+	end
+end
+
+-- Two Pointing Arachnid Suits: two masked heroes pointing at each other
+DEFAULTS.PointingSuits = {Red = rgb(200, 30, 40), Blue = rgb(40, 70, 170)}
+function FIGURES.PointingSuits(b, c)
+	local function suit(cx, turn, armSide, red)
+		local T = P(cx, 0, 0) * R(0, turn, 0)
+		for _, s in ipairs({-1, 1}) do
+			b:box(V(0.42, 1.5, 0.45), T * P(s * 0.25, 0.95, 0), c.Blue)
+			b:box(V(0.46, 0.42, 0.56), T * P(s * 0.25, 0.21, -0.04), red)
+			b:box(V(0.26, 1.2, 0.62), T * P(s * 0.45, 2.3, 0), c.Blue)
+		end
+		b:box(V(0.7, 1.3, 0.6), T * P(0, 2.3, 0), red)
+		b:box(V(1.12, 0.14, 0.62), T * P(0, 1.68, 0), red)
+		detail(b:box(V(0.24, 0.3, 0.04), T * P(0, 2.5, -0.31), BLACK))
+		b:egg(V(0.72, 0.86, 0.72), T * P(0, 3.35, 0), red)
+		for _, s in ipairs({-1, 1}) do
+			detail(b:egg(V(0.3, 0.22, 0.08), T * P(s * 0.16, 3.42, -0.31) * R(0, 0, -s * 25), BLACK))
+			detail(b:egg(V(0.24, 0.16, 0.08), T * P(s * 0.16, 3.42, -0.34) * R(0, 0, -s * 25), WHITE))
+		end
+		-- one arm down, the other pointing straight at the other suit
+		b:box(V(0.3, 1.2, 0.34), T * P(-armSide * 0.7, 2.25, 0), red)
+		b:box(V(0.3, 0.3, 1.3), T * P(armSide * 0.55, 2.75, -0.55), red)
+		b:ball(0.36, T * P(armSide * 0.55, 2.75, -1.25), red)
+		b:box(V(0.1, 0.1, 0.35), T * P(armSide * 0.55, 2.78, -1.5), red)
+	end
+	suit(-1.45, -90, -1, c.Red)
+	suit(1.45, 90, 1, c.Red:Lerp(BLACK, 0.12))
+end
+
+-- Purple Titan Buggy: a tiny purple hatchback with gold trim
+DEFAULTS.TitanBuggy = {Body = rgb(120, 60, 170), Gold = rgb(220, 180, 60)}
+function FIGURES.TitanBuggy(b, c)
+	for _, x in ipairs({-1.05, 1.05}) do
+		for _, z in ipairs({-0.72, 0.72}) do
+			detail(b:cyl(0.8, 0.3, P(x, 0.4, z) * R(0, 90, 0), BLACK))
+			detail(b:cyl(0.42, 0.34, P(x, 0.4, z) * R(0, 90, 0), rgb(170, 170, 180)))
+		end
+	end
+	b:box(V(2.6, 0.7, 1.4), P(0, 0.78, 0), c.Body)
+	b:egg(V(0.9, 0.7, 1.4), P(1.25, 0.8, 0), c.Body)
+	b:egg(V(0.7, 0.7, 1.4), P(-1.3, 0.82, 0), c.Body)
+	b:egg(V(1.9, 1.1, 1.36), P(-0.1, 1.35, 0), c.Body)
+	detail(b:egg(V(1.7, 0.72, 1.42), P(-0.1, 1.45, 0), rgb(60, 70, 90), Enum.Material.Glass))
+	b:box(V(2.9, 0.1, 1.44), P(0, 0.98, 0), c.Gold)
+	for _, z in ipairs({-0.45, 0.45}) do
+		detail(b:ball(0.26, P(1.62, 0.9, z), rgb(255, 240, 170), Enum.Material.Neon))
+	end
+	detail(b:box(V(0.05, 0.25, 0.8), P(1.68, 0.62, 0), BLACK))
+end
+
+-- Sus Purple Birthday Milkshake: the purple shake with a straw and a birthday candle, no logos
+DEFAULTS.PurpleShake = {Cup = rgb(245, 245, 250), Shake = rgb(125, 70, 180)}
+function FIGURES.PurpleShake(b, c)
+	b:egg(V(1.9, 0.08, 1.6), P(0.35, 0.04, -0.3), c.Shake)
+	b:cyl(1.3, 2.0, P(0, 1.0, 0) * R(0, 0, 90), c.Cup)
+	b:cyl(1.33, 0.6, P(0, 1.1, 0) * R(0, 0, 90), c.Shake)
+	b:egg(V(1.28, 0.52, 1.28), P(0, 2.02, 0), c.Shake)
+	detail(b:egg(V(1.34, 0.62, 1.34), P(0, 2.05, 0), rgb(230, 230, 240), Enum.Material.Glass)).Transparency = 0.55
+	b:egg(V(0.22, 0.45, 0.22), P(0.56, 1.65, -0.4), c.Shake)
+	b:cyl(0.16, 1.8, P(0.28, 2.65, 0) * R(0, 0, 72), WHITE)
+	b:cyl(0.17, 0.3, P(0.4, 3.0, 0) * R(0, 0, 72), c.Shake)
+	detail(b:box(V(0.09, 0.42, 0.09), P(-0.32, 2.45, 0), rgb(255, 150, 200)))
+	detail(b:egg(V(0.14, 0.22, 0.14), P(-0.32, 2.76, 0), rgb(255, 200, 80), Enum.Material.Neon))
+end
+
+-- Chonky Gray Bunny: an enormous round gray rabbit
+DEFAULTS.ChonkyBunny = {Fur = rgb(150, 150, 158), Light = rgb(225, 225, 230), Pink = rgb(240, 160, 170)}
+function FIGURES.ChonkyBunny(b, c)
+	for _, s in ipairs({-1, 1}) do
+		b:egg(V(0.7, 0.35, 1.1), P(s * 0.55, 0.18, -0.25), c.Fur)
+		b:egg(V(0.45, 0.8, 0.45), P(s * 1.1, 1.5, -0.2) * R(0, 0, s * 20), c.Fur)
+	end
+	b:egg(V(2.3, 2.2, 1.9), P(0, 1.25, 0), c.Fur)
+	b:egg(V(1.5, 1.5, 0.5), P(0, 1.15, -0.75), c.Light)
+	b:egg(V(1.3, 1.15, 1.15), P(0, 2.75, -0.05), c.Fur)
+	for _, s in ipairs({-1, 1}) do
+		b:egg(V(0.45, 0.35, 0.3), P(s * 0.18, 2.55, -0.55), c.Light)
+		detail(b:egg(V(0.22, 0.12, 0.06), P(s * 0.28, 2.92, -0.55), BLACK))
+		b:box(V(0.28, 0.07, 0.08), P(s * 0.28, 2.97, -0.56), c.Fur:Lerp(BLACK, 0.2))
+		local ear = P(s * 0.3, 3.9, 0.05) * R(0, 0, -s * 10)
+		b:egg(V(0.36, 1.4, 0.2), ear, c.Fur)
+		detail(b:egg(V(0.2, 1.1, 0.1), ear * P(0, 0, -0.07), c.Pink))
+	end
+	detail(b:egg(V(0.18, 0.12, 0.1), P(0, 2.68, -0.66), c.Pink))
+	detail(b:box(V(0.22, 0.18, 0.05), P(0, 2.4, -0.6), WHITE))
+end
+
+-- Much Wow Shiba: the sitting shiba with the side-eye
+DEFAULTS.WowShiba = {Fur = rgb(214, 160, 90), Cream = rgb(245, 232, 205)}
+function FIGURES.WowShiba(b, c)
+	b:egg(V(1.3, 1.6, 1.4), P(0, 0.85, 0.15), c.Fur)
+	b:egg(V(0.8, 1.1, 0.4), P(0, 1.0, -0.45), c.Cream)
+	for _, s in ipairs({-1, 1}) do
+		b:egg(V(0.3, 0.9, 0.3), P(s * 0.3, 0.45, -0.45), c.Cream)
+	end
+	b:egg(V(0.6, 0.6, 0.35), P(0.5, 1.2, 0.8), c.Fur)
+	b:egg(V(0.3, 0.3, 0.37), P(0.5, 1.2, 0.8), c.Cream)
+	local H = P(0, 2.1, -0.15) * R(0, 15, -8)
+	b:egg(V(1.2, 1.0, 1.0), H, c.Fur)
+	b:egg(V(0.9, 0.55, 0.7), H * P(0, -0.2, -0.3), c.Cream)
+	b:egg(V(0.45, 0.3, 0.5), H * P(0, -0.12, -0.6), c.Cream)
+	detail(b:egg(V(0.18, 0.12, 0.1), H * P(0, -0.02, -0.84), BLACK))
+	for _, s in ipairs({-1, 1}) do
+		local ear = H * P(s * 0.35, 0.55, 0) * R(0, 0, -s * 15)
+		b:egg(V(0.32, 0.55, 0.14), ear, c.Fur)
+		detail(b:egg(V(0.18, 0.36, 0.06), ear * P(0, -0.04, -0.06), c.Cream))
+		detail(b:egg(V(0.19, 0.13, 0.06), H * P(s * 0.25, 0.1, -0.46), WHITE))
+		detail(b:egg(V(0.09, 0.11, 0.06), H * P(s * 0.25 - 0.05, 0.1, -0.49), BLACK)) -- the side-eye
+		b:egg(V(0.1, 0.07, 0.04), H * P(s * 0.25, 0.25, -0.45), c.Cream)
+	end
+	if c.Helmet then
+		local glass = detail(b:ball(1.9, H * P(0, 0.05, -0.1), rgb(200, 230, 255), Enum.Material.Glass))
+		glass.Transparency = 0.7
+		b:cyl(1.3, 0.3, H * P(0, -0.8, -0.1) * R(0, 0, 90), rgb(235, 235, 240))
+	end
+end
+
+-- Three-Legged Sneaker Shark: a shark standing on three legs in blue sneakers
+DEFAULTS.SneakerShark = {Skin = rgb(110, 140, 170), Belly = rgb(235, 238, 242), Shoe = rgb(40, 110, 230)}
+function FIGURES.SneakerShark(b, c)
+	for i, x in ipairs({-0.7, 0, 0.7}) do
+		local z = (i == 2) and 0.25 or -0.2
+		b:box(V(0.22, 1.25, 0.22), P(x, 1.0, z), c.Skin)
+		detail(b:egg(V(0.66, 0.32, 0.38), P(x - 0.12, 0.2, z), c.Shoe))
+		detail(b:box(V(0.66, 0.08, 0.38), P(x - 0.12, 0.05, z), WHITE))
+	end
+	b:egg(V(3.3, 1.1, 1.1), P(0, 2.1, 0), c.Skin)
+	b:egg(V(2.8, 0.62, 0.96), P(-0.1, 1.84, 0), c.Belly)
+	b:wedge(V(0.12, 0.8, 0.9), P(0.1, 2.95, 0) * R(0, 90, 0), c.Skin)
+	b:egg(V(0.3, 0.95, 0.12), P(1.78, 2.5, 0) * R(0, 0, -30), c.Skin)
+	b:egg(V(0.3, 0.75, 0.12), P(1.72, 1.85, 0) * R(0, 0, 30), c.Skin)
+	for _, s in ipairs({-1, 1}) do
+		b:egg(V(0.62, 0.12, 0.4), P(-0.3, 1.75, s * 0.6) * R(-s * 25, 0, 0), c.Skin)
+		detail(b:ball(0.2, P(-1.1, 2.28, s * 0.42), BLACK))
+	end
+	detail(b:box(V(0.6, 0.05, 1.0), P(-1.15, 1.95, 0), rgb(60, 60, 70)))
+end
+
+-- Tung-Tung Log Guy: a wooden log with a big grin, holding a bat
+DEFAULTS.LogBatGuy = {Wood = rgb(170, 120, 70), Bat = rgb(205, 165, 105)}
+function FIGURES.LogBatGuy(b, c)
+	for _, s in ipairs({-1, 1}) do
+		b:box(V(0.22, 0.6, 0.22), P(s * 0.3, 0.3, 0), c.Wood:Lerp(BLACK, 0.2))
+		b:egg(V(0.34, 0.2, 0.5), P(s * 0.3, 0.08, -0.1), c.Wood:Lerp(BLACK, 0.35))
+	end
+	b:cyl(1.2, 3.0, P(0, 2.05, 0) * R(0, 0, 90), c.Wood, Enum.Material.Wood)
+	b:cyl(1.1, 0.05, P(0, 3.56, 0) * R(0, 0, 90), c.Wood:Lerp(WHITE, 0.3), Enum.Material.Wood)
+	for _, s in ipairs({-1, 1}) do
+		b:eye(P(s * 0.25, 2.95, -0.57), 0.42)
+		detail(b:box(V(0.3, 0.07, 0.05), P(s * 0.25, 3.25, -0.6), BLACK))
+	end
+	detail(b:egg(V(0.62, 0.26, 0.08), P(0, 2.4, -0.59), rgb(110, 30, 30)))
+	b:box(V(0.16, 0.9, 0.16), P(-0.7, 1.85, 0) * R(0, 0, -12), c.Wood)
+	b:box(V(0.16, 0.9, 0.16), P(0.74, 2.35, -0.1) * R(0, 0, -40), c.Wood)
+	b:cyl(0.2, 1.7, P(1.0, 3.15, -0.15) * R(0, 0, 70), c.Bat, Enum.Material.Wood)
+	b:egg(V(0.7, 0.3, 0.3), P(1.18, 3.65, -0.15) * R(0, 0, 70), c.Bat, Enum.Material.Wood)
+end
+
+-- Cappuccino Ballerina: a coffee-cup head on a dancing ballerina
+DEFAULTS.CappuccinoBallerina = {Cup = rgb(248, 246, 240), Coffee = rgb(150, 100, 60), Tutu = rgb(255, 170, 200), Skin = rgb(236, 200, 170)}
+function FIGURES.CappuccinoBallerina(b, c)
+	for _, s in ipairs({-1, 1}) do
+		b:box(V(0.14, 1.35, 0.14), P(s * 0.14, 0.78, 0) * R(0, 0, s * -4), c.Skin)
+		b:egg(V(0.18, 0.3, 0.22), P(s * 0.17, 0.12, 0), c.Tutu)
+	end
+	b:cyl(1.9, 0.14, P(0, 1.5, 0) * R(0, 0, 90), c.Tutu)
+	b:cyl(1.5, 0.2, P(0, 1.6, 0) * R(0, 0, 90), c.Tutu:Lerp(WHITE, 0.35))
+	b:egg(V(0.55, 0.85, 0.42), P(0, 1.98, 0), c.Tutu)
+	for _, s in ipairs({-1, 1}) do
+		b:box(V(0.1, 0.78, 0.1), P(s * 0.475, 2.55, 0) * R(0, 0, -s * 27), c.Skin)
+		b:box(V(0.1, 0.75, 0.1), P(s * 0.425, 3.2, 0) * R(0, 0, s * 37), c.Skin)
+	end
+	b:cyl(0.9, 0.75, P(0, 2.75, 0) * R(0, 0, 90), c.Cup)
+	b:cyl(0.82, 0.05, P(0, 3.12, 0) * R(0, 0, 90), c.Coffee)
+	b:egg(V(0.32, 0.05, 0.26), P(0, 3.15, 0), c.Cup)
+	b:egg(V(0.14, 0.42, 0.34), P(0.5, 2.76, 0), c.Cup)
+	for _, s in ipairs({-1, 1}) do
+		detail(b:egg(V(0.1, 0.14, 0.05), P(s * 0.15, 2.85, -0.45), BLACK))
+	end
+	detail(b:egg(V(0.22, 0.08, 0.05), P(0, 2.65, -0.45), rgb(170, 60, 70)))
+end
+
+-- Crocodile Bomber Plane: a crocodile that is also a bomber plane, on a display stand
+DEFAULTS.CrocBomber = {Skin = rgb(80, 140, 70), Belly = rgb(200, 210, 150), Metal = rgb(140, 145, 150)}
+function FIGURES.CrocBomber(b, c)
+	b:cyl(1.3, 0.16, P(0, 0.08, 0) * R(0, 0, 90), c.Metal:Lerp(BLACK, 0.4))
+	b:box(V(0.15, 1.3, 0.15), P(0, 0.75, 0), c.Metal)
+	b:egg(V(3.4, 0.9, 0.9), P(0, 1.8, 0), c.Skin)
+	b:egg(V(3.0, 0.5, 0.8), P(0, 1.62, 0), c.Belly)
+	b:box(V(1.1, 0.3, 0.55), P(-2.0, 1.76, 0), c.Skin)
+	b:box(V(1.0, 0.18, 0.5), P(-1.95, 1.54, 0) * R(0, 0, -8), c.Skin)
+	for i = 0, 3 do
+		for _, s in ipairs({-1, 1}) do
+			detail(b:box(V(0.06, 0.12, 0.06), P(-2.42 + i * 0.25, 1.64, s * 0.26), WHITE))
+		end
+	end
+	for _, s in ipairs({-1, 1}) do
+		b:egg(V(0.26, 0.22, 0.26), P(-1.35, 2.2, s * 0.22), c.Skin)
+		detail(b:ball(0.1, P(-1.44, 2.24, s * 0.3), BLACK))
+		b:cyl(0.35, 0.7, P(-0.35, 1.7, s * 1.0), c.Metal)
+		detail(b:box(V(0.05, 0.9, 0.1), P(-0.72, 1.7, s * 1.0), BLACK))
+		detail(b:box(V(0.05, 0.1, 0.9), P(-0.72, 1.7, s * 1.0), BLACK))
+		b:egg(V(0.8, 0.3, 0.3), P(0.1, 1.24, s * 0.4), c.Metal:Lerp(BLACK, 0.3))
+	end
+	b:box(V(0.8, 0.1, 3.2), P(-0.1, 1.85, 0), c.Metal)
+	b:egg(V(1.5, 0.42, 0.42), P(1.9, 1.9, 0), c.Skin)
+	b:box(V(0.5, 0.6, 0.08), P(2.4, 2.2, 0), c.Skin)
+	b:box(V(0.4, 0.08, 1.2), P(2.3, 1.95, 0), c.Metal)
+end
+
+-- Frowning Cat: the famously grumpy cat, sitting, with its permanent frown
+DEFAULTS.GrumpyCat = {Fur = rgb(240, 232, 218), Mask = rgb(150, 125, 105), Eye = rgb(90, 150, 220)}
+function FIGURES.GrumpyCat(b, c)
+	b:egg(V(1.3, 1.5, 1.3), P(0, 0.8, 0.1), c.Fur)
+	for _, s in ipairs({-1, 1}) do
+		b:egg(V(0.3, 0.25, 0.45), P(s * 0.25, 0.12, -0.5), c.Fur)
+	end
+	b:egg(V(0.25, 0.25, 1.1), P(0.6, 0.2, 0.4) * R(0, 40, 0), c.Fur)
+	b:egg(V(1.35, 1.1, 1.1), P(0, 2.0, -0.1), c.Fur)
+	b:egg(V(0.9, 0.7, 0.5), P(0, 2.0, -0.45), c.Mask)
+	for _, s in ipairs({-1, 1}) do
+		b:egg(V(0.35, 0.5, 0.15), P(s * 0.42, 2.6, -0.05) * R(0, 0, -s * 20), c.Mask)
+		detail(b:egg(V(0.2, 0.14, 0.06), P(s * 0.24, 2.12, -0.68), c.Eye))
+		detail(b:egg(V(0.08, 0.12, 0.05), P(s * 0.24, 2.12, -0.71), BLACK))
+		b:box(V(0.26, 0.06, 0.06), P(s * 0.24, 2.21, -0.7) * R(0, 0, s * 15), c.Mask:Lerp(BLACK, 0.3))
+	end
+	detail(b:egg(V(0.14, 0.1, 0.06), P(0, 1.98, -0.73), rgb(200, 130, 130)))
+	detail(b:box(V(0.2, 0.05, 0.05), P(-0.09, 1.82, -0.7) * R(0, 0, 25), BLACK))
+	detail(b:box(V(0.2, 0.05, 0.05), P(0.09, 1.82, -0.7) * R(0, 0, -25), BLACK))
+end
+
+-- Everything's Fine Dog: a dog in a bowler hat with a mug, calm, while the room burns
+DEFAULTS.FineDog = {Fur = rgb(230, 190, 90), Hat = rgb(40, 36, 34), Wood = rgb(130, 90, 60)}
+function FIGURES.FineDog(b, c)
+	local fire, core = rgb(255, 120, 30), rgb(255, 220, 80)
+	for _, f in ipairs({{1.2, 1.0, 0.6, 1.0}, {-1.25, 1.2, 0.8, 1.2}, {1.0, 2.3, 0.8, 0.9}, {-1.0, 2.6, 1.0, 1.0}, {0, 3.4, 1.0, 0.8}}) do
+		detail(b:egg(V(0.6, f[4] * 1.4, 0.4), P(f[1], f[2], f[3]), fire, Enum.Material.Neon))
+		detail(b:egg(V(0.3, f[4] * 0.8, 0.42), P(f[1], f[2] - 0.15, f[3] - 0.05), core, Enum.Material.Neon))
+	end
+	b:box(V(1.0, 0.12, 1.0), P(0.3, 0.9, 0.2), c.Wood)
+	for _, x in ipairs({-0.15, 0.75}) do
+		b:box(V(0.1, 0.9, 0.1), P(x, 0.45, 0.2), c.Wood)
+	end
+	b:egg(V(1.0, 1.2, 0.9), P(0.3, 1.5, 0.2), c.Fur)
+	b:egg(V(0.28, 0.5, 0.3), P(-0.05, 1.5, -0.2) * R(-60, 0, 0), c.Fur)
+	b:egg(V(1.0, 0.85, 0.85), P(0.3, 2.4, 0.1), c.Fur)
+	for _, s in ipairs({-1, 1}) do
+		b:egg(V(0.25, 0.5, 0.15), P(0.3 + s * 0.46, 2.32, 0.1), c.Fur:Lerp(rgb(120, 70, 30), 0.6))
+		b:eye(P(0.3 + s * 0.18, 2.5, -0.3), 0.2)
+	end
+	detail(b:box(V(0.25, 0.04, 0.04), P(0.3, 2.2, -0.34), BLACK))
+	b:cyl(0.95, 0.06, P(0.3, 2.76, 0.1) * R(0, 0, 90), c.Hat)
+	b:egg(V(0.62, 0.52, 0.62), P(0.3, 2.95, 0.1), c.Hat)
+	b:box(V(1.3, 0.1, 0.8), P(-0.75, 1.55, -0.55), c.Wood)
+	b:box(V(0.12, 1.5, 0.12), P(-0.75, 0.75, -0.55), c.Wood)
+	detail(b:cyl(0.3, 0.36, P(-0.7, 1.78, -0.62) * R(0, 0, 90), WHITE))
+end
+
+-- Sus Space Bean: the little bean-shaped astronaut with a visor and a backpack
+DEFAULTS.SusBean = {Body = rgb(200, 40, 40), Visor = rgb(150, 210, 230)}
+function FIGURES.SusBean(b, c)
+	for _, s in ipairs({-1, 1}) do
+		b:box(V(0.55, 0.6, 0.9), P(s * 0.36, 0.35, 0), c.Body)
+		b:egg(V(0.55, 0.3, 0.9), P(s * 0.36, 0.08, 0), c.Body)
+	end
+	b:egg(V(1.5, 2.2, 1.3), P(0, 1.6, 0), c.Body)
+	b:box(V(1.0, 1.1, 0.45), P(0, 1.5, 0.72), c.Body:Lerp(BLACK, 0.2))
+	detail(b:egg(V(1.0, 0.55, 0.5), P(0, 2.1, -0.5), c.Visor, Enum.Material.Glass)).Reflectance = 0.2
+	detail(b:egg(V(0.32, 0.12, 0.06), P(0.2, 2.22, -0.76), WHITE))
+end
+
+-- Dramatic Look Hamster: a little rodent whipping its head around to stare at you
+DEFAULTS.DramaticHamster = {Fur = rgb(170, 120, 70), Light = rgb(225, 195, 150)}
+function FIGURES.DramaticHamster(b, c)
+	local body = P(0, 0, 0) * R(0, 70, 0)
+	b:egg(V(1.0, 1.8, 0.9), body * P(0, 1.0, 0), c.Fur)
+	b:egg(V(0.6, 1.2, 0.3), body * P(0, 0.95, -0.38), c.Light)
+	for _, s in ipairs({-1, 1}) do
+		b:egg(V(0.3, 0.2, 0.5), body * P(s * 0.25, 0.1, -0.2), c.Fur)
+		b:egg(V(0.18, 0.4, 0.18), body * P(s * 0.22, 1.35, -0.45) * R(30, 0, 0), c.Fur)
+	end
+	local H = P(0, 2.1, 0) * R(-6, 0, 5)
+	b:egg(V(0.9, 0.8, 0.85), H, c.Fur)
+	b:egg(V(0.45, 0.32, 0.32), H * P(0, -0.14, -0.35), c.Light)
+	detail(b:egg(V(0.14, 0.1, 0.08), H * P(0, -0.08, -0.51), rgb(60, 40, 30)))
+	for _, s in ipairs({-1, 1}) do
+		detail(b:egg(V(0.24, 0.26, 0.1), H * P(s * 0.22, 0.1, -0.36), BLACK))
+		detail(b:ball(0.08, H * P(s * 0.2, 0.16, -0.42), WHITE))
+		b:egg(V(0.2, 0.18, 0.1), H * P(s * 0.34, 0.38, 0), c.Fur:Lerp(BLACK, 0.2))
+	end
+end
+
+-- Rainbow Pastry Cat: a gray cat with a frosted pastry body, flying on a rainbow
+DEFAULTS.RainbowPastryCat = {Crust = rgb(240, 200, 150), Frosting = rgb(250, 140, 200), Fur = rgb(150, 150, 155)}
+function FIGURES.RainbowPastryCat(b, c)
+	b:cyl(1.2, 0.14, P(0, 0.07, 0) * R(0, 0, 90), rgb(70, 60, 90))
+	b:box(V(0.14, 0.9, 0.14), P(0, 0.55, 0), rgb(120, 120, 130))
+	local rainbow = {rgb(255, 50, 50), rgb(255, 150, 30), rgb(255, 235, 40), rgb(60, 220, 60), rgb(40, 150, 255), rgb(140, 70, 230)}
+	for i, color in ipairs(rainbow) do
+		detail(b:box(V(2.0, 0.17, 0.12), P(-1.75, 2.05 - i * 0.17, 0), color))
+	end
+	b:box(V(1.6, 1.2, 0.4), P(0, 1.6, 0), c.Crust)
+	b:box(V(1.36, 0.96, 0.44), P(0, 1.6, 0), c.Frosting)
+	for _, spot in ipairs({{-0.45, 1.85}, {0.1, 1.95}, {0.45, 1.7}, {-0.2, 1.45}, {0.3, 1.3}, {-0.5, 1.3}}) do
+		detail(b:box(V(0.1, 0.1, 0.05), P(spot[1], spot[2], -0.24), rgb(220, 40, 150)))
+	end
+	for _, x in ipairs({-0.55, -0.25, 0.25, 0.55}) do
+		b:box(V(0.16, 0.26, 0.16), P(x, 0.92, 0), c.Fur)
+	end
+	b:box(V(0.5, 0.14, 0.14), P(-1.0, 1.55, 0), c.Fur)
+	b:egg(V(0.85, 0.66, 0.45), P(0.95, 1.45, -0.05), c.Fur)
+	for _, s in ipairs({-1, 1}) do
+		b:egg(V(0.2, 0.3, 0.14), P(0.95 + s * 0.26, 1.8, -0.05) * R(0, 0, -s * 15), c.Fur)
+		detail(b:ball(0.12, P(0.95 + s * 0.16, 1.5, -0.27), BLACK))
+		detail(b:egg(V(0.12, 0.08, 0.04), P(0.95 + s * 0.28, 1.36, -0.26), rgb(255, 150, 170)))
+	end
+end
+
+---------------------------------------------------------------------
+-- BUILD / FIT / RELIEF
+---------------------------------------------------------------------
+local function bounds(model)
+	local lo, hi = V(math.huge, math.huge, math.huge), V(-math.huge, -math.huge, -math.huge)
+	for _, p in ipairs(model:GetDescendants()) do
+		if p:IsA("BasePart") then
+			local cf, half = p.CFrame, p.Size / 2
+			-- the part's world-space extents (its box, turned)
+			local ex = math.abs(cf.XVector.X) * half.X + math.abs(cf.YVector.X) * half.Y + math.abs(cf.ZVector.X) * half.Z
+			local ey = math.abs(cf.XVector.Y) * half.X + math.abs(cf.YVector.Y) * half.Y + math.abs(cf.ZVector.Y) * half.Z
+			local ez = math.abs(cf.XVector.Z) * half.X + math.abs(cf.YVector.Z) * half.Y + math.abs(cf.ZVector.Z) * half.Z
+			local e = V(ex, ey, ez)
+			lo = lo:Min(cf.Position - e)
+			hi = hi:Max(cf.Position + e)
+		end
+	end
+	return lo, hi
+end
+MemeFigures.bounds = bounds
+
+-- scales every part around the origin (works everywhere, no Model:ScaleTo needed)
+local function scale(model, s, zExtra)
+	zExtra = zExtra or 1
+	for _, p in ipairs(model:GetDescendants()) do
+		if p:IsA("BasePart") then
+			local cf = p.CFrame
+			local pos = cf.Position
+			local size = p.Size * s
+			if zExtra ~= 1 then
+				-- press flat along world Z: shrink whichever of the part's own axes points most along Z
+				local ax, ay, az = math.abs(cf.XVector.Z), math.abs(cf.YVector.Z), math.abs(cf.ZVector.Z)
+				local squashX = ax >= ay and ax >= az
+				if squashX then
+					size = V(size.X * zExtra, size.Y, size.Z)
+				elseif ay >= az then
+					size = V(size.X, size.Y * zExtra, size.Z)
+				else
+					size = V(size.X, size.Y, size.Z * zExtra)
+				end
+				-- round parts can't be squashed across their roundness; swap in a mesh that can
+				if p:IsA("Part") and p.Shape == Enum.PartType.Ball then
+					p.Shape = Enum.PartType.Block
+					local mesh = Instance.new("SpecialMesh")
+					mesh.MeshType = Enum.MeshType.Sphere
+					mesh.Parent = p
+				elseif p:IsA("Part") and p.Shape == Enum.PartType.Cylinder and not squashX then
+					p.Shape = Enum.PartType.Block
+					local mesh = Instance.new("SpecialMesh")
+					mesh.MeshType = Enum.MeshType.Cylinder
+					mesh.Parent = p
+				end
+			end
+			p.Size = size
+			p.CFrame = cf.Rotation + V(pos.X * s, pos.Y * s, pos.Z * s * zExtra)
+		end
+	end
+end
+
+function MemeFigures.fit(model, width, height)
+	local lo, hi = bounds(model)
+	local size = hi - lo
+	local s = math.min(width / math.max(size.X, size.Z), height / size.Y)
+	scale(model, s)
+	return s
+end
+
+function MemeFigures.build(spec)
+	local kind = spec and FIGURES[spec.Kind]
+	if not kind then return nil end
+	local model = Instance.new("Model")
+	model.Name = "MemeFigure"
+	local palette = setmetatable(table.clone(spec.Colors or {}), {__index = DEFAULTS[spec.Kind] or {}})
+	kind(setmetatable({Model = model}, Builder), palette)
+	if YAW[spec.Kind] then
+		local turn = R(0, YAW[spec.Kind], 0)
+		for _, p in ipairs(model:GetChildren()) do
+			if p:IsA("BasePart") then p.CFrame = turn * p.CFrame end
+		end
+	end
+	-- a world's finish (gold, ice, lava...) over everything but the eyes and small details
+	if spec.Tint or spec.Material then
+		for _, p in ipairs(model:GetChildren()) do
+			if p:IsA("BasePart") and p.Name ~= "Detail" then
+				if spec.Tint then p.Color = p.Color:Lerp(spec.Tint, spec.TintAmount or 0.5) end
+				if spec.Material then p.Material = spec.Material end
+			end
+		end
+	end
+	-- stand it on y = 0, centered
+	local lo, hi = bounds(model)
+	local shift = V(-(lo.X + hi.X) / 2, -lo.Y, -(lo.Z + hi.Z) / 2)
+	for _, p in ipairs(model:GetChildren()) do
+		if p:IsA("BasePart") then p.CFrame = p.CFrame + shift end
+	end
+	return model
+end
+
+-- the figure pressed flat into a relief (a coin face or a carved stone), shaded by the
+-- figure's own light and dark colors so the silhouette reads like a real carving
+function MemeFigures.relief(spec, width, height, depth, color, material)
+	local model = MemeFigures.build(spec)
+	if not model then return nil end
+	local lo, hi = bounds(model)
+	local size = hi - lo
+	for _, p in ipairs(model:GetChildren()) do
+		if p:IsA("BasePart") then p.CFrame = p.CFrame - V(0, size.Y / 2, 0) end
+	end
+	local s = math.min(width / size.X, height / size.Y)
+	scale(model, s, depth / math.max(size.Z * s, 0.01))
+	for _, p in ipairs(model:GetChildren()) do
+		if p:IsA("BasePart") then
+			local c = p.Color
+			local light = 0.3 * c.R + 0.55 * c.G + 0.15 * c.B
+			p.Color = color:Lerp(Color3.new(0, 0, 0), 0.35 * (1 - light)):Lerp(Color3.new(1, 1, 1), 0.15 * light)
+			p.Material = material or Enum.Material.Metal
+			p.Transparency = 0
+			p.Reflectance = 0
+		end
+	end
+	return model
+end
+
+return MemeFigures
 ]=])
 install(game:GetService("ReplicatedStorage"), "PickaxeModels", "ModuleScript", [=[
 -- PickaxeModels (ModuleScript in ReplicatedStorage)
@@ -3711,54 +4534,136 @@ return Architecture
 ]=])
 install(game:GetService("ServerScriptService"), "BuriedPainting", "ModuleScript", [=[
 -- BuriedPainting (ModuleScript in ServerScriptService)
--- A dug-up find lying in the crater: the artifact's real 3D object (painting, statue, coin,
--- stone tablet or crystal, see ArtifactModels) with crumbs of dirt stuck to its front and a
--- soft glow in its rarity color. DigManager lays it face-up in the fresh crater, half sunk
--- into the soil; its ProximityPrompt lets the finder pull it out (FindPullClient animates it).
+-- A dug-up find in the crater: the artifact's real 3D object (a meme sculpture, painting,
+-- coin, stone tablet or crystal, see ArtifactModels) stuck half-way into a mound of dirt,
+-- with crumbs of soil on it and a soft glow in its rarity color around the mound. No icons
+-- or chests: what you see in the dirt is the meme itself. DigManager places it in the fresh
+-- crater; its ProximityPrompt lets the finder pull it out (FindPullClient animates it).
+--   * sculptures stand upright facing the finder, their lower part buried
+--   * flat things (paintings, coins, tablets, crystals) lie tilted, half sunk into the soil
 --
 -- Model layout (for the animation): PrimaryPart "Core" is the center; the front faces the
--- Core's -Z; attachments GripLeft (+X) and GripRight (-X) are where the hands hold it; parts
--- named "Dirt" fall off when it's pulled out.
--- Usage: BuriedPainting(artifact, rarityColor, cframe, rng) -> Model (not parented)
+-- Core's -Z; parts named "Dirt" are crumbs stuck to it (they fall off when it's pulled out);
+-- parts named "Mound" / "Glow" belong to the ground around it (they fade away).
+-- Attribute Sunk = how many studs of it are under the ground.
+-- Usage: BuriedPainting(artifact, rarityColor, placement, rng) -> Model (not parented)
+--   placement = {Floor = Vector3, Up = Vector3, ToPlayer = Vector3 (flat unit), DirtColor = Color3}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ArtifactModels = require(ReplicatedStorage:WaitForChild("ArtifactModels"))
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 
 local rgb = Color3.fromRGB
-local DIRT = {rgb(122, 88, 60), rgb(98, 70, 48), rgb(140, 104, 72)}
 
-return function(artifact, rarityColor, cf, rng)
+local function groundPart(model, name, size, cf, color, material)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Size = size
+	p.CFrame = cf
+	p.Color = color
+	p.Material = material or Enum.Material.Ground
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	p.Parent = model
+	return p
+end
+
+local function lump(model, name, size, cf, color)
+	local p = groundPart(model, name, size, cf, color)
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Sphere
+	mesh.Parent = p
+	return p
+end
+
+-- a frame at pos whose front (-Z) looks along look, with up as close to up as possible
+local function facing(pos, look, up)
+	local right = look:Cross(up).Unit
+	return CFrame.fromMatrix(pos, right, right:Cross(look), -look)
+end
+
+return function(artifact, rarityColor, placement, rng)
 	rng = rng or Random.new()
+	local floor, up = placement.Floor, placement.Up or Vector3.yAxis
+	local toPlayer = placement.ToPlayer or Vector3.zAxis
+	local dirt = placement.DirtColor or rgb(122, 88, 60)
 	local model = ArtifactModels.build(artifact)
 	model.Name = "BuriedFind"
 	local width = model:GetAttribute("Width") or 3
 	local half = model:GetAttribute("HalfHeight") or 2
+	local upright = model:GetAttribute("Form") == "Figure"
 
-	-- crumbs of soil stuck to the front
-	for i = 1, 8 do
-		local x = rng:NextNumber(-width / 2 + 0.3, width / 2 - 0.3)
-		local y = rng:NextNumber(-half + 0.3, half - 0.3)
-		local crumb = Instance.new("Part")
-		crumb.Name = "Dirt"
-		crumb.Size = Vector3.new(rng:NextNumber(0.3, 0.7), rng:NextNumber(0.22, 0.45), 0.16)
-		crumb.CFrame = CFrame.new(x, y, -0.45 - (i % 3) * 0.1) * CFrame.Angles(rng:NextNumber(-0.3, 0.3), rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, 6))
-		crumb.Color = DIRT[rng:NextInteger(1, #DIRT)]
-		crumb.Material = Enum.Material.Ground
-		crumb.Anchored = true
-		crumb.CanCollide = false
-		crumb.CanQuery = false
-		crumb.CanTouch = false
-		crumb.Parent = model
+	-- where the object sits (in its own space, before it's moved to the crater)
+	local cf, sunk
+	if upright then
+		-- standing, facing the finder, leaning back a little, the bottom quarter under the dirt
+		sunk = half * 2 * 0.25
+		local look = (toPlayer - up * toPlayer:Dot(up))
+		look = look.Magnitude > 0.01 and look.Unit or Vector3.zAxis
+		cf = facing(floor + up * (half - sunk), look, up) * CFrame.Angles(math.rad(12), 0, 0)
+	else
+		-- lying face up, its top edge pointing away from the finder, tipped toward them
+		local away = -toPlayer
+		local yAxis = (away - up * away:Dot(up))
+		yAxis = yAxis.Magnitude > 0.01 and yAxis.Unit or Vector3.xAxis
+		local zAxis = -up
+		local xAxis = yAxis:Cross(zAxis)
+		cf = CFrame.fromMatrix(floor + up * 0.05, xAxis, yAxis, zAxis) * CFrame.Angles(math.rad(-16), 0, 0)
+		sunk = 0.5
 	end
-	local glow = Instance.new("PointLight")
-	glow.Color = rarityColor
-	glow.Range = 9
-	glow.Brightness = 1.2
-	glow.Parent = model.PrimaryPart
 
-	-- the meme's emoji floating just above it, so you know what you dug up
-	ArtifactModels.addEmojiTag(model, artifact, 2.6)
+	-- crumbs of soil stuck to its front
+	for i = 1, 7 do
+		local x = rng:NextNumber(-width / 2 + 0.3, width / 2 - 0.3)
+		local y = rng:NextNumber(-half + 0.3, upright and 0 or half - 0.3)
+		groundPart(model, "Dirt", Vector3.new(rng:NextNumber(0.3, 0.6), rng:NextNumber(0.22, 0.4), 0.16),
+			CFrame.new(x, y, -0.5 - (i % 3) * 0.1) * CFrame.Angles(rng:NextNumber(-0.3, 0.3), rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, 6)),
+			dirt:Lerp(Color3.new(0, 0, 0), rng:NextNumber(0, 0.25)))
+	end
 	model:PivotTo(cf)
+
+	-- the dirt mound it's stuck in: lumps of soil in a ring around where it enters the ground
+	local flat = toPlayer - up * toPlayer:Dot(up)
+	local ground = facing(floor, flat.Magnitude > 0.01 and flat.Unit or Vector3.zAxis, up)
+	local ring = math.max(width * 0.55, 1.3)
+	local count = 9
+	for i = 1, count do
+		local a = (i / count) * math.pi * 2 + rng:NextNumber(-0.2, 0.2)
+		local r = ring * rng:NextNumber(0.75, 1.05)
+		local size = rng:NextNumber(0.9, 1.5)
+		lump(model, "Mound", Vector3.new(size * 1.3, size * 0.55, size),
+			ground * CFrame.new(math.cos(a) * r, size * 0.05, math.sin(a) * r * 0.8) * CFrame.Angles(0, rng:NextNumber(0, 6), 0),
+			dirt:Lerp(Color3.new(0, 0, 0), rng:NextNumber(0.05, 0.3)))
+	end
+
+	-- a soft glow in the rarity's color seeping out of the soil
+	local glow = groundPart(model, "Glow", Vector3.new(0.12, ring * 3, ring * 3), ground * CFrame.new(0, 0.08, 0) * CFrame.Angles(0, 0, math.rad(90)),
+		rarityColor, Enum.Material.Neon)
+	glow.Shape = Enum.PartType.Cylinder
+	glow.Transparency = 0.72
+	local light = Instance.new("PointLight")
+	light.Color = rarityColor
+	light.Range = 10
+	light.Brightness = 1.4
+	light.Parent = model.PrimaryPart
+	local motes = Instance.new("ParticleEmitter")
+	motes.Name = "GlowMotes"
+	motes.Color = ColorSequence.new(rarityColor)
+	motes.LightEmission = 0.9
+	motes.Size = NumberSequence.new(0.22, 0)
+	motes.Transparency = NumberSequence.new(0.2, 1)
+	motes.Lifetime = NumberRange.new(1, 1.8)
+	motes.Speed = NumberRange.new(1, 2.5)
+	motes.SpreadAngle = Vector2.new(25, 25)
+	motes.Rate = 3 + ArtifactData.GetRarityIndex(artifact.Rarity) * 1.5
+	motes.EmissionDirection = Enum.NormalId.Right -- the disc's X points up
+	motes.Parent = glow
+
+	model:SetAttribute("Sunk", sunk)
+	model:SetAttribute("Upright", upright)
 	return model
 end
 ]=])
@@ -4268,7 +5173,7 @@ local MINIGAME_LUCK = {Perfect = 3, Good = 1.5, Miss = 1} -- multiplies the shov
 local ANNOUNCE_FROM = ArtifactData.GetRarityIndex("Mythic")
 local MAX_REACH = 14 -- how far from your character you can dig
 local PICKUP_SECONDS = 25  -- how long a buried painting waits to be pulled out before it sinks back into the dirt
-local PULL_SECONDS = 2.9   -- the pull-out animation (the pickaxe is put away meanwhile)
+local PULL_SECONDS = 1.1   -- the pull-out animation (the pickaxe is put away meanwhile)
 local COMBO_WINDOW = 1.4   -- seconds between digs to keep a combo going
 local COMBO_MAX = 10
 local COMBO_LUCK = 0.04    -- each combo step adds +4% find chance (x10 combo = +36%)
@@ -4433,7 +5338,7 @@ local function isSolid(position)
 	return false
 end
 
--- A find is a framed painting lying in the crater. It waits in pending[player] until the
+-- A find is the meme's 3D object stuck in the dirt of the crater. It waits in pending[player] until the
 -- player pulls it out (ProximityPrompt) or it sinks back into the dirt.
 local pending = {} -- [player] = {Artifact = artifact, Model = painting, Info = info for the client}
 local findsFolder = workspace:FindFirstChild("BuriedFinds") or Instance.new("Folder")
@@ -4522,9 +5427,8 @@ getInventory.OnServerInvoke = function(player)
 	return list
 end
 
--- Where the painting lies: on the crater floor, face up, propped toward the finder and
--- half sunk into the soil
-local function paintingCFrame(player, position)
+-- Where the find goes: the crater floor under the dig spot, and which way the finder is
+local function findPlacement(player, position, zone)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Include
 	params.FilterDescendantsInstances = {terrain}
@@ -4535,11 +5439,7 @@ local function paintingCFrame(player, position)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	local toPlayer = root and (root.Position - floor) * Vector3.new(1, 0, 1) or Vector3.zero
 	toPlayer = toPlayer.Magnitude > 0.1 and toPlayer.Unit or Vector3.zAxis
-	local away = -toPlayer
-	local yAxis = (away - up * away:Dot(up)).Unit -- the picture's top edge points away from the finder
-	local zAxis = -up                              -- the picture faces the sky
-	local xAxis = yAxis:Cross(zAxis)
-	return CFrame.fromMatrix(floor + up * 0.05, xAxis, yAxis, zAxis) * CFrame.Angles(math.rad(-16), 0, 0)
+	return {Floor = floor, Up = up, ToPlayer = toPlayer, DirtColor = zone and zone.Color}
 end
 
 -- the painting is revealed: a burst of dirt, a flash of light in the rarity's color
@@ -4583,9 +5483,10 @@ local function giveArtifact(player, zone, luck, grade, position, forcedArtifact)
 		Timeout = PICKUP_SECONDS,
 	}
 
-	-- the framed painting lies in the crater, waiting to be pulled out
-	local cf = paintingCFrame(player, position)
-	local model = BuriedPainting(artifact, rarity.Color, cf, rng)
+	-- the meme itself is stuck in a mound of dirt in the crater, waiting to be pulled out
+	local placement = findPlacement(player, position, zone)
+	local model = BuriedPainting(artifact, rarity.Color, placement, rng)
+	local cf = model:GetPivot()
 	model:SetAttribute("Owner", player.UserId)
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Pull Out"
@@ -13510,10 +14411,12 @@ resultRemote.OnClientEvent:Connect(function(info)
 	if typeof(info.Painting) == "Instance" then
 		local model = info.Painting
 		buriedHighlight = Instance.new("Highlight")
-		buriedHighlight.FillTransparency = 0.85
+		buriedHighlight.FillTransparency = 0.9
 		buriedHighlight.FillColor = info.Color
 		buriedHighlight.OutlineColor = info.Color:Lerp(C.White, 0.3)
-		buriedHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		buriedHighlight.OutlineTransparency = 0.35
+		-- occluded: the part that's still under the dirt stays hidden
+		buriedHighlight.DepthMode = Enum.HighlightDepthMode.Occluded
 		buriedHighlight.Adornee = model
 		buriedHighlight.Parent = gui
 		local highlight = buriedHighlight
@@ -13529,7 +14432,7 @@ end)
 pullRemote.OnClientEvent:Connect(function(finder, _painting, info)
 	if finder ~= player or typeof(info) ~= "table" then return end
 	clearBuried()
-	task.delay(1.1, function()
+	task.delay(0.9, function()
 		say(foundText, foundStroke, "✨ You found " .. info.Name .. "!  " .. string.upper(info.Rarity) .. "  ·  +"
 			.. ArtifactData.FormatMoney(info.Income) .. "/s", info.Color:Lerp(C.White, 0.25), 3.5)
 	end)
@@ -13564,14 +14467,12 @@ end)
 ]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "FindPullClient", "LocalScript", [=[
 -- FindPullClient (LocalScript in StarterPlayer > StarterPlayerScripts)
--- The pull-out animation for dug-up paintings, played on every screen for whoever found it:
---   1. crouch: the digger squats down (knees bend, feet stay planted) and grabs the frame
---      while the painting wiggles loose in a puff of dirt
---   2. pull:   the painting is yanked out of the soil, dirt clumps fall off it
---   3. show:   it's lifted up over the head, picture facing the camera
---   4. stow:   it shrinks into a sparkle and goes into the inventory
--- The body is posed procedurally: Motor6D offsets for the squat and the bend, IKControls for
--- both arms (hands on the frame) and both legs (feet stay on the ground).
+-- The 1-second pull-out animation for dug-up memes, played on every screen for whoever
+-- found it (after they hold E on it):
+--   0.00-0.22  it wiggles loose and pops up out of the dirt in a burst of soil
+--   0.22-0.78  it flies in an arc straight to the finder, shrinking and turning to face them
+--   0.78-1.00  it dissolves into a sparkle at their chest (it's in the inventory now)
+-- The dirt mound and the rarity glow around it sink away while it flies.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13583,11 +14484,9 @@ local pullRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("PullF
 local player = Players.LocalPlayer
 
 -- timeline (seconds)
-local CROUCH_END = 0.4
-local PULL_END = 1.0
-local RAISE_END = 1.45
-local SHOW_END = 2.05
-local STOW_END = 2.4
+local RISE_END = 0.22
+local FLY_END = 0.78
+local DONE = 1.0
 
 local function smooth(u)
 	u = math.clamp(u, 0, 1)
@@ -13595,7 +14494,7 @@ local function smooth(u)
 end
 local function easeOutBack(u)
 	u = math.clamp(u, 0, 1)
-	local c1 = 1.6
+	local c1 = 1.7
 	return 1 + (c1 + 1) * (u - 1) ^ 3 + c1 * (u - 1) ^ 2
 end
 
@@ -13613,7 +14512,7 @@ local function burst(position, color, count, speed, size)
 	e.Enabled = false
 	e.Color = ColorSequence.new(color)
 	e.Size = NumberSequence.new(size or 0.5, 0)
-	e.Lifetime = NumberRange.new(0.5, 1)
+	e.Lifetime = NumberRange.new(0.4, 0.8)
 	e.Speed = NumberRange.new(speed * 0.6, speed)
 	e.SpreadAngle = Vector2.new(60, 60)
 	e.Acceleration = Vector3.new(0, -30, 0)
@@ -13621,59 +14520,54 @@ local function burst(position, color, count, speed, size)
 	e.LightEmission = 0.3
 	e.Parent = anchor
 	e:Emit(count)
-	Debris:AddItem(anchor, 1.6)
+	Debris:AddItem(anchor, 1.4)
 end
 
-local function attachment(parent, name, position)
-	local a = Instance.new("Attachment")
-	a.Name = name
-	a.WorldPosition = position or parent.Position
-	a.Parent = parent
-	return a
+local function sparkle(position, color)
+	local anchor = Instance.new("Part")
+	anchor.Anchored = true
+	anchor.CanCollide = false
+	anchor.CanQuery = false
+	anchor.CanTouch = false
+	anchor.Transparency = 1
+	anchor.Size = Vector3.one
+	anchor.CFrame = CFrame.new(position)
+	anchor.Parent = workspace
+	local e = Instance.new("ParticleEmitter")
+	e.Enabled = false
+	e.Color = ColorSequence.new(Color3.new(1, 1, 1), color)
+	e.LightEmission = 1
+	e.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0)})
+	e.Lifetime = NumberRange.new(0.35, 0.6)
+	e.Speed = NumberRange.new(4, 9)
+	e.SpreadAngle = Vector2.new(180, 180)
+	e.Drag = 6
+	e.Parent = anchor
+	e:Emit(28)
+	Debris:AddItem(anchor, 1)
 end
 
-local function ik(humanoid, name, chainRoot, endEffector, target, pole)
-	local c = Instance.new("IKControl")
-	c.Name = name
-	c.Type = Enum.IKControlType.Position
-	c.ChainRoot = chainRoot
-	c.EndEffector = endEffector
-	c.Target = target
-	c.Pole = pole
-	c.Weight = 0
-	c.SmoothTime = 0.04
-	c.Parent = humanoid
-	return c
-end
+local playing = {} -- [model] = true while it animates
 
-local playing = {} -- [character] = true while an animation runs on it
-
-local function play(finder, painting, info)
+local function play(finder, find, info)
 	local character = finder.Character
-	local canvas = painting and painting.PrimaryPart
-	if not character or not canvas or playing[character] then return end
-	local root = character:FindFirstChild("HumanoidRootPart")
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if not root or not humanoid then return end
-	playing[character] = true
-
-	-- the pickaxe is being put away: let the pickaxe pose let go of the body first
-	local waited = 0
-	while character:FindFirstChildOfClass("Tool") and waited < 0.3 do
-		waited += task.wait()
-	end
-	task.wait()
+	local core = find and find.PrimaryPart
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not core or not root or playing[find] then return end
+	playing[find] = true
 
 	local color = typeof(info) == "table" and typeof(info.Color) == "Color3" and info.Color or Color3.fromRGB(255, 220, 120)
-	local startCF = painting:GetPivot()
+	local startCF = find:GetPivot()
 	local world = GameConfig.GetWorldAt(startCF.Position)
 	local _, zone = GameConfig.GetZoneAt(world, startCF.Position.Y)
 	local dirtColor = zone and zone.Color or Color3.fromRGB(140, 104, 72)
+	local sunk = find:GetAttribute("Sunk") or 0.5
 
-	-- our own digger: stand still and face the painting
+	-- the finder stops for a moment and faces it
 	local isMe = finder == player
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	local oldSpeed, oldJump
-	if isMe then
+	if isMe and humanoid then
 		oldSpeed, oldJump = humanoid.WalkSpeed, humanoid.JumpHeight
 		humanoid.WalkSpeed = 0
 		humanoid.JumpHeight = 0
@@ -13683,155 +14577,108 @@ local function play(finder, painting, info)
 		end
 	end
 
-	-- BODY RIG (R15 only; an R6 character just watches the painting fly up)
-	local upperTorso = character:FindFirstChild("UpperTorso")
-	local lowerTorso = character:FindFirstChild("LowerTorso")
-	local waist = upperTorso and upperTorso:FindFirstChild("Waist")
-	local hips = lowerTorso and lowerTorso:FindFirstChild("Root")
-	local rig = {}
-	local made = {}
-	if waist and hips and waist:IsA("Motor6D") and hips:IsA("Motor6D") then
-		rig.Waist, rig.WaistC0 = waist, waist.C0
-		rig.Hips, rig.HipsC0 = hips, hips.C0
-		local left, right = canvas:FindFirstChild("GripLeft"), canvas:FindFirstChild("GripRight")
-		local parts = {}
-		for _, name in ipairs({"LeftUpperArm", "LeftHand", "RightUpperArm", "RightHand", "LeftUpperLeg", "LeftFoot", "RightUpperLeg", "RightFoot"}) do
-			parts[name] = character:FindFirstChild(name)
-		end
-		if left and right and parts.LeftHand and parts.RightHand and parts.LeftUpperArm and parts.RightUpperArm then
-			rig.Arms = {
-				ik(humanoid, "PullLeftArm", parts.LeftUpperArm, parts.LeftHand, left),
-				ik(humanoid, "PullRightArm", parts.RightUpperArm, parts.RightHand, right),
-			}
-			for _, c in ipairs(rig.Arms) do table.insert(made, c) end
-		end
-		-- feet stay where they are while the hips drop; knees point forward
-		if parts.LeftFoot and parts.RightFoot and parts.LeftUpperLeg and parts.RightUpperLeg then
-			rig.Legs = {}
-			for _, side in ipairs({"Left", "Right"}) do
-				local foot = parts[side .. "Foot"]
-				local plant = attachment(workspace.Terrain, side .. "FootPlant", foot.Position)
-				local sideX = side == "Left" and -0.6 or 0.6
-				local pole = attachment(workspace.Terrain, side .. "KneePole", (root.CFrame * CFrame.new(sideX, -1.5, -6)).Position)
-				local c = ik(humanoid, "Pull" .. side .. "Leg", parts[side .. "UpperLeg"], foot, plant, pole)
-				table.insert(rig.Legs, c)
-				table.insert(made, c)
-				table.insert(made, plant)
-				table.insert(made, pole)
+	-- sort its parts: the object (and crumbs stuck to it) flies; the mound and glow stay
+	local flying, ground, crumbs = {}, {}, {}
+	for _, d in ipairs(find:GetDescendants()) do
+		if d:IsA("BasePart") then
+			if d.Name == "Mound" or d.Name == "Glow" then
+				table.insert(ground, {Part = d, CF = d.CFrame, Transparency = d.Transparency})
+			elseif d.Name == "Dirt" then
+				table.insert(crumbs, {Part = d, Offset = startCF:ToObjectSpace(d.CFrame)})
+			else
+				table.insert(flying, {Part = d, Offset = startCF:ToObjectSpace(d.CFrame), Size = d.Size})
 			end
+		elseif d:IsA("ParticleEmitter") then
+			d.Enabled = false
+		elseif d:IsA("ProximityPrompt") then
+			d.Enabled = false
 		end
 	end
+	local light = core:FindFirstChildOfClass("PointLight")
 
-	-- the painting's dirt clumps (they drop off during the pull)
-	local dirt = {}
-	for _, d in ipairs(painting:GetChildren()) do
-		if d:IsA("BasePart") and d.Name == "Dirt" then table.insert(dirt, {Part = d, Offset = startCF:ToObjectSpace(d.CFrame)}) end
-	end
-	local prompt = canvas:FindFirstChildOfClass("ProximityPrompt")
-	if prompt then prompt.Enabled = false end
-
-	burst(startCF.Position + Vector3.new(0, 0.5, 0), dirtColor, 26, 10, 0.55)
-
+	burst(startCF.Position, dirtColor, 30, 14, 0.55)
+	local risenCF = startCF + Vector3.new(0, sunk + 1.2, 0)
 	local start = os.clock()
-	local pulledFx, stowFx = false, false
+	local fx = false
 	local conn
 	local function finish()
 		conn:Disconnect()
-		if rig.Waist and rig.Waist.Parent then rig.Waist.C0 = rig.WaistC0 end
-		if rig.Hips and rig.Hips.Parent then rig.Hips.C0 = rig.HipsC0 end
-		for _, thing in ipairs(made) do thing:Destroy() end
-		if painting.Parent then painting.Parent = nil end -- gone on this screen (the server removes it for real)
-		if isMe and humanoid.Parent then
+		if find.Parent then find.Parent = nil end -- gone on this screen (the server removes it for real)
+		if isMe and humanoid and humanoid.Parent then
 			humanoid.WalkSpeed = oldSpeed
 			humanoid.JumpHeight = oldJump
 		end
-		playing[character] = nil
+		playing[find] = nil
 	end
 
 	conn = RunService.RenderStepped:Connect(function()
 		local t = os.clock() - start
-		if not root.Parent or not painting.Parent and t < STOW_END then
+		if not root.Parent or not find.Parent then
 			finish()
 			return
 		end
-		local rootCF = root.CFrame
-		local chestCF = rootCF * CFrame.new(0, 0.1, -2.1) * CFrame.Angles(0, math.pi, 0) * CFrame.Angles(math.rad(-10), 0, 0)
-		local showCF = rootCF * CFrame.new(0, 4.3, -0.8) * CFrame.Angles(0, math.pi, 0) * CFrame.Angles(math.rad(8), 0, 0)
-
-		-- how deep the squat is, how far the back bends, how strongly the hands hold on
-		local crouch, bend, grip
-		local cf
-		if t < CROUCH_END then
-			local u = smooth(t / CROUCH_END)
-			crouch, bend, grip = u, u, u
-			-- it wiggles loose
-			local wiggle = math.sin(t * 60) * math.rad(4) * u
-			cf = startCF * CFrame.new(0, 0, -0.15 * u) * CFrame.Angles(wiggle, 0, wiggle * 0.6)
-		elseif t < PULL_END then
-			local u = (t - CROUCH_END) / (PULL_END - CROUCH_END)
-			crouch, bend, grip = 1 - smooth(u), 1 - smooth(u) * 0.8, 1
-			cf = startCF:Lerp(chestCF, easeOutBack(u))
-			if not pulledFx then
-				pulledFx = true
-				burst(startCF.Position + Vector3.new(0, 0.6, 0), dirtColor, 34, 16, 0.6)
-				burst(startCF.Position + Vector3.new(0, 1, 0), color, 20, 8, 0.35)
-			end
-		elseif t < RAISE_END then
-			local u = smooth((t - PULL_END) / (RAISE_END - PULL_END))
-			crouch, bend, grip = 0, 0.2 - u * 0.35, 1
-			cf = chestCF:Lerp(showCF, u)
-		elseif t < SHOW_END then
-			crouch, bend, grip = 0, -0.15, 1
-			local bob = math.sin((t - RAISE_END) * 9) * 0.12
-			cf = showCF * CFrame.new(0, bob, 0)
-		elseif t < STOW_END then
-			local u = smooth((t - SHOW_END) / (STOW_END - SHOW_END))
-			crouch, bend, grip = 0, -0.15 * (1 - u), 1 - u
-			cf = showCF:Lerp(rootCF * CFrame.new(0, 1, -0.6), u)
-			if not stowFx then
-				stowFx = true
-				burst(showCF.Position, color, 30, 7, 0.4)
-			end
-			for _, d in ipairs(painting:GetDescendants()) do
-				if d:IsA("BasePart") then
-					d.LocalTransparencyModifier = u
-				elseif d:IsA("SurfaceGui") then
-					d.Enabled = u < 0.6
-				end
+		local target = root.CFrame * CFrame.new(0, 0.6, -0.4)
+		local cf, scale, fade
+		if t < RISE_END then
+			-- wiggles loose and pops up out of the soil
+			local u = t / RISE_END
+			local wiggle = math.sin(t * 70) * math.rad(5) * (1 - u)
+			cf = startCF:Lerp(risenCF, easeOutBack(u)) * CFrame.Angles(wiggle, 0, wiggle * 0.7)
+			scale, fade = 1, 0
+		elseif t < FLY_END then
+			-- an arc to the finder, shrinking and turning to face them
+			local u = smooth((t - RISE_END) / (FLY_END - RISE_END))
+			local from, to = risenCF.Position, target.Position
+			local mid = from:Lerp(to, 0.5) + Vector3.new(0, 2.5, 0)
+			local pos = from:Lerp(mid, u):Lerp(mid:Lerp(to, u), u)
+			local facing = CFrame.lookAt(pos, pos + (root.Position - pos) * Vector3.new(1, 0, 1) + Vector3.new(0.001, 0, 0))
+			cf = risenCF.Rotation:Lerp(facing.Rotation, u) + pos
+			scale, fade = 1 - 0.7 * u, 0
+		elseif t < DONE then
+			-- dissolves into the finder's chest
+			local u = (t - FLY_END) / (DONE - FLY_END)
+			cf = target
+			scale, fade = 0.3 * (1 - u) + 0.02, u
+			if not fx then
+				fx = true
+				sparkle(target.Position, color)
 			end
 		else
 			finish()
 			return
 		end
-		painting:PivotTo(cf)
 
-		-- dirt falls off once it's out of the ground
-		for i, clump in ipairs(dirt) do
-			local fall = math.max(0, t - CROUCH_END - i * 0.04)
+		-- move and shrink the object around its center
+		for _, item in ipairs(flying) do
+			local offset = item.Offset
+			item.Part.Size = item.Size * scale
+			item.Part.CFrame = cf * (offset.Rotation + offset.Position * scale)
+			item.Part.LocalTransparencyModifier = fade
+		end
+		for _, item in ipairs(find:GetDescendants()) do
+			if item:IsA("SurfaceGui") then item.Enabled = scale > 0.25 end
+		end
+		if light then light.Brightness = 1.4 * (1 - fade) end
+
+		-- the crumbs fall off it, the mound and glow sink back into the ground
+		for i, clump in ipairs(crumbs) do
+			local fall = math.max(0, t - i * 0.02)
 			local p = clump.Part
-			if fall > 0 then
-				local offset = clump.Offset.Position
-				local drop = startCF.Position:Lerp(cf.Position, 0.35) + (startCF.Rotation * offset) - Vector3.new(0, fall * fall * 30, 0)
-				p.CFrame = CFrame.new(drop) * CFrame.Angles(fall * 9, fall * 7, 0)
-				p.LocalTransparencyModifier = math.clamp(fall * 2, 0, 1)
-			else
-				p.CFrame = cf * clump.Offset
-			end
+			local base = startCF * clump.Offset
+			p.CFrame = CFrame.new(base.Position - Vector3.new(0, fall * fall * 40, 0)) * CFrame.Angles(fall * 9, fall * 7, 0)
+			p.LocalTransparencyModifier = math.clamp(fall * 3, 0, 1)
 		end
-
-		-- body
-		if rig.Waist then
-			rig.Waist.C0 = rig.WaistC0 * CFrame.Angles(math.rad(-38 * bend), 0, 0)
-			rig.Hips.C0 = CFrame.new(0, -1.4 * crouch, 0.35 * crouch) * rig.HipsC0 * CFrame.Angles(math.rad(-14 * crouch), 0, 0)
+		local sink = smooth(t / FLY_END)
+		for _, item in ipairs(ground) do
+			item.Part.CFrame = item.CF - Vector3.new(0, sink * 1.2, 0)
+			item.Part.LocalTransparencyModifier = sink
 		end
-		for _, c in ipairs(rig.Arms or {}) do c.Weight = grip end
-		for _, c in ipairs(rig.Legs or {}) do c.Weight = crouch end
 	end)
 end
 
-pullRemote.OnClientEvent:Connect(function(finder, painting, info)
-	if typeof(finder) == "Instance" and finder:IsA("Player") and typeof(painting) == "Instance" and painting:IsA("Model") then
-		task.spawn(play, finder, painting, info)
+pullRemote.OnClientEvent:Connect(function(finder, find, info)
+	if typeof(finder) == "Instance" and finder:IsA("Player") and typeof(find) == "Instance" and find:IsA("Model") then
+		task.spawn(play, finder, find, info)
 	end
 end)
 ]=])

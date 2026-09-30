@@ -29,7 +29,7 @@ local MINIGAME_LUCK = {Perfect = 3, Good = 1.5, Miss = 1} -- multiplies the shov
 local ANNOUNCE_FROM = ArtifactData.GetRarityIndex("Mythic")
 local MAX_REACH = 14 -- how far from your character you can dig
 local PICKUP_SECONDS = 25  -- how long a buried painting waits to be pulled out before it sinks back into the dirt
-local PULL_SECONDS = 2.9   -- the pull-out animation (the pickaxe is put away meanwhile)
+local PULL_SECONDS = 1.1   -- the pull-out animation (the pickaxe is put away meanwhile)
 local COMBO_WINDOW = 1.4   -- seconds between digs to keep a combo going
 local COMBO_MAX = 10
 local COMBO_LUCK = 0.04    -- each combo step adds +4% find chance (x10 combo = +36%)
@@ -194,7 +194,7 @@ local function isSolid(position)
 	return false
 end
 
--- A find is a framed painting lying in the crater. It waits in pending[player] until the
+-- A find is the meme's 3D object stuck in the dirt of the crater. It waits in pending[player] until the
 -- player pulls it out (ProximityPrompt) or it sinks back into the dirt.
 local pending = {} -- [player] = {Artifact = artifact, Model = painting, Info = info for the client}
 local findsFolder = workspace:FindFirstChild("BuriedFinds") or Instance.new("Folder")
@@ -283,9 +283,8 @@ getInventory.OnServerInvoke = function(player)
 	return list
 end
 
--- Where the painting lies: on the crater floor, face up, propped toward the finder and
--- half sunk into the soil
-local function paintingCFrame(player, position)
+-- Where the find goes: the crater floor under the dig spot, and which way the finder is
+local function findPlacement(player, position, zone)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Include
 	params.FilterDescendantsInstances = {terrain}
@@ -296,11 +295,7 @@ local function paintingCFrame(player, position)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	local toPlayer = root and (root.Position - floor) * Vector3.new(1, 0, 1) or Vector3.zero
 	toPlayer = toPlayer.Magnitude > 0.1 and toPlayer.Unit or Vector3.zAxis
-	local away = -toPlayer
-	local yAxis = (away - up * away:Dot(up)).Unit -- the picture's top edge points away from the finder
-	local zAxis = -up                              -- the picture faces the sky
-	local xAxis = yAxis:Cross(zAxis)
-	return CFrame.fromMatrix(floor + up * 0.05, xAxis, yAxis, zAxis) * CFrame.Angles(math.rad(-16), 0, 0)
+	return {Floor = floor, Up = up, ToPlayer = toPlayer, DirtColor = zone and zone.Color}
 end
 
 -- the painting is revealed: a burst of dirt, a flash of light in the rarity's color
@@ -344,9 +339,10 @@ local function giveArtifact(player, zone, luck, grade, position, forcedArtifact)
 		Timeout = PICKUP_SECONDS,
 	}
 
-	-- the framed painting lies in the crater, waiting to be pulled out
-	local cf = paintingCFrame(player, position)
-	local model = BuriedPainting(artifact, rarity.Color, cf, rng)
+	-- the meme itself is stuck in a mound of dirt in the crater, waiting to be pulled out
+	local placement = findPlacement(player, position, zone)
+	local model = BuriedPainting(artifact, rarity.Color, placement, rng)
+	local cf = model:GetPivot()
 	model:SetAttribute("Owner", player.UserId)
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Pull Out"

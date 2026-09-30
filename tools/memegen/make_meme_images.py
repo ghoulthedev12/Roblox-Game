@@ -76,7 +76,7 @@ def extras_html(extras):
     return "".join(out)
 
 def card(area, rarity, aid):
-    top, bottom, extras = CAPTIONS[aid]
+    top, bottom, extras = CAPTIONS.get(aid, ("", "", []))
     emoji = icons.get(aid, "❓")
     glitch = "glitch" in extras
     subject = '<div class="subject">%s</div>' % emoji

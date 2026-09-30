@@ -1,12 +1,10 @@
 -- FindPullClient (LocalScript in StarterPlayer > StarterPlayerScripts)
--- The pull-out animation for dug-up paintings, played on every screen for whoever found it:
---   1. crouch: the digger squats down (knees bend, feet stay planted) and grabs the frame
---      while the painting wiggles loose in a puff of dirt
---   2. pull:   the painting is yanked out of the soil, dirt clumps fall off it
---   3. show:   it's lifted up over the head, picture facing the camera
---   4. stow:   it shrinks into a sparkle and goes into the inventory
--- The body is posed procedurally: Motor6D offsets for the squat and the bend, IKControls for
--- both arms (hands on the frame) and both legs (feet stay on the ground).
+-- The 1-second pull-out animation for dug-up memes, played on every screen for whoever
+-- found it (after they hold E on it):
+--   0.00-0.22  it wiggles loose and pops up out of the dirt in a burst of soil
+--   0.22-0.78  it flies in an arc straight to the finder, shrinking and turning to face them
+--   0.78-1.00  it dissolves into a sparkle at their chest (it's in the inventory now)
+-- The dirt mound and the rarity glow around it sink away while it flies.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,11 +16,9 @@ local pullRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("PullF
 local player = Players.LocalPlayer
 
 -- timeline (seconds)
-local CROUCH_END = 0.4
-local PULL_END = 1.0
-local RAISE_END = 1.45
-local SHOW_END = 2.05
-local STOW_END = 2.4
+local RISE_END = 0.22
+local FLY_END = 0.78
+local DONE = 1.0
 
 local function smooth(u)
 	u = math.clamp(u, 0, 1)
@@ -30,7 +26,7 @@ local function smooth(u)
 end
 local function easeOutBack(u)
 	u = math.clamp(u, 0, 1)
-	local c1 = 1.6
+	local c1 = 1.7
 	return 1 + (c1 + 1) * (u - 1) ^ 3 + c1 * (u - 1) ^ 2
 end
 
@@ -48,7 +44,7 @@ local function burst(position, color, count, speed, size)
 	e.Enabled = false
 	e.Color = ColorSequence.new(color)
 	e.Size = NumberSequence.new(size or 0.5, 0)
-	e.Lifetime = NumberRange.new(0.5, 1)
+	e.Lifetime = NumberRange.new(0.4, 0.8)
 	e.Speed = NumberRange.new(speed * 0.6, speed)
 	e.SpreadAngle = Vector2.new(60, 60)
 	e.Acceleration = Vector3.new(0, -30, 0)
@@ -56,59 +52,54 @@ local function burst(position, color, count, speed, size)
 	e.LightEmission = 0.3
 	e.Parent = anchor
 	e:Emit(count)
-	Debris:AddItem(anchor, 1.6)
+	Debris:AddItem(anchor, 1.4)
 end
 
-local function attachment(parent, name, position)
-	local a = Instance.new("Attachment")
-	a.Name = name
-	a.WorldPosition = position or parent.Position
-	a.Parent = parent
-	return a
+local function sparkle(position, color)
+	local anchor = Instance.new("Part")
+	anchor.Anchored = true
+	anchor.CanCollide = false
+	anchor.CanQuery = false
+	anchor.CanTouch = false
+	anchor.Transparency = 1
+	anchor.Size = Vector3.one
+	anchor.CFrame = CFrame.new(position)
+	anchor.Parent = workspace
+	local e = Instance.new("ParticleEmitter")
+	e.Enabled = false
+	e.Color = ColorSequence.new(Color3.new(1, 1, 1), color)
+	e.LightEmission = 1
+	e.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0)})
+	e.Lifetime = NumberRange.new(0.35, 0.6)
+	e.Speed = NumberRange.new(4, 9)
+	e.SpreadAngle = Vector2.new(180, 180)
+	e.Drag = 6
+	e.Parent = anchor
+	e:Emit(28)
+	Debris:AddItem(anchor, 1)
 end
 
-local function ik(humanoid, name, chainRoot, endEffector, target, pole)
-	local c = Instance.new("IKControl")
-	c.Name = name
-	c.Type = Enum.IKControlType.Position
-	c.ChainRoot = chainRoot
-	c.EndEffector = endEffector
-	c.Target = target
-	c.Pole = pole
-	c.Weight = 0
-	c.SmoothTime = 0.04
-	c.Parent = humanoid
-	return c
-end
+local playing = {} -- [model] = true while it animates
 
-local playing = {} -- [character] = true while an animation runs on it
-
-local function play(finder, painting, info)
+local function play(finder, find, info)
 	local character = finder.Character
-	local canvas = painting and painting.PrimaryPart
-	if not character or not canvas or playing[character] then return end
-	local root = character:FindFirstChild("HumanoidRootPart")
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if not root or not humanoid then return end
-	playing[character] = true
-
-	-- the pickaxe is being put away: let the pickaxe pose let go of the body first
-	local waited = 0
-	while character:FindFirstChildOfClass("Tool") and waited < 0.3 do
-		waited += task.wait()
-	end
-	task.wait()
+	local core = find and find.PrimaryPart
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not core or not root or playing[find] then return end
+	playing[find] = true
 
 	local color = typeof(info) == "table" and typeof(info.Color) == "Color3" and info.Color or Color3.fromRGB(255, 220, 120)
-	local startCF = painting:GetPivot()
+	local startCF = find:GetPivot()
 	local world = GameConfig.GetWorldAt(startCF.Position)
 	local _, zone = GameConfig.GetZoneAt(world, startCF.Position.Y)
 	local dirtColor = zone and zone.Color or Color3.fromRGB(140, 104, 72)
+	local sunk = find:GetAttribute("Sunk") or 0.5
 
-	-- our own digger: stand still and face the painting
+	-- the finder stops for a moment and faces it
 	local isMe = finder == player
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	local oldSpeed, oldJump
-	if isMe then
+	if isMe and humanoid then
 		oldSpeed, oldJump = humanoid.WalkSpeed, humanoid.JumpHeight
 		humanoid.WalkSpeed = 0
 		humanoid.JumpHeight = 0
@@ -118,154 +109,107 @@ local function play(finder, painting, info)
 		end
 	end
 
-	-- BODY RIG (R15 only; an R6 character just watches the painting fly up)
-	local upperTorso = character:FindFirstChild("UpperTorso")
-	local lowerTorso = character:FindFirstChild("LowerTorso")
-	local waist = upperTorso and upperTorso:FindFirstChild("Waist")
-	local hips = lowerTorso and lowerTorso:FindFirstChild("Root")
-	local rig = {}
-	local made = {}
-	if waist and hips and waist:IsA("Motor6D") and hips:IsA("Motor6D") then
-		rig.Waist, rig.WaistC0 = waist, waist.C0
-		rig.Hips, rig.HipsC0 = hips, hips.C0
-		local left, right = canvas:FindFirstChild("GripLeft"), canvas:FindFirstChild("GripRight")
-		local parts = {}
-		for _, name in ipairs({"LeftUpperArm", "LeftHand", "RightUpperArm", "RightHand", "LeftUpperLeg", "LeftFoot", "RightUpperLeg", "RightFoot"}) do
-			parts[name] = character:FindFirstChild(name)
-		end
-		if left and right and parts.LeftHand and parts.RightHand and parts.LeftUpperArm and parts.RightUpperArm then
-			rig.Arms = {
-				ik(humanoid, "PullLeftArm", parts.LeftUpperArm, parts.LeftHand, left),
-				ik(humanoid, "PullRightArm", parts.RightUpperArm, parts.RightHand, right),
-			}
-			for _, c in ipairs(rig.Arms) do table.insert(made, c) end
-		end
-		-- feet stay where they are while the hips drop; knees point forward
-		if parts.LeftFoot and parts.RightFoot and parts.LeftUpperLeg and parts.RightUpperLeg then
-			rig.Legs = {}
-			for _, side in ipairs({"Left", "Right"}) do
-				local foot = parts[side .. "Foot"]
-				local plant = attachment(workspace.Terrain, side .. "FootPlant", foot.Position)
-				local sideX = side == "Left" and -0.6 or 0.6
-				local pole = attachment(workspace.Terrain, side .. "KneePole", (root.CFrame * CFrame.new(sideX, -1.5, -6)).Position)
-				local c = ik(humanoid, "Pull" .. side .. "Leg", parts[side .. "UpperLeg"], foot, plant, pole)
-				table.insert(rig.Legs, c)
-				table.insert(made, c)
-				table.insert(made, plant)
-				table.insert(made, pole)
+	-- sort its parts: the object (and crumbs stuck to it) flies; the mound and glow stay
+	local flying, ground, crumbs = {}, {}, {}
+	for _, d in ipairs(find:GetDescendants()) do
+		if d:IsA("BasePart") then
+			if d.Name == "Mound" or d.Name == "Glow" then
+				table.insert(ground, {Part = d, CF = d.CFrame, Transparency = d.Transparency})
+			elseif d.Name == "Dirt" then
+				table.insert(crumbs, {Part = d, Offset = startCF:ToObjectSpace(d.CFrame)})
+			else
+				table.insert(flying, {Part = d, Offset = startCF:ToObjectSpace(d.CFrame), Size = d.Size})
 			end
+		elseif d:IsA("ParticleEmitter") then
+			d.Enabled = false
+		elseif d:IsA("ProximityPrompt") then
+			d.Enabled = false
 		end
 	end
+	local light = core:FindFirstChildOfClass("PointLight")
 
-	-- the painting's dirt clumps (they drop off during the pull)
-	local dirt = {}
-	for _, d in ipairs(painting:GetChildren()) do
-		if d:IsA("BasePart") and d.Name == "Dirt" then table.insert(dirt, {Part = d, Offset = startCF:ToObjectSpace(d.CFrame)}) end
-	end
-	local prompt = canvas:FindFirstChildOfClass("ProximityPrompt")
-	if prompt then prompt.Enabled = false end
-
-	burst(startCF.Position + Vector3.new(0, 0.5, 0), dirtColor, 26, 10, 0.55)
-
+	burst(startCF.Position, dirtColor, 30, 14, 0.55)
+	local risenCF = startCF + Vector3.new(0, sunk + 1.2, 0)
 	local start = os.clock()
-	local pulledFx, stowFx = false, false
+	local fx = false
 	local conn
 	local function finish()
 		conn:Disconnect()
-		if rig.Waist and rig.Waist.Parent then rig.Waist.C0 = rig.WaistC0 end
-		if rig.Hips and rig.Hips.Parent then rig.Hips.C0 = rig.HipsC0 end
-		for _, thing in ipairs(made) do thing:Destroy() end
-		if painting.Parent then painting.Parent = nil end -- gone on this screen (the server removes it for real)
-		if isMe and humanoid.Parent then
+		if find.Parent then find.Parent = nil end -- gone on this screen (the server removes it for real)
+		if isMe and humanoid and humanoid.Parent then
 			humanoid.WalkSpeed = oldSpeed
 			humanoid.JumpHeight = oldJump
 		end
-		playing[character] = nil
+		playing[find] = nil
 	end
 
 	conn = RunService.RenderStepped:Connect(function()
 		local t = os.clock() - start
-		if not root.Parent or not painting.Parent and t < STOW_END then
+		if not root.Parent or not find.Parent then
 			finish()
 			return
 		end
-		local rootCF = root.CFrame
-		local chestCF = rootCF * CFrame.new(0, 0.1, -2.1) * CFrame.Angles(0, math.pi, 0) * CFrame.Angles(math.rad(-10), 0, 0)
-		local showCF = rootCF * CFrame.new(0, 4.3, -0.8) * CFrame.Angles(0, math.pi, 0) * CFrame.Angles(math.rad(8), 0, 0)
-
-		-- how deep the squat is, how far the back bends, how strongly the hands hold on
-		local crouch, bend, grip
-		local cf
-		if t < CROUCH_END then
-			local u = smooth(t / CROUCH_END)
-			crouch, bend, grip = u, u, u
-			-- it wiggles loose
-			local wiggle = math.sin(t * 60) * math.rad(4) * u
-			cf = startCF * CFrame.new(0, 0, -0.15 * u) * CFrame.Angles(wiggle, 0, wiggle * 0.6)
-		elseif t < PULL_END then
-			local u = (t - CROUCH_END) / (PULL_END - CROUCH_END)
-			crouch, bend, grip = 1 - smooth(u), 1 - smooth(u) * 0.8, 1
-			cf = startCF:Lerp(chestCF, easeOutBack(u))
-			if not pulledFx then
-				pulledFx = true
-				burst(startCF.Position + Vector3.new(0, 0.6, 0), dirtColor, 34, 16, 0.6)
-				burst(startCF.Position + Vector3.new(0, 1, 0), color, 20, 8, 0.35)
-			end
-		elseif t < RAISE_END then
-			local u = smooth((t - PULL_END) / (RAISE_END - PULL_END))
-			crouch, bend, grip = 0, 0.2 - u * 0.35, 1
-			cf = chestCF:Lerp(showCF, u)
-		elseif t < SHOW_END then
-			crouch, bend, grip = 0, -0.15, 1
-			local bob = math.sin((t - RAISE_END) * 9) * 0.12
-			cf = showCF * CFrame.new(0, bob, 0)
-		elseif t < STOW_END then
-			local u = smooth((t - SHOW_END) / (STOW_END - SHOW_END))
-			crouch, bend, grip = 0, -0.15 * (1 - u), 1 - u
-			cf = showCF:Lerp(rootCF * CFrame.new(0, 1, -0.6), u)
-			if not stowFx then
-				stowFx = true
-				burst(showCF.Position, color, 30, 7, 0.4)
-			end
-			for _, d in ipairs(painting:GetDescendants()) do
-				if d:IsA("BasePart") then
-					d.LocalTransparencyModifier = u
-				elseif d:IsA("SurfaceGui") then
-					d.Enabled = u < 0.6
-				end
+		local target = root.CFrame * CFrame.new(0, 0.6, -0.4)
+		local cf, scale, fade
+		if t < RISE_END then
+			-- wiggles loose and pops up out of the soil
+			local u = t / RISE_END
+			local wiggle = math.sin(t * 70) * math.rad(5) * (1 - u)
+			cf = startCF:Lerp(risenCF, easeOutBack(u)) * CFrame.Angles(wiggle, 0, wiggle * 0.7)
+			scale, fade = 1, 0
+		elseif t < FLY_END then
+			-- an arc to the finder, shrinking and turning to face them
+			local u = smooth((t - RISE_END) / (FLY_END - RISE_END))
+			local from, to = risenCF.Position, target.Position
+			local mid = from:Lerp(to, 0.5) + Vector3.new(0, 2.5, 0)
+			local pos = from:Lerp(mid, u):Lerp(mid:Lerp(to, u), u)
+			local facing = CFrame.lookAt(pos, pos + (root.Position - pos) * Vector3.new(1, 0, 1) + Vector3.new(0.001, 0, 0))
+			cf = risenCF.Rotation:Lerp(facing.Rotation, u) + pos
+			scale, fade = 1 - 0.7 * u, 0
+		elseif t < DONE then
+			-- dissolves into the finder's chest
+			local u = (t - FLY_END) / (DONE - FLY_END)
+			cf = target
+			scale, fade = 0.3 * (1 - u) + 0.02, u
+			if not fx then
+				fx = true
+				sparkle(target.Position, color)
 			end
 		else
 			finish()
 			return
 		end
-		painting:PivotTo(cf)
 
-		-- dirt falls off once it's out of the ground
-		for i, clump in ipairs(dirt) do
-			local fall = math.max(0, t - CROUCH_END - i * 0.04)
+		-- move and shrink the object around its center
+		for _, item in ipairs(flying) do
+			local offset = item.Offset
+			item.Part.Size = item.Size * scale
+			item.Part.CFrame = cf * (offset.Rotation + offset.Position * scale)
+			item.Part.LocalTransparencyModifier = fade
+		end
+		for _, item in ipairs(find:GetDescendants()) do
+			if item:IsA("SurfaceGui") then item.Enabled = scale > 0.25 end
+		end
+		if light then light.Brightness = 1.4 * (1 - fade) end
+
+		-- the crumbs fall off it, the mound and glow sink back into the ground
+		for i, clump in ipairs(crumbs) do
+			local fall = math.max(0, t - i * 0.02)
 			local p = clump.Part
-			if fall > 0 then
-				local offset = clump.Offset.Position
-				local drop = startCF.Position:Lerp(cf.Position, 0.35) + (startCF.Rotation * offset) - Vector3.new(0, fall * fall * 30, 0)
-				p.CFrame = CFrame.new(drop) * CFrame.Angles(fall * 9, fall * 7, 0)
-				p.LocalTransparencyModifier = math.clamp(fall * 2, 0, 1)
-			else
-				p.CFrame = cf * clump.Offset
-			end
+			local base = startCF * clump.Offset
+			p.CFrame = CFrame.new(base.Position - Vector3.new(0, fall * fall * 40, 0)) * CFrame.Angles(fall * 9, fall * 7, 0)
+			p.LocalTransparencyModifier = math.clamp(fall * 3, 0, 1)
 		end
-
-		-- body
-		if rig.Waist then
-			rig.Waist.C0 = rig.WaistC0 * CFrame.Angles(math.rad(-38 * bend), 0, 0)
-			rig.Hips.C0 = CFrame.new(0, -1.4 * crouch, 0.35 * crouch) * rig.HipsC0 * CFrame.Angles(math.rad(-14 * crouch), 0, 0)
+		local sink = smooth(t / FLY_END)
+		for _, item in ipairs(ground) do
+			item.Part.CFrame = item.CF - Vector3.new(0, sink * 1.2, 0)
+			item.Part.LocalTransparencyModifier = sink
 		end
-		for _, c in ipairs(rig.Arms or {}) do c.Weight = grip end
-		for _, c in ipairs(rig.Legs or {}) do c.Weight = crouch end
 	end)
 end
 
-pullRemote.OnClientEvent:Connect(function(finder, painting, info)
-	if typeof(finder) == "Instance" and finder:IsA("Player") and typeof(painting) == "Instance" and painting:IsA("Model") then
-		task.spawn(play, finder, painting, info)
+pullRemote.OnClientEvent:Connect(function(finder, find, info)
+	if typeof(finder) == "Instance" and finder:IsA("Player") and typeof(find) == "Instance" and find:IsA("Model") then
+		task.spawn(play, finder, find, info)
 	end
 end)
