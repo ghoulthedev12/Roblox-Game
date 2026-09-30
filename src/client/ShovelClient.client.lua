@@ -101,11 +101,14 @@ local depthLabel = UIKit.label(depthBubble, "0m", {Size = UDim2.new(1, -16, 0.7,
 
 -- the tube, filled with one colored band per zone (thicker zones = taller bands)
 local tube = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(30, GAUGE_H), Position = UDim2.new(0.5, 0, 0, 50), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 15, Stroke = 3, StrokeColor = C.Ink, Shade = false})
-tube.ClipsDescendants = true
-local bands = Instance.new("Frame")
+-- the zone bands sit in a CanvasGroup, which clips them to the tube's rounded ends
+-- (a plain frame clips square, so a band's corner used to poke out as a line at the bottom)
+local bands = Instance.new("CanvasGroup")
 bands.BackgroundTransparency = 1
+bands.BorderSizePixel = 0
 bands.Size = UDim2.fromScale(1, 1)
 bands.Parent = tube
+UIKit.corner(bands, 15)
 local tubeGloss = UIKit.panel(tube, {Size = UDim2.new(0, 6, 1, -16), Position = UDim2.new(0, 5, 0, 8), Color = C.White, Radius = 3, Stroke = false, Shade = false})
 tubeGloss.BackgroundTransparency = 0.55
 tubeGloss.ZIndex = 3
@@ -924,6 +927,8 @@ local function maxStat(world, key)
 	return m
 end
 
+local BUTTON_W = 116 -- the buy / equip button on each shop card
+
 local function buildCards(world)
 	for _, child in ipairs(list:GetChildren()) do
 		if child:IsA("GuiObject") then child:Destroy() end
@@ -952,7 +957,8 @@ local function buildCards(world)
 		-- right column: stat bars. Speed is shown as a multiplier of the starter pickaxe (1.5x = 50% faster swings)
 		local statsBox = Instance.new("Frame")
 		statsBox.BackgroundTransparency = 1
-		statsBox.Size = UDim2.new(0.3, 0, 0, 90)
+		-- fills the space between the middle column and the button, with a gap before the button
+		statsBox.Size = UDim2.new(0.5, -(BUTTON_W + 44), 0, 90)
 		statsBox.Position = UDim2.new(0.5, 0, 0.5, -45)
 		statsBox.Parent = card
 		local speed = starterCooldown / def.Cooldown
@@ -961,7 +967,7 @@ local function buildCards(world)
 		UIKit.statBar(statsBox, "Luck", def.Luck / maxLuck, "x" .. def.Luck, C.Sun, {Size = UDim2.new(1, 0, 0, 19), Position = UDim2.fromOffset(0, 46)})
 		UIKit.statBar(statsBox, "Speed", speed / maxSpeed, string.format("%.1fx", speed), C.Sky, {Size = UDim2.new(1, 0, 0, 19), Position = UDim2.fromOffset(0, 69)})
 
-		local b = UIKit.button(card, "", {Size = UDim2.new(0.17, 0, 0, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5)})
+		local b = UIKit.button(card, "", {Size = UDim2.fromOffset(BUTTON_W, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5)})
 		cards[def.Id] = b
 		b.MouseButton1Click:Connect(function()
 			local owned = string.split(player:GetAttribute("OwnedShovels") or "", ",")
