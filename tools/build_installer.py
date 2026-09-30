@@ -52,6 +52,9 @@ out = [
 ]
 # Future lighting: realistic lights, shadows and reflections (only settable from Studio)
 out.append('pcall(function() game:GetService("Lighting").Technology = Enum.Technology.Future end)')
+# the Abyss is ~580 studs deep; the default void (-500) would kill diggers at the bottom.
+# Only Studio can change this property, so the installer sets it (saved with the place).
+out.append('pcall(function() workspace.FallenPartsDestroyHeight = -3000 end)')
 for parent, name in DELETE:
     out.append(f'do local old = {parent}:FindFirstChild("{name}") if old then old:Destroy() print("Removed {name}") end end')
 for folder, parent in TARGETS:

@@ -13,6 +13,7 @@ local function install(parent, name, className, source)
 	count += 1
 end
 pcall(function() game:GetService("Lighting").Technology = Enum.Technology.Future end)
+pcall(function() workspace.FallenPartsDestroyHeight = -3000 end)
 do local old = game:GetService("ServerScriptService"):FindFirstChild("DataManager") if old then old:Destroy() print("Removed DataManager") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
 do local old = game:GetService("ReplicatedStorage"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
@@ -4514,8 +4515,12 @@ worldsBuilt = true
 -- PIT SAFETY: invisible walls around every pit, a solid floor inside the bedrock, a lower
 -- void, and a rescue for anyone who still manages to fall out of the world
 ---------------------------------------------------------------------
--- the Abyss goes 560 studs down; Roblox's default kill height would kill diggers down there
-workspace.FallenPartsDestroyHeight = -3000
+-- the Abyss goes 560 studs down; Roblox's default kill height would kill diggers down there.
+-- Only Studio (the installer, from the Command Bar) may change it, so here we just try.
+pcall(function() workspace.FallenPartsDestroyHeight = -3000 end)
+if workspace.FallenPartsDestroyHeight > -1000 then
+	warn("Run InstallInStudio.lua again to lower Workspace.FallenPartsDestroyHeight (the Abyss is deeper than the void)")
+end
 
 local safetyFolder = workspace:FindFirstChild("PitSafety")
 if safetyFolder then safetyFolder:Destroy() end
@@ -4540,25 +4545,28 @@ local function barrier(name, size, cf, shape)
 end
 
 local WALL_SEGMENTS = 48
-for _, world in ipairs(enabledWorlds()) do
-	local origin = world.Origin
-	local bedrockTop = origin.Y + world.Zones[#world.Zones].Bottom
-	-- walls: a ring just outside the widest crater a pickaxe can carve, from a few studs
-	-- under the surface (so you can still jump in from the top) down to the bedrock
-	local wallRadius = world.PitRadius + 7
-	local top, bottom = origin.Y - 4, bedrockTop - 4
-	local height = top - bottom
-	local length = 2 * math.pi * wallRadius / WALL_SEGMENTS + 1
-	for i = 0, WALL_SEGMENTS - 1 do
-		local a = (i + 0.5) / WALL_SEGMENTS * math.pi * 2
-		local pos = origin + Vector3.new(math.cos(a) * (wallRadius + 1), 0, math.sin(a) * (wallRadius + 1))
-		pos = Vector3.new(pos.X, (top + bottom) / 2, pos.Z)
-		barrier("PitWall", Vector3.new(length, height, 2), CFrame.lookAt(pos, Vector3.new(origin.X, pos.Y, origin.Z)))
+local barriersOk, barriersError = pcall(function()
+	for _, world in ipairs(enabledWorlds()) do
+		local origin = world.Origin
+		local bedrockTop = origin.Y + world.Zones[#world.Zones].Bottom
+		-- walls: a ring just outside the widest crater a pickaxe can carve, from a few studs
+		-- under the surface (so you can still jump in from the top) down to the bedrock
+		local wallRadius = world.PitRadius + 7
+		local top, bottom = origin.Y - 4, bedrockTop - 4
+		local height = top - bottom
+		local length = 2 * math.pi * wallRadius / WALL_SEGMENTS + 1
+		for i = 0, WALL_SEGMENTS - 1 do
+			local a = (i + 0.5) / WALL_SEGMENTS * math.pi * 2
+			local pos = origin + Vector3.new(math.cos(a) * (wallRadius + 1), 0, math.sin(a) * (wallRadius + 1))
+			pos = Vector3.new(pos.X, (top + bottom) / 2, pos.Z)
+			barrier("PitWall", Vector3.new(length, height, 2), CFrame.lookAt(pos, Vector3.new(origin.X, pos.Y, origin.Z)))
+		end
+		-- a solid floor hidden inside the bedrock, under the whole pit
+		barrier("BedrockFloor", Vector3.new(2, (wallRadius + 2) * 2, (wallRadius + 2) * 2),
+			CFrame.new(origin.X, bedrockTop - 3, origin.Z) * CFrame.Angles(0, 0, math.rad(90)), Enum.PartType.Cylinder)
 	end
-	-- a solid floor hidden inside the bedrock, under the whole pit
-	barrier("BedrockFloor", Vector3.new(2, (wallRadius + 2) * 2, (wallRadius + 2) * 2),
-		CFrame.new(origin.X, bedrockTop - 3, origin.Z) * CFrame.Angles(0, 0, math.rad(90)), Enum.PartType.Cylinder)
-end
+end)
+if not barriersOk then warn("Pit barriers failed: " .. tostring(barriersError)) end
 
 -- anyone below the bedrock, or who fell off a floating island, is put back safely
 task.spawn(function()
@@ -13957,6 +13965,8 @@ local function buildCards(world)
 	local maxFind, maxLuck, maxPower = maxStat(world, "FindChance"), maxStat(world, "Luck"), maxStat(world, "Power")
 	local minCooldown = math.huge
 	for _, def in ipairs(world.Shovels) do minCooldown = math.min(minCooldown, def.Cooldown) end
+	local starterCooldown = world.Shovels[1].Cooldown
+	local maxSpeed = starterCooldown / minCooldown
 
 	for i, def in ipairs(world.Shovels) do
 		local zone = world.Zones[def.MaxZone]
@@ -13965,20 +13975,23 @@ local function buildCards(world)
 		-- icon on a colored plate (plate color = the deepest zone it reaches)
 		local plate = UIKit.panel(card, {Size = UDim2.fromOffset(108, 108), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = zone.Color, Radius = 18, ShadeAmount = 0.2})
 		UIKit.shovelIcon(plate, def, {Size = UDim2.fromScale(1, 1)})
-		UIKit.label(card, def.Name, {Size = UDim2.new(0.52, -138, 0, 28), Position = UDim2.fromOffset(134, 10), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
-		UIKit.label(card, def.Description, {Size = UDim2.new(0.52, -138, 0, 40), Position = UDim2.fromOffset(134, 40), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 14})
-		local zoneTag = UIKit.panel(card, {Size = UDim2.fromOffset(200, 26), Position = UDim2.fromOffset(134, 92), Color = zone.Color, Radius = 13})
-		UIKit.label(zoneTag, "⬇ " .. -zone.Bottom .. "m  •  " .. string.upper(zone.Name), {Size = UDim2.new(1, -14, 0.74, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 16})
+		-- middle column: name, depth badge, description (sized to the column so nothing overlaps)
+		UIKit.label(card, def.Name, {Size = UDim2.new(0.5, -140, 0, 26), Position = UDim2.fromOffset(134, 10), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
+		local zoneTag = UIKit.panel(card, {Size = UDim2.new(0.5, -140, 0, 24), Position = UDim2.fromOffset(134, 40), Color = zone.Color, Radius = 12})
+		UIKit.label(zoneTag, "⬇ " .. -zone.Bottom .. "m  •  " .. string.upper(zone.Name), {Size = UDim2.new(1, -14, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 15})
+		UIKit.label(card, def.Description, {Size = UDim2.new(0.5, -140, 0, 52), Position = UDim2.fromOffset(134, 70), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
 
+		-- right column: stat bars. Speed is shown as a multiplier of the starter pickaxe (1.5x = 50% faster swings)
 		local statsBox = Instance.new("Frame")
 		statsBox.BackgroundTransparency = 1
-		statsBox.Size = UDim2.new(0.28, 0, 0, 82)
-		statsBox.Position = UDim2.new(0.52, 0, 0.5, -41)
+		statsBox.Size = UDim2.new(0.3, 0, 0, 90)
+		statsBox.Position = UDim2.new(0.5, 0, 0.5, -45)
 		statsBox.Parent = card
-		UIKit.statBar(statsBox, "Power", def.Power / maxPower, tostring(def.Power), C.Coral, {Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 0)})
-		UIKit.statBar(statsBox, "Find", def.FindChance / maxFind, math.floor(def.FindChance * 1000 + 0.5) / 10 .. "%", C.Mint, {Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 21)})
-		UIKit.statBar(statsBox, "Luck", def.Luck / maxLuck, "x" .. def.Luck, C.Sun, {Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 42)})
-		UIKit.statBar(statsBox, "Speed", minCooldown / def.Cooldown, string.format("%.2fs", def.Cooldown), C.Sky, {Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 63)})
+		local speed = starterCooldown / def.Cooldown
+		UIKit.statBar(statsBox, "Power", def.Power / maxPower, tostring(def.Power), C.Coral, {Size = UDim2.new(1, 0, 0, 19), Position = UDim2.fromOffset(0, 0)})
+		UIKit.statBar(statsBox, "Find", def.FindChance / maxFind, math.floor(def.FindChance * 1000 + 0.5) / 10 .. "%", C.Mint, {Size = UDim2.new(1, 0, 0, 19), Position = UDim2.fromOffset(0, 23)})
+		UIKit.statBar(statsBox, "Luck", def.Luck / maxLuck, "x" .. def.Luck, C.Sun, {Size = UDim2.new(1, 0, 0, 19), Position = UDim2.fromOffset(0, 46)})
+		UIKit.statBar(statsBox, "Speed", speed / maxSpeed, string.format("%.1fx", speed), C.Sky, {Size = UDim2.new(1, 0, 0, 19), Position = UDim2.fromOffset(0, 69)})
 
 		local b = UIKit.button(card, "", {Size = UDim2.new(0.17, 0, 0, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5)})
 		cards[def.Id] = b

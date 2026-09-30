@@ -749,8 +749,12 @@ worldsBuilt = true
 -- PIT SAFETY: invisible walls around every pit, a solid floor inside the bedrock, a lower
 -- void, and a rescue for anyone who still manages to fall out of the world
 ---------------------------------------------------------------------
--- the Abyss goes 560 studs down; Roblox's default kill height would kill diggers down there
-workspace.FallenPartsDestroyHeight = -3000
+-- the Abyss goes 560 studs down; Roblox's default kill height would kill diggers down there.
+-- Only Studio (the installer, from the Command Bar) may change it, so here we just try.
+pcall(function() workspace.FallenPartsDestroyHeight = -3000 end)
+if workspace.FallenPartsDestroyHeight > -1000 then
+	warn("Run InstallInStudio.lua again to lower Workspace.FallenPartsDestroyHeight (the Abyss is deeper than the void)")
+end
 
 local safetyFolder = workspace:FindFirstChild("PitSafety")
 if safetyFolder then safetyFolder:Destroy() end
@@ -775,25 +779,28 @@ local function barrier(name, size, cf, shape)
 end
 
 local WALL_SEGMENTS = 48
-for _, world in ipairs(enabledWorlds()) do
-	local origin = world.Origin
-	local bedrockTop = origin.Y + world.Zones[#world.Zones].Bottom
-	-- walls: a ring just outside the widest crater a pickaxe can carve, from a few studs
-	-- under the surface (so you can still jump in from the top) down to the bedrock
-	local wallRadius = world.PitRadius + 7
-	local top, bottom = origin.Y - 4, bedrockTop - 4
-	local height = top - bottom
-	local length = 2 * math.pi * wallRadius / WALL_SEGMENTS + 1
-	for i = 0, WALL_SEGMENTS - 1 do
-		local a = (i + 0.5) / WALL_SEGMENTS * math.pi * 2
-		local pos = origin + Vector3.new(math.cos(a) * (wallRadius + 1), 0, math.sin(a) * (wallRadius + 1))
-		pos = Vector3.new(pos.X, (top + bottom) / 2, pos.Z)
-		barrier("PitWall", Vector3.new(length, height, 2), CFrame.lookAt(pos, Vector3.new(origin.X, pos.Y, origin.Z)))
+local barriersOk, barriersError = pcall(function()
+	for _, world in ipairs(enabledWorlds()) do
+		local origin = world.Origin
+		local bedrockTop = origin.Y + world.Zones[#world.Zones].Bottom
+		-- walls: a ring just outside the widest crater a pickaxe can carve, from a few studs
+		-- under the surface (so you can still jump in from the top) down to the bedrock
+		local wallRadius = world.PitRadius + 7
+		local top, bottom = origin.Y - 4, bedrockTop - 4
+		local height = top - bottom
+		local length = 2 * math.pi * wallRadius / WALL_SEGMENTS + 1
+		for i = 0, WALL_SEGMENTS - 1 do
+			local a = (i + 0.5) / WALL_SEGMENTS * math.pi * 2
+			local pos = origin + Vector3.new(math.cos(a) * (wallRadius + 1), 0, math.sin(a) * (wallRadius + 1))
+			pos = Vector3.new(pos.X, (top + bottom) / 2, pos.Z)
+			barrier("PitWall", Vector3.new(length, height, 2), CFrame.lookAt(pos, Vector3.new(origin.X, pos.Y, origin.Z)))
+		end
+		-- a solid floor hidden inside the bedrock, under the whole pit
+		barrier("BedrockFloor", Vector3.new(2, (wallRadius + 2) * 2, (wallRadius + 2) * 2),
+			CFrame.new(origin.X, bedrockTop - 3, origin.Z) * CFrame.Angles(0, 0, math.rad(90)), Enum.PartType.Cylinder)
 	end
-	-- a solid floor hidden inside the bedrock, under the whole pit
-	barrier("BedrockFloor", Vector3.new(2, (wallRadius + 2) * 2, (wallRadius + 2) * 2),
-		CFrame.new(origin.X, bedrockTop - 3, origin.Z) * CFrame.Angles(0, 0, math.rad(90)), Enum.PartType.Cylinder)
-end
+end)
+if not barriersOk then warn("Pit barriers failed: " .. tostring(barriersError)) end
 
 -- anyone below the bedrock, or who fell off a floating island, is put back safely
 task.spawn(function()
