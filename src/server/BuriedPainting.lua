@@ -44,6 +44,8 @@ return function(artifact, rarityColor, cf, rng)
 	glow.Brightness = 1.2
 	glow.Parent = model.PrimaryPart
 
+	-- the meme's emoji floating just above it, so you know what you dug up
+	ArtifactModels.addEmojiTag(model, artifact, 2.6)
 	model:PivotTo(cf)
 	return model
 end

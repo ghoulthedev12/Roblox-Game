@@ -767,7 +767,6 @@ local function art(target, artifact, face, opts)
 		if opts.Engraved then
 			-- carved into the stone: a dark, slightly see-through silhouette
 			emoji.TextColor3 = rgb(40, 34, 30)
-			emoji.TextTransparency = 0.25
 		end
 		emoji.Parent = holder
 	end
@@ -896,6 +895,46 @@ function FORMS.Crystal(model, artifact, color)
 end
 
 ---------------------------------------------------------------------
+-- A round emoji badge floating above the object (the same emoji as in your inventory), so
+-- you can tell at a glance which meme a painting, statue, coin or stone is.
+-- heightAbove = studs above the object's center, straight up in the world.
+function ArtifactModels.addEmojiTag(model, artifact, heightAbove)
+	local core = model.PrimaryPart
+	if not core then return nil end
+	local old = core:FindFirstChild("EmojiTag")
+	if old then old:Destroy() end
+	local rarity = ArtifactData.GetRarity(artifact.Rarity)
+	local tag = Instance.new("BillboardGui")
+	tag.Name = "EmojiTag"
+	tag.Size = UDim2.fromScale(1.9, 1.9) -- in studs
+	tag.StudsOffsetWorldSpace = Vector3.new(0, heightAbove, 0)
+	tag.LightInfluence = 0
+	tag.MaxDistance = 90
+	tag.Parent = core
+	local bubble = Instance.new("Frame")
+	bubble.Size = UDim2.fromScale(1, 1)
+	bubble.BackgroundColor3 = Color3.new(1, 1, 1)
+	bubble.BackgroundTransparency = 0.05
+	bubble.Parent = tag
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.5, 0)
+	corner.Parent = bubble
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 3
+	stroke.Color = rarity and rarity.Color or rgb(200, 200, 200)
+	stroke.Parent = bubble
+	local emoji = Instance.new("TextLabel")
+	emoji.BackgroundTransparency = 1
+	emoji.Size = UDim2.fromScale(0.74, 0.74)
+	emoji.Position = UDim2.fromScale(0.5, 0.5)
+	emoji.AnchorPoint = Vector2.new(0.5, 0.5)
+	emoji.Text = ArtifactIcons[artifact.Id] or "🗿"
+	emoji.TextScaled = true
+	emoji.Font = Enum.Font.GothamBold
+	emoji.Parent = bubble
+	return tag
+end
+
 function ArtifactModels.build(artifact)
 	local rarity = ArtifactData.GetRarity(artifact.Rarity)
 	local color = rarity and rarity.Color or rgb(200, 200, 200)
@@ -3285,6 +3324,8 @@ return function(artifact, rarityColor, cf, rng)
 	glow.Brightness = 1.2
 	glow.Parent = model.PrimaryPart
 
+	-- the meme's emoji floating just above it, so you know what you dug up
+	ArtifactModels.addEmojiTag(model, artifact, 2.6)
 	model:PivotTo(cf)
 	return model
 end
@@ -12729,6 +12770,10 @@ local function updateCard(slot)
 	if fit < 1 then object:ScaleTo(fit) end
 	local half = (object:GetAttribute("HalfHeight") or 2) * fit
 	object:PivotTo(baseCF * CFrame.new(0, 0.35 + half, 0))
+	-- its emoji floats just above the glass case, and the name tag moves up to make room
+	ArtifactModels.addEmojiTag(object, artifact, CASE.Y + 1.2 - 0.35 - half)
+	local info = spot:FindFirstChild("InfoGui")
+	if info and info:IsA("BillboardGui") then info.StudsOffset = Vector3.new(0, 8.4, 0) end
 	object.Parent = display
 	-- a soft spotlight in the rarity's color, and sparkles for the fancy ones
 	local light = Instance.new("PointLight")
@@ -12976,7 +13021,7 @@ local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(360, 62), Position 
 floorPanel.Visible = false
 local downButton = UIKit.button(floorPanel, "▼ DOWN", {Size = UDim2.fromOffset(104, 48), Position = UDim2.new(0, 7, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Violet, Radius = 24, MaxText = 18})
 local upButton = UIKit.button(floorPanel, "UP ▲", {Size = UDim2.fromOffset(104, 48), Position = UDim2.new(1, -7, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Color = C.Sky, Radius = 24, MaxText = 18})
-local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -236, 0, 30), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0, MaxText = 22})
+local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -236, 0, 26), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0, MaxText = 22})
 -- the price of the next floor hangs under the bar when it's still locked
 local pricePill = UIKit.panel(floorPanel, {Size = UDim2.fromOffset(190, 28), Position = UDim2.new(0.5, 0, 1, 6), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Radius = 14, Stroke = 2.5})
 local upPrice = UIKit.label(pricePill, "", {Size = UDim2.new(1, -16, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
@@ -13006,8 +13051,21 @@ local function currentMuseumFloor()
 	return nil
 end
 
-upButton.MouseButton1Click:Connect(function() floorRemote:FireServer(1) end)
-downButton.MouseButton1Click:Connect(function() floorRemote:FireServer(-1) end)
+-- both buttons always stay in place (so the bar never looks lopsided); one that can't be
+-- used right now is greyed out instead of disappearing
+local canGo = {[upButton] = false, [downButton] = false}
+local function setUsable(button, usable, color)
+	canGo[button] = usable
+	button.BackgroundColor3 = usable and color or C.Lilac:Lerp(C.Grey, 0.5)
+	local label = button:FindFirstChild("Label")
+	if label then label.TextTransparency = usable and 0 or 0.45 end
+end
+upButton.MouseButton1Click:Connect(function()
+	if canGo[upButton] then floorRemote:FireServer(1) end
+end)
+downButton.MouseButton1Click:Connect(function()
+	if canGo[downButton] then floorRemote:FireServer(-1) end
+end)
 
 task.spawn(function()
 	local topFloor = #GameConfig.FloorPrices
@@ -13019,15 +13077,13 @@ task.spawn(function()
 			local owned = museum:GetAttribute("OwnerUserId") == player.UserId
 			local nextOpen = table.find(opened, tostring(floor + 1)) ~= nil
 			floorLabel.Text = "🛗 FLOOR " .. floor .. "/" .. topFloor
-			upButton.Visible = floor < topFloor and (nextOpen or owned)
-			downButton.Visible = floor > 1
-			if upButton.Visible and not nextOpen then
+			local canUp = floor < topFloor and (nextOpen or owned)
+			local buying = canUp and not nextOpen
+			setUsable(upButton, canUp, buying and C.Coral or C.Sky)
+			setUsable(downButton, floor > 1, C.Violet)
+			pricePill.Visible = buying
+			if buying then
 				upPrice.Text = "🔒 Unlock " .. ArtifactData.FormatMoney(GameConfig.FloorPrices[floor + 1])
-				pricePill.Visible = true
-				upButton.BackgroundColor3 = C.Coral
-			else
-				pricePill.Visible = false
-				upButton.BackgroundColor3 = C.Sky
 			end
 		end
 		task.wait(0.25)
@@ -13137,7 +13193,7 @@ depthBubble.BackgroundTransparency = 0.1
 local depthLabel = UIKit.label(depthBubble, "0m", {Size = UDim2.new(1, -16, 0.7, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 0, MaxText = 26})
 
 -- the tube, filled with one colored band per zone (thicker zones = taller bands)
-local tube = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(30, GAUGE_H), Position = UDim2.new(0.5, 8, 0, 50), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 15, Stroke = 3, StrokeColor = C.Ink, Shade = false})
+local tube = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(30, GAUGE_H), Position = UDim2.new(0.5, 0, 0, 50), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 15, Stroke = 3, StrokeColor = C.Ink, Shade = false})
 tube.ClipsDescendants = true
 local bands = Instance.new("Frame")
 bands.BackgroundTransparency = 1
@@ -13147,23 +13203,26 @@ local tubeGloss = UIKit.panel(tube, {Size = UDim2.new(0, 6, 1, -16), Position = 
 tubeGloss.BackgroundTransparency = 0.55
 tubeGloss.ZIndex = 3
 
--- your position: a round marker that slides down the left side of the tube
-local marker = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(22, 22), Position = UDim2.new(0.5, -14, 0, 50), AnchorPoint = Vector2.new(1, 0.5), Color = C.Sun, Radius = 11, Stroke = 3})
+-- your position: a bright bar across the tube
+local marker = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(42, 10), Position = UDim2.new(0.5, 0, 0, 50), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Sun, Radius = 5, Stroke = 2.5, Shade = false})
 marker.ZIndex = 4
 
 -- your shovel's limit: a red line across the tube with a small tag
-local limitLine = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(40, 6), Position = UDim2.new(0.5, 8, 0, 50), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Coral, Radius = 3, Stroke = 2, Shade = false})
+local limitLine = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(40, 6), Position = UDim2.new(0.5, 0, 0, 50), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Coral, Radius = 3, Stroke = 2, Shade = false})
 limitLine.ZIndex = 4
-local shovelLabel = UIKit.label(depthPanel, "", {Size = UDim2.fromOffset(52, 16), Position = UDim2.new(0.5, 30, 0, 50), AnchorPoint = Vector2.new(0, 0.5), Align = "Left", Color = C.Coral, Stroke = 2})
+local shovelLabel = UIKit.label(depthPanel, "", {Size = UDim2.fromOffset(34, 16), Position = UDim2.new(0.5, 22, 0, 50), AnchorPoint = Vector2.new(0, 0.5), Align = "Left", Color = C.Coral, Stroke = 2})
 shovelLabel.ZIndex = 4
 
--- zone name pill under the tube
-local zonePill = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(104, 28), Position = UDim2.new(0.5, 0, 0, 50 + GAUGE_H + 8), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sun, Radius = 14})
-local zoneLabel = UIKit.label(zonePill, "", {Size = UDim2.new(1, -12, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 16})
+-- zone name pill under the tube: dark, with the zone's color as a dot and an outline
+local zonePill = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(104, 28), Position = UDim2.new(0.5, 0, 0, 50 + GAUGE_H + 12), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Radius = 14, Stroke = 2.5})
+zonePill.BackgroundTransparency = 0.1
+local zoneStroke = zonePill:FindFirstChildOfClass("UIStroke")
+local zoneDot = UIKit.panel(zonePill, {Size = UDim2.fromOffset(12, 12), Position = UDim2.new(0, 8, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Sun, Radius = 6, Stroke = false, Shade = false})
+local zoneLabel = UIKit.label(zonePill, "", {Size = UDim2.new(1, -30, 0.64, 0), Position = UDim2.new(0, 24, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.White, Stroke = 0, MaxText = 14})
 
 -- small "surface" button under everything, only while underground
 local surfaceButton = UIKit.button(depthPanel, "SURFACE", {
-	Size = UDim2.fromOffset(104, 40), Position = UDim2.new(0.5, 0, 0, 50 + GAUGE_H + 44), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sky, Radius = 20,
+	Size = UDim2.fromOffset(104, 40), Position = UDim2.new(0.5, 0, 0, 50 + GAUGE_H + 50), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sky, Radius = 20,
 })
 surfaceButton.Visible = false
 surfaceButton.MouseButton1Click:Connect(function()
@@ -13235,15 +13294,17 @@ task.spawn(function()
 			zone = zone or {Name = "Bedrock", Color = Color3.fromRGB(150, 150, 160)}
 			depthLabel.Text = depth .. "m"
 			zoneLabel.Text = string.upper(zone.Name)
-			zonePill.BackgroundColor3 = zone.Color
-			marker.Position = UDim2.new(0.5, -14, 0, gaugeY(world, depth))
+			zoneDot.BackgroundColor3 = zone.Color
+			if zoneStroke then zoneStroke.Color = zone.Color end
+			-- the marker stays inside the tube, even at the very bottom
+			marker.Position = UDim2.new(0.5, 0, 0, math.clamp(gaugeY(world, depth), 50 + 6, 50 + GAUGE_H - 6))
 
 			if equippedDef and equippedDef.World == world.Id then
 				local maxDepth = -world.Zones[equippedDef.MaxZone].Bottom
 				limitLine.Visible = equippedDef.MaxZone < #world.Zones
 				shovelLabel.Visible = limitLine.Visible
-				limitLine.Position = UDim2.new(0.5, 8, 0, gaugeY(world, maxDepth))
-				shovelLabel.Position = UDim2.new(0.5, 30, 0, gaugeY(world, maxDepth))
+				limitLine.Position = UDim2.new(0.5, 0, 0, gaugeY(world, maxDepth))
+				shovelLabel.Position = UDim2.new(0.5, 22, 0, gaugeY(world, maxDepth))
 				shovelLabel.Text = "MAX"
 				-- marker turns red when you're right at your shovel's limit
 				marker.BackgroundColor3 = (limitLine.Visible and maxDepth - depth <= 8) and C.Coral or C.Sun

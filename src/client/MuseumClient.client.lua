@@ -99,6 +99,10 @@ local function updateCard(slot)
 	if fit < 1 then object:ScaleTo(fit) end
 	local half = (object:GetAttribute("HalfHeight") or 2) * fit
 	object:PivotTo(baseCF * CFrame.new(0, 0.35 + half, 0))
+	-- its emoji floats just above the glass case, and the name tag moves up to make room
+	ArtifactModels.addEmojiTag(object, artifact, CASE.Y + 1.2 - 0.35 - half)
+	local info = spot:FindFirstChild("InfoGui")
+	if info and info:IsA("BillboardGui") then info.StudsOffset = Vector3.new(0, 8.4, 0) end
 	object.Parent = display
 	-- a soft spotlight in the rarity's color, and sparkles for the fancy ones
 	local light = Instance.new("PointLight")
@@ -346,7 +350,7 @@ local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(360, 62), Position 
 floorPanel.Visible = false
 local downButton = UIKit.button(floorPanel, "▼ DOWN", {Size = UDim2.fromOffset(104, 48), Position = UDim2.new(0, 7, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Violet, Radius = 24, MaxText = 18})
 local upButton = UIKit.button(floorPanel, "UP ▲", {Size = UDim2.fromOffset(104, 48), Position = UDim2.new(1, -7, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Color = C.Sky, Radius = 24, MaxText = 18})
-local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -236, 0, 30), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0, MaxText = 22})
+local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -236, 0, 26), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0, MaxText = 22})
 -- the price of the next floor hangs under the bar when it's still locked
 local pricePill = UIKit.panel(floorPanel, {Size = UDim2.fromOffset(190, 28), Position = UDim2.new(0.5, 0, 1, 6), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Radius = 14, Stroke = 2.5})
 local upPrice = UIKit.label(pricePill, "", {Size = UDim2.new(1, -16, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
@@ -376,8 +380,21 @@ local function currentMuseumFloor()
 	return nil
 end
 
-upButton.MouseButton1Click:Connect(function() floorRemote:FireServer(1) end)
-downButton.MouseButton1Click:Connect(function() floorRemote:FireServer(-1) end)
+-- both buttons always stay in place (so the bar never looks lopsided); one that can't be
+-- used right now is greyed out instead of disappearing
+local canGo = {[upButton] = false, [downButton] = false}
+local function setUsable(button, usable, color)
+	canGo[button] = usable
+	button.BackgroundColor3 = usable and color or C.Lilac:Lerp(C.Grey, 0.5)
+	local label = button:FindFirstChild("Label")
+	if label then label.TextTransparency = usable and 0 or 0.45 end
+end
+upButton.MouseButton1Click:Connect(function()
+	if canGo[upButton] then floorRemote:FireServer(1) end
+end)
+downButton.MouseButton1Click:Connect(function()
+	if canGo[downButton] then floorRemote:FireServer(-1) end
+end)
 
 task.spawn(function()
 	local topFloor = #GameConfig.FloorPrices
@@ -389,15 +406,13 @@ task.spawn(function()
 			local owned = museum:GetAttribute("OwnerUserId") == player.UserId
 			local nextOpen = table.find(opened, tostring(floor + 1)) ~= nil
 			floorLabel.Text = "🛗 FLOOR " .. floor .. "/" .. topFloor
-			upButton.Visible = floor < topFloor and (nextOpen or owned)
-			downButton.Visible = floor > 1
-			if upButton.Visible and not nextOpen then
+			local canUp = floor < topFloor and (nextOpen or owned)
+			local buying = canUp and not nextOpen
+			setUsable(upButton, canUp, buying and C.Coral or C.Sky)
+			setUsable(downButton, floor > 1, C.Violet)
+			pricePill.Visible = buying
+			if buying then
 				upPrice.Text = "🔒 Unlock " .. ArtifactData.FormatMoney(GameConfig.FloorPrices[floor + 1])
-				pricePill.Visible = true
-				upButton.BackgroundColor3 = C.Coral
-			else
-				pricePill.Visible = false
-				upButton.BackgroundColor3 = C.Sky
 			end
 		end
 		task.wait(0.25)

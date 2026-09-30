@@ -126,7 +126,6 @@ local function art(target, artifact, face, opts)
 		if opts.Engraved then
 			-- carved into the stone: a dark, slightly see-through silhouette
 			emoji.TextColor3 = rgb(40, 34, 30)
-			emoji.TextTransparency = 0.25
 		end
 		emoji.Parent = holder
 	end
@@ -255,6 +254,46 @@ function FORMS.Crystal(model, artifact, color)
 end
 
 ---------------------------------------------------------------------
+-- A round emoji badge floating above the object (the same emoji as in your inventory), so
+-- you can tell at a glance which meme a painting, statue, coin or stone is.
+-- heightAbove = studs above the object's center, straight up in the world.
+function ArtifactModels.addEmojiTag(model, artifact, heightAbove)
+	local core = model.PrimaryPart
+	if not core then return nil end
+	local old = core:FindFirstChild("EmojiTag")
+	if old then old:Destroy() end
+	local rarity = ArtifactData.GetRarity(artifact.Rarity)
+	local tag = Instance.new("BillboardGui")
+	tag.Name = "EmojiTag"
+	tag.Size = UDim2.fromScale(1.9, 1.9) -- in studs
+	tag.StudsOffsetWorldSpace = Vector3.new(0, heightAbove, 0)
+	tag.LightInfluence = 0
+	tag.MaxDistance = 90
+	tag.Parent = core
+	local bubble = Instance.new("Frame")
+	bubble.Size = UDim2.fromScale(1, 1)
+	bubble.BackgroundColor3 = Color3.new(1, 1, 1)
+	bubble.BackgroundTransparency = 0.05
+	bubble.Parent = tag
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.5, 0)
+	corner.Parent = bubble
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 3
+	stroke.Color = rarity and rarity.Color or rgb(200, 200, 200)
+	stroke.Parent = bubble
+	local emoji = Instance.new("TextLabel")
+	emoji.BackgroundTransparency = 1
+	emoji.Size = UDim2.fromScale(0.74, 0.74)
+	emoji.Position = UDim2.fromScale(0.5, 0.5)
+	emoji.AnchorPoint = Vector2.new(0.5, 0.5)
+	emoji.Text = ArtifactIcons[artifact.Id] or "🗿"
+	emoji.TextScaled = true
+	emoji.Font = Enum.Font.GothamBold
+	emoji.Parent = bubble
+	return tag
+end
+
 function ArtifactModels.build(artifact)
 	local rarity = ArtifactData.GetRarity(artifact.Rarity)
 	local color = rarity and rarity.Color or rgb(200, 200, 200)

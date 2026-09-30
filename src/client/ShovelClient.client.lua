@@ -100,7 +100,7 @@ depthBubble.BackgroundTransparency = 0.1
 local depthLabel = UIKit.label(depthBubble, "0m", {Size = UDim2.new(1, -16, 0.7, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 0, MaxText = 26})
 
 -- the tube, filled with one colored band per zone (thicker zones = taller bands)
-local tube = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(30, GAUGE_H), Position = UDim2.new(0.5, 8, 0, 50), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 15, Stroke = 3, StrokeColor = C.Ink, Shade = false})
+local tube = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(30, GAUGE_H), Position = UDim2.new(0.5, 0, 0, 50), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 15, Stroke = 3, StrokeColor = C.Ink, Shade = false})
 tube.ClipsDescendants = true
 local bands = Instance.new("Frame")
 bands.BackgroundTransparency = 1
@@ -110,23 +110,26 @@ local tubeGloss = UIKit.panel(tube, {Size = UDim2.new(0, 6, 1, -16), Position = 
 tubeGloss.BackgroundTransparency = 0.55
 tubeGloss.ZIndex = 3
 
--- your position: a round marker that slides down the left side of the tube
-local marker = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(22, 22), Position = UDim2.new(0.5, -14, 0, 50), AnchorPoint = Vector2.new(1, 0.5), Color = C.Sun, Radius = 11, Stroke = 3})
+-- your position: a bright bar across the tube
+local marker = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(42, 10), Position = UDim2.new(0.5, 0, 0, 50), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Sun, Radius = 5, Stroke = 2.5, Shade = false})
 marker.ZIndex = 4
 
 -- your shovel's limit: a red line across the tube with a small tag
-local limitLine = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(40, 6), Position = UDim2.new(0.5, 8, 0, 50), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Coral, Radius = 3, Stroke = 2, Shade = false})
+local limitLine = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(40, 6), Position = UDim2.new(0.5, 0, 0, 50), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Coral, Radius = 3, Stroke = 2, Shade = false})
 limitLine.ZIndex = 4
-local shovelLabel = UIKit.label(depthPanel, "", {Size = UDim2.fromOffset(52, 16), Position = UDim2.new(0.5, 30, 0, 50), AnchorPoint = Vector2.new(0, 0.5), Align = "Left", Color = C.Coral, Stroke = 2})
+local shovelLabel = UIKit.label(depthPanel, "", {Size = UDim2.fromOffset(34, 16), Position = UDim2.new(0.5, 22, 0, 50), AnchorPoint = Vector2.new(0, 0.5), Align = "Left", Color = C.Coral, Stroke = 2})
 shovelLabel.ZIndex = 4
 
--- zone name pill under the tube
-local zonePill = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(104, 28), Position = UDim2.new(0.5, 0, 0, 50 + GAUGE_H + 8), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sun, Radius = 14})
-local zoneLabel = UIKit.label(zonePill, "", {Size = UDim2.new(1, -12, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 16})
+-- zone name pill under the tube: dark, with the zone's color as a dot and an outline
+local zonePill = UIKit.panel(depthPanel, {Size = UDim2.fromOffset(104, 28), Position = UDim2.new(0.5, 0, 0, 50 + GAUGE_H + 12), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Radius = 14, Stroke = 2.5})
+zonePill.BackgroundTransparency = 0.1
+local zoneStroke = zonePill:FindFirstChildOfClass("UIStroke")
+local zoneDot = UIKit.panel(zonePill, {Size = UDim2.fromOffset(12, 12), Position = UDim2.new(0, 8, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Sun, Radius = 6, Stroke = false, Shade = false})
+local zoneLabel = UIKit.label(zonePill, "", {Size = UDim2.new(1, -30, 0.64, 0), Position = UDim2.new(0, 24, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.White, Stroke = 0, MaxText = 14})
 
 -- small "surface" button under everything, only while underground
 local surfaceButton = UIKit.button(depthPanel, "SURFACE", {
-	Size = UDim2.fromOffset(104, 40), Position = UDim2.new(0.5, 0, 0, 50 + GAUGE_H + 44), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sky, Radius = 20,
+	Size = UDim2.fromOffset(104, 40), Position = UDim2.new(0.5, 0, 0, 50 + GAUGE_H + 50), AnchorPoint = Vector2.new(0.5, 0), Color = C.Sky, Radius = 20,
 })
 surfaceButton.Visible = false
 surfaceButton.MouseButton1Click:Connect(function()
@@ -198,15 +201,17 @@ task.spawn(function()
 			zone = zone or {Name = "Bedrock", Color = Color3.fromRGB(150, 150, 160)}
 			depthLabel.Text = depth .. "m"
 			zoneLabel.Text = string.upper(zone.Name)
-			zonePill.BackgroundColor3 = zone.Color
-			marker.Position = UDim2.new(0.5, -14, 0, gaugeY(world, depth))
+			zoneDot.BackgroundColor3 = zone.Color
+			if zoneStroke then zoneStroke.Color = zone.Color end
+			-- the marker stays inside the tube, even at the very bottom
+			marker.Position = UDim2.new(0.5, 0, 0, math.clamp(gaugeY(world, depth), 50 + 6, 50 + GAUGE_H - 6))
 
 			if equippedDef and equippedDef.World == world.Id then
 				local maxDepth = -world.Zones[equippedDef.MaxZone].Bottom
 				limitLine.Visible = equippedDef.MaxZone < #world.Zones
 				shovelLabel.Visible = limitLine.Visible
-				limitLine.Position = UDim2.new(0.5, 8, 0, gaugeY(world, maxDepth))
-				shovelLabel.Position = UDim2.new(0.5, 30, 0, gaugeY(world, maxDepth))
+				limitLine.Position = UDim2.new(0.5, 0, 0, gaugeY(world, maxDepth))
+				shovelLabel.Position = UDim2.new(0.5, 22, 0, gaugeY(world, maxDepth))
 				shovelLabel.Text = "MAX"
 				-- marker turns red when you're right at your shovel's limit
 				marker.BackgroundColor3 = (limitLine.Visible and maxDepth - depth <= 8) and C.Coral or C.Sun
