@@ -16604,6 +16604,7 @@ end)
 -- Other players' swings arrive through ShovelSwingFx, so everyone sees everyone dig.
 ---------------------------------------------------------------------
 local Debris = game:GetService("Debris")
+local TweenService = game:GetService("TweenService")
 local ShovelModels = require(ReplicatedStorage:WaitForChild("PickaxeModels"))
 local swingFxRemote = remotes:WaitForChild("ShovelSwingFx")
 
@@ -16631,29 +16632,26 @@ local function easeOutBack(u)
 end
 local function easeInOutCubic(u) return u < 0.5 and 4 * u * u * u or 1 - (-2 * u + 2) ^ 3 / 2 end
 
--- The swing, key by key. Ease = how the motion INTO that key is timed.
+-- The dig, key by key (a two-beat scoop, like digging with a spade): a quick wind-up, a stab
+-- down into the dirt in front, a pry back, then a heave up over the right shoulder that
+-- flings the dirt up and behind. Ease = how the motion INTO that key is timed.
 local SWING = {
 	{T = 0.00, Pose = IDLE},
-	-- load: a little dip and a cock of the wrists before the big lift
-	{T = 0.10, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.45, -0.3, -0.7), Tilt = 112, Turn = 20, Roll = 4, Lean = 7, Twist = -8, Bend = 0, Look = 4}},
-	-- raise: the pickaxe swings up past the RIGHT shoulder, not across the face
-	{T = 0.22, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.8, 0.5, -0.5), Tilt = 165, Turn = -6, Roll = -40, Lean = 2, Twist = -26, Bend = -4, Look = -4}},
-	-- top: heaved up over the right shoulder, slowing as it gets there
-	{T = 0.34, Ease = easeOutCubic, Pose = {Hand = Vector3.new(1.0, 1.45, 0.0), Tilt = 215, Turn = -12, Roll = -30, Lean = -6, Twist = -44, Bend = -6, Look = -12}},
-	-- hang: the pickaxe floats at the very top for a beat, stretching back
-	{T = 0.42, Ease = easeOutSine, Pose = {Hand = Vector3.new(1.02, 1.52, 0.06), Tilt = 220, Turn = -13, Roll = -33, Lean = -8, Twist = -46, Bend = -7, Look = -14}},
-	-- swing-over: comes forward beside the head (not over it)
-	{T = 0.48, Ease = easeInQuad, Pose = {Hand = Vector3.new(0.7, 1.05, -0.8), Tilt = 150, Turn = -6, Roll = -22, Lean = 10, Twist = -34, Bend = 0, Look = 8}},
-	-- strike: accelerates all the way down into the ground
-	{T = 0.52, Ease = easeInQuad, Pose = {Hand = Vector3.new(0.1, -0.1, -1.1), Tilt = 78, Turn = 6, Roll = 0, Lean = 28, Twist = -18, Bend = 5, Look = 22}},
-	-- rebound: kicks back up out of the dirt (with a little overshoot)
-	{T = 0.64, Ease = easeOutBack, Pose = {Hand = Vector3.new(0.2, 0.3, -1.0), Tilt = 102, Turn = 4, Roll = 4, Lean = 16, Twist = -10, Bend = 3, Look = 12}},
+	-- wind-up: the pickaxe comes up beside the right shoulder
+	{T = 0.12, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.6, 0.55, -0.5), Tilt = 150, Turn = 0, Roll = -20, Lean = -2, Twist = -16, Bend = -2, Look = -4}},
+	-- stab: driven down hard into the ground in front of the feet
+	{T = 0.26, Ease = easeInQuad, Pose = {Hand = Vector3.new(0.15, -0.55, -1.25), Tilt = 40, Turn = 4, Roll = 0, Lean = 30, Twist = -6, Bend = 4, Look = 24}},
+	-- pry: leans back on the handle, levering the dirt loose
+	{T = 0.40, Ease = easeOutCubic, Pose = {Hand = Vector3.new(0.3, -0.25, -0.75), Tilt = 62, Turn = 8, Roll = 6, Lean = 24, Twist = -10, Bend = 3, Look = 18}},
+	-- fling: heaved up over the right shoulder, throwing the dirt up and behind
+	{T = 0.62, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.95, 1.4, 0.05), Tilt = 215, Turn = -14, Roll = -32, Lean = -8, Twist = -46, Bend = -6, Look = -12}},
 	-- settle back into the ready stance
 	{T = 1.00, Ease = easeInOutCubic, Pose = IDLE},
 }
-local STRIKE_TIME = 0.52
-local HIT_STOP = 0.06 -- the pose freezes this long on impact, which makes hits feel heavy
-local TRAIL_FROM, TRAIL_TO = 0.43, 0.62 -- the head leaves a swoosh trail during the down-swing
+local STRIKE_TIME = 0.26 -- the blade bites the ground (the dig happens here)
+local FLING_TIME = 0.54 -- the dirt leaves the blade on the way up
+local HIT_STOP = 0.05 -- the pose freezes this long on impact, which makes hits feel heavy
+local TRAILS = {{0.14, 0.28}, {0.44, 0.64}} -- swoosh trail during the stab and the fling
 local WOBBLE = {Degrees = 7, Decay = 9, Speed = 38} -- the handle vibrates after the impact
 
 -- tool axes when upright: grip end (+Z) points up (head down), pick arms (+Y) point forward
@@ -16665,11 +16663,12 @@ local function catmull(p0, p1, p2, p3, u)
 	return (p1 * 2 + (p2 - p0) * u + (p0 * 2 - p1 * 5 + p2 * 4 - p3) * u2 + (p1 * 3 - p0 - p2 * 3 + p3) * u3) * 0.5
 end
 
-local function samplePose(t)
+local function samplePose(t, keys)
+	keys = keys or SWING
 	t = math.clamp(t, 0, 1)
 	local i = 1
-	while i < #SWING - 1 and t > SWING[i + 1].T do i += 1 end
-	local k0, k1, k2, k3 = SWING[math.max(i - 1, 1)], SWING[i], SWING[i + 1], SWING[math.min(i + 2, #SWING)]
+	while i < #keys - 1 and t > keys[i + 1].T do i += 1 end
+	local k0, k1, k2, k3 = keys[math.max(i - 1, 1)], keys[i], keys[i + 1], keys[math.min(i + 2, #keys)]
 	local u = (t - k1.T) / (k2.T - k1.T)
 	u = k2.Ease and k2.Ease(u) or u
 	local pose = {Hand = catmull(k0.Pose.Hand, k1.Pose.Hand, k2.Pose.Hand, k3.Pose.Hand, u)}
@@ -16691,6 +16690,20 @@ local function idlePose(clock, moving)
 		Twist = IDLE.Twist + sway * 2, Bend = sway * 1.5 + step * 1.2, Look = -breathe * 2,
 	}
 end
+
+-- EQUIP: the pickaxe fades in at the side with a sparkle, gets flipped up into the air,
+-- spins twice, is caught overhead with a flash, then swung down into the ready stance.
+local EQUIP_LENGTH = 0.8
+local EQUIP = {
+	{T = 0.00, Pose = {Hand = Vector3.new(0.6, -0.35, -0.4), Tilt = 30, Turn = 10, Roll = 0, Lean = 0, Twist = 0, Bend = 0, Look = 4}},
+	{T = 0.14, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.5, -0.3, -0.5), Tilt = 60, Turn = 10, Roll = 0, Lean = 4, Twist = 4, Bend = 0, Look = 0}},
+	{T = 0.22, Ease = easeOutCubic, Pose = {Hand = Vector3.new(0.9, 1.0, -0.8), Tilt = 160, Turn = 0, Roll = -20, Lean = -4, Twist = -6, Bend = 0, Look = -20}},
+	{T = 0.50, Ease = easeOutSine, Pose = {Hand = Vector3.new(1.0, 1.45, -0.7), Tilt = 180, Turn = 0, Roll = -20, Lean = -6, Twist = -10, Bend = -2, Look = -25}},
+	{T = 0.64, Ease = easeInQuad, Pose = {Hand = Vector3.new(0.25, -0.05, -1.0), Tilt = 95, Turn = 20, Roll = 10, Lean = 10, Twist = -12, Bend = 2, Look = 8}},
+	{T = 1.00, Ease = easeOutBack, Pose = IDLE},
+}
+local TOSS_FROM, TOSS_TO, TOSS_HEIGHT, TOSS_SPINS = 0.22, 0.5, 3.4, 2
+local onEquipCatch -- camera jolt + sound for our own catch (set further down)
 
 local rigs = {} -- [character] = rig
 local puppetFolder = Instance.new("Folder")
@@ -16861,7 +16874,8 @@ local function createRig(character, tool)
 		Hips = hips and hips:IsA("Motor6D") and hips or nil,
 		HipsC0 = hips and hips:IsA("Motor6D") and hips.C0 or nil,
 		Humanoid = humanoid, Trail = trail, ImpactAt = nil, Smooth = nil,
-		SwingStart = nil, SwingLength = 0.4, Struck = true,
+		SwingStart = nil, SwingLength = 0.4, Struck = true, Flung = true,
+		EquipStart = os.clock(), Caught = false, Landed = false,
 		GripOffset = gripAttachment and gripAttachment.CFrame or CFrame.new(0, -0.15, 0) * CFrame.Angles(math.rad(-90), 0, 0),
 		RayParams = rayParams,
 		Cleanup = {holder, rightTarget, rightPole, rightIK, leftTarget, leftPole, leftIK or nil},
@@ -16891,9 +16905,63 @@ local function tossDirt(position, color)
 	end
 end
 
+-- the scooped dirt flying off the blade: chunky cubes thrown up and back over the shoulder,
+-- tumbling, then shrinking away
+local function flingDirt(root, position, color, count)
+	for _ = 1, count do
+		local clod = Instance.new("Part")
+		local size = 0.45 + math.random() * 0.4
+		clod.Size = Vector3.new(size, size * (0.8 + math.random() * 0.3), size)
+		clod.Color = color:Lerp(Color3.new(math.random(), math.random() * 0.8, 0.2), 0.08):Lerp(Color3.new(0, 0, 0), math.random() * 0.15)
+		clod.Material = Enum.Material.SmoothPlastic
+		clod.CanCollide = false
+		clod.CanQuery = false
+		clod.CanTouch = false
+		clod.CastShadow = false
+		clod.CFrame = CFrame.new(position + Vector3.new(math.random() - 0.5, math.random() * 0.4, math.random() - 0.5) * 0.7)
+			* CFrame.Angles(math.random() * 6, math.random() * 6, math.random() * 6)
+		-- up and backward (+Z behind the player), drifting to the right
+		clod.AssemblyLinearVelocity = root.CFrame:VectorToWorldSpace(Vector3.new(math.random() * 9 - 3, 24 + math.random() * 9, 7 + math.random() * 7))
+		clod.AssemblyAngularVelocity = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 24
+		clod.Parent = puppetFolder
+		local life = 0.9 + math.random() * 0.3
+		task.delay(life - 0.25, function()
+			if clod.Parent then
+				TweenService:Create(clod, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = Vector3.one * 0.05}):Play()
+			end
+		end)
+		Debris:AddItem(clod, life)
+	end
+end
+
+-- a quick burst of glowing sparkles (the equip flash)
+local function sparkle(position, colorA, colorB, count, speed)
+	local anchor = Instance.new("Part")
+	anchor.Anchored = true
+	anchor.CanCollide = false
+	anchor.CanQuery = false
+	anchor.CanTouch = false
+	anchor.Transparency = 1
+	anchor.Size = Vector3.one
+	anchor.CFrame = CFrame.new(position)
+	anchor.Parent = puppetFolder
+	local e = Instance.new("ParticleEmitter")
+	e.Enabled = false
+	e.Color = ColorSequence.new(colorA, colorB)
+	e.LightEmission = 1
+	e.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 0)})
+	e.Lifetime = NumberRange.new(0.25, 0.5)
+	e.Speed = NumberRange.new(speed * 0.5, speed)
+	e.SpreadAngle = Vector2.new(180, 180)
+	e.Drag = 5
+	e.RotSpeed = NumberRange.new(-300, 300)
+	e.Parent = anchor
+	e:Emit(count)
+	Debris:AddItem(anchor, 0.8)
+end
+
 -- the moment the pickaxe bites the ground: a burst of dirt chunks, a puff of dust and a
 -- ring of dust rolling out across the ground (plus camera shake for our own swings)
-local TweenService = game:GetService("TweenService")
 local impactShake -- set further down, once the camera shake exists
 -- extra impact particles in the tool's style (see PickaxeModels TRAILS), and glowing sparks
 -- in the deep layers (crystal sparkles in the crystal layer, embers in the magma core)
@@ -16993,13 +17061,60 @@ local function startSwing(character, length)
 	rig.SwingStart = os.clock()
 	rig.SwingLength = length
 	rig.Struck = false
+	rig.Flung = false
+	if rig.EquipStart then -- digging cuts the equip flourish short
+		rig.EquipStart = nil
+		for _, p in ipairs(rig.Puppet) do p.Part.LocalTransparencyModifier = 0 end
+	end
+end
+
+local function rigColors(rig)
+	local a, b = rig.Tool:GetAttribute("TrailColorA"), rig.Tool:GetAttribute("TrailColorB")
+	if typeof(a) == "Color3" and typeof(b) == "Color3" then return a, b end
+	return Color3.new(1, 1, 1), Color3.fromRGB(255, 220, 110)
 end
 
 local function poseRig(character, rig, clock, dt)
 	local moving = rig.Humanoid and math.clamp(rig.Humanoid.MoveDirection.Magnitude, 0, 1) or 0
 	local target
 	local trailOn = false
-	if rig.SwingStart then
+	local toss -- 0-1 while the pickaxe is in the air during the equip flip
+	if rig.EquipStart and not rig.SwingStart then
+		local t = (clock - rig.EquipStart) / EQUIP_LENGTH
+		if t >= 1 then
+			rig.EquipStart = nil
+			target = idlePose(clock, moving)
+		else
+			target = samplePose(t, EQUIP)
+			-- fade in at the start
+			local fade = 1 - math.clamp(t / 0.12, 0, 1)
+			for _, p in ipairs(rig.Puppet) do p.Part.LocalTransparencyModifier = fade end
+			if t > TOSS_FROM and t < TOSS_TO then
+				toss = (t - TOSS_FROM) / (TOSS_TO - TOSS_FROM)
+				trailOn = true
+			end
+			if not rig.Caught and t >= TOSS_TO then
+				rig.Caught = true
+				if rig.Blade then
+					local a, b = rigColors(rig)
+					sparkle(rig.Blade.Position, a, b, 26, 14)
+				end
+				if character == player.Character and onEquipCatch then onEquipCatch() end
+			end
+			if not rig.Landed and t >= 0.66 then
+				rig.Landed = true
+				trailOn = true
+				if rig.Blade then
+					local a, b = rigColors(rig)
+					sparkle(rig.Blade.Position, b, a, 12, 7)
+				end
+			end
+			if t > 0.52 and t < 0.68 then trailOn = true end
+		end
+		if rig.EquipStart == nil then
+			for _, p in ipairs(rig.Puppet) do p.Part.LocalTransparencyModifier = 0 end
+		end
+	elseif rig.SwingStart then
 		-- hit-stop: time stands still for a moment right at the impact
 		local elapsed = clock - rig.SwingStart
 		local strikeAt = rig.SwingLength * STRIKE_TIME
@@ -17012,7 +17127,15 @@ local function poseRig(character, rig, clock, dt)
 			target = idlePose(clock, moving)
 		else
 			target = samplePose(t)
-			trailOn = t > TRAIL_FROM and t < TRAIL_TO
+			for _, window in ipairs(TRAILS) do
+				if t > window[1] and t < window[2] then trailOn = true end
+			end
+			if not rig.Flung and t >= FLING_TIME then
+				rig.Flung = true
+				if rig.Blade then
+					flingDirt(rig.Root, rig.Blade.Position, dirtColorAt(rig.Root.Position), character == player.Character and 6 or 3)
+				end
+			end
 			if not rig.Struck and t >= STRIKE_TIME then
 				rig.Struck = true
 				rig.ImpactAt = clock
@@ -17050,7 +17173,7 @@ local function poseRig(character, rig, clock, dt)
 		smooth = table.clone(target)
 		rig.Smooth = smooth
 	end
-	local alpha = 1 - math.exp(-(rig.SwingStart and 45 or 12) * (dt or 1 / 60))
+	local alpha = 1 - math.exp(-((rig.SwingStart or rig.EquipStart) and 45 or 12) * (dt or 1 / 60))
 	smooth.Hand = smooth.Hand:Lerp(target.Hand, alpha)
 	for _, c in ipairs(CHANNELS) do
 		smooth[c] += ((target[c] or 0) - (smooth[c] or 0)) * alpha
@@ -17083,6 +17206,16 @@ local function poseRig(character, rig, clock, dt)
 		end
 	end
 
+	-- the hand stays where the grip would be (reaching up to catch), the pickaxe flies:
+	-- up in an arc above the hand, spinning end over end around the middle of its handle
+	local handShovelCF = shovelCF
+	if toss then
+		local arc = 4 * TOSS_HEIGHT * toss * (1 - toss)
+		local middle = rig.HoldZ * 0.5
+		local spin = -easeOutSine(toss) * TOSS_SPINS * math.pi * 2
+		shovelCF = CFrame.new(0, arc, 0) * shovelCF * CFrame.new(0, 0, middle) * CFrame.Angles(spin, 0, 0) * CFrame.new(0, 0, -middle)
+	end
+
 	local parts, cframes = {}, {}
 	for i, p in ipairs(rig.Puppet) do
 		parts[i] = p.Part
@@ -17097,10 +17230,10 @@ local function poseRig(character, rig, clock, dt)
 
 	-- the hand goes exactly where a normal Roblox tool grip would put it on this shaft:
 	-- handle = hand * gripAttachment * grip^-1, so hand = handle * grip * gripAttachment^-1
-	local handCF = shovelCF * CFrame.new(0, 0, rig.HoldZ) * rig.GripOffset:Inverse()
+	local handCF = handShovelCF * CFrame.new(0, 0, rig.HoldZ) * rig.GripOffset:Inverse()
 	rig.RightTarget.CFrame = rig.Root.CFrame:ToObjectSpace(handCF)
 	if rig.LeftTarget then
-		rig.LeftTarget.Position = rig.Root.CFrame:PointToObjectSpace((shovelCF * CFrame.new(0, 0, rig.LeftHoldZ)).Position)
+		rig.LeftTarget.Position = rig.Root.CFrame:PointToObjectSpace((handShovelCF * CFrame.new(0, 0, rig.LeftHoldZ)).Position)
 	end
 	-- whole body: the torso bends and twists with the swing, the hips counter-turn a little,
 	-- and the head follows the pickaxe (looks up at the top, down at the impact)
@@ -17164,6 +17297,10 @@ local function shake(strength, duration)
 end
 impactShake = function()
 	shake(0.16, 0.1) -- a crisp little jolt right on the strike
+end
+onEquipCatch = function()
+	shake(0.1, 0.08)
+	Audio.sfx("Click")
 end
 RunService:BindToRenderStep("DigShake", Enum.RenderPriority.Camera.Value + 1, function()
 	local left = shakeUntil - os.clock()
@@ -18474,4 +18611,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 15:04). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 15:12). Now save the place (Ctrl+S).")
