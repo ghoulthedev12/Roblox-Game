@@ -1,1 +1,4 @@
 __pycache__/
+
+# texture folders Studio unpacks next to imported .fbx files
+*.fbm/
