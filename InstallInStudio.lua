@@ -1468,9 +1468,10 @@ function GameConfig.FillDigTerrain(terrain, world)
 	-- bedrock
 	terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, lastZone.Bottom - GameConfig.BedrockThickness / 2, 0)),
 		GameConfig.BedrockThickness, radius, Enum.Material.Basalt)
-	if not world.IslandRadius then
-		local size = math.max(200, world.WorkYard and world.WorkYard.Radius * 2 + 8 or 0)
-		GameConfig.FlattenGround(terrain, origin, size)
+	if world.IslandRadius then
+		GameConfig.FlattenGround(terrain, origin, (world.PitRadius + 12) * 2)
+	else
+		GameConfig.FlattenGround(terrain, origin, math.max(200, world.WorkYard and world.WorkYard.Radius * 2 + 8 or 0))
 	end
 end
 
@@ -13471,6 +13472,7 @@ install(game:GetService("ServerScriptService"), "WorldBuilder", "ModuleScript", 
 
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
 local DigSiteStyle = require(script.Parent:WaitForChild("DigSiteStyle"))
+local GameConfig = require(game:GetService("ReplicatedStorage"):WaitForChild("GameConfig"))
 
 local terrain = workspace.Terrain
 local rgb = Color3.fromRGB
@@ -13551,6 +13553,8 @@ local function buildIsland(world, rng)
 	terrain:FillBall(origin + Vector3.new(0, world.Zones[#world.Zones].Bottom - 20, 0), 40, wall)
 	-- the surface
 	terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -2, 0)), 4, R, top)
+	-- bring the surface down to y = 0, where the gate, shop and decorations stand
+	GameConfig.FlattenGround(terrain, origin, R * 2 + 8)
 	-- a few soft hills near the edge (away from the shop and gate)
 	for _, angle in ipairs({95, 160, 200, 265}) do
 		local a = math.rad(angle + rng:NextNumber(-8, 8))
@@ -18917,4 +18921,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 23:16). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 23:21). Now save the place (Ctrl+S).")

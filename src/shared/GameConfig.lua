@@ -443,9 +443,10 @@ function GameConfig.FillDigTerrain(terrain, world)
 	-- bedrock
 	terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, lastZone.Bottom - GameConfig.BedrockThickness / 2, 0)),
 		GameConfig.BedrockThickness, radius, Enum.Material.Basalt)
-	if not world.IslandRadius then
-		local size = math.max(200, world.WorkYard and world.WorkYard.Radius * 2 + 8 or 0)
-		GameConfig.FlattenGround(terrain, origin, size)
+	if world.IslandRadius then
+		GameConfig.FlattenGround(terrain, origin, (world.PitRadius + 12) * 2)
+	else
+		GameConfig.FlattenGround(terrain, origin, math.max(200, world.WorkYard and world.WorkYard.Radius * 2 + 8 or 0))
 	end
 end
 
