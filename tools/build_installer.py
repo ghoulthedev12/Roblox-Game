@@ -64,7 +64,7 @@ out.append('pcall(function() game:GetService("MaterialService").Use2022Materials
 # model named after a meme, keeps one copy of each (a re-import replaces the old one) and
 # moves them to ReplicatedStorage > MemeMeshes, where the game reads them by meme id.
 # The Blender portals (assets/models/PortalMeshes.fbx) work the same way and go to
-# ReplicatedStorage > PortalMeshes.
+# ReplicatedStorage > PortalModels (not "PortalMeshes": that name is the ModuleScript).
 import re as _re
 _meme_ids = _re.findall(r'^\t\t\{"[^"]+", "(\w+)", ', open("src/shared/MemeList.lua", encoding="utf-8").read(), _re.M)
 _portal_ids = _re.findall(r'^\t(\w+) = \{Size = ', open("src/shared/PortalMeshes.lua", encoding="utf-8").read(), _re.M)
@@ -86,6 +86,7 @@ out.append('''local function collectMeshes(folderName, ids, hint)
 	end
 	scan(workspace)
 	local folder = RS:FindFirstChild(folderName)
+	if folder and not folder:IsA("Folder") then folder = nil end
 	if #found > 0 then
 		if not folder then
 			folder = Instance.new("Folder")
@@ -117,7 +118,7 @@ out.append('''local function collectMeshes(folderName, ids, hint)
 	end
 end
 collectMeshes("MemeMeshes", {%s}, "No meme meshes yet: File > Import 3D > assets/models/MemeMeshes.fbx, then run this installer again")
-collectMeshes("PortalMeshes", {%s}, "No portal meshes yet: File > Import 3D > assets/models/PortalMeshes.fbx, then run this installer again")''' % (
+collectMeshes("PortalModels", {%s}, "No portal meshes yet: File > Import 3D > assets/models/PortalMeshes.fbx, then run this installer again")''' % (
     ", ".join('"%s"' % i for i in _meme_ids), ", ".join('"%s"' % i for i in _portal_ids)))
 for parent, name in DELETE:
     out.append(f'do local old = {parent}:FindFirstChild("{name}") if old then old:Destroy() print("Removed {name}") end end')

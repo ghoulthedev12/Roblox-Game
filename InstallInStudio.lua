@@ -33,6 +33,7 @@ local function collectMeshes(folderName, ids, hint)
 	end
 	scan(workspace)
 	local folder = RS:FindFirstChild(folderName)
+	if folder and not folder:IsA("Folder") then folder = nil end
 	if #found > 0 then
 		if not folder then
 			folder = Instance.new("Folder")
@@ -64,7 +65,7 @@ local function collectMeshes(folderName, ids, hint)
 	end
 end
 collectMeshes("MemeMeshes", {"DaWaeEchidna", "SeaShantyMug", "AisleYodelSet", "ConvinceMeTable", "ShockedRodent", "IsThisABird", "ChonkyBunny", "SpicyLasagna", "SpikedShellCrown", "GrapeSurgery", "BadBoyHatchback", "TempleTap", "SteamedClams", "MegaSealTape", "PurpleTitanBuggy", "OrcaRebellionBoat", "NeverMissDartboard", "CrimeTownBoss", "BoneComedian", "SugarSneakJohnny", "FrostFlask", "BreathtakingCyberGuy", "EnslavedMoisture", "StonksHead", "AhShucks", "UncannyHedgehog", "SpaceInfant", "MeAndTheCrew", "CyberWedgeTruck", "YelledAtCat", "RaidAlien", "AngelWingDancer", "KombuchaDisgust", "DoubleTakeBlink", "TallPinkPiglet", "SpongeLeaving", "CappuccinoBallerina", "FrozenCoffinDance", "HundredMenGorilla", "GothDanceHands", "NatureHealingSwan", "OnceAgainLectern", "LockdownSourdough", "HeadBobCat", "PallbearerCoin", "TumbleJellyBean", "SwoleVsSmol", "PointingLaughChair", "PolkaSpinCow", "SusBean", "PartyCornerGuy", "BeepBopMicKid", "TradeOfferScroll", "BigMittensChair", "ThinkSonThink", "SneakerShark", "JawlineChad", "BingChillingCone", "SigmaGrindset", "EmotionalDamage", "YesNoLabDog", "AssistantSam", "LampOilMerchant", "MaulingTimeVampire", "GentlePillSquad", "WiseMysticalTree", "ItsCornCob", "UncannySuperDad", "GirlDinnerPlate", "PhonkEyebrowSpeaker", "RizzFaceMask", "ClangingPipe", "BetterCallPaul", "KingPrawnCrooner", "OhioFinalBoss", "OhYeahVillain", "LogBatGuy", "ShailushaiCat", "BirthdayShake", "WhistleEdit", "PeachesTurtleKing", "KindergartenMascot", "CursedCartoonTape", "AwkwardSmileGuy", "LaughCryCarSeat", "CanonEventWeb", "PinkbombFeature", "BoulderEyebrow", "PointingSuits", "MewingHush", "EnglishSpanishChair", "AHyuckDog", "NoScopeOlympian", "PommelHorseLegend", "BratGreenSlab", "PedroRaccoon", "CrocBomber", "ChillDude", "BabyHippo", "DubaiChocolate", "LowTaperFade", "ShushUpTablet", "BigGamerChair", "SixSevenHands", "TakeEggCushion", "IbizaBossDancer", "BoutiqueRock", "LittleFrenchFish", "VeryDemureTeacup", "JohnPorkPhone", "BeforeGTA6Hourglass", "StandingOnBusiness", "AuraBoatBow", "PaperclipHelper", "ZombieChickenRider", "JetTooHoliday", "PressureDiverHelmet", "AbyssalAngler", "GlitchWhale", "AtlantisJawlineChad", "SpookySkeleton", "PumpkinDancer", "GhostlySwampFrog", "BonkShiba", "SadViolinHamster", "ConfusedMathCat", "JellyTimeBanana", "RainbowPastryCat", "WowShiba", "ProblemGrinCoin", "MeLikeyTablet", "RageScreamTablet", "ForeverAlone", "BadLuckBryan", "FrowningCat", "PunchMonkey", "PhantomChonkyBunny", "CemeterySpecter", "UndeadSanic", "GraveyardOssuary", "CyberWowShiba", "GlitchSwampFrog", "QuantumShockedRodent", "VoidStonks", "MultiverseSpaceInfant", "BulletDodgeGuy", "NeonSusBean", "HoloJawlineChad", "CosmicShake", "SpacePolkaCow", "InterdimensionalChillDude", "CyberSingingThrone", "UniversalSanic", "ExponentialOgre", "MiraculousGnome", "ApexWowShiba", "GoldenSwampFrog", "ToorngEntity", "HighRollerBrainrot", "ImmeasupremeOverlord", "QuantumDatFrog", "SubatomicSwampFrog", "ParticleWowShiba", "AntimatterEchidna", "StringTheoryBunny", "WarpSpeedStonks", "ParallelJawlineChad", "RealityWarpedSponge", "TimeFoldPanels", "DarkMatterHippo", "RomanEmpireBust", "HypercubeChillDude", "ZeroPointThrone", "TesseractShake", "SingularityGrinCoin", "EventHorizonShiba", "NeverGonnaStair", "QuantumBrainrotGod", "MemeMatrix", "OriginalShiba"}, "No meme meshes yet: File > Import 3D > assets/models/MemeMeshes.fbx, then run this installer again")
-collectMeshes("PortalMeshes", {"GatePortalFrame", "GatePortalGlow", "GateHorizon", "GateVortexA", "GateVortexB", "AlienPortalRim", "AlienPortalFunnel", "AlienPortalSwirl"}, "No portal meshes yet: File > Import 3D > assets/models/PortalMeshes.fbx, then run this installer again")
+collectMeshes("PortalModels", {"GatePortalFrame", "GatePortalGlow", "GateHorizon", "GateVortexA", "GateVortexB", "AlienPortalRim", "AlienPortalFunnel", "AlienPortalSwirl"}, "No portal meshes yet: File > Import 3D > assets/models/PortalMeshes.fbx, then run this installer again")
 do local old = game:GetService("ServerScriptService"):FindFirstChild("DataManager") if old then old:Destroy() print("Removed DataManager") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
 do local old = game:GetService("ReplicatedStorage"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
@@ -3029,7 +3030,7 @@ install(game:GetService("ReplicatedStorage"), "PortalMeshes", "ModuleScript", [=
 -- PortalMeshes (ModuleScript in ReplicatedStorage)
 -- Written by tools/blender/portals.py: the Blender portal pieces (World Gate and alien portal).
 -- Studio's File > Import 3D of assets/models/PortalMeshes.fbx + the installer put them in
--- ReplicatedStorage > PortalMeshes. Data = each piece's size and where its center sits from
+-- ReplicatedStorage > PortalModels. Data = each piece's size and where its center sits from
 -- the portal's center (front = -Z). Until they're imported the portals use their old parts.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -3048,7 +3049,7 @@ PortalMeshes.Data = {
 }
 
 local function source(name)
-	local folder = ReplicatedStorage:FindFirstChild("PortalMeshes")
+	local folder = ReplicatedStorage:FindFirstChild("PortalModels")
 	local item = folder and folder:FindFirstChild(name)
 	if item and not item:IsA("MeshPart") then item = item:FindFirstChildWhichIsA("MeshPart", true) end
 	return item
@@ -18473,4 +18474,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 14:55). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 15:04). Now save the place (Ctrl+S).")

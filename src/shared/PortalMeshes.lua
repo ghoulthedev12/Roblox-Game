@@ -1,7 +1,7 @@
 -- PortalMeshes (ModuleScript in ReplicatedStorage)
 -- Written by tools/blender/portals.py: the Blender portal pieces (World Gate and alien portal).
 -- Studio's File > Import 3D of assets/models/PortalMeshes.fbx + the installer put them in
--- ReplicatedStorage > PortalMeshes. Data = each piece's size and where its center sits from
+-- ReplicatedStorage > PortalModels. Data = each piece's size and where its center sits from
 -- the portal's center (front = -Z). Until they're imported the portals use their old parts.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,7 +20,7 @@ PortalMeshes.Data = {
 }
 
 local function source(name)
-	local folder = ReplicatedStorage:FindFirstChild("PortalMeshes")
+	local folder = ReplicatedStorage:FindFirstChild("PortalModels")
 	local item = folder and folder:FindFirstChild(name)
 	if item and not item:IsA("MeshPart") then item = item:FindFirstChildWhichIsA("MeshPart", true) end
 	return item
