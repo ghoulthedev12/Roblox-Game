@@ -1146,6 +1146,8 @@ GameConfig.Worlds = {
 		PitRadius = 41,          -- how far from the center you can dig
 		CenterNoDigRadius = 9,   -- keeps the giant hard drive standing
 		HubPaths = true,         -- world 1 has the 6 walkways around the pit
+		TopMaterial = "Slate",   -- the stone plaza around the pit (no lawn)
+		WorkYard = {Radius = 124, Material = "Ground"}, -- the dirt work yard around the dig site
 		Zones = zones({
 			-- the layers you dig through: Topsoil -> Dense Clay -> (rocky crust bands) ->
 			-- Crystal-Infused Substratum -> Magma Core (see also the rock strata in FillDigTerrain)
@@ -1384,6 +1386,10 @@ function GameConfig.FillDigTerrain(terrain, world)
 		terrain:FillBlock(CFrame.new(origin + Vector3.new(0, -depth / 2, 0)), Vector3.new(200, depth, 200), wall)
 		terrain:FillBlock(CFrame.new(origin + Vector3.new(0, -2, 0)), Vector3.new(200, 4, 200), surface)
 	end
+	if world.WorkYard then
+		-- a dirt work yard around the dig site, inside the plaza's mosaic ring
+		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -2, 0)), 4, world.WorkYard.Radius, Enum.Material[world.WorkYard.Material])
+	end
 	if world.HubPaths then
 		-- keep the walkways clear (otherwise the stone pokes through them)
 		for k = 0, 5 do
@@ -1397,6 +1403,16 @@ function GameConfig.FillDigTerrain(terrain, world)
 	for _, zone in ipairs(world.Zones) do
 		local height = zone.Top - zone.Bottom
 		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, zone.Bottom + height / 2, 0)), height, radius, Enum.Material[zone.Material])
+	end
+	-- patchy floor: the next layer's material peeks through the top dirt in a few spots,
+	-- so the pit floor isn't one flat color
+	local patches = Random.new(world.Id * 31)
+	local patchMaterial = Enum.Material[(world.Zones[2] or world.Zones[1]).Material]
+	for _ = 1, 9 do
+		local a = patches:NextNumber(0, math.pi * 2)
+		local d = patches:NextNumber(world.CenterNoDigRadius and world.CenterNoDigRadius + 6 or 6, world.PitRadius - 6)
+		local r = patches:NextNumber(3, 4.5)
+		terrain:FillBall(origin + Vector3.new(math.cos(a) * d, -r - 0.2, math.sin(a) * d), r, patchMaterial)
 	end
 	-- rock strata: thin layers of other rock run through the dirt and on into the pit walls,
 	-- so every crater wall and the edge of the pit show stripes like a real dig site
@@ -3784,7 +3800,7 @@ WorldsData.ShovelTiers = {
 WorldsData.TerrainColors = {
 	-- World 1
 	-- topsoil, dense clay, rocky crust (the wall/strata rock), crystal substratum, magma core
-	Grass = rgb(112, 204, 108), Slate = rgb(118, 112, 128), Ground = rgb(128, 88, 60),
+	Grass = rgb(112, 204, 108), Slate = rgb(198, 192, 214), Ground = rgb(128, 88, 60),
 	Sandstone = rgb(176, 104, 74), CrackedLava = rgb(200, 70, 36), Glacier = rgb(120, 205, 240),
 	Basalt = rgb(70, 64, 96),
 	-- Worlds 2-9
@@ -6243,9 +6259,14 @@ return function(digSite, world)
 			local pos = Vector3.new(math.cos(a) * rimRadius, 4.3, math.sin(a) * rimRadius)
 			local tangent = Vector3.new(-math.sin(a), 0, math.cos(a))
 			local length = 2 * math.pi * rimRadius / segments + 0.6
-			b:rod("RimStripe", length, 2.2, Architecture.alongX(pos, tangent), (i // 2) % 2 == 0 and "Sun" or "White")
+			-- a sturdy safety railing: dark posts and two yellow rails, a small lamp on every 6th post
+			b:rod("RimRail", length, 0.45, Architecture.alongX(pos + Vector3.new(0, 1.6, 0), tangent), "Sun")
+			b:rod("RimRail", length, 0.45, Architecture.alongX(pos + Vector3.new(0, 0.2, 0), tangent), "Sun")
+			if i % 2 == 0 then
+				b:box("RimPost", Vector3.new(0.6, 2.8, 0.6), CFrame.new(pos + Vector3.new(0, 0.6, 0)), "Navy")
+			end
 			if i % 6 == 0 then
-				b:bulb("RimBulb", 1, CFrame.new(pos + Vector3.new(0, 1.5, 0)), (i // 6) % 2 == 0 and "GlowPink" or "GlowCyan", 8)
+				b:bulb("RimBulb", 0.8, CFrame.new(pos + Vector3.new(0, 2.3, 0)), "GlowSun", 8)
 			end
 		end
 	end
@@ -7487,8 +7508,9 @@ local function buildTerrain(rng)
 		local d = rng:NextNumber(R * 0.4, R * 0.85)
 		terrain:FillBall(Vector3.new(math.cos(a) * d, rng:NextNumber(-80, -36), math.sin(a) * d), rng:NextNumber(18, 34), Enum.Material.Slate)
 	end
-	-- grass on top (the Dig Site refills its own square in the middle)
-	terrain:FillCylinder(CFrame.new(0, -2, 0), 4, R, Enum.Material.Grass)
+	-- a light stone plaza on top instead of one flat lawn (WorldOneDecor adds the mosaic
+	-- rings, inlay lines and garden planters; the Dig Site refills its own square)
+	terrain:FillCylinder(CFrame.new(0, -2, 0), 4, R, Enum.Material.Slate)
 end
 
 ---------------------------------------------------------------------
@@ -7814,6 +7836,7 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local MainIsland = require(script.Parent:WaitForChild("MainIsland"))
 local DigSiteStyle = require(script.Parent:WaitForChild("DigSiteStyle"))
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
+local WorldOneDecor = require(script.Parent:WaitForChild("WorldOneDecor"))
 
 -- Set to false to keep the place's own sky and time of day (the calm lighting still applies)
 local SUNNY_SKY = true
@@ -7846,6 +7869,7 @@ end
 -- MAIN ISLAND + DIG SITE
 ---------------------------------------------------------------------
 MainIsland.build()
+WorldOneDecor.build() -- stone plaza details, gardens, the excavation work area, pit shoring
 workspace:SetAttribute("MainIslandReady", true) -- DigManager fills the pit after this
 local digSite = workspace:FindFirstChild("DigSite")
 if digSite then
@@ -13862,6 +13886,270 @@ Players.PlayerRemoving:Connect(function(player)
 	notify(before, "OnLeave", player)
 end)
 ]=])
+install(game:GetService("ServerScriptService"), "WorldOneDecor", "ModuleScript", [=[
+-- WorldOneDecor (ModuleScript in ServerScriptService)
+-- Dresses World 1 so it isn't one flat lawn:
+--   * PLAZA: the island top is a light stone plaza (terrain Slate) with tiled mosaic rings
+--     around the dig site and inside the boulevard, and glowing inlay lines running out
+--     from the dig site between the museums
+--   * GARDENS: raised flower-bed planters with trees, flowers and benches on the strips
+--     between the museums
+--   * EXCAVATION: the area around the pit looks like a real archaeology dig: dirt spoil
+--     heaps with shovels stuck in them, canvas tents, crate stacks, wheelbarrows and sifting
+--     screens between the walkways
+--   * SHORING: wooden planks and beams set into the top of the pit walls, so digging near
+--     the edge uncovers the dig's timber shoring
+-- MapStyle calls WorldOneDecor.build() once on server start (after MainIsland).
+
+local Architecture = require(script.Parent:WaitForChild("Architecture"))
+local P = Architecture.Palette
+
+local WorldOneDecor = {}
+local rgb = Color3.fromRGB
+
+P.PlazaTileA = {Color = rgb(236, 232, 246), Material = Enum.Material.Slate}
+P.PlazaTileB = {Color = rgb(186, 172, 232), Material = Enum.Material.Slate}
+P.PlazaTileC = {Color = rgb(150, 206, 236), Material = Enum.Material.Slate}
+P.Dirt = {Color = rgb(164, 124, 86), Material = Enum.Material.Ground}
+P.DirtDark = {Color = rgb(128, 92, 62), Material = Enum.Material.Ground}
+P.Gravel = {Color = rgb(150, 144, 150), Material = Enum.Material.Pebble}
+P.Flag = {Color = rgb(255, 92, 92), Material = Enum.Material.Fabric}
+P.Timber = {Color = rgb(150, 104, 66), Material = Enum.Material.WoodPlanks}
+P.TimberDark = {Color = rgb(110, 74, 46), Material = Enum.Material.Wood}
+P.Canvas = {Color = rgb(232, 214, 170), Material = Enum.Material.Fabric}
+P.CanvasStripe = {Color = rgb(236, 120, 90), Material = Enum.Material.Fabric}
+P.PlanterGrass = {Color = rgb(104, 196, 104), Material = Enum.Material.Grass}
+P.Leaf = {Color = rgb(96, 206, 150), Material = Enum.Material.SmoothPlastic}
+P.Blossom = {Color = rgb(255, 176, 214), Material = Enum.Material.SmoothPlastic}
+P.SteelDark = {Color = rgb(70, 72, 86), Material = Enum.Material.Metal}
+
+local PIT_RADIUS = 41
+local GAP_ANGLES = {30, 90, 150, 210, 270, 330}     -- the strips between them
+
+local function at(deg, radius, y)
+	local a = math.rad(deg)
+	return Vector3.new(math.cos(a) * radius, y or 0, math.sin(a) * radius)
+end
+-- a CFrame on the circle, its -Z facing the island center
+local function facing(deg, radius, y)
+	local pos = at(deg, radius, y)
+	return CFrame.lookAt(pos, Vector3.new(0, pos.Y, 0))
+end
+
+---------------------------------------------------------------------
+-- PLAZA: mosaic rings and inlay lines on the stone ground
+---------------------------------------------------------------------
+local function mosaicRing(b, radius, width, segments, finishes)
+	local length = 2 * math.pi * radius / segments + 0.3
+	for i = 0, segments - 1 do
+		local deg = (i + 0.5) * 360 / segments
+		local pos = at(deg, radius, 0.08)
+		local tangent = Vector3.new(-math.sin(math.rad(deg)), 0, math.cos(math.rad(deg)))
+		b:box("PlazaTile", Vector3.new(length, 0.16, width), Architecture.alongX(pos, tangent), finishes[i % #finishes + 1])
+	end
+end
+
+local function plaza(b)
+	-- around the dig site (just outside its ramps) and inside the boulevard
+	mosaicRing(b, 128, 7, 96, {"PlazaTileA", "PlazaTileB", "PlazaTileA", "PlazaTileC"})
+	mosaicRing(b, 133, 1.2, 96, {"GlowCyan"})
+	mosaicRing(b, 247, 6, 128, {"PlazaTileB", "PlazaTileA"})
+	-- glowing inlay lines from the dig site out between the museums
+	for _, deg in ipairs(GAP_ANGLES) do
+		local from, to = at(deg, 136, 0.1), at(deg, 243, 0.1)
+		b:box("InlayLine", Vector3.new(0.7, 0.2, (to - from).Magnitude), CFrame.lookAt((from + to) / 2, to), "GlowCyan")
+		for _, side in ipairs({-1, 1}) do
+			local off = Vector3.new(-math.sin(math.rad(deg)), 0, math.cos(math.rad(deg))) * side * 3
+			b:box("InlayEdge", Vector3.new(1.4, 0.18, (to - from).Magnitude), CFrame.lookAt((from + to) / 2 + off, to + off), "PlazaTileB")
+		end
+	end
+end
+
+---------------------------------------------------------------------
+-- GARDENS: planters with trees, flowers and a bench, between the museums
+---------------------------------------------------------------------
+local FLOWERS = {"Coral", "Sun", "Lilac", "Sky", "White", "Blossom"}
+local function planter(b, rng, pos)
+	local base = CFrame.new(pos)
+	b:disc("PlanterCurb", 13, 1.4, base * CFrame.new(0, 0.7, 0), "White")
+	b:disc("PlanterTrim", 13.4, 0.3, base * CFrame.new(0, 1.35, 0), "Lilac")
+	b:disc("PlanterSoil", 11.6, 1.5, base * CFrame.new(0, 0.8, 0), "PlanterGrass")
+	-- a round cartoon tree (green or blossom)
+	local top = base * CFrame.new(0, 1.5, 0)
+	b:pill("TreeTrunk", top.Position, top.Position + Vector3.new(0, 6.5, 0), 1.3, "TimberDark")
+	local crown = rng:NextNumber() < 0.35 and "Blossom" or "Leaf"
+	b:ball("TreeTop", rng:NextNumber(6.5, 8), top * CFrame.new(0, 8.5, 0), crown)
+	b:ball("TreeTop", 4.5, top * CFrame.new(1.8, 7, 1.2), crown)
+	b:ball("TreeTop", 4, top * CFrame.new(-1.8, 7.4, -1), crown)
+	for k = 1, 10 do
+		local a = k / 10 * math.pi * 2 + rng:NextNumber(-0.2, 0.2)
+		local r = rng:NextNumber(3.4, 5)
+		b:ball("Flower", rng:NextNumber(0.6, 0.9), top * CFrame.new(math.cos(a) * r, 0.3, math.sin(a) * r), FLOWERS[k % #FLOWERS + 1])
+	end
+end
+
+local function bench(b, cf)
+	b:box("BenchSeat", Vector3.new(5, 0.4, 1.6), cf * CFrame.new(0, 1.3, 0), "Timber")
+	b:box("BenchBack", Vector3.new(5, 1.4, 0.3), cf * CFrame.new(0, 2.1, 0.75) * CFrame.Angles(math.rad(-10), 0, 0), "Timber")
+	for _, x in ipairs({-2, 2}) do
+		b:box("BenchLeg", Vector3.new(0.4, 1.2, 1.4), cf * CFrame.new(x, 0.6, 0), "SteelDark")
+	end
+end
+
+local function gardens(b, rng)
+	-- a ring of planters around the plaza, just outside the mosaic ring (skipping the walkways)
+	for deg = 7.5, 360, 15 do
+		local fromPath = math.abs(((deg + 30) % 60) - 30)
+		if fromPath > 10 and math.abs(((deg) % 60) - 30) > 6 then
+			planter(b, rng, at(deg, 143))
+		end
+	end
+	for _, deg in ipairs(GAP_ANGLES) do
+		for i, r in ipairs({165, 200, 232}) do
+			planter(b, rng, at(deg, r))
+			if i < 3 then
+				-- benches facing the path between two planters
+				local mid = facing(deg, r + 19)
+				bench(b, mid * CFrame.new(6.5, 0, 0) * CFrame.Angles(0, math.rad(90), 0))
+				bench(b, mid * CFrame.new(-6.5, 0, 0) * CFrame.Angles(0, math.rad(-90), 0))
+			end
+		end
+	end
+end
+
+---------------------------------------------------------------------
+-- EXCAVATION: the dig site's work area, between the walkways
+---------------------------------------------------------------------
+local function spoilHeap(b, rng, cf)
+	-- a low, wide pile of dug-out earth, built from several overlapping mounds
+	for k = 1, 7 do
+		local a = k / 7 * math.pi * 2
+		local r = k == 1 and 0 or rng:NextNumber(3, 6)
+		local w = rng:NextNumber(6, 10)
+		b:ellipsoid("SpoilHeap", Vector3.new(w, rng:NextNumber(2.2, 3.6), w * rng:NextNumber(0.7, 1)),
+			cf * CFrame.new(math.cos(a) * r, 0.2, math.sin(a) * r * 0.7) * CFrame.Angles(0, rng:NextNumber(0, 6), 0), k % 3 == 0 and "DirtDark" or "Dirt")
+	end
+	b:ellipsoid("SpoilHeap", Vector3.new(9, 5, 7), cf * CFrame.new(0.5, 1, 0), "Dirt") -- the peak
+	b:ellipsoid("GravelSkirt", Vector3.new(15, 0.5, 11), cf * CFrame.new(0, 0.05, 0), "DirtDark")
+	for k = 1, 6 do -- rocks poking out
+		b:ellipsoid("Rock", Vector3.new(1.4, 1, 1.2), cf * CFrame.new(rng:NextNumber(-6, 6), rng:NextNumber(0.8, 2.2), rng:NextNumber(-4, 4)), "SteelDark")
+	end
+	for k = 1, 3 do -- red survey flags marking the finds
+		local pos = cf * CFrame.new(rng:NextNumber(-8, 8), 0, rng:NextNumber(-6, -4))
+		b:box("FlagPole", Vector3.new(0.15, 3, 0.15), pos * CFrame.new(0, 1.5, 0), "White")
+		b:box("Flag", Vector3.new(1.2, 0.7, 0.06), pos * CFrame.new(0.6, 2.6, 0), "Flag")
+	end
+	-- a shovel stuck in the top
+	local tip = cf * CFrame.new(1, 3.4, 0) * CFrame.Angles(0, 0, math.rad(12))
+	b:box("ShovelBlade", Vector3.new(1.2, 1.4, 0.15), tip, "Chrome")
+	b:rod("ShovelHandle", 4.5, 0.25, tip * CFrame.new(0, 2.8, 0) * CFrame.Angles(0, 0, math.rad(90)), "Timber")
+	b:box("ShovelGrip", Vector3.new(1, 0.25, 0.25), tip * CFrame.new(0, 5, 0), "Ink")
+end
+
+local function tent(b, cf)
+	-- an A-frame canvas tent with striped edges
+	for _, side in ipairs({-1, 1}) do
+		b:box("TentCanvas", Vector3.new(0.2, 6.2, 9), cf * CFrame.new(side * 2.2, 2.6, 0) * CFrame.Angles(0, 0, side * math.rad(35)), "Canvas")
+		b:box("TentStripe", Vector3.new(0.22, 0.8, 9.05), cf * CFrame.new(side * 3.85, 0.35, 0) * CFrame.Angles(0, 0, side * math.rad(35)), "CanvasStripe")
+	end
+	b:rod("TentRidge", 9.6, 0.3, cf * CFrame.new(0, 5.2, 0) * CFrame.Angles(0, math.rad(90), 0), "TimberDark")
+	b:box("TentTable", Vector3.new(3, 0.3, 2), cf * CFrame.new(0, 1.4, 1), "Timber")
+	b:box("TentLamp", Vector3.new(0.6, 0.6, 0.6), cf * CFrame.new(0, 4.4, 0), "GlowSun")
+end
+
+local function crates(b, cf)
+	b:box("Crate", Vector3.new(3, 3, 3), cf * CFrame.new(0, 1.5, 0), "Timber")
+	b:box("Crate", Vector3.new(3, 3, 3), cf * CFrame.new(3.2, 1.5, 0.4) * CFrame.Angles(0, math.rad(10), 0), "Timber")
+	b:box("Crate", Vector3.new(2.6, 2.6, 2.6), cf * CFrame.new(1.5, 4.3, 0.2) * CFrame.Angles(0, math.rad(-12), 0), "TimberDark")
+	for _, x in ipairs({0, 3.2}) do
+		b:box("CrateBand", Vector3.new(3.05, 0.3, 3.05), cf * CFrame.new(x, 1.5, x == 0 and 0 or 0.4), "SteelDark")
+	end
+end
+
+local function wheelbarrow(b, cf)
+	b:box("BarrowTub", Vector3.new(3, 1.4, 2.2), cf * CFrame.new(0, 1.8, 0) * CFrame.Angles(0, 0, math.rad(-8)), "Sky")
+	b:ellipsoid("BarrowDirt", Vector3.new(2.6, 1, 1.9), cf * CFrame.new(0, 2.5, 0), "Dirt")
+	b:rod("BarrowWheel", 0.5, 1.6, cf * CFrame.new(1.9, 0.8, 0) * CFrame.Angles(0, math.rad(90), 0), "Ink")
+	for _, z in ipairs({-0.8, 0.8}) do
+		b:rod("BarrowHandle", 3, 0.25, cf * CFrame.new(-2.2, 1.6, z) * CFrame.Angles(0, 0, math.rad(15)), "TimberDark")
+	end
+end
+
+local function sifter(b, cf)
+	b:box("SiftScreen", Vector3.new(4, 0.2, 3), cf * CFrame.new(0, 2.6, 0) * CFrame.Angles(0, 0, math.rad(15)), "SteelDark",
+		{Transparency = 0.35})
+	b:box("SiftFrame", Vector3.new(4.2, 0.4, 0.3), cf * CFrame.new(0, 2.6, 1.5) * CFrame.Angles(0, 0, math.rad(15)), "Timber")
+	b:box("SiftFrame", Vector3.new(4.2, 0.4, 0.3), cf * CFrame.new(0, 2.6, -1.5) * CFrame.Angles(0, 0, math.rad(15)), "Timber")
+	for _, x in ipairs({-1.6, 1.6}) do
+		b:box("SiftLeg", Vector3.new(0.3, 2.6, 0.3), cf * CFrame.new(x, 1.3 + x * 0.25, 1.4), "TimberDark")
+		b:box("SiftLeg", Vector3.new(0.3, 2.6, 0.3), cf * CFrame.new(x, 1.3 + x * 0.25, -1.4), "TimberDark")
+	end
+	b:ellipsoid("SiftPile", Vector3.new(3, 1, 2.4), cf * CFrame.new(0.5, 0.4, 0), "Dirt")
+end
+
+local function excavation(b, rng)
+	for i, deg in ipairs(GAP_ANGLES) do
+		local cf = facing(deg, 100)
+		spoilHeap(b, rng, cf * CFrame.new(0, 0, 0))
+		if i % 2 == 1 then
+			tent(b, facing(deg + 9, 108) * CFrame.Angles(0, math.rad(90), 0))
+			wheelbarrow(b, facing(deg - 8, 92) * CFrame.Angles(0, math.rad(20), 0))
+		else
+			crates(b, facing(deg + 9, 106))
+			sifter(b, facing(deg - 9, 94) * CFrame.Angles(0, math.rad(90), 0))
+		end
+	end
+end
+
+---------------------------------------------------------------------
+-- SHORING: timber set into the top of the pit walls (seen once you dig near the edge)
+---------------------------------------------------------------------
+local function shoring(b)
+	local PLANKS = 60
+	for i = 0, PLANKS - 1 do
+		local deg = (i + 0.5) * 360 / PLANKS
+		b:box("ShoringPlank", Vector3.new(3.6, 12, 0.4), facing(deg, PIT_RADIUS + 0.6, -6.2), i % 2 == 0 and "Timber" or "TimberDark")
+	end
+	for _, y in ipairs({-2.5, -9}) do
+		local segments = 60
+		local length = 2 * math.pi * (PIT_RADIUS + 0.3) / segments + 0.2
+		for i = 0, segments - 1 do
+			local deg = (i + 0.5) * 360 / segments
+			local tangent = Vector3.new(-math.sin(math.rad(deg)), 0, math.cos(math.rad(deg)))
+			b:box("ShoringWaler", Vector3.new(length, 0.8, 0.5), Architecture.alongX(at(deg, PIT_RADIUS + 0.25, y), tangent), "TimberDark")
+		end
+	end
+end
+
+function WorldOneDecor.build(parent)
+	parent = parent or workspace
+	local old = parent:FindFirstChild("WorldOneDecor")
+	if old then old:Destroy() end
+	local folder = Instance.new("Model")
+	folder.Name = "WorldOneDecor"
+	local b = Architecture.builder(folder, CFrame.new())
+	local rng = Random.new(2050)
+	plaza(b)
+	gardens(b, rng)
+	excavation(b, rng)
+	shoring(b)
+	for _, p in ipairs(folder:GetDescendants()) do
+		if p:IsA("BasePart") then
+			-- flat plaza pieces and the shoring hidden in the walls never get in the way
+			local flat = p.Name:find("Tile") or p.Name:find("Inlay") or p.Name:find("Shoring")
+			if flat then
+				p.CanCollide = p.Name:find("Shoring") ~= nil
+				p.CanQuery = false
+				p.CastShadow = false
+			end
+		end
+	end
+	folder.Parent = parent
+	return folder
+end
+
+return WorldOneDecor
+]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "AudioClient", "LocalScript", [=[
 -- AudioClient (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- Background music and the audio settings.
@@ -17981,4 +18269,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 14:18). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 14:29). Now save the place (Ctrl+S).")

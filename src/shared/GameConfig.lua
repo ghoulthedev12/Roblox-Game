@@ -149,6 +149,8 @@ GameConfig.Worlds = {
 		PitRadius = 41,          -- how far from the center you can dig
 		CenterNoDigRadius = 9,   -- keeps the giant hard drive standing
 		HubPaths = true,         -- world 1 has the 6 walkways around the pit
+		TopMaterial = "Slate",   -- the stone plaza around the pit (no lawn)
+		WorkYard = {Radius = 124, Material = "Ground"}, -- the dirt work yard around the dig site
 		Zones = zones({
 			-- the layers you dig through: Topsoil -> Dense Clay -> (rocky crust bands) ->
 			-- Crystal-Infused Substratum -> Magma Core (see also the rock strata in FillDigTerrain)
@@ -387,6 +389,10 @@ function GameConfig.FillDigTerrain(terrain, world)
 		terrain:FillBlock(CFrame.new(origin + Vector3.new(0, -depth / 2, 0)), Vector3.new(200, depth, 200), wall)
 		terrain:FillBlock(CFrame.new(origin + Vector3.new(0, -2, 0)), Vector3.new(200, 4, 200), surface)
 	end
+	if world.WorkYard then
+		-- a dirt work yard around the dig site, inside the plaza's mosaic ring
+		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -2, 0)), 4, world.WorkYard.Radius, Enum.Material[world.WorkYard.Material])
+	end
 	if world.HubPaths then
 		-- keep the walkways clear (otherwise the stone pokes through them)
 		for k = 0, 5 do
@@ -400,6 +406,16 @@ function GameConfig.FillDigTerrain(terrain, world)
 	for _, zone in ipairs(world.Zones) do
 		local height = zone.Top - zone.Bottom
 		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, zone.Bottom + height / 2, 0)), height, radius, Enum.Material[zone.Material])
+	end
+	-- patchy floor: the next layer's material peeks through the top dirt in a few spots,
+	-- so the pit floor isn't one flat color
+	local patches = Random.new(world.Id * 31)
+	local patchMaterial = Enum.Material[(world.Zones[2] or world.Zones[1]).Material]
+	for _ = 1, 9 do
+		local a = patches:NextNumber(0, math.pi * 2)
+		local d = patches:NextNumber(world.CenterNoDigRadius and world.CenterNoDigRadius + 6 or 6, world.PitRadius - 6)
+		local r = patches:NextNumber(3, 4.5)
+		terrain:FillBall(origin + Vector3.new(math.cos(a) * d, -r - 0.2, math.sin(a) * d), r, patchMaterial)
 	end
 	-- rock strata: thin layers of other rock run through the dirt and on into the pit walls,
 	-- so every crater wall and the edge of the pit show stripes like a real dig site

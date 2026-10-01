@@ -10,6 +10,7 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local MainIsland = require(script.Parent:WaitForChild("MainIsland"))
 local DigSiteStyle = require(script.Parent:WaitForChild("DigSiteStyle"))
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
+local WorldOneDecor = require(script.Parent:WaitForChild("WorldOneDecor"))
 
 -- Set to false to keep the place's own sky and time of day (the calm lighting still applies)
 local SUNNY_SKY = true
@@ -42,6 +43,7 @@ end
 -- MAIN ISLAND + DIG SITE
 ---------------------------------------------------------------------
 MainIsland.build()
+WorldOneDecor.build() -- stone plaza details, gardens, the excavation work area, pit shoring
 workspace:SetAttribute("MainIslandReady", true) -- DigManager fills the pit after this
 local digSite = workspace:FindFirstChild("DigSite")
 if digSite then

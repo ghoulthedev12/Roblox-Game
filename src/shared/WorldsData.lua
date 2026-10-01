@@ -36,7 +36,7 @@ WorldsData.ShovelTiers = {
 WorldsData.TerrainColors = {
 	-- World 1
 	-- topsoil, dense clay, rocky crust (the wall/strata rock), crystal substratum, magma core
-	Grass = rgb(112, 204, 108), Slate = rgb(118, 112, 128), Ground = rgb(128, 88, 60),
+	Grass = rgb(112, 204, 108), Slate = rgb(198, 192, 214), Ground = rgb(128, 88, 60),
 	Sandstone = rgb(176, 104, 74), CrackedLava = rgb(200, 70, 36), Glacier = rgb(120, 205, 240),
 	Basalt = rgb(70, 64, 96),
 	-- Worlds 2-9

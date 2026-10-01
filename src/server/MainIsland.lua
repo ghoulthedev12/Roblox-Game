@@ -104,8 +104,9 @@ local function buildTerrain(rng)
 		local d = rng:NextNumber(R * 0.4, R * 0.85)
 		terrain:FillBall(Vector3.new(math.cos(a) * d, rng:NextNumber(-80, -36), math.sin(a) * d), rng:NextNumber(18, 34), Enum.Material.Slate)
 	end
-	-- grass on top (the Dig Site refills its own square in the middle)
-	terrain:FillCylinder(CFrame.new(0, -2, 0), 4, R, Enum.Material.Grass)
+	-- a light stone plaza on top instead of one flat lawn (WorldOneDecor adds the mosaic
+	-- rings, inlay lines and garden planters; the Dig Site refills its own square)
+	terrain:FillCylinder(CFrame.new(0, -2, 0), 4, R, Enum.Material.Slate)
 end
 
 ---------------------------------------------------------------------

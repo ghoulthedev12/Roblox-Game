@@ -297,9 +297,14 @@ return function(digSite, world)
 			local pos = Vector3.new(math.cos(a) * rimRadius, 4.3, math.sin(a) * rimRadius)
 			local tangent = Vector3.new(-math.sin(a), 0, math.cos(a))
 			local length = 2 * math.pi * rimRadius / segments + 0.6
-			b:rod("RimStripe", length, 2.2, Architecture.alongX(pos, tangent), (i // 2) % 2 == 0 and "Sun" or "White")
+			-- a sturdy safety railing: dark posts and two yellow rails, a small lamp on every 6th post
+			b:rod("RimRail", length, 0.45, Architecture.alongX(pos + Vector3.new(0, 1.6, 0), tangent), "Sun")
+			b:rod("RimRail", length, 0.45, Architecture.alongX(pos + Vector3.new(0, 0.2, 0), tangent), "Sun")
+			if i % 2 == 0 then
+				b:box("RimPost", Vector3.new(0.6, 2.8, 0.6), CFrame.new(pos + Vector3.new(0, 0.6, 0)), "Navy")
+			end
 			if i % 6 == 0 then
-				b:bulb("RimBulb", 1, CFrame.new(pos + Vector3.new(0, 1.5, 0)), (i // 6) % 2 == 0 and "GlowPink" or "GlowCyan", 8)
+				b:bulb("RimBulb", 0.8, CFrame.new(pos + Vector3.new(0, 2.3, 0)), "GlowSun", 8)
 			end
 		end
 	end
