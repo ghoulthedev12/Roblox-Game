@@ -356,9 +356,22 @@ function UIKit.setIcon(holder, name)
 	if holder:GetAttribute("Icon") == name and #holder:GetChildren() > 0 then return end
 	holder:SetAttribute("Icon", name)
 	for _, child in ipairs(holder:GetChildren()) do
-		if child:IsA("BasePart") or child:IsA("Camera") or child.Name == "Fallback" then child:Destroy() end
+		if child:IsA("BasePart") or child:IsA("Camera") or child.Name == "Fallback" or child.Name == "IconImage" then child:Destroy() end
 	end
 	if not name or name == "" then return end
+	-- a rendered picture (glossy, outlined) beats the live 3D model when there is one
+	local image = require(ReplicatedStorage:WaitForChild("UIIconImages"))[name]
+	if image then
+		local picture = Instance.new("ImageLabel")
+		picture.Name = "IconImage"
+		picture.BackgroundTransparency = 1
+		picture.Size = UDim2.fromScale(1, 1)
+		picture.Image = image
+		picture.ScaleType = Enum.ScaleType.Fit
+		picture.ZIndex = holder.ZIndex
+		picture.Parent = holder
+		return
+	end
 	local source = iconSource(name)
 	if source then
 		local part = source:Clone()

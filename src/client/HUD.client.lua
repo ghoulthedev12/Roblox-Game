@@ -106,7 +106,7 @@ menu.Parent = gui
 local bagButton = UIKit.button(menu, "", {Size = UDim2.fromOffset(98, 98), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0),
 	Color = rgb(56, 150, 226), Radius = 12, Pattern = false})
 bagButton.Name = "Bag"
-UIKit.icon(bagButton, "Bag", {Size = UDim2.fromScale(1.02, 1.02), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
+UIKit.icon(bagButton, "Bag", {Size = UDim2.fromScale(0.92, 0.92), Position = UDim2.fromScale(0.5, 0.44), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
 local bagLabel = UIKit.label(bagButton, "Bag", {Size = UDim2.new(1, -6, 0, 30), Position = UDim2.new(0.5, 0, 0.5, 6), AnchorPoint = Vector2.new(0.5, 0.5),
 	Color = rgb(190, 236, 255), Stroke = 3.5, MaxText = 28})
 bagLabel.ZIndex = 4
@@ -125,7 +125,7 @@ rebirthButton.Size = UDim2.fromOffset(116, 120)
 rebirthButton.Position = UDim2.new(0.5, 0, 0, 112)
 rebirthButton.AnchorPoint = Vector2.new(0.5, 0)
 rebirthButton.Parent = menu
-UIKit.icon(rebirthButton, "Rebirth", {Size = UDim2.fromOffset(100, 100), Position = UDim2.new(0.5, 0, 0, -6), AnchorPoint = Vector2.new(0.5, 0)})
+UIKit.icon(rebirthButton, "Rebirth", {Size = UDim2.fromOffset(104, 104), Position = UDim2.new(0.5, 0, 0, -8), AnchorPoint = Vector2.new(0.5, 0)})
 UIKit.label(rebirthButton, "Rebirth", {Size = UDim2.new(1, 8, 0, 32), Position = UDim2.new(0.5, 0, 0, 86), AnchorPoint = Vector2.new(0.5, 0),
 	Color = rgb(255, 206, 232), Stroke = 4, MaxText = 30}).ZIndex = 2
 local rebirthAlert = alertBadge(rebirthButton, 34, UDim2.new(0.5, 40, 0, 10))

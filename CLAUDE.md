@@ -24,6 +24,11 @@ game systems. The owner is a beginner on Windows: explain steps simply, one at a
 - Portals: `tools/blender/portals.py` -> `PortalMeshes.fbx` + `src/shared/PortalMeshes.lua`.
 - UI icons: `tools/blender/ui_icons.py` -> `UIIcons.fbx`, pictures in `assets/ui/icons`,
   `src/shared/UIIconList.lua`. Shown with `UIKit.icon(parent, "Name")`.
+- Big HUD icons (Bag, Rebirth, Settings) are glossy rendered pictures instead (the owner found
+  the low-poly 3D ones too cheap): `tools/blender/ui_icon_renders.py` -> `assets/ui/rendered`,
+  uploaded with the Studio MCP `upload_image` (serve the folder on localhost first), ids in
+  `src/shared/UIIconImages.lua`; `UIKit.icon` prefers the picture. UI style reference: the
+  Roblox game Mini War (big studded buttons, thick dark outlines).
 - FBX axes: Blender -Y (front) ends up as Roblox +Z. portals.py writes Roblox-space coords.
 - Memes must be ORIGINAL parody designs (no copied characters/logos); flag IP risks.
 
