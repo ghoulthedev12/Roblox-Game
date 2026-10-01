@@ -50,12 +50,18 @@ local FALLBACK = {"Painting", "Painting", "Painting", "Statue", "Statue", "Coin"
 
 -- which form an artifact takes (always the same for the same artifact)
 -- the sculpted mesh for an artifact, or nil if it hasn't been made/imported yet
+-- (Studio's Import 3D wraps each mesh in a Model named after it; the mesh is inside.)
 function ArtifactModels.meshFor(artifact)
 	local folder = ReplicatedStorage:FindFirstChild("MemeMeshes")
 	local id = artifact and (artifact.BaseId or artifact.Id)
-	local found = folder and id and folder:FindFirstChild(id, true)
-	if found and found:IsA("MeshPart") then return found end
-	return nil
+	local found = folder and id and (folder:FindFirstChild(id) or folder:FindFirstChild(id, true))
+	if not found then return nil end
+	if found:IsA("MeshPart") then return found end
+	local best
+	for _, d in ipairs(found:GetDescendants()) do
+		if d:IsA("MeshPart") and (not best or d.Size.Magnitude > best.Size.Magnitude) then best = d end
+	end
+	return best
 end
 
 function ArtifactModels.formOf(artifact)

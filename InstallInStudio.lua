@@ -16,24 +16,50 @@ pcall(function() game:GetService("Lighting").Technology = Enum.Technology.Future
 pcall(function() workspace.FallenPartsDestroyHeight = -3000 end)
 pcall(function() game:GetService("MaterialService").Use2022Materials = true end)
 do
-	local imported = workspace:FindFirstChild("MemeMeshes")
-	if not imported then
-		for _, child in ipairs(workspace:GetChildren()) do
-			if child:IsA("Model") and child:FindFirstChild("ChillDude", true) and child:FindFirstChild("LogBatGuy", true) then imported = child break end
+	local RS = game:GetService("ReplicatedStorage")
+	local isMeme = {}
+	for _, id in ipairs({"DaWaeEchidna", "SeaShantyMug", "AisleYodelSet", "ConvinceMeTable", "ShockedRodent", "IsThisABird", "ChonkyBunny", "SpicyLasagna", "SpikedShellCrown", "GrapeSurgery", "BadBoyHatchback", "TempleTap", "SteamedClams", "MegaSealTape", "PurpleTitanBuggy", "OrcaRebellionBoat", "NeverMissDartboard", "CrimeTownBoss", "BoneComedian", "SugarSneakJohnny", "FrostFlask", "BreathtakingCyberGuy", "EnslavedMoisture", "StonksHead", "AhShucks", "UncannyHedgehog", "SpaceInfant", "MeAndTheCrew", "CyberWedgeTruck", "YelledAtCat", "RaidAlien", "AngelWingDancer", "KombuchaDisgust", "DoubleTakeBlink", "TallPinkPiglet", "SpongeLeaving", "CappuccinoBallerina", "FrozenCoffinDance", "HundredMenGorilla", "GothDanceHands", "NatureHealingSwan", "OnceAgainLectern", "LockdownSourdough", "HeadBobCat", "PallbearerCoin", "TumbleJellyBean", "SwoleVsSmol", "PointingLaughChair", "PolkaSpinCow", "SusBean", "PartyCornerGuy", "BeepBopMicKid", "TradeOfferScroll", "BigMittensChair", "ThinkSonThink", "SneakerShark", "JawlineChad", "BingChillingCone", "SigmaGrindset", "EmotionalDamage", "YesNoLabDog", "AssistantSam", "LampOilMerchant", "MaulingTimeVampire", "GentlePillSquad", "WiseMysticalTree", "ItsCornCob", "UncannySuperDad", "GirlDinnerPlate", "PhonkEyebrowSpeaker", "RizzFaceMask", "ClangingPipe", "BetterCallPaul", "KingPrawnCrooner", "OhioFinalBoss", "OhYeahVillain", "LogBatGuy", "ShailushaiCat", "BirthdayShake", "WhistleEdit", "PeachesTurtleKing", "KindergartenMascot", "CursedCartoonTape", "AwkwardSmileGuy", "LaughCryCarSeat", "CanonEventWeb", "PinkbombFeature", "BoulderEyebrow", "PointingSuits", "MewingHush", "EnglishSpanishChair", "AHyuckDog", "NoScopeOlympian", "PommelHorseLegend", "BratGreenSlab", "PedroRaccoon", "CrocBomber", "ChillDude", "BabyHippo", "DubaiChocolate", "LowTaperFade", "ShushUpTablet", "BigGamerChair", "SixSevenHands", "TakeEggCushion", "IbizaBossDancer", "BoutiqueRock", "LittleFrenchFish", "VeryDemureTeacup", "JohnPorkPhone", "BeforeGTA6Hourglass", "StandingOnBusiness", "AuraBoatBow", "PaperclipHelper", "ZombieChickenRider", "JetTooHoliday", "PressureDiverHelmet", "AbyssalAngler", "GlitchWhale", "AtlantisJawlineChad", "SpookySkeleton", "PumpkinDancer", "GhostlySwampFrog", "BonkShiba", "SadViolinHamster", "ConfusedMathCat", "JellyTimeBanana", "RainbowPastryCat", "WowShiba", "ProblemGrinCoin", "MeLikeyTablet", "RageScreamTablet", "ForeverAlone", "BadLuckBryan", "FrowningCat", "PunchMonkey", "PhantomChonkyBunny", "CemeterySpecter", "UndeadSanic", "GraveyardOssuary", "CyberWowShiba", "GlitchSwampFrog", "QuantumShockedRodent", "VoidStonks", "MultiverseSpaceInfant", "BulletDodgeGuy", "NeonSusBean", "HoloJawlineChad", "CosmicShake", "SpacePolkaCow", "InterdimensionalChillDude", "CyberSingingThrone", "UniversalSanic", "ExponentialOgre", "MiraculousGnome", "ApexWowShiba", "GoldenSwampFrog", "ToorngEntity", "HighRollerBrainrot", "ImmeasupremeOverlord", "QuantumDatFrog", "SubatomicSwampFrog", "ParticleWowShiba", "AntimatterEchidna", "StringTheoryBunny", "WarpSpeedStonks", "ParallelJawlineChad", "RealityWarpedSponge", "TimeFoldPanels", "DarkMatterHippo", "RomanEmpireBust", "HypercubeChillDude", "ZeroPointThrone", "TesseractShake", "SingularityGrinCoin", "EventHorizonShiba", "NeverGonnaStair", "QuantumBrainrotGod", "MemeMatrix", "OriginalShiba"}) do isMeme[id] = true end
+	local found, groups = {}, {}
+	local function scan(container)
+		for _, child in ipairs(container:GetChildren()) do
+			if isMeme[child.Name] and (child:IsA("Model") or child:IsA("MeshPart")) then
+				table.insert(found, child)
+			elseif child:IsA("Model") or child:IsA("Folder") then
+				local before = #found
+				scan(child)
+				if #found > before then table.insert(groups, child) end -- a group the import made
+			end
 		end
 	end
-	if imported then
-		local RS = game:GetService("ReplicatedStorage")
-		local old = RS:FindFirstChild("MemeMeshes")
-		if old then old:Destroy() end
-		local count = 0
-		for _, d in ipairs(imported:GetDescendants()) do
-			if d:IsA("BasePart") then d.Anchored = true d.CanCollide = false count += (d:IsA("MeshPart") and 1 or 0) end
+	scan(workspace)
+	local folder = RS:FindFirstChild("MemeMeshes")
+	if #found > 0 then
+		if not folder then
+			folder = Instance.new("Folder")
+			folder.Name = "MemeMeshes"
+			folder.Parent = RS
 		end
-		imported.Name = "MemeMeshes"
-		imported.Parent = RS
-		print("Moved " .. count .. " meme meshes into ReplicatedStorage > MemeMeshes")
-	elseif not game:GetService("ReplicatedStorage"):FindFirstChild("MemeMeshes") then
+		local placed = {}
+		for _, item in ipairs(found) do
+			if placed[item.Name] then
+				item:Destroy() -- a second copy from importing twice
+			else
+				placed[item.Name] = true
+				local old = folder:FindFirstChild(item.Name)
+				if old then old:Destroy() end -- the newest import replaces the older version
+				for _, d in ipairs({item, table.unpack(item:GetDescendants())}) do
+					if d:IsA("BasePart") then d.Anchored = true d.CanCollide = false end
+				end
+				item.Parent = folder
+			end
+		end
+		for _, group in ipairs(groups) do
+			if group.Parent and #group:GetChildren() == 0 then group:Destroy() end
+		end
+		local count = 0
+		for _ in pairs(placed) do count += 1 end
+		print("Moved " .. count .. " meme meshes into ReplicatedStorage > MemeMeshes (" .. #folder:GetChildren() .. " in total)")
+	elseif not folder then
 		warn("No meme meshes yet: File > Import 3D > assets/models/MemeMeshes.fbx, then run this installer again")
 	end
 end
@@ -376,12 +402,18 @@ local FALLBACK = {"Painting", "Painting", "Painting", "Statue", "Statue", "Coin"
 
 -- which form an artifact takes (always the same for the same artifact)
 -- the sculpted mesh for an artifact, or nil if it hasn't been made/imported yet
+-- (Studio's Import 3D wraps each mesh in a Model named after it; the mesh is inside.)
 function ArtifactModels.meshFor(artifact)
 	local folder = ReplicatedStorage:FindFirstChild("MemeMeshes")
 	local id = artifact and (artifact.BaseId or artifact.Id)
-	local found = folder and id and folder:FindFirstChild(id, true)
-	if found and found:IsA("MeshPart") then return found end
-	return nil
+	local found = folder and id and (folder:FindFirstChild(id) or folder:FindFirstChild(id, true))
+	if not found then return nil end
+	if found:IsA("MeshPart") then return found end
+	local best
+	for _, d in ipairs(found:GetDescendants()) do
+		if d:IsA("MeshPart") and (not best or d.Size.Magnitude > best.Size.Magnitude) then best = d end
+	end
+	return best
 end
 
 function ArtifactModels.formOf(artifact)
@@ -17868,4 +17900,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 13:38). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 14:05). Now save the place (Ctrl+S).")
