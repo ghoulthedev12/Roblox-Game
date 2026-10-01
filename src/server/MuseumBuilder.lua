@@ -1,9 +1,10 @@
 -- MuseumBuilder (ModuleScript in ServerScriptService)
 -- Builds the player museum from code: a compact, three-storey 2050 gallery (64 x 64 studs,
--- floors every 22 studs) instead of a huge simulator hall. White walls with rounded capsule
--- corners, a glass curtain front with glowing floor bands, a round portal entrance under a
--- saucer canopy, a glass dome with a halo on the roof, and a plaza with the Alien Art Dealer's
--- kiosk out front.
+-- floors every 22 studs) instead of a huge simulator hall. Cartoony and futuristic: white
+-- walls with round porthole windows and rounded capsule corners, a glass curtain front framed
+-- by a giant white arch with the museum's sign in it, a round portal entrance under a saucer
+-- canopy, a flying saucer hovering over the roof with a glass bubble and an orbit ring, and a
+-- plaza with the Alien Art Dealer's kiosk out front.
 --
 -- Inside, each floor has 8 display alcoves around the walls (24 slots in total) and a glowing
 -- lift pad in the middle (the on-screen arrows teleport between the pads).
@@ -34,6 +35,7 @@ P.MuseumAlcove = {Color = rgb(32, 30, 64), Material = Enum.Material.SmoothPlasti
 P.MuseumAlcoveGlow = {Color = rgb(150, 130, 255), Material = Enum.Material.Neon}
 P.MuseumGold = {Color = rgb(255, 214, 110), Material = Enum.Material.Metal, Reflectance = 0.1}
 P.AlienSkin = {Color = rgb(120, 220, 120), Material = Enum.Material.SmoothPlastic}
+P.MuseumPorthole = {Color = rgb(70, 110, 200), Material = Enum.Material.Glass, Transparency = 0.15, Reflectance = 0.3}
 
 ---------------------------------------------------------------------
 -- HELPERS
@@ -226,19 +228,31 @@ local function build()
 
 	-- WALLS: solid white sides and back with glass window strips, a glass front
 	local wallX = HALF - WALL / 2
+	-- a round porthole window: white rim, a glowing ring, blue glass (cf faces out along X)
+	local function porthole(cf)
+		ex:rod("PortholeRim", 0.9, 8.8, cf, "White")
+		ex:rod("PortholeGlow", 1.1, 7.4, cf, "GlowCyan")
+		ex:rod("PortholeGlass", 1.3, 6.6, cf, "MuseumPorthole")
+	end
 	for _, side in ipairs({-1, 1}) do
 		ex:box("SideWall", Vector3.new(WALL, ROOF_Y, HALF * 2), CFrame.new(side * wallX, ROOF_Y / 2, 0), "MuseumWall")
 		for f = 1, FLOORS do
-			local y = (f - 1) * FLOOR_H + 17.5
-			ex:box("SideWindow", Vector3.new(0.6, 3, HALF * 2 - 16), CFrame.new(side * (HALF + 0.05), y, 0), "MuseumGlass")
-			ex:box("SideWindowTrim", Vector3.new(0.7, 0.4, HALF * 2 - 14), CFrame.new(side * (HALF + 0.1), y - 1.7, 0), "GlowCyan")
+			for _, z in ipairs({-16, 0, 16}) do
+				porthole(CFrame.new(side * HALF, (f - 1) * FLOOR_H + 12, z))
+			end
+			-- a lilac band along each floor line
+			ex:box("SideBand", Vector3.new(0.6, 1.6, HALF * 2 - 4), CFrame.new(side * (HALF + 0.1), f * FLOOR_H, 0), "Lilac")
 		end
-		-- vertical lilac fins
-		for _, z in ipairs({-12, 12}) do
-			ex:roundedBlock("Fin", Vector3.new(2.4, ROOF_Y - 4, 2.4), CFrame.new(side * (HALF + 1), ROOF_Y / 2, z), 1.1, "Lilac")
-		end
+		ex:box("BaseBand", Vector3.new(0.6, 3, HALF * 2), CFrame.new(side * (HALF + 0.1), 2.2, 0), "Violet")
 	end
 	ex:box("BackWall", Vector3.new(HALF * 2, ROOF_Y, WALL), CFrame.new(0, ROOF_Y / 2, wallX), "MuseumWall")
+	ex:box("BaseBand", Vector3.new(HALF * 2, 3, 0.6), CFrame.new(0, 2.2, HALF + 0.1), "Violet")
+	for f = 1, FLOORS do
+		for _, x in ipairs({-16, 0, 16}) do
+			porthole(CFrame.new(x, (f - 1) * FLOOR_H + 12, HALF) * CFrame.Angles(0, math.rad(90), 0))
+		end
+		ex:box("BackBand", Vector3.new(HALF * 2 - 4, 1.6, 0.6), CFrame.new(0, f * FLOOR_H, HALF + 0.1), "Lilac")
+	end
 	-- front: glass curtain on floors 2-3, glass panels either side of the entrance on floor 1
 	local frontZ = -wallX
 	ex:box("FrontGlass", Vector3.new(HALF * 2 - 4, FLOOR_H * 2, 0.8), CFrame.new(0, FLOOR_H * 2, frontZ), "MuseumGlass")
@@ -278,19 +292,46 @@ local function build()
 		ex:bulb("CanopyBulb", 0.9, CFrame.new(i * 4.5, 15.2, frontZ - 8.5), i % 2 == 0 and "GlowSun" or "GlowPink", 0)
 	end
 
-	-- ROOF: parapet, glass dome with a halo, and the big sign
-	ex:roundedBlock("Parapet", Vector3.new(HALF * 2 + 3, 2.4, HALF * 2 + 3), CFrame.new(0, ROOF_Y + 2.6, 0), 4, "Lilac")
-	ex:ellipsoid("Dome", Vector3.new(36, 18, 36), CFrame.new(0, ROOF_Y + 1.6, 4), "MuseumGlass")
-	ex:ring("DomeHalo", CFrame.new(0, ROOF_Y + 13, 4) * CFrame.Angles(math.rad(90), 0, 0), 12, 0.9, "GlowCyan", 32)
-	ex:pill("DomeSpire", Vector3.new(0, ROOF_Y + 10, 4), Vector3.new(0, ROOF_Y + 20, 4), 0.8, "Chrome")
-	ex:bulb("DomeBeacon", 2, CFrame.new(0, ROOF_Y + 21, 4), "GlowPink", 20)
-	ex:roundedBlock("SignBack", Vector3.new(44, 9, 1.4), CFrame.new(0, ROOF_Y + 8, frontZ + 1), 3, "Violet")
-	local sign = ex:roundedBlock("EntranceSign", Vector3.new(42, 7.6, 1.6), CFrame.new(0, ROOF_Y + 8, frontZ + 0.8), 2.6, "Ink")
+	-- THE ARCH: a giant white arch framing the whole front, with a glowing pink inner line
+	local archZ = frontZ - 3.2
+	local archR, archY = 28, 44
+	for _, side in ipairs({-1, 1}) do
+		ex:pill("ArchLeg", Vector3.new(side * archR, 1, archZ), Vector3.new(side * archR, archY, archZ), 4.6, "White")
+		ex:box("ArchLegGlow", Vector3.new(0.8, archY - 3, 0.8), CFrame.new(side * (archR - 2.6), archY / 2 + 1, archZ), "GlowPink")
+		ex:disc("ArchFoot", 7.4, 1.6, CFrame.new(side * archR, 0.8, archZ), "Violet")
+	end
+	ex:ring("Arch", CFrame.new(0, archY, archZ), archR, 4.6, "White", 26, 180, 0)
+	ex:ring("ArchGlow", CFrame.new(0, archY, archZ), archR - 2.6, 0.8, "GlowPink", 26, 180, 0)
+	ex:ball("ArchKeystone", 6.4, CFrame.new(0, archY + archR + 0.6, archZ), "Sun")
+
+	-- the sign hangs inside the top of the arch
+	ex:roundedBlock("SignBack", Vector3.new(36, 9.2, 1.2), CFrame.new(0, ROOF_Y - 2, archZ + 0.6), 3, "Violet")
+	local sign = ex:roundedBlock("EntranceSign", Vector3.new(34, 7.8, 1.6), CFrame.new(0, ROOF_Y - 2, archZ), 2.6, "Ink")
 	sign.Name = "EntranceSign"
 	local signGui = surface(sign)
 	textLabel(signGui, "TitleLabel", "MEME MUSEUM 2050", UDim2.fromScale(0, 0.06), UDim2.fromScale(1, 0.56), rgb(255, 222, 110))
 	textLabel(signGui, "SubLabel", "EST. 2050", UDim2.fromScale(0, 0.62), UDim2.fromScale(1, 0.32), rgb(150, 230, 255))
-	ex:box("SignGlow", Vector3.new(42, 0.4, 1.8), CFrame.new(0, ROOF_Y + 3.9, frontZ + 0.8), "GlowSun")
+	ex:box("SignGlow", Vector3.new(32, 0.4, 1.8), CFrame.new(0, ROOF_Y - 6.3, archZ), "GlowSun")
+
+	-- ROOF: a parapet, and a flying saucer hovering over it on a glowing beam, with a glass
+	-- bubble, a golden orb inside and a tilted orbit ring
+	ex:roundedBlock("Parapet", Vector3.new(HALF * 2 + 3, 2.4, HALF * 2 + 3), CFrame.new(0, ROOF_Y + 2.6, 0), 4, "Lilac")
+	local saucerY = ROOF_Y + 15
+	ex:disc("SaucerBeam", 8, 12, CFrame.new(0, ROOF_Y + 7, 4), "MuseumGlass")
+	ex:disc("SaucerBeamCore", 3, 12, CFrame.new(0, ROOF_Y + 7, 4), "GlowCyan")
+	ex:ellipsoid("Saucer", Vector3.new(56, 7, 56), CFrame.new(0, saucerY, 4), "White")
+	ex:ellipsoid("SaucerBelly", Vector3.new(46, 6, 46), CFrame.new(0, saucerY - 1.8, 4), "Violet")
+	ex:disc("SaucerRim", 52, 0.6, CFrame.new(0, saucerY - 0.4, 4), "GlowCyan")
+	ex:disc("SaucerWindows", 38, 1.8, CFrame.new(0, saucerY + 2.6, 4), "Navy")
+	for i = 0, 7 do
+		local a = math.rad(i * 45)
+		ex:bulb("SaucerLight", 1.6, CFrame.new(math.cos(a) * 21, saucerY - 3.4, 4 + math.sin(a) * 21), i % 2 == 0 and "GlowSun" or "GlowPink", 0)
+	end
+	ex:ellipsoid("Bubble", Vector3.new(26, 18, 26), CFrame.new(0, saucerY + 3, 4), "MuseumGlass")
+	ex:ball("BubbleOrb", 8, CFrame.new(0, saucerY + 6, 4), "MuseumGold")
+	ex:ring("BubbleOrbit", CFrame.new(0, saucerY + 6, 4) * CFrame.Angles(math.rad(70), 0, math.rad(15)), 16, 0.9, "GlowSun", 28)
+	ex:pill("Spire", Vector3.new(0, saucerY + 11.5, 4), Vector3.new(0, saucerY + 20, 4), 0.9, "Chrome")
+	ex:bulb("Beacon", 2.4, CFrame.new(0, saucerY + 21, 4), "GlowPink", 20)
 
 	-- ALIEN ART DEALER kiosk on the plaza (left of the entrance)
 	local dealer = Instance.new("Model")
@@ -326,7 +367,8 @@ local function build()
 	marker(waypoints, "Lobby", CFrame.new(0, 3, -HALF + 12), Vector3.new(10, 1, 4))
 
 	-- decorative rings and ropes shouldn't trip anyone up
-	local NO_COLLIDE = {FloorInlay = true, Rope = true, DomeHalo = true, PortalGlow = true, CanopyBulb = true, PlazaGlow = true}
+	local NO_COLLIDE = {FloorInlay = true, Rope = true, BubbleOrbit = true, PortalGlow = true, CanopyBulb = true, PlazaGlow = true,
+		ArchGlow = true, ArchLegGlow = true, SaucerLight = true}
 	for _, part in ipairs(museum:GetDescendants()) do
 		if part:IsA("BasePart") and NO_COLLIDE[part.Name] then
 			part.CanCollide = false

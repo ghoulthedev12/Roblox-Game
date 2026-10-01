@@ -10,10 +10,11 @@
 --           avenues (between the museums) so every museum keeps a view out
 --   470     the island edge: a glass railing, then the floating cliff underneath
 --
--- Every skyscraper is made from Instance.new("Part") with exact Color3s, Glass and Neon
--- materials and CFrame math: floors that twist a few degrees each, stacks that shear
--- sideways along a sine curve, set-back tiers, glass cylinders ringed with neon, twin towers
--- joined by sky tubes, and a few megatowers with spiralling neon ribs and sky gardens.
+-- Every skyscraper is made from Instance.new("Part") in a cartoony 2050 style, like a toy
+-- city: chunky rounded bodies in bold pastels with dark-blue ribbon windows and thick white
+-- lips. Five styles (banded round towers, saucer towers, jellybean pod stacks, chunky
+-- rounded blocks, twin/triple towers joined by sky tubes) plus six megatowers with a saucer
+-- sky deck, tilted orbit rings and a glowing needle.
 -- MapStyle calls MainIsland.build() once when the server starts.
 
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
@@ -56,11 +57,10 @@ local NEON_TINTS = {
 	rgb(92, 226, 180),  -- mint
 	rgb(168, 132, 250), -- violet
 }
-local glassNames, neonNames = {}, {}
+local neonNames = {}
 for i, c in ipairs(GLASS_TINTS) do
 	local name = "IslandGlass" .. i
 	P[name] = {Color = c, Material = Enum.Material.Glass, Transparency = 0.05, Reflectance = 0.28}
-	table.insert(glassNames, name)
 	-- a deeper version of the same tint for set-back cores and shadows
 	P[name .. "Core"] = {Color = c:Lerp(rgb(40, 44, 90), 0.45), Material = Enum.Material.SmoothPlastic}
 end
@@ -69,6 +69,26 @@ for i, c in ipairs(NEON_TINTS) do
 	P[name] = {Color = c, Material = Enum.Material.Neon}
 	table.insert(neonNames, name)
 end
+-- skyscraper bodies: bold cartoon pastels, each tower gets two of them
+local BODY_TINTS = {
+	rgb(178, 158, 255), -- lilac
+	rgb(112, 192, 255), -- sky
+	rgb(104, 222, 190), -- mint
+	rgb(255, 150, 196), -- bubblegum
+	rgb(255, 224, 128), -- lemon
+	rgb(140, 150, 255), -- periwinkle
+	rgb(92, 214, 232),  -- aqua
+	rgb(246, 247, 252), -- white
+}
+local bodyNames = {}
+for i, color in ipairs(BODY_TINTS) do
+	P["TowerBody" .. i] = {Color = color, Material = Enum.Material.SmoothPlastic}
+	table.insert(bodyNames, "TowerBody" .. i)
+end
+-- cartoon window glass: deep blue with a little shine
+P.TowerWindow1 = {Color = rgb(58, 78, 158), Material = Enum.Material.SmoothPlastic, Reflectance = 0.15}
+P.TowerWindow2 = {Color = rgb(44, 104, 150), Material = Enum.Material.SmoothPlastic, Reflectance = 0.15}
+P.TowerWindow3 = {Color = rgb(86, 64, 150), Material = Enum.Material.SmoothPlastic, Reflectance = 0.15}
 P.IslandFrame = {Color = rgb(238, 241, 250), Material = Enum.Material.SmoothPlastic}
 P.IslandSteel = {Color = rgb(206, 212, 228), Material = Enum.Material.Metal, Reflectance = 0.12}
 P.IslandRoad = {Color = rgb(64, 60, 112), Material = Enum.Material.SmoothPlastic}
@@ -169,164 +189,225 @@ local function buildGround(b, rng)
 end
 
 ---------------------------------------------------------------------
--- SKYSCRAPER STYLES. b is a builder at the tower's footprint (ground = y 0, -Z faces the
--- island center), w = footprint width, h = height, rng = this tower's random numbers.
+-- SKYSCRAPER STYLES: a cartoony 2050 skyline, like a toy city. Chunky rounded bodies in
+-- bold pastels, dark-blue ribbon windows, thick white lips, bubble domes, saucers and
+-- floating halos. b is a builder at the tower's footprint (ground = y 0, -Z faces the
+-- island center), w = footprint width, h = height, rng = this tower's random numbers,
+-- c = its colors {Body, Second, Window, Neon}.
 ---------------------------------------------------------------------
-local function podium(b, w, glass, neon)
-	b:box("Podium", Vector3.new(w + 8, 6, w + 8), CFrame.new(0, 3, 0), "IslandFrame")
-	b:box("PodiumGlow", Vector3.new(w + 8.4, 0.5, w + 8.4), CFrame.new(0, 6, 0), neon)
-	b:box("Lobby", Vector3.new(w + 2, 8, w + 2), CFrame.new(0, 10, 0), glass)
-	return 14 -- where the tower itself starts
+local RIBBON_GAP = 21 -- studs between window ribbons
+
+-- round podium with a glowing rim and a glass lobby
+local function podium(b, w, c)
+	b:disc("Podium", w + 10, 5, CFrame.new(0, 2.5, 0), "IslandFrame")
+	b:disc("PodiumGlow", w + 10.6, 0.6, CFrame.new(0, 5, 0), c.Neon)
+	b:disc("Lobby", w + 3, 7, CFrame.new(0, 8.5, 0), "IslandGlass6")
+	b:disc("LobbyRoof", w + 6, 1.4, CFrame.new(0, 12.6, 0), "IslandFrame")
+	return 13 -- where the tower itself starts
 end
 
-local function antenna(b, y, height, neon)
-	b:pill("Antenna", Vector3.new(0, y, 0), Vector3.new(0, y + height, 0), 1, "IslandSteel")
-	b:ball("AntennaTip", 2.4, CFrame.new(0, y + height + 1, 0), neon)
+-- a round body from y0 to y1: colored cylinder, window ribbons, a thick white lip on top
+local function roundBody(b, d, y0, y1, body, window)
+	b:disc("Body", d, y1 - y0, CFrame.new(0, (y0 + y1) / 2, 0), body)
+	local y = y0 + RIBBON_GAP * 0.6
+	while y < y1 - 5 do
+		b:disc("WindowRibbon", d + 0.6, 5.4, CFrame.new(0, y, 0), window)
+		y += RIBBON_GAP
+	end
+	b:disc("Lip", d + 2.4, 1.8, CFrame.new(0, y1, 0), "IslandFrame")
 end
 
--- A: set-back tiers, like a 2050 art-deco tower: each tier is narrower, with white corner
--- posts, a neon stripe up the front and a white crown ledge
-local function setbackTower(b, w, h, rng, glass, neon)
-	local y = podium(b, w, glass, neon)
-	local tiers = rng:NextInteger(3, 4)
-	local remaining = h - y - 16
+-- a glass bubble on top with a floating halo disc and an antenna ball
+local function bubbleTop(b, d, y, c, rng)
+	b:ellipsoid("BubbleDome", Vector3.new(d * 0.8, d * 0.62, d * 0.8), CFrame.new(0, y + 0.6, 0), "IslandGlass6")
+	b:ellipsoid("BubbleCore", Vector3.new(d * 0.4, d * 0.42, d * 0.4), CFrame.new(0, y + 0.6, 0), c.Second)
+	b:disc("Halo", d * 0.95, 0.5, CFrame.new(0, y + d * 0.42, 0), c.Neon, {Transparency = 0.25, CanCollide = false})
+	local tip = y + d * 0.31 + rng:NextNumber(8, 16)
+	b:pill("Antenna", Vector3.new(0, y + d * 0.28, 0), Vector3.new(0, tip, 0), 0.9, "IslandFrame")
+	b:ball("AntennaBall", 3.2, CFrame.new(0, tip + 1.2, 0), c.Neon)
+end
+
+-- A: banded round tower that steps in two or three times, each section a little slimmer,
+-- with a glowing collar where it narrows
+local function bandTower(b, w, h, rng, c)
+	local start = podium(b, w, c)
+	local sections = rng:NextInteger(2, 3)
+	local splits = sections == 2 and {0.6, 1} or {0.45, 0.75, 1}
+	local top = h - w * 0.35
+	local y, d = start, w
+	for i = 1, sections do
+		local y1 = start + (top - start) * splits[i]
+		roundBody(b, d, y, y1, i % 2 == 1 and c.Body or c.Second, c.Window)
+		if i < sections then
+			b:disc("Collar", d * 0.78, 3.4, CFrame.new(0, y1 + 2.2, 0), c.Neon)
+			d *= 0.78
+		end
+		y = y1 + (i < sections and 3.4 or 0)
+	end
+	bubbleTop(b, d, y, c, rng)
+end
+
+-- B: a slim core threaded through big flying saucers
+local function saucerTower(b, w, h, rng, c)
+	local y = podium(b, w, c)
+	local core = w * 0.5
+	local top = h - 10
+	roundBody(b, core, y, top, c.Body, c.Window)
+	local count = rng:NextInteger(2, 3)
+	for k = 1, count do
+		local sy = y + (top - y) * (0.35 + 0.55 * (k - 1) / math.max(count - 1, 1))
+		local sd = w * (1.45 - 0.18 * (k - 1))
+		b:ellipsoid("Saucer", Vector3.new(sd, 5.6, sd), CFrame.new(0, sy, 0), "IslandFrame")
+		b:ellipsoid("SaucerBelly", Vector3.new(sd * 0.82, 4.6, sd * 0.82), CFrame.new(0, sy - 1.6, 0), c.Second)
+		b:disc("SaucerWindows", sd * 0.62, 1.6, CFrame.new(0, sy + 2.2, 0), c.Window)
+		b:disc("SaucerRim", sd * 0.9, 0.5, CFrame.new(0, sy - 0.2, 0), c.Neon)
+	end
+	b:ellipsoid("TopPod", Vector3.new(core * 1.3, core * 1.1, core * 1.3), CFrame.new(0, top + 1, 0), c.Second)
+	b:disc("TopPodBand", core * 1.32, 1.2, CFrame.new(0, top + 1, 0), c.Window)
+	local tip = top + core * 0.5 + rng:NextNumber(12, 22)
+	b:pill("Spire", Vector3.new(0, top + core * 0.5, 0), Vector3.new(0, tip, 0), 1, "IslandFrame")
+	b:ball("SpireBall", 3.4, CFrame.new(0, tip + 1.2, 0), c.Neon)
+end
+
+-- C: a stack of rounded jellybean pods joined by slim glowing necks
+local function podTower(b, w, h, rng, c)
+	local y = podium(b, w, c)
+	local pods = math.clamp(math.floor((h - y) / 55) + 1, 3, 6)
+	local neck = 5
+	local podH = (h - y - 14 - neck * (pods - 1)) / pods
+	for i = 1, pods do
+		local d = w * (1 - 0.1 * (i - 1))
+		local finish = i % 2 == 1 and c.Body or c.Second
+		-- a short cylinder with a dome on each end: a rounded jellybean
+		local cap = math.min(d * 0.28, podH * 0.3)
+		local bodyH = podH - cap * 2
+		local mid = y + podH / 2
+		b:disc("PodBody", d, bodyH, CFrame.new(0, mid, 0), finish)
+		b:ellipsoid("PodCap", Vector3.new(d, cap * 2, d), CFrame.new(0, mid + bodyH / 2, 0), finish)
+		b:ellipsoid("PodBase", Vector3.new(d, cap * 2, d), CFrame.new(0, mid - bodyH / 2, 0), finish)
+		b:disc("PodLip", d + 1.6, 1.2, CFrame.new(0, mid + bodyH / 2, 0), "IslandFrame")
+		for k = 1, math.max(1, math.floor(bodyH / RIBBON_GAP)) do
+			b:disc("WindowRibbon", d + 0.6, 5, CFrame.new(0, mid - bodyH / 2 + bodyH * (k - 0.5) / math.max(1, math.floor(bodyH / RIBBON_GAP)), 0), c.Window)
+		end
+		y += podH
+		if i < pods then
+			b:disc("PodNeck", d * 0.36, neck + 2, CFrame.new(0, y + neck / 2, 0), c.Neon)
+			y += neck
+		end
+	end
+	local tip = y + rng:NextNumber(10, 18)
+	b:pill("Antenna", Vector3.new(0, y - 2, 0), Vector3.new(0, tip, 0), 0.9, "IslandFrame")
+	b:ball("AntennaBall", 3.4, CFrame.new(0, tip + 1.2, 0), c.Neon)
+end
+
+-- D: chunky set-back block tower: rounded white corner columns, a big dark window wall on
+-- every side, a thick white cap on each tier and a ball on top
+local function blockTower(b, w, h, rng, c)
+	b:box("Podium", Vector3.new(w + 10, 5, w + 10), CFrame.new(0, 2.5, 0), "IslandFrame")
+	b:box("PodiumGlow", Vector3.new(w + 10.6, 0.6, w + 10.6), CFrame.new(0, 5, 0), c.Neon)
+	local y = 5
+	local tiers = rng:NextInteger(2, 3)
+	local remaining = h - y - w * 0.4
 	for i = 1, tiers do
-		local size = w * (1 - (i - 1) * 0.17)
-		local th = remaining * (i == 1 and 0.4 or (0.6 / (tiers - 1)))
-		b:box("Tier", Vector3.new(size, th, size), CFrame.new(0, y + th / 2, 0), glass)
-		for _, c in ipairs({{1, 1}, {-1, 1}, {1, -1}, {-1, -1}}) do
-			b:box("CornerPost", Vector3.new(1.6, th, 1.6), CFrame.new(c[1] * size / 2, y + th / 2, c[2] * size / 2), "IslandFrame")
-		end
-		b:box("FrontStripe", Vector3.new(1, th - 4, 0.6), CFrame.new(0, y + th / 2, -size / 2 - 0.3), neon)
-		b:box("Ledge", Vector3.new(size + 2, 1.4, size + 2), CFrame.new(0, y + th, 0), "IslandFrame")
-		y += th
-	end
-	b:box("Crown", Vector3.new(w * 0.3, 10, w * 0.3), CFrame.new(0, y + 5, 0) * CFrame.Angles(0, math.rad(45), 0), glass)
-	antenna(b, y + 10, rng:NextNumber(10, 22), neon)
-end
-
--- B: twisting tower: stacked glass floors, each turned a few degrees more than the one below
-local function twistTower(b, w, h, rng, glass, neon)
-	local y = podium(b, w, glass, neon)
-	local segH = 24
-	local n = math.max(3, math.floor((h - y - 14) / segH))
-	local twist = math.rad(rng:NextNumber(4, 7)) * (rng:NextNumber() < 0.5 and -1 or 1)
-	for i = 0, n - 1 do
-		local size = w * (1 - 0.25 * i / n)
-		local turn = CFrame.Angles(0, i * twist, 0)
-		b:box("TwistFloor", Vector3.new(size, segH - 1.2, size), CFrame.new(0, y + segH / 2, 0) * turn, glass)
-		if i % 2 == 0 then
-			b:box("TwistPlate", Vector3.new(size + 1.6, 1.2, size + 1.6), CFrame.new(0, y, 0) * turn, "IslandFrame")
-		end
-		y += segH
-	end
-	b:box("TwistCap", Vector3.new(w * 0.6, 3, w * 0.6), CFrame.new(0, y + 1.5, 0) * CFrame.Angles(0, n * twist, 0), neon)
-	antenna(b, y + 3, rng:NextNumber(12, 24), neon)
-end
-
--- C: glass cylinder banded with thin neon discs, a dome on top
-local function cylinderTower(b, w, h, rng, glass, neon)
-	local y = podium(b, w, glass, neon)
-	local body = h - y - w * 0.4
-	b:disc("Cylinder", w, body, CFrame.new(0, y + body / 2, 0), glass)
-	b:disc("CylinderCore", w * 0.7, body, CFrame.new(0, y + body / 2, 0), glass .. "Core")
-	local bands = math.floor(body / 30)
-	for i = 1, bands do
-		b:disc("NeonBand", w + 0.8, 0.8, CFrame.new(0, y + i * body / (bands + 1), 0), neon)
-	end
-	b:disc("CylinderLip", w + 2, 1.4, CFrame.new(0, y + body, 0), "IslandFrame")
-	b:ellipsoid("CylinderDome", Vector3.new(w, w * 0.8, w), CFrame.new(0, y + body, 0), glass)
-	antenna(b, y + body + w * 0.35, rng:NextNumber(8, 16), neon)
-end
-
--- D: sheared tower: segments slide sideways along a sine curve and lean with it, so the
--- whole tower bends gracefully
-local function shearTower(b, w, h, rng, glass, neon)
-	local y = podium(b, w, glass, neon)
-	local n = rng:NextInteger(5, 7)
-	local segH = (h - y - 10) / n
-	local sway = w * rng:NextNumber(0.25, 0.4) * (rng:NextNumber() < 0.5 and -1 or 1)
-	for i = 0, n - 1 do
-		local t0, t1 = i / n, (i + 1) / n
-		local x0, x1 = math.sin(t0 * math.pi) * sway, math.sin(t1 * math.pi) * sway
-		local lean = math.atan2(x1 - x0, segH)
-		local cf = CFrame.new((x0 + x1) / 2, y + segH / 2, 0) * CFrame.Angles(0, 0, -lean)
-		b:box("ShearFloor", Vector3.new(w * 0.9, segH - 1, w * 0.9), cf, glass)
-		b:box("ShearEdge", Vector3.new(0.8, segH - 1, 0.8), cf * CFrame.new(w * 0.45, 0, -w * 0.45), neon)
-		b:box("ShearEdge", Vector3.new(0.8, segH - 1, 0.8), cf * CFrame.new(-w * 0.45, 0, -w * 0.45), neon)
-		b:box("ShearPlate", Vector3.new(w * 0.95, 1, w * 0.95), CFrame.new(x0, y, 0) * CFrame.Angles(0, 0, -lean), "IslandFrame")
-		y += segH
-	end
-	b:box("ShearRoof", Vector3.new(w * 0.95, 1.6, w * 0.95), CFrame.new(math.sin(math.pi) * sway, y, 0), "IslandFrame")
-	antenna(b, y + 1, rng:NextNumber(10, 18), neon)
-end
-
--- E: twin towers joined by glass sky tubes
-local function twinTower(b, w, h, rng, glass, neon)
-	local y = podium(b, w, glass, neon)
-	local tw = w * 0.42
-	local heights = {h - y, (h - y) * rng:NextNumber(0.7, 0.85)}
-	for i, side in ipairs({-1, 1}) do
-		local th = heights[i]
-		local x = side * w * 0.27
-		b:box("TwinBody", Vector3.new(tw, th, tw), CFrame.new(x, y + th / 2, 0), glass)
-		b:box("TwinFin", Vector3.new(1.2, th, tw + 2), CFrame.new(x + side * tw / 2, y + th / 2, 0), "IslandFrame")
-		b:box("TwinGlow", Vector3.new(0.8, th - 6, 0.8), CFrame.new(x - side * tw / 2, y + th / 2, -tw / 2), neon)
-		b:box("TwinTop", Vector3.new(tw + 1.4, 1.4, tw + 1.4), CFrame.new(x, y + th, 0), "IslandFrame")
-		if i == 1 then antenna(b, y + th, rng:NextNumber(10, 20), neon) end
-	end
-	for k = 1, 3 do
-		local by = y + heights[2] * (0.3 + 0.2 * k)
-		b:rod("SkyTube", w * 0.25, 5, CFrame.new(0, by, 0), "IslandGlass6")
-		b:rod("SkyTubeGlow", w * 0.25, 5.4, CFrame.new(0, by - 1.5, 0), neon, {Transparency = 0.6})
-	end
-end
-
--- F: megatower: twisting floors with neon ribs spiralling around the corners, two sky
--- gardens and a stepped crown with a halo and a spire
-local function megaTower(b, w, h, rng, glass, neon)
-	local y = podium(b, w, glass, neon)
-	local segH = 20
-	local n = math.floor((h - y - 40) / segH)
-	local twist = math.rad(rng:NextNumber(3.5, 5.5)) * (rng:NextNumber() < 0.5 and -1 or 1)
-	local prev
-	for i = 0, n - 1 do
-		local t = i / math.max(n - 1, 1)
-		local size = w * (1 - 0.25 * math.sin(t * math.pi * 0.85)) * (1 - 0.12 * t)
-		local turn = CFrame.Angles(0, i * twist, 0)
-		b:box("MegaFloor", Vector3.new(size, segH - 1, size), CFrame.new(0, y + segH / 2, 0) * turn, glass)
-		b:box("MegaPlate", Vector3.new(size + 1.6, 1, size + 1.6), CFrame.new(0, y, 0) * turn, "IslandFrame")
-		if i % 2 == 0 then
-			local corners = {}
-			for k = 0, 3 do
-				local a = math.rad(45 + k * 90)
-				corners[k + 1] = (CFrame.new(0, y, 0) * turn * CFrame.new(math.cos(a) * size * 0.72, 0, math.sin(a) * size * 0.72)).Position
-			end
-			if prev then
-				for k = 1, 4 do
-					local p0, p1 = prev[k], corners[k]
-					b:rod("MegaRib", (p1 - p0).Magnitude + 0.6, 1, Architecture.alongX((p0 + p1) / 2, p1 - p0), neon)
-				end
-			end
-			prev = corners
-		end
-		if i == math.floor(n / 3) or i == math.floor(n * 2 / 3) then
-			b:disc("SkyGarden", size * 1.45, 1.4, CFrame.new(0, y + 0.5, 0), "IslandFrame")
-			for k = 1, 6 do
-				local a = math.pi * 2 * k / 6
-				b:ball("GardenTree", 4, CFrame.new(math.cos(a) * size * 0.6, y + 3.4, math.sin(a) * size * 0.6), "IslandLeaf")
+		local s = w * (1 - (i - 1) * 0.2)
+		local th = remaining * (i == 1 and 0.5 or 0.5 / (tiers - 1))
+		local cy = y + th / 2
+		local r = math.max(2, s * 0.14)
+		b:box("Tier", Vector3.new(s - r * 2, th, s), CFrame.new(0, cy, 0), i % 2 == 1 and c.Body or c.Second)
+		b:box("TierSide", Vector3.new(s, th, s - r * 2), CFrame.new(0, cy, 0), i % 2 == 1 and c.Body or c.Second)
+		for _, sx in ipairs({-1, 1}) do
+			for _, sz in ipairs({-1, 1}) do
+				b:disc("CornerColumn", r * 2 + 0.4, th, CFrame.new(sx * (s / 2 - r), cy, sz * (s / 2 - r)), "IslandFrame")
 			end
 		end
-		y += segH
+		-- window walls, cut into floors by thin white lines
+		local panel = s - r * 2 - 2
+		for _, face in ipairs({0, 90, 180, 270}) do
+			local turn = CFrame.Angles(0, math.rad(face), 0)
+			b:box("WindowWall", Vector3.new(panel, th - 6, 0.6), CFrame.new(0, cy, 0) * turn * CFrame.new(0, 0, -s / 2), c.Window)
+		end
+		for fy = y + 9, y + th - 6, 9 do
+			b:box("FloorLine", Vector3.new(s - r * 2 - 1.4, 0.8, s + 0.9), CFrame.new(0, fy, 0), "IslandFrame")
+			b:box("FloorLine", Vector3.new(s + 0.9, 0.8, s - r * 2 - 1.4), CFrame.new(0, fy, 0), "IslandFrame")
+		end
+		b:box("TierCap", Vector3.new(s + 2.4, 2.2, s + 2.4), CFrame.new(0, y + th + 1.1, 0), "IslandFrame")
+		b:box("TierCapGlow", Vector3.new(s + 2.6, 0.5, s + 2.6), CFrame.new(0, y + th, 0), c.Neon)
+		y += th + 2.2
 	end
-	local _, crownH = b:tiers("MegaCrown", CFrame.new(0, y, 0) * CFrame.Angles(0, n * twist, 0), {
-		{w * 0.6, 4, "IslandFrame"}, {w * 0.46, 4, glass}, {w * 0.3, 8, glass .. "Core"},
-	})
-	b:ring("MegaHalo", CFrame.new(0, y + crownH + 5, 0) * CFrame.Angles(math.rad(90), 0, 0), w * 0.3, 1, neon, 24)
-	antenna(b, y + crownH, 30, neon)
+	local ball = w * 0.42
+	b:disc("BallNeck", ball * 0.5, 4, CFrame.new(0, y + 2, 0), c.Second)
+	b:ball("TopBall", ball, CFrame.new(0, y + 3 + ball / 2, 0), "IslandGlass6")
+	b:ball("TopBallCore", ball * 0.55, CFrame.new(0, y + 3 + ball / 2, 0), c.Neon)
+	b:disc("TopBallRing", ball * 1.35, 0.8, CFrame.new(0, y + 3 + ball / 2, 0) * CFrame.Angles(math.rad(18), 0, math.rad(12)), "IslandFrame")
+	local tip = y + 3 + ball + rng:NextNumber(6, 12)
+	b:pill("Antenna", Vector3.new(0, y + 3 + ball - 1, 0), Vector3.new(0, tip, 0), 0.8, "IslandFrame")
 end
 
-local STYLES = {setbackTower, twistTower, cylinderTower, shearTower, twinTower}
+-- E: two or three round towers of different heights, joined by glass sky tubes
+local function clusterTower(b, w, h, rng, c)
+	local y = podium(b, w, c)
+	local count = rng:NextInteger(2, 3)
+	local d = w * (count == 2 and 0.52 or 0.46)
+	local spots = count == 2 and {Vector3.new(-w * 0.24, 0, 0), Vector3.new(w * 0.24, 0, 0)}
+		or {Vector3.new(-w * 0.26, 0, w * 0.14), Vector3.new(w * 0.26, 0, w * 0.14), Vector3.new(0, 0, -w * 0.24)}
+	local tops = {}
+	for i, at in ipairs(spots) do
+		local top = y + (h - y - d * 0.5) * (i == 1 and 1 or rng:NextNumber(0.62, 0.86))
+		tops[i] = top
+		local sub = Architecture.builder(b.Parent, b.Base * CFrame.new(at))
+		roundBody(sub, d, y, top, i % 2 == 1 and c.Body or c.Second, c.Window)
+		sub:ellipsoid("Dome", Vector3.new(d, d * 0.7, d), CFrame.new(0, top + 0.6, 0), i % 2 == 1 and c.Second or c.Body)
+		sub:ball("DomeLight", 2.6, CFrame.new(0, top + d * 0.35 + 1, 0), c.Neon)
+	end
+	local lowest = math.min(table.unpack(tops))
+	for k = 1, 2 do
+		local ty = y + (lowest - y) * (0.35 + 0.35 * k)
+		for i = 2, count do
+			local from, to = spots[1] + Vector3.new(0, ty, 0), spots[i] + Vector3.new(0, ty, 0)
+			b:rod("SkyTube", (to - from).Magnitude, 5, Architecture.alongX((from + to) / 2, to - from), "IslandGlass6")
+			b:rod("SkyTubeFloor", (to - from).Magnitude, 2.2, Architecture.alongX((from + to) / 2 - Vector3.new(0, 1.4, 0), to - from), c.Neon)
+		end
+	end
+end
+
+-- F: megatower: a tall tapering spire of banded sections, two tilted orbit rings with little
+-- moons, a big saucer sky deck near the top and a long glowing needle
+local function megaTower(b, w, h, rng, c)
+	local start = podium(b, w, c)
+	local y = start
+	local deck = h * 0.78
+	local sections = 4
+	local d = w
+	for i = 1, sections do
+		local y1 = y + (deck - y) / sections
+		roundBody(b, d, y, y1, i % 2 == 1 and c.Body or c.Second, c.Window)
+		y = y1 + 1
+		d *= 0.86
+	end
+	-- the sky deck saucer with a glass observation ring
+	b:ellipsoid("DeckSaucer", Vector3.new(w * 1.9, 10, w * 1.9), CFrame.new(0, deck + 3, 0), "IslandFrame")
+	b:ellipsoid("DeckBelly", Vector3.new(w * 1.6, 8, w * 1.6), CFrame.new(0, deck, 0), c.Second)
+	b:disc("DeckGlass", w * 1.25, 6, CFrame.new(0, deck + 8, 0), "IslandGlass6")
+	b:disc("DeckRoof", w * 1.35, 1.6, CFrame.new(0, deck + 11.6, 0), "IslandFrame")
+	b:disc("DeckRim", w * 1.75, 0.8, CFrame.new(0, deck + 1.6, 0), c.Neon)
+	-- the upper spire and the needle
+	local spireTop = h - 30
+	roundBody(b, d * 0.8, deck + 12, spireTop, c.Body, c.Window)
+	b:ellipsoid("SpireCap", Vector3.new(d * 0.8, d * 0.7, d * 0.8), CFrame.new(0, spireTop + 0.5, 0), c.Second)
+	b:pill("Needle", Vector3.new(0, spireTop + d * 0.3, 0), Vector3.new(0, h + 20, 0), 1.6, "IslandFrame")
+	b:ball("NeedleBall", 6, CFrame.new(0, h + 22, 0), c.Neon)
+	b:disc("NeedleHalo", 14, 0.6, CFrame.new(0, h + 10, 0), c.Neon, {Transparency = 0.3, CanCollide = false})
+	-- two orbit rings, tilted, each with a moon
+	for k, tilt in ipairs({18, -24}) do
+		local ry = start + (deck - start) * (0.3 + 0.25 * k)
+		local ringCF = CFrame.new(0, ry, 0) * CFrame.Angles(math.rad(90 + tilt), math.rad(k * 50), 0)
+		local radius = w * (0.95 + 0.15 * k)
+		b:ring("OrbitRing", ringCF, radius, 1.6, k == 1 and c.Neon or "IslandFrame", 28)
+		b:ball("Moon", 6, ringCF * CFrame.new(radius * math.cos(k * 2), radius * math.sin(k * 2), 0), k == 1 and c.Second or c.Neon)
+	end
+end
+
+local STYLES = {bandTower, saucerTower, podTower, blockTower, clusterTower}
 
 ---------------------------------------------------------------------
 -- PLACE THE TOWERS
@@ -396,6 +477,16 @@ function MainIsland.build(parent)
 	end
 	-- bring the ground surface down to y = 0, where the roads and decorations sit
 	GameConfig.FlattenGround(terrain, Vector3.zero, ISLAND_RADIUS * 2 + 8)
+	-- roads and walkways become thick slabs set into a dug-out bed, so the slightly bumpy
+	-- terrain can't poke up through them
+	local SLAB = {Boulevard = true, SidewalkIn = true, SidewalkOut = true, Avenue = true, MuseumWalk = true}
+	for _, part in ipairs(ground:GetChildren()) do
+		if SLAB[part.Name] then
+			local pos = part.Position
+			terrain:FillBlock(CFrame.new(pos.X, -2, pos.Z) * part.CFrame.Rotation, Vector3.new(part.Size.X, 4, part.Size.Z), Enum.Material.Air)
+			part.Size = Vector3.new(part.Size.X, 2.6, part.Size.Z)
+		end
+	end
 	-- sink the roads, sidewalks and walkways so their tops sit just above the ground (y = 0): you
 	-- walk straight onto them instead of bumping into a ledge
 	local FLUSH_TOP = {Boulevard = 0.2, SidewalkIn = 0.25, SidewalkOut = 0.25, Avenue = 0.2, MuseumWalk = 0.25, Lookout = 0.25,
@@ -424,12 +515,16 @@ function MainIsland.build(parent)
 		model.Name = t.Mega and "MegaTower" or "Skyscraper"
 		local towerRng = Random.new(i * 7919)
 		local b = Architecture.builder(model, facingCenter(t.Angle, t.Radius))
-		local glass = pick(towerRng, glassNames)
-		local neon = pick(towerRng, neonNames)
+		local body = towerRng:NextInteger(1, #bodyNames)
+		local second = (body + towerRng:NextInteger(1, #bodyNames - 1) - 1) % #bodyNames + 1
+		local colors = {
+			Body = bodyNames[body], Second = bodyNames[second],
+			Window = "TowerWindow" .. towerRng:NextInteger(1, 3), Neon = pick(towerRng, neonNames),
+		}
 		if t.Mega then
-			megaTower(b, t.Width, t.Height, towerRng, glass, neon)
+			megaTower(b, t.Width, t.Height, towerRng, colors)
 		else
-			STYLES[towerRng:NextInteger(1, #STYLES)](b, t.Width, t.Height, towerRng, glass, neon)
+			STYLES[towerRng:NextInteger(1, #STYLES)](b, t.Width, t.Height, towerRng, colors)
 		end
 		model.Parent = towers
 	end
