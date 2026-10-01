@@ -1,7 +1,7 @@
 -- HUD (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- The always-on screen, in a big chunky style:
 --   * TOP: three wide studded buttons (Shop, Museum, Worlds) with the world you're in under them
---   * LEFT: the Bag as a square item tile and Rebirth as a big 3D icon, with red alert badges
+--   * LEFT: the Bag as a square item tile and Rebirth as a big icon (red badge when a rebirth is ready)
 --   * TOP RIGHT CORNER: a small round Settings button (music and sound live in Settings)
 --   * BOTTOM LEFT: big gem and money numbers (money in full: 15,760,347,332$), income under them
 --   * BOTTOM CENTER: a hotbar of square slots (name on top, key number in the corner, 3D icon)
@@ -82,7 +82,7 @@ local worldText = UIKit.label(topBar, "", {Size = UDim2.new(1, 40, 0, 28), Posit
 	Color = C.White, Stroke = 3, MaxText = 26})
 
 ---------------------------------------------------------------------
--- LEFT: the Bag as a square item tile (backpack, name across it, key square, count badge)
+-- LEFT: the Bag as a square item tile (backpack, name across it, key square)
 -- and Rebirth as a big 3D icon with a pink label under it
 ---------------------------------------------------------------------
 local function bounce(b)
@@ -114,7 +114,6 @@ local bagKey = UIKit.panel(bagButton, {Size = UDim2.fromOffset(24, 24), Position
 	Color = rgb(30, 70, 120), Radius = 5, Stroke = 2, StrokeColor = C.White, Shade = false})
 bagKey.ZIndex = 4
 UIKit.label(bagKey, "B", {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, MaxText = 16}).ZIndex = 5
-local bagAlert = alertBadge(bagButton, 34, UDim2.new(1, -2, 0, 2))
 bagButton.MouseButton1Click:Connect(function() UIBus.Fire("Inventory") end)
 
 local rebirthButton = Instance.new("TextButton")
@@ -184,8 +183,8 @@ local function counter(y, height, iconSize, icon, color, maxText)
 		Align = "Left", Color = color, Stroke = 4.5, MaxText = maxText})
 	return row, text
 end
-local _, gemText = counter(0, 50, 56, "Gem", rgb(230, 60, 255), 46)
-local moneyRow, moneyText = counter(54, 66, 78, "Cash", rgb(60, 255, 50), 58)
+local _, gemText = counter(0, 50, 66, "Gem", rgb(230, 60, 255), 46)
+local moneyRow, moneyText = counter(54, 66, 86, "Cash", rgb(60, 255, 50), 58)
 local _, incomeText = counter(124, 32, 0, nil, rgb(255, 224, 90), 28)
 
 -- 15760347332 -> "15,760,347,332"
@@ -254,24 +253,14 @@ for _, attribute in ipairs({"Money", "Rebirths", "OwnedShovels", "CurrentWorld"}
 end
 refreshAlerts()
 
--- the bag shows how many memes are waiting in it (not on display yet), and bounces when one arrives
+-- the bag bounces when a meme arrives in it
 task.spawn(function()
 	local changed = remotes:WaitForChild("InventoryChanged", 30)
-	local getInventory = remotes:WaitForChild("GetInventory", 30)
-	local function refreshBag()
-		local ok, list = pcall(function() return getInventory:InvokeServer() end)
-		if not ok or type(list) ~= "table" then return end
-		local count = 0
-		for _, item in ipairs(list) do count += item.Count or 1 end
-		bagAlert(count > 0 and (count > 99 and "99+" or tostring(count)) or nil)
-	end
 	if changed then
 		changed.OnClientEvent:Connect(function()
 			UIKit.pop(bagButton, 1.3)
-			refreshBag()
 		end)
 	end
-	if getInventory then refreshBag() end
 end)
 
 ---------------------------------------------------------------------

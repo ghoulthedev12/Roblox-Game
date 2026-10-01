@@ -71,7 +71,7 @@ def setup_render():
     while fs.linesets:
         fs.linesets.remove(fs.linesets[0])
     # thick outline around the main shapes, a thin one around small details (straps, buckles)
-    for name, thickness in (("Main", 17), ("Detail", 6)):
+    for name, thickness in (("Main", 17), ("Mid", 10), ("Detail", 6)):
         collection = bpy.data.collections.get(name) or bpy.data.collections.new(name)
         if collection.name not in bpy.context.scene.collection.children:
             bpy.context.scene.collection.children.link(collection)
@@ -162,14 +162,15 @@ def finish(o, mat, bevel=0.08, segments=4, smooth=True):
     return o
 
 
-DETAIL = ("Strap", "Buckle", "Tie", "BedrollEnd", "PocketFlap", "Hole")
+MID = ("Bill",)
+DETAIL = ("Strap", "Buckle", "Tie", "BedrollEnd", "BedrollStripe", "PocketFlap", "Hole", "Print", "Band")
 
 
 def link(o):
     """Puts an object in the Main or Detail collection (which sets its outline weight)."""
     for c in list(o.users_collection):
         c.objects.unlink(o)
-    name = "Detail" if o.name.startswith(DETAIL) else "Main"
+    name = "Detail" if o.name.startswith(DETAIL) else ("Mid" if o.name.startswith(MID) else "Main")
     bpy.data.collections[name].objects.link(o)
     return o
 
@@ -254,31 +255,83 @@ def build_rebirth():
 
 
 def build_bag():
-    leather = material("Leather", rgb(168, 98, 44), rough=0.42, coat=0.35)
-    dark = material("LeatherDark", rgb(118, 64, 28), rough=0.45, coat=0.3)
-    light = material("LeatherLight", rgb(196, 124, 62), rough=0.42, coat=0.35)
-    strap = material("Strap", rgb(92, 50, 24), rough=0.5, coat=0.2)
-    gold = material("Buckle", rgb(250, 200, 70), rough=0.18, coat=0.6, metal=0.7)
-    blue = material("Bedroll", rgb(58, 132, 226), rough=0.35, coat=0.5)
-    blueLight = material("BedrollEnd", rgb(150, 205, 255), rough=0.35, coat=0.5)
-    # body, flap, pockets
-    rounded_box("Body", (2.3, 1.3, 2.5), leather, loc=(0, 0, -0.15), bevel=0.42)
-    rounded_box("Flap", (2.36, 1.42, 0.9), dark, loc=(0, -0.02, 0.95), bevel=0.36)
-    rounded_box("Pocket", (1.62, 0.5, 1.15), light, loc=(0, -0.72, -0.62), bevel=0.24)
-    rounded_box("PocketFlap", (1.72, 0.56, 0.42), dark, loc=(0, -0.78, -0.08), bevel=0.18)
-    for x in (-1.24, 1.24):
-        rounded_box("SidePocket", (0.38, 0.9, 1.15), light, loc=(x, 0, -0.62), bevel=0.16)
-    # straps with gold buckles down the front
-    for x in (-0.52, 0.52):
-        rounded_box("Strap", (0.3, 0.12, 1.3), strap, loc=(x, -0.98, -0.2), bevel=0.05)
-        rounded_box("Buckle", (0.46, 0.16, 0.36), gold, loc=(x, -1.06, -0.55), bevel=0.07)
-    # a rolled blue blanket on top, tied with two straps
-    cylinder("Bedroll", 0.48, 2.7, blue, loc=(0, 0.05, 1.68), rot=(0, R(90), 0), bevel=0.14)
-    for x in (-1.36, 1.36):
-        cylinder("BedrollEnd", 0.42, 0.04, blueLight, loc=(x, 0.05, 1.68), rot=(0, R(90), 0), bevel=0.0)
-    for x in (-0.7, 0.7):
-        torus("Tie", 0.5, 0.07, strap, loc=(x, 0.05, 1.68), rot=(0, R(90), 0))
-    return 4.35, (14, -24), 0.42
+    leather = material("Leather", rgb(190, 110, 48), rough=0.38, coat=0.45)
+    dark = material("LeatherDark", rgb(136, 72, 32), rough=0.4, coat=0.4)
+    light = material("LeatherLight", rgb(214, 138, 70), rough=0.38, coat=0.45)
+    strap = material("Strap", rgb(96, 50, 22), rough=0.5, coat=0.2)
+    gold = material("Buckle", rgb(255, 204, 64), rough=0.15, coat=0.7, metal=0.75)
+    blue = material("Bedroll", rgb(64, 138, 232), rough=0.32, coat=0.6)
+    blueEnd = material("BedrollEnd", rgb(150, 206, 255), rough=0.32, coat=0.6)
+    blueDark = material("BedrollSpiral", rgb(36, 92, 180), rough=0.35, coat=0.5)
+    cream = material("BedrollStripe", rgb(246, 238, 214), rough=0.35, coat=0.5)
+    # a round, puffy body with a big flap over the top
+    rounded_box("Body", (2.4, 1.4, 2.6), leather, loc=(0, 0, -0.2), bevel=0.62)
+    rounded_box("Flap", (2.5, 1.54, 1.0), dark, loc=(0, -0.02, 0.98), bevel=0.46)
+    # the flap's tongue hangs down the front and closes with a gold buckle
+    rounded_box("StrapTongue", (0.62, 0.22, 0.9), dark, loc=(0, -0.76, 0.48), bevel=0.2)
+    rounded_box("Buckle", (0.62, 0.18, 0.4), gold, loc=(0, -0.88, 0.1), bevel=0.09)
+    # a big front pocket with its own seam, and two side pockets
+    rounded_box("Pocket", (1.86, 0.62, 1.24), light, loc=(0, -0.7, -0.66), bevel=0.32)
+    rounded_box("PocketFlap", (1.92, 0.68, 0.34), dark, loc=(0, -0.72, -0.12), bevel=0.15)
+    for x in (-1.3, 1.3):
+        rounded_box("SidePocket", (0.44, 1.02, 1.32), light, loc=(x, 0, -0.62), bevel=0.2)
+    # a carry handle behind the blanket roll
+    torus("StrapHandle", 0.42, 0.1, strap, loc=(0, 0.42, 1.62), rot=(R(90), 0, 0))
+    # a rolled blue blanket on top: cream stripes, tied with two straps, a spiral on each end
+    cylinder("Bedroll", 0.52, 2.8, blue, loc=(0, 0.02, 1.76), rot=(0, R(90), 0), bevel=0.16)
+    for x in (-0.98, 0.98):
+        cylinder("BedrollStripe", 0.525, 0.2, cream, loc=(x, 0.02, 1.76), rot=(0, R(90), 0), bevel=0.0)
+    for x in (-1.41, 1.41):
+        cylinder("BedrollEnd", 0.44, 0.04, blueEnd, loc=(x, 0.02, 1.76), rot=(0, R(90), 0), bevel=0.0)
+        cylinder("BedrollEnd", 0.22, 0.06, blueDark, loc=(x * 1.004, 0.02, 1.76), rot=(0, R(90), 0), bevel=0.0)
+    for x in (-0.48, 0.48):
+        torus("Tie", 0.54, 0.075, strap, loc=(x, 0.02, 1.76), rot=(0, R(90), 0))
+    return 4.4, (12, -22), 0.4
+
+
+def build_gem():
+    """A tall faceted purple crystal: a six-sided body with a pointed top and bottom."""
+    purple = material("GemPurple", rgb(156, 44, 246), rough=0.05, coat=1.0)
+    sides, radius, half, top, bottom = 6, 0.95, 0.55, 1.75, -1.75
+    bm = bmesh.new()
+    upper = [bm.verts.new((math.cos(R(60 * i + 30)) * radius, math.sin(R(60 * i + 30)) * radius, half)) for i in range(sides)]
+    lower = [bm.verts.new((math.cos(R(60 * i + 30)) * radius, math.sin(R(60 * i + 30)) * radius, -half)) for i in range(sides)]
+    tip_top = bm.verts.new((0, 0, top))
+    tip_bottom = bm.verts.new((0, 0, bottom))
+    for i in range(sides):
+        j = (i + 1) % sides
+        bm.faces.new((lower[i], lower[j], upper[j], upper[i]))
+        bm.faces.new((upper[i], upper[j], tip_top))
+        bm.faces.new((lower[j], lower[i], tip_bottom))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    me = bpy.data.meshes.new("Gem")
+    bm.to_mesh(me)
+    bm.free()
+    o = bpy.data.objects.new("Gem", me)
+    bpy.context.scene.collection.objects.link(o)
+    link(o)
+    o.rotation_euler = (R(-8), R(-28), R(12))
+    finish(o, purple, bevel=0.035, segments=2, smooth=False)
+    return 4.3, (12, -18), 0.0
+
+
+def build_cash():
+    """A stack of green bills held together by a yellow paper band."""
+    green = material("Bill", rgb(64, 168, 74), rough=0.45, coat=0.35)
+    greenEdge = material("BillLight", rgb(96, 190, 92), rough=0.45, coat=0.35)
+    ink = material("PrintInk", rgb(38, 128, 58), rough=0.5, coat=0.2)
+    seal = material("PrintSeal", rgb(176, 232, 160), rough=0.45, coat=0.3)
+    band = material("Band", rgb(255, 210, 60), rough=0.3, coat=0.6)
+    for k, (dx, turn) in enumerate(((0.06, -3), (-0.05, 2), (0.04, -1), (0, 0))):
+        rounded_box("Bill", (3.0, 1.5, 0.2), green if k % 2 else greenEdge, loc=(dx, 0, -0.45 + k * 0.22),
+                    rot=(0, 0, R(turn)), bevel=0.06)
+    top = -0.45 + 3 * 0.22 + 0.105
+    rounded_box("PrintFrame", (2.5, 1.04, 0.03), ink, loc=(0, 0, top), bevel=0.01)
+    rounded_box("PrintFace", (2.34, 0.88, 0.04), green, loc=(0, 0, top + 0.01), bevel=0.01)
+    cylinder("PrintSeal", 0.36, 0.06, seal, loc=(0, 0, top + 0.03), bevel=0.0)
+    cylinder("PrintSeal", 0.22, 0.08, ink, loc=(0, 0, top + 0.04), bevel=0.0)
+    rounded_box("Band", (0.62, 1.62, 1.02), band, loc=(0, 0, -0.12), bevel=0.08)
+    return 4.4, (42, -22), -0.05
 
 
 def build_settings():
@@ -301,7 +354,7 @@ def build_settings():
     return 4.5, (12, -14)
 
 
-ICONS = {"Rebirth": build_rebirth, "Bag": build_bag, "Settings": build_settings}
+ICONS = {"Rebirth": build_rebirth, "Bag": build_bag, "Settings": build_settings, "Gem": build_gem, "Cash": build_cash}
 
 
 def render(name):
