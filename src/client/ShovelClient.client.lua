@@ -334,9 +334,11 @@ local swingFxRemote = remotes:WaitForChild("ShovelSwingFx")
 -- Turn  = yaw (+ = to the left), Roll = sideways lean of the pickaxe (+ = head leans left)
 -- Lean  = torso pitch (+ = bend forward), Twist = torso yaw (+ = turn left)
 -- Bend  = torso side bend (+ = lean left), Look = head pitch (+ = look down)
-local CHANNELS = {"Tilt", "Turn", "Roll", "Lean", "Twist", "Bend", "Look"}
+-- Crouch = knee bend, degrees (the body drops, the feet stay planted)
+-- Hip   = pelvis pitch (+ = the whole upper body tips forward from the hips)
+local CHANNELS = {"Tilt", "Turn", "Roll", "Lean", "Twist", "Bend", "Look", "Crouch", "Hip"}
 -- ready stance: pickaxe held low and across the body, head out to the side (clear of the face)
-local IDLE = {Hand = Vector3.new(0.35, -0.15, -0.8), Tilt = 105, Turn = 30, Roll = 15, Lean = 3, Twist = 0, Bend = 0, Look = 2}
+local IDLE = {Hand = Vector3.new(0.35, -0.15, -0.8), Tilt = 105, Turn = 30, Roll = 15, Lean = 3, Twist = 0, Bend = 0, Look = 2, Crouch = 6, Hip = 2}
 
 -- easing curves: how each part of the swing speeds up and slows down
 local function easeInOutSine(u) return -(math.cos(math.pi * u) - 1) / 2 end
@@ -355,13 +357,13 @@ local function easeInOutCubic(u) return u < 0.5 and 4 * u * u * u or 1 - (-2 * u
 local SWING = {
 	{T = 0.00, Pose = IDLE},
 	-- wind-up: the pickaxe comes up beside the right shoulder
-	{T = 0.12, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.6, 0.55, -0.5), Tilt = 150, Turn = 0, Roll = -20, Lean = -2, Twist = -16, Bend = -2, Look = -4}},
+	{T = 0.12, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.6, 0.55, -0.5), Tilt = 150, Turn = 0, Roll = -20, Lean = -4, Twist = -16, Bend = -2, Look = -4, Crouch = 12, Hip = -2}},
 	-- stab: driven down hard into the ground in front of the feet
-	{T = 0.26, Ease = easeInQuad, Pose = {Hand = Vector3.new(0.15, -0.55, -1.25), Tilt = 40, Turn = 4, Roll = 0, Lean = 30, Twist = -6, Bend = 4, Look = 24}},
+	{T = 0.26, Ease = easeInQuad, Pose = {Hand = Vector3.new(0.15, -1.0, -1.7), Tilt = 40, Turn = 4, Roll = 0, Lean = 28, Twist = -6, Bend = 4, Look = 22, Crouch = 38, Hip = 26}},
 	-- pry: leans back on the handle, levering the dirt loose
-	{T = 0.40, Ease = easeOutCubic, Pose = {Hand = Vector3.new(0.3, -0.25, -0.75), Tilt = 62, Turn = 8, Roll = 6, Lean = 24, Twist = -10, Bend = 3, Look = 18}},
+	{T = 0.40, Ease = easeOutCubic, Pose = {Hand = Vector3.new(0.3, -0.6, -1.2), Tilt = 62, Turn = 8, Roll = 6, Lean = 22, Twist = -10, Bend = 3, Look = 16, Crouch = 34, Hip = 20}},
 	-- fling: heaved up over the right shoulder, throwing the dirt up and behind
-	{T = 0.62, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.95, 1.4, 0.05), Tilt = 215, Turn = -14, Roll = -32, Lean = -8, Twist = -46, Bend = -6, Look = -12}},
+	{T = 0.62, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.95, 1.4, 0.05), Tilt = 215, Turn = -14, Roll = -32, Lean = -10, Twist = -46, Bend = -6, Look = -12, Crouch = 4, Hip = -6}},
 	-- settle back into the ready stance
 	{T = 1.00, Ease = easeInOutCubic, Pose = IDLE},
 }
@@ -390,7 +392,7 @@ local function samplePose(t, keys)
 	u = k2.Ease and k2.Ease(u) or u
 	local pose = {Hand = catmull(k0.Pose.Hand, k1.Pose.Hand, k2.Pose.Hand, k3.Pose.Hand, u)}
 	for _, c in ipairs(CHANNELS) do
-		pose[c] = catmull(k0.Pose[c], k1.Pose[c], k2.Pose[c], k3.Pose[c], u)
+		pose[c] = catmull(k0.Pose[c] or 0, k1.Pose[c] or 0, k2.Pose[c] or 0, k3.Pose[c] or 0, u)
 	end
 	return pose
 end
@@ -405,6 +407,7 @@ local function idlePose(clock, moving)
 		Tilt = IDLE.Tilt + breathe * 2 + step * 4, Turn = IDLE.Turn + sway * 2,
 		Roll = IDLE.Roll + sway * 3, Lean = IDLE.Lean + breathe * 0.6 + moving * 5,
 		Twist = IDLE.Twist + sway * 2, Bend = sway * 1.5 + step * 1.2, Look = -breathe * 2,
+		Crouch = IDLE.Crouch * (1 - moving) + breathe, Hip = IDLE.Hip,
 	}
 end
 
@@ -416,7 +419,7 @@ local EQUIP = {
 	{T = 0.14, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.5, -0.3, -0.5), Tilt = 60, Turn = 10, Roll = 0, Lean = 4, Twist = 4, Bend = 0, Look = 0}},
 	{T = 0.22, Ease = easeOutCubic, Pose = {Hand = Vector3.new(0.9, 1.0, -0.8), Tilt = 160, Turn = 0, Roll = -20, Lean = -4, Twist = -6, Bend = 0, Look = -20}},
 	{T = 0.50, Ease = easeOutSine, Pose = {Hand = Vector3.new(1.0, 1.45, -0.7), Tilt = 180, Turn = 0, Roll = -20, Lean = -6, Twist = -10, Bend = -2, Look = -25}},
-	{T = 0.64, Ease = easeInQuad, Pose = {Hand = Vector3.new(0.25, -0.05, -1.0), Tilt = 95, Turn = 20, Roll = 10, Lean = 10, Twist = -12, Bend = 2, Look = 8}},
+	{T = 0.64, Ease = easeInQuad, Pose = {Hand = Vector3.new(0.25, -0.05, -1.0), Tilt = 95, Turn = 20, Roll = 10, Lean = 10, Twist = -12, Bend = 2, Look = 8, Crouch = 22, Hip = 8}},
 	{T = 1.00, Ease = easeOutBack, Pose = IDLE},
 }
 local TOSS_FROM, TOSS_TO, TOSS_HEIGHT, TOSS_SPINS = 0.22, 0.5, 3.4, 2
@@ -459,6 +462,9 @@ local function destroyRig(character)
 	if rig.Waist and rig.Waist.Parent then rig.Waist.C0 = rig.WaistC0 end
 	if rig.Neck and rig.Neck.Parent then rig.Neck.C0 = rig.NeckC0 end
 	if rig.Hips and rig.Hips.Parent then rig.Hips.C0 = rig.HipsC0 end
+	for _, leg in ipairs(rig.Legs) do
+		if leg.Motor.Parent then leg.Motor.C0 = leg.C0 end
+	end
 	if rig.Tool then
 		for _, d in ipairs(rig.Tool:GetDescendants()) do
 			if d:IsA("BasePart") then d.LocalTransparencyModifier = 0 end
@@ -579,6 +585,21 @@ local function createRig(character, tool)
 		trail.Parent = bladePart
 	end
 
+	-- leg joints for the crouch: hip, knee and ankle on each side
+	local legs = {}
+	local legLength = 0
+	for _, side in ipairs({"Left", "Right"}) do
+		local upper, lower, foot = character:FindFirstChild(side .. "UpperLeg"), character:FindFirstChild(side .. "LowerLeg"), character:FindFirstChild(side .. "Foot")
+		for _, joint in ipairs({{upper, "Hip"}, {lower, "Knee"}, {foot, "Ankle"}}) do
+			local motor = joint[1] and joint[1]:FindFirstChild(side .. joint[2])
+			if motor and motor:IsA("Motor6D") then
+				table.insert(legs, {Motor = motor, C0 = motor.C0, Kind = joint[2]})
+			end
+		end
+		if side == "Left" and upper and lower then legLength = upper.Size.Y + lower.Size.Y end
+	end
+	if legLength == 0 then legLength = 2.2 end
+
 	local waist = upperTorso:FindFirstChild("Waist")
 	local head = character:FindFirstChild("Head")
 	local neck = head and head:FindFirstChild("Neck")
@@ -597,6 +618,7 @@ local function createRig(character, tool)
 		NeckC0 = neck and neck:IsA("Motor6D") and neck.C0 or nil,
 		Hips = hips and hips:IsA("Motor6D") and hips or nil,
 		HipsC0 = hips and hips:IsA("Motor6D") and hips.C0 or nil,
+		Legs = legs, LegLength = legLength,
 		Humanoid = humanoid, Trail = trail, ImpactAt = nil, Smooth = nil,
 		SwingStart = nil, SwingLength = 0.4, Struck = true, Flung = true,
 		EquipStart = os.clock(), Caught = false, Landed = false,
@@ -964,8 +986,17 @@ local function poseRig(character, rig, clock, dt)
 	if rig.Waist then
 		rig.Waist.C0 = rig.WaistC0 * CFrame.Angles(math.rad(-pose.Lean), math.rad(pose.Twist), math.rad(pose.Bend))
 	end
+	-- legs: the knees bend and the body drops (feet stay planted), and the pelvis tips the
+	-- whole upper body forward from the hips while the thighs stay put
+	local crouch = math.rad(math.max(pose.Crouch or 0, 0))
+	local hip = math.rad(pose.Hip or 0)
+	local drop = rig.LegLength * 0.5 * (1 - math.cos(crouch)) * 2
 	if rig.Hips then
-		rig.Hips.C0 = rig.HipsC0 * CFrame.Angles(0, math.rad(-pose.Twist * 0.35), 0)
+		rig.Hips.C0 = CFrame.new(0, -drop, 0) * rig.HipsC0 * CFrame.Angles(-hip, math.rad(-pose.Twist * 0.35), 0)
+	end
+	for _, leg in ipairs(rig.Legs) do
+		local angle = leg.Kind == "Hip" and crouch + hip or leg.Kind == "Knee" and -2 * crouch or crouch
+		leg.Motor.C0 = leg.C0 * CFrame.Angles(angle, 0, 0)
 	end
 	if rig.Neck then
 		rig.Neck.C0 = rig.NeckC0 * CFrame.Angles(math.rad(-pose.Look), math.rad(-pose.Twist * 0.4), 0)
