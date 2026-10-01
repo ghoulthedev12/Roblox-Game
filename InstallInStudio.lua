@@ -71,12 +71,14 @@ local function collectMeshes(folderName, ids, hint)
 end
 collectMeshes("MemeMeshes", {"DaWaeEchidna", "SeaShantyMug", "AisleYodelSet", "ConvinceMeTable", "ShockedRodent", "IsThisABird", "ChonkyBunny", "SpicyLasagna", "SpikedShellCrown", "GrapeSurgery", "BadBoyHatchback", "TempleTap", "SteamedClams", "MegaSealTape", "PurpleTitanBuggy", "OrcaRebellionBoat", "NeverMissDartboard", "CrimeTownBoss", "BoneComedian", "SugarSneakJohnny", "FrostFlask", "BreathtakingCyberGuy", "EnslavedMoisture", "StonksHead", "AhShucks", "UncannyHedgehog", "SpaceInfant", "MeAndTheCrew", "CyberWedgeTruck", "YelledAtCat", "RaidAlien", "AngelWingDancer", "KombuchaDisgust", "DoubleTakeBlink", "TallPinkPiglet", "SpongeLeaving", "CappuccinoBallerina", "FrozenCoffinDance", "HundredMenGorilla", "GothDanceHands", "NatureHealingSwan", "OnceAgainLectern", "LockdownSourdough", "HeadBobCat", "PallbearerCoin", "TumbleJellyBean", "SwoleVsSmol", "PointingLaughChair", "PolkaSpinCow", "SusBean", "PartyCornerGuy", "BeepBopMicKid", "TradeOfferScroll", "BigMittensChair", "ThinkSonThink", "SneakerShark", "JawlineChad", "BingChillingCone", "SigmaGrindset", "EmotionalDamage", "YesNoLabDog", "AssistantSam", "LampOilMerchant", "MaulingTimeVampire", "GentlePillSquad", "WiseMysticalTree", "ItsCornCob", "UncannySuperDad", "GirlDinnerPlate", "PhonkEyebrowSpeaker", "RizzFaceMask", "ClangingPipe", "BetterCallPaul", "KingPrawnCrooner", "OhioFinalBoss", "OhYeahVillain", "LogBatGuy", "ShailushaiCat", "BirthdayShake", "WhistleEdit", "PeachesTurtleKing", "KindergartenMascot", "CursedCartoonTape", "AwkwardSmileGuy", "LaughCryCarSeat", "CanonEventWeb", "PinkbombFeature", "BoulderEyebrow", "PointingSuits", "MewingHush", "EnglishSpanishChair", "AHyuckDog", "NoScopeOlympian", "PommelHorseLegend", "BratGreenSlab", "PedroRaccoon", "CrocBomber", "ChillDude", "BabyHippo", "DubaiChocolate", "LowTaperFade", "ShushUpTablet", "BigGamerChair", "SixSevenHands", "TakeEggCushion", "IbizaBossDancer", "BoutiqueRock", "LittleFrenchFish", "VeryDemureTeacup", "JohnPorkPhone", "BeforeGTA6Hourglass", "StandingOnBusiness", "AuraBoatBow", "PaperclipHelper", "ZombieChickenRider", "JetTooHoliday", "PressureDiverHelmet", "AbyssalAngler", "GlitchWhale", "AtlantisJawlineChad", "SpookySkeleton", "PumpkinDancer", "GhostlySwampFrog", "BonkShiba", "SadViolinHamster", "ConfusedMathCat", "JellyTimeBanana", "RainbowPastryCat", "WowShiba", "ProblemGrinCoin", "MeLikeyTablet", "RageScreamTablet", "ForeverAlone", "BadLuckBryan", "FrowningCat", "PunchMonkey", "PhantomChonkyBunny", "CemeterySpecter", "UndeadSanic", "GraveyardOssuary", "CyberWowShiba", "GlitchSwampFrog", "QuantumShockedRodent", "VoidStonks", "MultiverseSpaceInfant", "BulletDodgeGuy", "NeonSusBean", "HoloJawlineChad", "CosmicShake", "SpacePolkaCow", "InterdimensionalChillDude", "CyberSingingThrone", "UniversalSanic", "ExponentialOgre", "MiraculousGnome", "ApexWowShiba", "GoldenSwampFrog", "ToorngEntity", "HighRollerBrainrot", "ImmeasupremeOverlord", "QuantumDatFrog", "SubatomicSwampFrog", "ParticleWowShiba", "AntimatterEchidna", "StringTheoryBunny", "WarpSpeedStonks", "ParallelJawlineChad", "RealityWarpedSponge", "TimeFoldPanels", "DarkMatterHippo", "RomanEmpireBust", "HypercubeChillDude", "ZeroPointThrone", "TesseractShake", "SingularityGrinCoin", "EventHorizonShiba", "NeverGonnaStair", "QuantumBrainrotGod", "MemeMatrix", "OriginalShiba"}, "No meme meshes yet: File > Import 3D > assets/models/MemeMeshes.fbx, then run this installer again")
 collectMeshes("PortalModels", {"GatePortalFrame", "GatePortalGlow", "GateHorizon", "GateVortexA", "GateVortexB", "AlienPortalRim", "AlienPortalFunnel", "AlienPortalSwirl"}, "No portal meshes yet: File > Import 3D > assets/models/PortalMeshes.fbx, then run this installer again")
+collectMeshes("UIIcons", {"Shop", "Bag", "Museum", "Rebirth", "World", "Settings", "Gem", "Cash", "Income", "SoundOn", "SoundOff", "Music", "Bell", "Lock", "Luck", "Pickaxe", "Star", "Sparkle", "Heart", "Pin", "Alien", "Fire", "Skull", "Disk", "Volcano", "Candy", "Ghost", "Bubble", "Ice", "Snowflake", "Coin", "Warning", "Boom", "Party", "Picture", "Hole", "Elevator", "Crown", "FaceHappy", "FaceLaugh", "FaceLove", "FaceWow", "FaceCool", "FaceMeh", "FaceSick"}, "No 3D UI icons yet: File > Import 3D > assets/models/UIIcons.fbx, then run this installer again")
 do local old = game:GetService("ServerScriptService"):FindFirstChild("DataManager") if old then old:Destroy() print("Removed DataManager") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
 do local old = game:GetService("ReplicatedStorage"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("MuseumStyle") if old then old:Destroy() print("Removed MuseumStyle") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("TutorialSign") if old then old:Destroy() print("Removed TutorialSign") end end
 do local old = game:GetService("ReplicatedStorage"):FindFirstChild("ArtifactsWorlds") if old then old:Destroy() print("Removed ArtifactsWorlds") end end
+do local old = game:GetService("ReplicatedStorage"):FindFirstChild("ArtifactIcons") if old then old:Destroy() print("Removed ArtifactIcons") end end
 install(game:GetService("ReplicatedStorage"), "ArtifactData", "ModuleScript", [=[
 -- ArtifactData (ModuleScript in ReplicatedStorage)
 -- The ONE place the whole game reads memes and rarities from.
@@ -321,37 +323,11 @@ end
 
 return ArtifactData
 ]=])
-install(game:GetService("ReplicatedStorage"), "ArtifactIcons", "ModuleScript", [=[
--- ArtifactIcons (ModuleScript in ReplicatedStorage)
--- One emoji per meme, used where a small flat icon is needed (the 3D model is used everywhere else).
--- (Only emoji from Unicode 11 or older are used, so they show up on every device.)
-
-return {
-	-- World 1: Grassland Dig Pit
-	DaWaeEchidna = "🔴", SeaShantyMug = "🍺", AisleYodelSet = "🤠", ConvinceMeTable = "💺", ShockedRodent = "😮", IsThisABird = "🦋", ChonkyBunny = "🐰", SpicyLasagna = "🍝", SpikedShellCrown = "👑", GrapeSurgery = "🍇", BadBoyHatchback = "🚙", TempleTap = "🤔", SteamedClams = "🍔", MegaSealTape = "🚣", PurpleTitanBuggy = "🚗", OrcaRebellionBoat = "🐋", NeverMissDartboard = "🎯", CrimeTownBoss = "🤵", BoneComedian = "💀", SugarSneakJohnny = "🍬",
-	-- World 2: Frozen Ice Age
-	FrostFlask = "🧴", BreathtakingCyberGuy = "🤖", EnslavedMoisture = "❄️", StonksHead = "📈", AhShucks = "🚲", UncannyHedgehog = "🦔", SpaceInfant = "👶", MeAndTheCrew = "👬", CyberWedgeTruck = "🚚", YelledAtCat = "🐱", RaidAlien = "🛸", AngelWingDancer = "🕺", KombuchaDisgust = "🍾", DoubleTakeBlink = "😳", TallPinkPiglet = "🐷", SpongeLeaving = "🧽", CappuccinoBallerina = "☕", FrozenCoffinDance = "⚰️", HundredMenGorilla = "🦍", GothDanceHands = "🖤",
-	-- World 3: Volcanic Lava Trench
-	NatureHealingSwan = "🦢", OnceAgainLectern = "📋", LockdownSourdough = "🍞", HeadBobCat = "🐈", PallbearerCoin = "⚰️", TumbleJellyBean = "🍬", SwoleVsSmol = "💪", PointingLaughChair = "📺", PolkaSpinCow = "🐄", SusBean = "🔴", PartyCornerGuy = "🎉", BeepBopMicKid = "🎤", TradeOfferScroll = "📜", BigMittensChair = "🧤", ThinkSonThink = "🦸", SneakerShark = "🦈", JawlineChad = "🗿", BingChillingCone = "🍦", SigmaGrindset = "🌅", EmotionalDamage = "💔",
-	-- World 4: Ancient Egyptian Catacombs
-	YesNoLabDog = "🐶", AssistantSam = "📱", LampOilMerchant = "🛢️", MaulingTimeVampire = "🦇", GentlePillSquad = "🕶️", WiseMysticalTree = "🌳", ItsCornCob = "🌽", UncannySuperDad = "🖼️", GirlDinnerPlate = "🧀", PhonkEyebrowSpeaker = "🔊", RizzFaceMask = "🤨", ClangingPipe = "🔩", BetterCallPaul = "⚖️", KingPrawnCrooner = "🦐", OhioFinalBoss = "🌽", OhYeahVillain = "🧡", LogBatGuy = "🏏", ShailushaiCat = "🍄", BirthdayShake = "🥤", WhistleEdit = "🎵",
-	-- World 5: Cyber Glitch Grid
-	PeachesTurtleKing = "🎹", KindergartenMascot = "🎈", CursedCartoonTape = "📼", AwkwardSmileGuy = "🙂", LaughCryCarSeat = "🚘", CanonEventWeb = "🕸️", PinkbombFeature = "🎬", BoulderEyebrow = "🤨", PointingSuits = "👉", MewingHush = "🤫", EnglishSpanishChair = "💺", AHyuckDog = "🐕", NoScopeOlympian = "🎯", PommelHorseLegend = "🐎", BratGreenSlab = "💚", PedroRaccoon = "🦝", CrocBomber = "🐊", ChillDude = "🐶", BabyHippo = "🦛", DubaiChocolate = "🍫",
-	-- World 6: Deep Ocean Trench
-	LowTaperFade = "💈", ShushUpTablet = "🤐", BigGamerChair = "🎮", SixSevenHands = "🙌", TakeEggCushion = "🥚", IbizaBossDancer = "🕺", BoutiqueRock = "🏷️", LittleFrenchFish = "🐟", VeryDemureTeacup = "🍵", JohnPorkPhone = "📞", BeforeGTA6Hourglass = "⏳", StandingOnBusiness = "💼", AuraBoatBow = "🚤", PaperclipHelper = "📎", ZombieChickenRider = "🐔", JetTooHoliday = "✈️", PressureDiverHelmet = "🌊", AbyssalAngler = "🐡", GlitchWhale = "🐋", AtlantisJawlineChad = "🔱",
-	-- World 7: Haunted Cemetery
-	SpookySkeleton = "💀", PumpkinDancer = "🎃", GhostlySwampFrog = "🐸", BonkShiba = "🏏", SadViolinHamster = "🐹", ConfusedMathCat = "🙀", JellyTimeBanana = "🍌", RainbowPastryCat = "🌈", WowShiba = "🐕", ProblemGrinCoin = "😏", MeLikeyTablet = "😌", RageScreamTablet = "😡", ForeverAlone = "😢", BadLuckBryan = "🍀", FrowningCat = "😾", PunchMonkey = "🐒", PhantomChonkyBunny = "👻", CemeterySpecter = "🏮", UndeadSanic = "🧟", GraveyardOssuary = "⚰️",
-	-- World 8: Multiverse Glitch Void
-	CyberWowShiba = "🤖", GlitchSwampFrog = "🐸", QuantumShockedRodent = "⚛️", VoidStonks = "📉", MultiverseSpaceInfant = "👶", BulletDodgeGuy = "🕶️", NeonSusBean = "🔴", HoloJawlineChad = "🗿", CosmicShake = "🌌", SpacePolkaCow = "🐄", InterdimensionalChillDude = "🌀", CyberSingingThrone = "🚽", UniversalSanic = "🌠", ExponentialOgre = "👹", MiraculousGnome = "🎅", ApexWowShiba = "🏔️", GoldenSwampFrog = "🐸", ToorngEntity = "👁️", HighRollerBrainrot = "🎲", ImmeasupremeOverlord = "👑",
-	-- World 9: Quantum Dimension
-	QuantumDatFrog = "🐸", SubatomicSwampFrog = "⚛️", ParticleWowShiba = "✨", AntimatterEchidna = "🔵", StringTheoryBunny = "🧶", WarpSpeedStonks = "🚀", ParallelJawlineChad = "👥", RealityWarpedSponge = "🌀", TimeFoldPanels = "🙅", DarkMatterHippo = "🦛", RomanEmpireBust = "🏛️", HypercubeChillDude = "🔷", ZeroPointThrone = "🚽", TesseractShake = "🥤", SingularityGrinCoin = "🕳️", EventHorizonShiba = "🌑", NeverGonnaStair = "🕺", QuantumBrainrotGod = "🔱", MemeMatrix = "💠", OriginalShiba = "🌟",
-}
-]=])
 install(game:GetService("ReplicatedStorage"), "ArtifactImages", "ModuleScript", [=[
 -- ArtifactImages (ModuleScript in ReplicatedStorage)
 -- The uploaded meme picture for each artifact. tools/upload_meme_images.py fills this in
 -- automatically after uploading assets/meme_images/*.png to Roblox; any artifact without
--- a picture here shows its emoji icon instead (see ArtifactIcons).
+-- a picture here shows its 3D figure instead (see ArtifactModels).
 -- Format: ArtifactId = "rbxthumb://type=Asset&id=<decal id>&w=420&h=420",
 
 return {
@@ -379,7 +355,6 @@ install(game:GetService("ReplicatedStorage"), "ArtifactModels", "ModuleScript", 
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
-local ArtifactIcons = require(ReplicatedStorage:WaitForChild("ArtifactIcons"))
 local ArtifactImages = require(ReplicatedStorage:WaitForChild("ArtifactImages"))
 local MemeFigures = require(ReplicatedStorage:WaitForChild("MemeFigures"))
 
@@ -533,11 +508,34 @@ local function art(target, artifact, face, opts)
 			item.ImageTransparency = transparency
 			if tint then item.ImageColor3 = tint end
 		else
-			item = Instance.new("TextLabel")
-			item.Text = ArtifactIcons[iconId] or "🗿"
-			item.TextScaled = true
-			item.Font = Enum.Font.GothamBold
-			item.TextTransparency = transparency
+			-- no picture: the meme's own 3D figure (its Blender mesh or part-built figure) in a
+			-- little viewport, tinted like the material; the faint shadow copies are skipped
+			if transparency >= 0.7 then return nil end
+			local ok, figure = pcall(ArtifactModels.sculpture, artifact)
+			if ok and figure and figure:FindFirstChildWhichIsA("BasePart", true) then
+				item = Instance.new("ViewportFrame")
+				item.Ambient = rgb(190, 190, 200)
+				item.LightColor = rgb(255, 250, 240)
+				item.LightDirection = Vector3.new(0.4, -1, -0.7)
+				item.ImageTransparency = transparency
+				if tint then item.ImageColor3 = tint:Lerp(Color3.new(1, 1, 1), 0.45) end
+				figure.Parent = item
+				local lo, hi = MemeFigures.bounds(figure)
+				local centre = (lo + hi) / 2
+				local span = math.max(hi.X - lo.X, hi.Y - lo.Y)
+				local camera = Instance.new("Camera")
+				camera.FieldOfView = 20
+				camera.CFrame = CFrame.lookAt(centre + Vector3.new(0, 0, -span * 0.6 / math.tan(math.rad(10))), centre)
+				camera.Parent = item
+				item.CurrentCamera = camera
+			else
+				item = Instance.new("TextLabel")
+				item.Text = string.upper(artifact.Name)
+				item.TextScaled = true
+				item.Font = Enum.Font.GothamBlack
+				item.TextColor3 = (tint or rgb(60, 50, 40)):Lerp(Color3.new(0, 0, 0), 0.5)
+				item.TextTransparency = transparency
+			end
 		end
 		item.BackgroundTransparency = 1
 		item.Size = UDim2.fromScale(size, size)
@@ -3120,6 +3118,59 @@ end
 
 return UIBus
 ]=])
+install(game:GetService("ReplicatedStorage"), "UIIconList", "ModuleScript", [=[
+-- UIIconList (ModuleScript in ReplicatedStorage)
+-- Written by tools/blender/ui_icons.py: the names of the 3D UI icons in assets/models/UIIcons.fbx.
+-- Import that file once (File > Import 3D) and run the installer; UIKit.icon shows them.
+
+return {
+	"Shop",
+	"Bag",
+	"Museum",
+	"Rebirth",
+	"World",
+	"Settings",
+	"Gem",
+	"Cash",
+	"Income",
+	"SoundOn",
+	"SoundOff",
+	"Music",
+	"Bell",
+	"Lock",
+	"Luck",
+	"Pickaxe",
+	"Star",
+	"Sparkle",
+	"Heart",
+	"Pin",
+	"Alien",
+	"Fire",
+	"Skull",
+	"Disk",
+	"Volcano",
+	"Candy",
+	"Ghost",
+	"Bubble",
+	"Ice",
+	"Snowflake",
+	"Coin",
+	"Warning",
+	"Boom",
+	"Party",
+	"Picture",
+	"Hole",
+	"Elevator",
+	"Crown",
+	"FaceHappy",
+	"FaceLaugh",
+	"FaceLove",
+	"FaceWow",
+	"FaceCool",
+	"FaceMeh",
+	"FaceSick",
+}
+]=])
 install(game:GetService("ReplicatedStorage"), "UIKit", "ModuleScript", [=[
 -- UIKit (ModuleScript in ReplicatedStorage)
 -- One chunky simulator-style look for every screen in the game:
@@ -3129,6 +3180,7 @@ install(game:GetService("ReplicatedStorage"), "UIKit", "ModuleScript", [=[
 --   * windows with a full-width colored header bar, an icon, and the close button inside it
 --   * text that scales with its box but never past a sensible size (so nothing looks huge)
 --   * live 3D pickaxe icons (ViewportFrames that render the real pickaxe model)
+--   * chunky cartoon 3D icons for everything else (UIKit.icon), no emoji anywhere
 
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -3340,11 +3392,46 @@ function UIKit.button(parent, text, props)
 	local gloss = Instance.new("UIGradient")
 	gloss.Rotation = 90
 	gloss.Parent = b
+	-- a faint grid of rounded studs across the face (the classic chunky-button texture)
+	local size = b.Size
+	if props.Pattern ~= false and (size.Y.Scale > 0 or size.Y.Offset >= 34) then
+		local pattern = Instance.new("Frame")
+		pattern.Name = "Studs"
+		pattern.BackgroundTransparency = 1
+		pattern.Size = UDim2.new(1, -8, 1, -8)
+		pattern.Position = UDim2.fromScale(0.5, 0.5)
+		pattern.AnchorPoint = Vector2.new(0.5, 0.5)
+		pattern.ClipsDescendants = true
+		pattern.Parent = b
+		local grid = Instance.new("UIGridLayout")
+		grid.CellSize = UDim2.fromOffset(11, 11)
+		grid.CellPadding = UDim2.fromOffset(7, 7)
+		grid.Parent = pattern
+		local w = size.X.Scale > 0 and 420 or size.X.Offset
+		local h = size.Y.Scale > 0 and 90 or size.Y.Offset
+		for _ = 1, math.min(math.ceil(w / 18) * math.ceil(h / 18), 140) do
+			local stud = Instance.new("Frame")
+			stud.BorderSizePixel = 0
+			stud.BackgroundColor3 = Color3.new(1, 1, 1)
+			stud.BackgroundTransparency = 0.86
+			stud.Parent = pattern
+			UIKit.corner(stud, 3)
+		end
+	end
 	local label = UIKit.label(b, text, {
 		Size = UDim2.new(1, -16, 1, -14), Position = UDim2.new(0.5, 0, 0.5, -2), AnchorPoint = Vector2.new(0.5, 0.5),
 		Color = props.TextColor or C.White, Stroke = 3, MaxText = props.MaxText or 26,
 	})
 	label.Name = "Label"
+	label.ZIndex = 2
+	-- optional 3D icon on the left (props.Icon)
+	if props.Icon then
+		local h = size.Y.Offset > 0 and size.Y.Offset or 44
+		UIKit.icon(b, props.Icon, {Name = "ButtonIcon", Size = UDim2.fromOffset(h + 6, h + 6), Position = UDim2.new(0, 2, 0.5, -1),
+			AnchorPoint = Vector2.new(0, 0.5), ZIndex = 3})
+		label.Size = UDim2.new(1, -h - 16, 1, -14)
+		label.Position = UDim2.new(0.5, (h - 2) / 2, 0.5, -2)
+	end
 	local labelStroke = label:FindFirstChildOfClass("UIStroke")
 
 	local function paint()
@@ -3381,10 +3468,13 @@ function UIKit.button(parent, text, props)
 	return b, label
 end
 
-function UIKit.setButton(button, text, color)
+-- icon (optional): a different 3D icon for buttons made with props.Icon
+function UIKit.setButton(button, text, color, icon)
 	button.BackgroundColor3 = color
 	local label = button:FindFirstChild("Label")
 	if label then label.Text = text end
+	local holder = button:FindFirstChild("ButtonIcon")
+	if holder and icon ~= nil then UIKit.setIcon(holder, icon) end
 end
 
 -- Pops a frame in with a bouncy scale
@@ -3401,14 +3491,101 @@ function UIKit.pop(frame, from)
 	TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = base}):Play()
 end
 
--- A round colored badge with an emoji (or short text) in it
-function UIKit.badge(parent, iconText, color, props)
+---------------------------------------------------------------------
+-- 3D UI ICONS: chunky cartoon icons with thick outlines, made in Blender
+-- (tools/blender/ui_icons.py, pictures in assets/ui/icons). File > Import 3D of
+-- assets/models/UIIcons.fbx + the installer put them in ReplicatedStorage > UIIcons; each
+-- shows as a live 3D model in a ViewportFrame. Names: see UIIconList.
+-- Messages can start with an icon tag, "{Skull} The curse got you!" (see UIKit.splitIcon).
+---------------------------------------------------------------------
+local iconNames -- [name] = true, loaded on first use
+local function isIcon(name)
+	if not iconNames then
+		iconNames = {}
+		for _, n in ipairs(require(ReplicatedStorage:WaitForChild("UIIconList"))) do iconNames[n] = true end
+	end
+	return typeof(name) == "string" and iconNames[name] == true
+end
+UIKit.isIcon = isIcon
+
+local function iconSource(name)
+	local folder = ReplicatedStorage:FindFirstChild("UIIcons")
+	local item = folder and folder:FindFirstChild(name)
+	if item and not item:IsA("BasePart") then item = item:FindFirstChildWhichIsA("BasePart", true) end
+	return item
+end
+
+-- shows a different icon in a holder made by UIKit.icon (nil or "" clears it)
+function UIKit.setIcon(holder, name)
+	if holder:GetAttribute("Icon") == name and #holder:GetChildren() > 0 then return end
+	holder:SetAttribute("Icon", name)
+	for _, child in ipairs(holder:GetChildren()) do
+		if child:IsA("BasePart") or child:IsA("Camera") or child.Name == "Fallback" then child:Destroy() end
+	end
+	if not name or name == "" then return end
+	local source = iconSource(name)
+	if source then
+		local part = source:Clone()
+		part.Anchored = true
+		part.CFrame = CFrame.new()
+		part.Parent = holder
+		-- the icon's front faces +Z; a slightly turned, slightly raised view, filling the frame
+		local camera = Instance.new("Camera")
+		camera.FieldOfView = 20
+		local span = math.max(part.Size.X, part.Size.Y, part.Size.Z * 0.8)
+		local distance = span * 0.6 / math.tan(math.rad(10))
+		local turn, tilt = math.rad(-12), math.rad(8)
+		camera.CFrame = CFrame.lookAt(Vector3.new(math.sin(turn), math.sin(tilt), math.cos(turn)) * distance, Vector3.zero)
+		camera.Parent = holder
+		holder.CurrentCamera = camera
+	else
+		-- not imported yet: a plain round chip with the first letter
+		local chip = UIKit.panel(holder, {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+			Color = C.Lilac, Radius = 999, Stroke = 2})
+		chip.Name = "Fallback"
+		UIKit.label(chip, string.sub(name, 1, 1), {Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+	end
+end
+
+-- A 3D icon. props: Size, Position, AnchorPoint, ZIndex, Name
+function UIKit.icon(parent, name, props)
+	props = props or {}
+	local holder = Instance.new("ViewportFrame")
+	holder.Name = props.Name or "Icon"
+	holder.BackgroundTransparency = 1
+	holder.Size = props.Size or UDim2.fromOffset(44, 44)
+	holder.Position = props.Position or UDim2.new()
+	holder.AnchorPoint = props.AnchorPoint or Vector2.zero
+	if props.ZIndex then holder.ZIndex = props.ZIndex end
+	holder.Ambient = rgb(205, 205, 215)
+	holder.LightColor = rgb(255, 252, 245)
+	holder.LightDirection = Vector3.new(0.5, -1, -0.6)
+	holder.Parent = parent
+	UIKit.setIcon(holder, name)
+	return holder
+end
+
+-- "{Skull} The curse got you!" -> "Skull", "The curse got you!"  (no tag: nil, text)
+function UIKit.splitIcon(text)
+	if typeof(text) ~= "string" then return nil, "" end
+	local name, rest = string.match(text, "^{(%w+)}%s*(.*)$")
+	if name and isIcon(name) then return name, rest end
+	return nil, text
+end
+
+-- A round colored badge with a 3D icon (or short text, like a number) in it
+function UIKit.badge(parent, iconOrText, color, props)
 	props = props or {}
 	local d = props.Diameter or 44
 	local circle = UIKit.panel(parent, {Size = UDim2.fromOffset(d, d), Position = props.Position, AnchorPoint = props.AnchorPoint,
 		Color = color, Radius = d, Stroke = props.Stroke or 2.5})
-	local icon = UIKit.label(circle, iconText, {Size = UDim2.fromScale(0.64, 0.64), Position = UDim2.fromScale(0.5, 0.5),
-		AnchorPoint = Vector2.new(0.5, 0.5), Stroke = props.TextStroke or 0, MaxText = 60, Font = props.Font or Enum.Font.GothamBlack})
+	local icon
+	if isIcon(iconOrText) then
+		icon = UIKit.icon(circle, iconOrText, {Size = UDim2.fromScale(0.86, 0.86), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5)})
+	else
+		icon = UIKit.label(circle, iconOrText, {Size = UDim2.fromScale(0.64, 0.64), Position = UDim2.fromScale(0.5, 0.5),
+			AnchorPoint = Vector2.new(0.5, 0.5), Stroke = props.TextStroke or 0, MaxText = 60, Font = props.Font or Enum.Font.GothamBlack})
+	end
 	icon.Name = "Icon"
 	return circle, icon
 end
@@ -3451,8 +3628,9 @@ function UIKit.window(gui, title, size, accent, icon)
 
 	local titleX = 22
 	if icon then
-		UIKit.badge(header, icon, UIKit.shadeColor(accent, -0.25), {Diameter = 40, Position = UDim2.new(0, 14, 0.5, -2), AnchorPoint = Vector2.new(0, 0.5)})
-		titleX = 64
+		-- a big 3D icon that pokes out over the top-left of the header
+		UIKit.icon(header, icon, {Size = UDim2.fromOffset(64, 64), Position = UDim2.new(0, 6, 0.5, -8), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 3})
+		titleX = 76
 	end
 	local titleLabel = UIKit.label(header, title, {Size = UDim2.new(1, -titleX - 70, 0, 38), Position = UDim2.new(0, titleX, 0.5, -2), AnchorPoint = Vector2.new(0, 0.5),
 		Align = "Left", Stroke = 3.5, StrokeColor = C.Outline, MaxText = 34})
@@ -3637,7 +3815,7 @@ function UIKit.artifactIcon(parent, artifact, props)
 	if props.Badge ~= false then
 		local badge = UIKit.panel(tile, {Size = UDim2.fromScale(0.36, 0.26), Position = UDim2.new(1, 4, 0, -4), AnchorPoint = Vector2.new(1, 0),
 			Color = color, Radius = 8, Stroke = 2, Shade = false})
-		UIKit.label(badge, rarity and (rarity.Secret and "★" or rarity.Code) or "?", {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5),
+		UIKit.label(badge, rarity and (rarity.Secret and "S" or rarity.Code) or "?", {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5),
 			AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
 	end
 	return tile
@@ -3825,23 +4003,23 @@ install(game:GetService("ReplicatedStorage"), "WorldGimmicks", "ModuleScript", [
 -- World 1 has no gimmick scripts; its twist (the depth bonus) is built into digging itself.
 
 return {
-	[1] = {Modules = {}, Icon = "⛏️", Tag = "Depth Bonus", Title = "DEPTH BONUS",
+	[1] = {Modules = {}, Icon = "Pickaxe", Tag = "Depth Bonus", Title = "DEPTH BONUS",
 		Text = "The deeper you dig, the luckier your finds: up to 1.6x luck at the bottom of the Abyss!"},
-	[2] = {Modules = {"Spirits"}, Icon = "👻", Tag = "Meme Ghosts", Title = "MEME GHOSTS",
+	[2] = {Modules = {"Spirits"}, Icon = "Ghost", Tag = "Meme Ghosts", Title = "MEME GHOSTS",
 		Text = "Memes you dig up here escape as ghosts! Click the ghost 4 times to capture it before it gets away."},
-	[3] = {Modules = {"LowGravity", "GravityShift"}, Icon = "🌌", Tag = "Gravity Shift", Title = "LOW GRAVITY + GRAVITY SHIFTS",
+	[3] = {Modules = {"LowGravity", "GravityShift"}, Icon = "Sparkle", Tag = "Gravity Shift", Title = "LOW GRAVITY + GRAVITY SHIFTS",
 		Text = "Gravity is weak here, and deep down it flips! Hold on during a shift. The deep layers give 1.5x luck."},
-	[4] = {Modules = {"Blizzard", "Permafrost"}, Icon = "🔥", Tag = "Permafrost", Title = "PERMAFROST",
+	[4] = {Modules = {"Blizzard", "Permafrost"}, Icon = "Ice", Tag = "Permafrost", Title = "PERMAFROST",
 		Text = "Below the topsoil the ground is frozen solid. Use a Torch Flare [F] to melt it, or get a heated pickaxe (the top 3)."},
-	[5] = {Modules = {"GoldRush", "CurseTraps"}, Icon = "☠️", Tag = "Curse Traps", Title = "CURSE TRAPS + GOLD RUSH",
+	[5] = {Modules = {"GoldRush", "CurseTraps"}, Icon = "Skull", Tag = "Curse Traps", Title = "CURSE TRAPS + GOLD RUSH",
 		Text = "Cursed blocks hide in the sand. When one goes off, press the key shown in time for gold, or your pickaxe is locked for 3s!"},
-	[6] = {Modules = {"Oxygen"}, Icon = "🫧", Tag = "Oxygen", Title = "LOW OXYGEN",
+	[6] = {Modules = {"Oxygen"}, Icon = "Bubble", Tag = "Oxygen", Title = "LOW OXYGEN",
 		Text = "The deep pit is flooded with toxic fumes. Watch your air meter and refill it at the bubbling air vents!"},
-	[7] = {Modules = {"Merchant"}, Icon = "🍭", Tag = "Alien Merchant", Title = "ALIEN MERCHANT",
+	[7] = {Modules = {"Merchant"}, Icon = "Candy", Tag = "Alien Merchant", Title = "ALIEN MERCHANT",
 		Text = "A candy-loving alien wanders the rim selling Sugar Rush: dig 1.5x faster for 3 minutes!"},
-	[8] = {Modules = {"Eruption", "LavaSurge"}, Icon = "🌋", Tag = "Lava Surge", Title = "LAVA SURGES + ERUPTIONS",
+	[8] = {Modules = {"Eruption", "LavaSurge"}, Icon = "Volcano", Tag = "Lava Surge", Title = "LAVA SURGES + ERUPTIONS",
 		Text = "Every few minutes lava rises from the bottom of the pit! Climb up to the glowing safe ledges or the surface before it hits."},
-	[9] = {Modules = {"GlitchSurge", "DataHacking"}, Icon = "💾", Tag = "Data Hacking", Title = "DATA HACKING",
+	[9] = {Modules = {"GlitchSurge", "DataHacking"}, Icon = "Disk", Tag = "Data Hacking", Title = "DATA HACKING",
 		Text = "Digging uncovers Data Nodes. Hit the beats to hack them and dig up a Corrupted meme worth 2x!"},
 }
 ]=])
@@ -5567,7 +5745,7 @@ end
 swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	if resetting or sessions[player] then return end
 	if GimmickHooks.IsLocked(player) then
-		digMessageRemote:FireClient(player, "☠️ Your pickaxe is cursed! It unlocks in a moment...", Color3.fromRGB(200, 130, 255))
+		digMessageRemote:FireClient(player, "{Skull} Your pickaxe is cursed! It unlocks in a moment...", Color3.fromRGB(200, 130, 255))
 		return
 	end
 	local data = PlayerData.Get(player)
@@ -5800,7 +5978,7 @@ buyShovelRemote.OnServerEvent:Connect(function(player, shovelId)
 	data.EquippedShovels[tostring(def.World)] = def.Id
 	updateAttributes(player)
 	giveShovel(player)
-	shopMessageRemote:FireClient(player, "You bought the " .. def.Name .. "! It digs down to " .. -GameConfig.GetWorld(def.World).Zones[def.MaxZone].Bottom .. "m.", true)
+	shopMessageRemote:FireClient(player, "{Pickaxe} You bought the " .. def.Name .. "! It digs down to " .. -GameConfig.GetWorld(def.World).Zones[def.MaxZone].Bottom .. "m.", true)
 end)
 
 equipShovelRemote.OnServerEvent:Connect(function(player, shovelId)
@@ -6563,7 +6741,7 @@ function Gimmick.Start(ctx)
 	ctx.EventLoop({
 		Every = 170, Duration = 40, Name = "BLIZZARD",
 		Boost = {LuckMult = 2},
-		Message = "❄️ A BLIZZARD rolls in! The storm stirs up relics: 2x luck for 40 seconds!",
+		Message = "{Snowflake} A BLIZZARD rolls in! The storm stirs up relics: 2x luck for 40 seconds!",
 		Color = Color3.fromRGB(170, 230, 255),
 	})
 end
@@ -6603,7 +6781,7 @@ function Gimmick.Start(ctx)
 	local function fail(player)
 		traps[player] = nil
 		GimmickHooks.LockDig(player, LOCK_SECONDS)
-		Api.Message(player, "☠️ The curse got you! Your pickaxe is locked for 3 seconds.", Color3.fromRGB(200, 120, 255))
+		Api.Message(player, "{Skull} The curse got you! Your pickaxe is locked for 3 seconds.", Color3.fromRGB(200, 120, 255))
 	end
 
 	GimmickHooks.Register(world.Id, "AfterDig", function(player, dig)
@@ -6625,7 +6803,7 @@ function Gimmick.Start(ctx)
 		if pressed == trap.Key and os.clock() <= trap.Deadline then
 			traps[player] = nil
 			PlayerData.AddMoney(player, reward)
-			Api.Message(player, "🪙 Curse broken! +" .. ArtifactData.FormatMoney(reward) .. " in ancient gold!", Color3.fromRGB(255, 214, 90))
+			Api.Message(player, "{Coin} Curse broken! +" .. ArtifactData.FormatMoney(reward) .. " in ancient gold!", Color3.fromRGB(255, 214, 90))
 		else
 			fail(player)
 		end
@@ -6702,11 +6880,11 @@ function Gimmick.Start(ctx)
 			local base = ArtifactData.RollForZone(node.Zone, node.Luck)
 			local corrupted = ArtifactData.GetCorrupted(base) or base
 			if Api.GiveFind(player, node.Zone, node.Luck, node.Position, corrupted) then
-				Api.Message(player, "💾 HACKED! A Corrupted meme (2x income) is waiting in the dirt!", Color3.fromRGB(80, 255, 220))
+				Api.Message(player, "{Disk} HACKED! A Corrupted meme (2x income) is waiting in the dirt!", Color3.fromRGB(80, 255, 220))
 			end
 		else
 			Api.Burst(node.Position, Color3.fromRGB(255, 60, 120), 24, 12)
-			Api.Message(player, "💥 Hack failed, the Data Node crashed.", Color3.fromRGB(255, 110, 150))
+			Api.Message(player, "{Boom} Hack failed, the Data Node crashed.", Color3.fromRGB(255, 110, 150))
 		end
 	end)
 end
@@ -6806,7 +6984,7 @@ function Gimmick.Start(ctx)
 			if not rock.Parent or rock:GetAttribute("Taken") then return end
 			rock:SetAttribute("Taken", true)
 			PlayerData.AddMoney(player, reward)
-			ReplicatedStorage.Remotes.DigProgress:FireClient(player, "🌋 Forge Nugget! +" .. ArtifactData.FormatMoney(reward), Color3.fromRGB(255, 170, 70))
+			ReplicatedStorage.Remotes.DigProgress:FireClient(player, "{Volcano} Forge Nugget! +" .. ArtifactData.FormatMoney(reward), Color3.fromRGB(255, 170, 70))
 			burst(ctx.Folder, rock.Position, Color3.fromRGB(255, 150, 40), 20)
 			rock:Destroy()
 		end)
@@ -6842,7 +7020,7 @@ function Gimmick.Start(ctx)
 
 	ctx.EventLoop({
 		Every = 140, Duration = 12, Name = "ERUPTION",
-		Message = "🌋 ERUPTION! Lava bombs are raining into the pit. Grab the glowing Forge Nuggets!",
+		Message = "{Volcano} ERUPTION! Lava bombs are raining into the pit. Grab the glowing Forge Nuggets!",
 		Color = Color3.fromRGB(255, 140, 60),
 		OnStart = function()
 			for i = 1, BOMBS do
@@ -6866,7 +7044,7 @@ function Gimmick.Start(ctx)
 	ctx.EventLoop({
 		Every = 170, Duration = 30, Name = "GLITCH SURGE",
 		Boost = {CooldownMult = 0.5, LuckMult = 1.5},
-		Message = "👾 GLITCH SURGE! Swing 2x faster with 1.5x luck for 30 seconds!",
+		Message = "{Income} GLITCH SURGE! Swing 2x faster with 1.5x luck for 30 seconds!",
 		Color = Color3.fromRGB(190, 120, 255),
 	})
 end
@@ -6909,7 +7087,7 @@ function Gimmick.Start(ctx)
 	ctx.EventLoop({
 		Every = 150, Duration = 45, Name = "GOLD RUSH",
 		Boost = {FindMult = 3, LuckMult = 1.3},
-		Message = "🪙 GOLD RUSH! You find artifacts 3x as often for 45 seconds!",
+		Message = "{Coin} GOLD RUSH! You find artifacts 3x as often for 45 seconds!",
 		Color = Color3.fromRGB(255, 214, 90),
 		OnStart = function() glitter.Enabled = true end,
 		OnStop = function() glitter.Enabled = false end,
@@ -7037,7 +7215,7 @@ function Gimmick.Start(ctx)
 				if inPit and root.Position.Y - 3 < top then
 					Api.SendToSurface(player)
 					ctx.Boosts.GivePersonal(player, table.clone(SCORCH), SCORCH_SECONDS)
-					Api.Message(player, "🔥 The lava got you! Knocked to the surface and SCORCHED (slower swings for 20s).", Color3.fromRGB(255, 130, 70))
+					Api.Message(player, "{Fire} The lava got you! Knocked to the surface and SCORCHED (slower swings for 20s).", Color3.fromRGB(255, 130, 70))
 				end
 			end
 		end
@@ -7047,7 +7225,7 @@ function Gimmick.Start(ctx)
 		task.wait(EVERY * 0.6)
 		while ctx.Container.Parent do
 			if #ctx.PlayersInWorld() > 0 then
-				ctx.Announce("🌋 LAVA SURGE in " .. WARNING .. " seconds! Get up to a glowing ledge or the surface!", Color3.fromRGB(255, 120, 60))
+				ctx.Announce("{Volcano} LAVA SURGE in " .. WARNING .. " seconds! Get up to a glowing ledge or the surface!", Color3.fromRGB(255, 120, 60))
 				ctx.Container:SetAttribute("Event", "LAVA SURGE")
 				task.wait(WARNING)
 				lava.Transparency = 0.15
@@ -7159,7 +7337,7 @@ function Gimmick.Start(ctx)
 	local root = merchant:FindFirstChild("HumanoidRootPart")
 	if not humanoid or not root then return end
 	humanoid.WalkSpeed = 8
-	humanoid.DisplayName = "🍭 Alien Merchant"
+	humanoid.DisplayName = "Alien Merchant"
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Viewer
 	humanoid.NameDisplayDistance = 60
 
@@ -7193,7 +7371,7 @@ function Gimmick.Start(ctx)
 			return
 		end
 		ctx.Boosts.GivePersonal(player, table.clone(BOOST), BOOST_SECONDS)
-		ReplicatedStorage.Remotes.DigProgress:FireClient(player, "🍭 SUGAR RUSH! You dig 1.5x faster for 3 minutes!", Color3.fromRGB(255, 150, 220))
+		ReplicatedStorage.Remotes.DigProgress:FireClient(player, "{Candy} SUGAR RUSH! You dig 1.5x faster for 3 minutes!", Color3.fromRGB(255, 150, 220))
 	end)
 
 	local function stop(i)
@@ -7344,7 +7522,7 @@ function Gimmick.Start(ctx)
 		Api.Burst(dig.Position + Vector3.new(0, 2, 0), Color3.fromRGB(200, 240, 255), 16, 14)
 		if os.clock() - (lastMessage[player] or 0) > 3 then
 			lastMessage[player] = os.clock()
-			Api.Message(player, "🧊 Permafrost! Use a Torch Flare [F] to melt it, or get a heated pickaxe.", Color3.fromRGB(170, 225, 255))
+			Api.Message(player, "{Ice} Permafrost! Use a Torch Flare [F] to melt it, or get a heated pickaxe.", Color3.fromRGB(170, 225, 255))
 		end
 		return "block"
 	end)
@@ -7373,7 +7551,7 @@ function Gimmick.Start(ctx)
 				light:Destroy()
 			end)
 		end
-		Api.Message(player, "🔥 Torch Flare! You melt through permafrost for 20 seconds.", Color3.fromRGB(255, 170, 80))
+		Api.Message(player, "{Fire} Torch Flare! You melt through permafrost for 20 seconds.", Color3.fromRGB(255, 170, 80))
 	end)
 end
 
@@ -7391,7 +7569,8 @@ local TweenService = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
-local ArtifactIcons = require(ReplicatedStorage:WaitForChild("ArtifactIcons"))
+local ArtifactModels = require(ReplicatedStorage:WaitForChild("ArtifactModels"))
+local MemeFigures = require(ReplicatedStorage:WaitForChild("MemeFigures"))
 local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
 
 local Gimmick = {}
@@ -7434,13 +7613,25 @@ local function makeGhost(folder, artifact, position)
 	face.LightInfluence = 0
 	face.AlwaysOnTop = true
 	face.Parent = body
-	local emoji = Instance.new("TextLabel")
-	emoji.BackgroundTransparency = 1
-	emoji.Size = UDim2.fromScale(1, 1)
-	emoji.Text = ArtifactIcons[ArtifactData.IconId(artifact.Id)] or "👻"
-	emoji.TextScaled = true
-	emoji.Font = Enum.Font.GothamBold
-	emoji.Parent = face
+	-- the escaped meme itself, as a little 3D figure floating in the ghost
+	local view = Instance.new("ViewportFrame")
+	view.BackgroundTransparency = 1
+	view.Size = UDim2.fromScale(1, 1)
+	view.Ambient = Color3.fromRGB(220, 220, 235)
+	view.LightColor = Color3.new(1, 1, 1)
+	view.ImageTransparency = 0.15
+	view.Parent = face
+	local ok, figure = pcall(ArtifactModels.sculpture, artifact)
+	if ok and figure and figure:FindFirstChildWhichIsA("BasePart", true) then
+		figure.Parent = view
+		local lo, hi = MemeFigures.bounds(figure)
+		local centre = (lo + hi) / 2
+		local camera = Instance.new("Camera")
+		camera.FieldOfView = 20
+		camera.CFrame = CFrame.lookAt(centre + Vector3.new(0, 0, -math.max(hi.X - lo.X, hi.Y - lo.Y) * 0.6 / math.tan(math.rad(10))), centre)
+		camera.Parent = view
+		view.CurrentCamera = camera
+	end
 	local light = Instance.new("PointLight")
 	light.Color = color
 	light.Range = 14
@@ -7473,7 +7664,7 @@ function Gimmick.Start(ctx)
 			local ghost = makeGhost(ctx.Folder, artifact, position + Vector3.new(0, 2, 0))
 			local entry = {Owner = player, Artifact = artifact, Hits = 0}
 			ghosts[ghost] = entry
-			Api.Message(player, "👻 The " .. artifact.Name .. " escaped as a ghost! Click it " .. HITS_NEEDED .. " times to capture it!", Color3.fromRGB(255, 170, 230))
+			Api.Message(player, "{Ghost} The " .. artifact.Name .. " escaped as a ghost! Click it " .. HITS_NEEDED .. " times to capture it!", Color3.fromRGB(255, 170, 230))
 			-- dart around the pit until it's caught or gets away
 			local started = os.clock()
 			task.spawn(function()
@@ -7525,7 +7716,7 @@ function Gimmick.Start(ctx)
 			Api.Burst(body.Position, body.Color, 40, 14)
 			ghost:Destroy()
 			Api.AddArtifactNow(player, entry.Artifact)
-			Api.Message(player, "👻 Captured! The " .. entry.Artifact.Name .. " is in your bag.", Color3.fromRGB(150, 255, 200))
+			Api.Message(player, "{Ghost} Captured! The " .. entry.Artifact.Name .. " is in your bag.", Color3.fromRGB(150, 255, 200))
 		end
 	end)
 end
@@ -8550,7 +8741,7 @@ local function build()
 	end
 	d:ellipsoid("KioskRoof", Vector3.new(15, 2.4, 9), CFrame.new(0, 11.6, 0), "Mint")
 	local kioskSign = d:roundedBlock("KioskSign", Vector3.new(10, 2.6, 0.6), CFrame.new(0, 13.8, 0), 1, "Ink")
-	textLabel(surface(kioskSign), "Label", "👽 ALIEN ART DEALER", UDim2.fromScale(0, 0.1), UDim2.fromScale(1, 0.8), rgb(150, 255, 200))
+	textLabel(surface(kioskSign), "Label", "ALIEN ART DEALER", UDim2.fromScale(0, 0.1), UDim2.fromScale(1, 0.8), rgb(150, 255, 200))
 	-- the dealer: a friendly alien behind the counter
 	d:ellipsoid("AlienBody", Vector3.new(3, 4, 2.6), CFrame.new(0, 5.2, 0.4), "Violet")
 	d:ellipsoid("AlienHead", Vector3.new(3.8, 3.4, 3.4), CFrame.new(0, 8.4, 0.4), "AlienSkin")
@@ -8735,7 +8926,7 @@ local function refreshSlot(player, museum, index)
 		setText(plaque, "LOCKED  •  " .. ArtifactData.FormatMoney(price))
 		setText(facts[1], "SLOT " .. index .. " LOCKED", LOCKED_COLOR)
 		setText(facts[2], floorOpen and ("Unlock it for " .. ArtifactData.FormatMoney(price)) or ("Unlock floor " .. floor .. " first"))
-		setText(nameLabel, "🔒 LOCKED", LOCKED_COLOR)
+		setText(nameLabel, "LOCKED", LOCKED_COLOR)
 		setText(incomeLabel, ArtifactData.FormatMoney(price))
 		if slotPrompt then
 			slotPrompt.ActionText = floorOpen and ("Unlock  " .. ArtifactData.FormatMoney(price)) or ("Floor " .. floor .. " locked")
@@ -8924,7 +9115,7 @@ placeAllRemote.OnServerEvent:Connect(function(player)
 	end
 	inventoryChangedRemote:FireClient(player)
 	if placed > 0 then
-		messageRemote:FireClient(player, "🏛️ Placed " .. placed .. " meme" .. (placed == 1 and "" or "s") .. " in your museum! Now earning " .. ArtifactData.FormatMoney(PlayerData.GetIncome(player)) .. "/s", true)
+		messageRemote:FireClient(player, "{Museum} Placed " .. placed .. " meme" .. (placed == 1 and "" or "s") .. " in your museum! Now earning " .. ArtifactData.FormatMoney(PlayerData.GetIncome(player)) .. "/s", true)
 	elseif #memes == 0 then
 		messageRemote:FireClient(player, "Your bag is empty. Go dig up some memes!", false)
 	else
@@ -11973,7 +12164,7 @@ rebirthRemote.OnServerEvent:Connect(function(player)
 			data.Gems += gems
 			data.Money = GameConfig.StartingMoney
 			PlayerData.Refresh(player)
-			messageRemote:FireClient(player, "♻️ REBIRTH " .. data.Rebirths .. "! +" .. math.floor(GameConfig.RebirthIncomeBonus * 100) .. "% income forever and +" .. gems .. " 💎", true)
+			messageRemote:FireClient(player, "{Rebirth} REBIRTH " .. data.Rebirths .. "! +" .. math.floor(GameConfig.RebirthIncomeBonus * 100) .. "% income forever and +" .. gems .. " gems", true)
 			announceRemote:FireAllClients(player.DisplayName .. " reached Rebirth " .. data.Rebirths .. "!", Color3.fromRGB(255, 130, 150))
 		end
 	end
@@ -11990,13 +12181,13 @@ gemUpgradeRemote.OnServerEvent:Connect(function(player)
 	end
 	local cost = (data.GemLuckLevel + 1) * GameConfig.GemLuckCost
 	if data.Gems < cost then
-		messageRemote:FireClient(player, "You need " .. cost .. " 💎 for the next Lucky Charm level.", false)
+		messageRemote:FireClient(player, "{Gem} You need " .. cost .. " gems for the next Lucky Charm level.", false)
 		return
 	end
 	data.Gems -= cost
 	data.GemLuckLevel += 1
 	PlayerData.Refresh(player)
-	messageRemote:FireClient(player, "🍀 Lucky Charm level " .. data.GemLuckLevel .. "! +" .. math.floor(GameConfig.GemLuckPerLevel * 100 * data.GemLuckLevel) .. "% luck", true)
+	messageRemote:FireClient(player, "{Luck} Lucky Charm level " .. data.GemLuckLevel .. "! +" .. math.floor(GameConfig.GemLuckPerLevel * 100 * data.GemLuckLevel) .. "% luck", true)
 end)
 
 Players.PlayerRemoving:Connect(function(player)
@@ -12350,7 +12541,7 @@ install(game:GetService("ServerScriptService"), "VisitorManager", "Script", [=[
 -- Autonomous NPC visitors on World 1 (they never give money; they make the island feel alive).
 --   * Humans from 2050 appear on a museum's plaza, walk in with PathfindingService, visit a
 --     few display slots that have a meme on them (taking the "lift" to the right floor),
---     react to each one with a floating emoji, then walk back out and fade away.
+--     react to each one with a floating 3D face, then walk back out and fade away.
 --   * Aliens come through glowing portals at the far lookouts of the island (AlienPortal):
 --     they grow out of the vortex in a burst of sparks, roam the island on its paths
 --     (the dig site, the boulevard, other lookouts), wander into a museum to inspect the
@@ -12364,6 +12555,7 @@ local TweenService = game:GetService("TweenService")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
 local buildVisitor = require(script.Parent:WaitForChild("VisitorModels"))
 local AlienPortal = require(script.Parent:WaitForChild("AlienPortal"))
 local RunService = game:GetService("RunService")
@@ -12385,11 +12577,11 @@ local STEP_TIMEOUT = 4           -- give up on a waypoint after this many second
 local WALK_ANIMATION = "rbxassetid://507777826"
 local IDLE_ANIMATION = "rbxassetid://507766388"
 
--- Emoji reactions by how rare the meme is
+-- Reactions by how rare the meme is (3D icons from UIKit, see tools/blender/ui_icons.py)
 local REACTIONS = {
-	Low = {"😐", "🥱", "🤔", "🙂", "🤮", "😬", "🙄"},
-	Mid = {"😮", "😄", "👍", "😂", "👏", "🤔", "😎"},
-	High = {"🤩", "😍", "🔥", "🤯", "😱", "👑", "💯"},
+	Low = {"FaceMeh", "FaceSick", "FaceMeh", "FaceHappy"},
+	Mid = {"FaceHappy", "FaceWow", "FaceLaugh", "FaceCool", "Heart"},
+	High = {"FaceLove", "FaceWow", "Fire", "Crown", "Star"},
 }
 
 -- Visitors don't bump into players (or each other); they still stand on the floors
@@ -12466,7 +12658,7 @@ local function occupiedSlots(museum)
 end
 
 ---------------------------------------------------------------------
--- EMOJI REACTIONS (BillboardGui over the visitor's head)
+-- REACTIONS (a speech bubble with a 3D face over the visitor's head)
 ---------------------------------------------------------------------
 local function react(npc, artifact)
 	local head = npc:FindFirstChild("Head")
@@ -12498,15 +12690,8 @@ local function react(npc, artifact)
 	stroke.Thickness = 3
 	stroke.Color = ArtifactData.GetRarity(artifact.Rarity).Color
 	stroke.Parent = bubble
-	local emoji = Instance.new("TextLabel")
-	emoji.BackgroundTransparency = 1
-	emoji.Size = UDim2.fromScale(0.78, 0.78)
-	emoji.Position = UDim2.fromScale(0.5, 0.5)
-	emoji.AnchorPoint = Vector2.new(0.5, 0.5)
-	emoji.Text = pool[rng:NextInteger(1, #pool)]
-	emoji.TextScaled = true
-	emoji.Font = Enum.Font.GothamBold
-	emoji.Parent = bubble
+	local face = UIKit.icon(bubble, pool[rng:NextInteger(1, #pool)], {Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = Vector2.new(0.5, 0.5)})
 
 	-- pop in, hover, fade out
 	TweenService:Create(gui, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromScale(2.6, 2.6)}):Play()
@@ -12516,7 +12701,7 @@ local function react(npc, artifact)
 		local fade = TweenInfo.new(0.4)
 		TweenService:Create(bubble, fade, {BackgroundTransparency = 1}):Play()
 		TweenService:Create(stroke, fade, {Transparency = 1}):Play()
-		TweenService:Create(emoji, fade, {TextTransparency = 1}):Play()
+		TweenService:Create(face, fade, {ImageTransparency = 1}):Play()
 		task.delay(0.45, function() gui:Destroy() end)
 	end)
 end
@@ -14446,12 +14631,13 @@ playMusic(player:GetAttribute("CurrentWorld") or 1)
 -- SETTINGS WINDOW
 ---------------------------------------------------------------------
 local gui = UIKit.screen(player, "SettingsGui", 8)
-local window, content = UIKit.window(gui, "SETTINGS", UDim2.fromOffset(460, 330), C.Sky, "⚙️")
+local window, content = UIKit.window(gui, "SETTINGS", UDim2.fromOffset(460, 330), C.Sky, "Settings")
 
 -- one row: icon + name, a mute button, and a slider underneath
 local function audioRow(y, icon, title, volumeKey, mutedKey)
-	UIKit.label(content, icon .. "  " .. title, {Size = UDim2.new(0.6, 0, 0, 30), Position = UDim2.fromOffset(8, y), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
-	local mute = UIKit.button(content, "", {Size = UDim2.fromOffset(120, 38), Position = UDim2.new(1, -8, 0, y - 4), AnchorPoint = Vector2.new(1, 0), Radius = 19, MaxText = 16})
+	UIKit.icon(content, icon, {Size = UDim2.fromOffset(40, 40), Position = UDim2.fromOffset(4, y - 5)})
+	UIKit.label(content, title, {Size = UDim2.new(0.6, -48, 0, 30), Position = UDim2.fromOffset(50, y), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
+	local mute = UIKit.button(content, "", {Size = UDim2.fromOffset(130, 40), Position = UDim2.new(1, -8, 0, y - 5), AnchorPoint = Vector2.new(1, 0), Radius = 19, MaxText = 16, Icon = "SoundOn"})
 	local track = UIKit.panel(content, {Size = UDim2.new(1, -90, 0, 14), Position = UDim2.fromOffset(8, y + 50), Color = C.PanelTint, Radius = 7, Stroke = 2, StrokeColor = C.Lilac, Shade = false})
 	local fill = UIKit.panel(track, {Size = UDim2.fromScale(1, 1), Color = C.Sky, Radius = 7, Stroke = false, Shade = false})
 	local knob = UIKit.panel(track, {Size = UDim2.fromOffset(26, 26), Position = UDim2.fromScale(1, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Radius = 13, Stroke = 3, StrokeColor = C.Sky, Shade = false})
@@ -14462,7 +14648,7 @@ local function audioRow(y, icon, title, volumeKey, mutedKey)
 		knob.Position = UDim2.fromScale(v, 0.5)
 		percent.Text = math.floor(v * 100 + 0.5) .. "%"
 		local muted = settings[mutedKey]
-		UIKit.setButton(mute, muted and "🔇 MUTED" or "🔊 ON", muted and C.Coral or C.Mint)
+		UIKit.setButton(mute, muted and "MUTED" or "ON", muted and C.Coral or C.Mint, muted and "SoundOff" or "SoundOn")
 		fill.BackgroundColor3 = muted and C.Grey or C.Sky
 	end
 	mute.MouseButton1Click:Connect(function()
@@ -14498,8 +14684,8 @@ local function audioRow(y, icon, title, volumeKey, mutedKey)
 	return refresh
 end
 
-local refreshMusic = audioRow(14, "🎵", "Music", "MusicVolume", "MusicMuted")
-local refreshSfx = audioRow(118, "🔔", "Sound Effects", "SfxVolume", "SfxMuted")
+local refreshMusic = audioRow(14, "Music", "Music", "MusicVolume", "MusicMuted")
+local refreshSfx = audioRow(118, "Bell", "Sound Effects", "SfxVolume", "SfxMuted")
 UIKit.label(content, "Your settings are saved and stick between visits.", {Size = UDim2.new(1, -16, 0, 20), Position = UDim2.new(0.5, 0, 1, -30), AnchorPoint = Vector2.new(0.5, 0),
 	Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, MaxText = 15})
 
@@ -14727,8 +14913,9 @@ local function headerCard(size, position, color, title)
 	return card, titleLabel, paint
 end
 
-local mini = headerCard(UDim2.fromOffset(480, 160), UDim2.fromScale(0.5, 0.7), C.Sun, "🍀 LUCKY DIG!")
+local mini = headerCard(UDim2.fromOffset(480, 160), UDim2.fromScale(0.5, 0.7), C.Sun, "LUCKY DIG!")
 mini.Visible = false
+UIKit.icon(mini, "Luck", {Size = UDim2.fromOffset(64, 64), Position = UDim2.fromOffset(-14, -22), ZIndex = 3})
 UIKit.label(mini, "Stop in the green for bonus luck!", {Size = UDim2.new(0.9, 0, 0, 22), Position = UDim2.new(0.5, 0, 0, 58), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0, MaxText = 20})
 
 local bar = UIKit.panel(mini, {Size = UDim2.new(0.88, 0, 0, 30), Position = UDim2.new(0.5, 0, 0, 88), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 15, Stroke = 3, StrokeColor = C.Ink, Shade = false})
@@ -14922,7 +15109,7 @@ pullRemote.OnClientEvent:Connect(function(finder, _painting, info)
 	if finder ~= player or typeof(info) ~= "table" then return end
 	clearBuried()
 	task.delay(0.9, function()
-		say(foundText, foundStroke, "✨ You found " .. info.Name .. "!  " .. string.upper(info.Rarity) .. "  ·  +"
+		say(foundText, foundStroke, "You found " .. info.Name .. "!  " .. string.upper(info.Rarity) .. "  ·  +"
 			.. ArtifactData.FormatMoney(info.Income) .. "/s", info.Color:Lerp(C.White, 0.25), 3.5)
 	end)
 end)
@@ -14934,14 +15121,16 @@ local banner = UIKit.panel(gui, {Size = UDim2.fromOffset(640, 54), Position = UD
 banner.BackgroundTransparency = 0.08
 banner.Visible = false
 local bannerStroke = banner:FindFirstChildOfClass("UIStroke")
-local bannerStar = UIKit.badge(banner, "🎉", C.Sun, {Diameter = 44, Position = UDim2.new(0, 6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+local bannerStar, bannerIcon = UIKit.badge(banner, "Party", C.Sun, {Diameter = 44, Position = UDim2.new(0, 6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
 local bannerText = UIKit.label(banner, "", {Size = UDim2.new(1, -80, 0.56, 0), Position = UDim2.new(0, 62, 0.22, 0), Align = "Left", Color = C.White, Stroke = 0, MaxText = 24})
 
 local bannerToken = 0
 announceRemote.OnClientEvent:Connect(function(message, color)
 	bannerToken += 1
 	local myToken = bannerToken
-	bannerText.Text = message
+	local icon, text = UIKit.splitIcon(message)
+	bannerText.Text = text
+	UIKit.setIcon(bannerIcon, icon or "Party")
 	local accent = typeof(color) == "Color3" and color or C.Sun
 	bannerStar.BackgroundColor3 = accent
 	bannerStroke.Color = accent
@@ -15287,15 +15476,14 @@ local function counter(y, height, icon, color, maxText)
 	row.Size = UDim2.new(1, 0, 0, height)
 	row.Position = UDim2.fromOffset(0, y)
 	row.Parent = wallet
-	local iconLabel = UIKit.label(row, icon, {Size = UDim2.fromOffset(height, height), Stroke = 0, MaxText = 80, Font = Enum.Font.GothamBold})
-	iconLabel.Name = "Icon"
-	local text = UIKit.label(row, "", {Size = UDim2.new(1, -height - 6, 1, -4), Position = UDim2.new(0, height + 6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+	UIKit.icon(row, icon, {Size = UDim2.fromOffset(height * 1.3, height * 1.3), Position = UDim2.new(0, -height * 0.15, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+	local text = UIKit.label(row, "", {Size = UDim2.new(1, -height - 10, 1, -4), Position = UDim2.new(0, height + 10, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
 		Align = "Left", Color = color, Stroke = 3.5, MaxText = maxText})
 	return row, text
 end
-local _, gemText = counter(0, 40, "💎", Color3.fromRGB(230, 110, 255), 34)
-local moneyRow, moneyText = counter(44, 52, "💵", Color3.fromRGB(80, 235, 90), 44)
-local _, incomeText = counter(100, 30, "⚡", C.Sun, 24)
+local _, gemText = counter(0, 40, "Gem", Color3.fromRGB(230, 110, 255), 34)
+local moneyRow, moneyText = counter(44, 52, "Cash", Color3.fromRGB(80, 235, 90), 44)
+local _, incomeText = counter(100, 30, "Income", C.Sun, 24)
 
 local worldText = UIKit.label(gui, "", {Size = UDim2.fromOffset(520, 26), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0),
 	Color = C.White, Stroke = 3, MaxText = 22})
@@ -15322,7 +15510,7 @@ end
 local function refreshWorld()
 	local world = GameConfig.GetWorld(player:GetAttribute("CurrentWorld") or 1)
 	local rebirths = player:GetAttribute("Rebirths") or 0
-	worldText.Text = "🌍 " .. (world and world.Name or "") .. (rebirths > 0 and ("   ♻️ Rebirth " .. rebirths) or "")
+	worldText.Text = (world and world.Name or "") .. (rebirths > 0 and ("   ·   Rebirth " .. rebirths) or "")
 end
 player:GetAttributeChangedSignal("Money"):Connect(refreshMoney)
 player:GetAttributeChangedSignal("Income"):Connect(refreshIncome)
@@ -15344,7 +15532,7 @@ local remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local menu = Instance.new("Frame")
 menu.BackgroundTransparency = 1
-menu.Size = UDim2.fromOffset(96, 470)
+menu.Size = UDim2.fromOffset(100, 7 * 68)
 menu.Position = UDim2.new(0, 8, 0, 58)
 menu.AnchorPoint = Vector2.new(0, 0)
 menu.Parent = gui
@@ -15359,32 +15547,22 @@ local function menuButton(order, icon, label, onClick, key)
 	b.Name = label
 	b.Text = ""
 	b.BackgroundTransparency = 1
-	b.Size = UDim2.fromOffset(96, 66)
+	b.Size = UDim2.fromOffset(100, 68)
 	b.LayoutOrder = order
 	b.Parent = menu
-	-- the icon, with a soft dark copy under it as a drop shadow
-	for k, offset in ipairs({3, 0}) do
-		local e = Instance.new("TextLabel")
-		e.Name = k == 1 and "IconShadow" or "Icon"
-		e.BackgroundTransparency = 1
-		e.Size = UDim2.fromOffset(44, 44)
-		e.Position = UDim2.new(0.5, offset, 0, offset)
-		e.AnchorPoint = Vector2.new(0.5, 0)
-		e.Text = icon
-		e.TextScaled = true
-		e.Font = Enum.Font.GothamBold
-		if k == 1 then
-			e.TextColor3 = Color3.new(0, 0, 0)
-			e.TextTransparency = 0.55
-		end
-		e.Parent = b
-	end
-	UIKit.label(b, label .. (key and (" [" .. key .. "]") or ""), {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.new(0.5, 0, 0, 44), AnchorPoint = Vector2.new(0.5, 0),
+	-- a soft dark disc behind a big 3D icon, with a bold label across the bottom of it
+	local disc = UIKit.panel(b, {Size = UDim2.fromOffset(52, 52), Position = UDim2.new(0.5, 0, 0, 2), AnchorPoint = Vector2.new(0.5, 0),
+		Color = Color3.new(0, 0, 0), Radius = 999, Stroke = false, Shade = false})
+	disc.BackgroundTransparency = 0.72
+	UIKit.icon(b, icon, {Size = UDim2.fromOffset(66, 66), Position = UDim2.new(0.5, 0, 0, -8), AnchorPoint = Vector2.new(0.5, 0)})
+	local caption = UIKit.label(b, label .. (key and (" [" .. key .. "]") or ""), {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.new(0.5, 0, 0, 46), AnchorPoint = Vector2.new(0.5, 0),
 		Stroke = 3, MaxText = 19})
+	caption.ZIndex = 2
 	-- the red alert badge (hidden until something needs you)
 	local alert = UIKit.panel(b, {Size = UDim2.fromOffset(28, 28), Position = UDim2.new(0.5, 26, 0, -4), AnchorPoint = Vector2.new(0.5, 0),
 		Color = C.Coral, Radius = 14, Stroke = 2.5, StrokeColor = C.Outline, ShadeAmount = 0.15})
 	alert.Name = "Alert"
+	alert.ZIndex = 4
 	alert.Visible = false
 	local alertText = UIKit.label(alert, "!", {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, MaxText = 18})
 	local scale = Instance.new("UIScale")
@@ -15407,22 +15585,19 @@ local function menuButton(order, icon, label, onClick, key)
 	end
 end
 
-local _, shopAlert = menuButton(1, "🛒", "Shop", function() UIBus.Fire("Shop") end)
-menuButton(2, "🏛️", "Museum", function()
+local _, shopAlert = menuButton(1, "Shop", "Shop", function() UIBus.Fire("Shop") end)
+menuButton(2, "Museum", "Museum", function()
 	local goHome = remotes:FindFirstChild("GoHome")
 	if goHome then goHome:FireServer() end
 end)
-menuButton(3, "🌍", "Worlds", function() UIBus.Fire("Teleport") end)
-local _, rebirthAlert = menuButton(4, "♻️", "Rebirth", function() UIBus.Fire("Rebirth") end)
-local bagButton, bagAlert = menuButton(5, "🎒", "Bag", function() UIBus.Fire("Inventory") end, "B")
-menuButton(6, "⚙️", "Settings", function() UIBus.Fire("Settings") end)
-local soundButton = menuButton(7, "🔊", "Sound", function() UIBus.Fire("ToggleSound") end)
+menuButton(3, "World", "Worlds", function() UIBus.Fire("Teleport") end)
+local _, rebirthAlert = menuButton(4, "Rebirth", "Rebirth", function() UIBus.Fire("Rebirth") end)
+local bagButton, bagAlert = menuButton(5, "Bag", "Bag", function() UIBus.Fire("Inventory") end, "B")
+menuButton(6, "Settings", "Settings", function() UIBus.Fire("Settings") end)
+local soundButton = menuButton(7, "SoundOn", "Sound", function() UIBus.Fire("ToggleSound") end)
 local function refreshSound()
-	local icon = player:GetAttribute("SoundMuted") and "🔇" or "🔊"
-	for _, name in ipairs({"Icon", "IconShadow"}) do
-		local e = soundButton:FindFirstChild(name)
-		if e then e.Text = icon end
-	end
+	local holder = soundButton:FindFirstChild("Icon")
+	if holder then UIKit.setIcon(holder, player:GetAttribute("SoundMuted") and "SoundOff" or "SoundOn") end
 end
 player:GetAttributeChangedSignal("SoundMuted"):Connect(refreshSound)
 refreshSound()
@@ -15619,12 +15794,12 @@ local gui = UIKit.screen(player, "InventoryGui", 3)
 ---------------------------------------------------------------------
 -- WINDOW
 ---------------------------------------------------------------------
-local window, content = UIKit.window(gui, "INVENTORY", UDim2.fromOffset(740, 560), C.Sun, "🎒")
+local window, content = UIKit.window(gui, "INVENTORY", UDim2.fromOffset(740, 560), C.Sun, "Bag")
 local countLabel = UIKit.label(content, "", {Size = UDim2.new(1, -260, 0, 26), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 22})
 UIKit.label(content, "Click a meme to hold it", {Size = UDim2.new(1, -260, 0, 14), Position = UDim2.fromOffset(4, 28), Align = "Left", Color = C.Grey, Stroke = 0,
 	Font = UIKit.BodyFont, MaxText = 13})
 -- fills every empty display slot in your museum with your best-earning memes
-local placeAllButton = UIKit.button(content, "🏛️ PLACE ALL IN MUSEUM", {Size = UDim2.fromOffset(250, 38), Position = UDim2.new(1, -4, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Violet, Radius = 19, MaxText = 16})
+local placeAllButton = UIKit.button(content, "PLACE ALL IN MUSEUM", {Icon = "Museum", Size = UDim2.fromOffset(270, 40), Position = UDim2.new(1, -4, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Violet, Radius = 19, MaxText = 16})
 placeAllButton.MouseButton1Click:Connect(function()
 	remotes:WaitForChild("PlaceAll"):FireServer()
 end)
@@ -15994,7 +16169,7 @@ local gui = UIKit.screen(player, "MuseumGui", 3)
 ---------------------------------------------------------------------
 -- DISPLAY WINDOW (opened from a slot)
 ---------------------------------------------------------------------
-local displayWindow, displayContent = UIKit.window(gui, "DISPLAY", UDim2.fromOffset(740, 580), C.Violet, "🏛️")
+local displayWindow, displayContent = UIKit.window(gui, "DISPLAY", UDim2.fromOffset(740, 580), C.Violet, "Museum")
 local currentPanel = UIKit.panel(displayContent, {Size = UDim2.new(1, 0, 0, 96), Color = C.PanelTint, Radius = 20, StrokeColor = C.Lilac})
 local currentTitle = UIKit.label(currentPanel, "", {Size = UDim2.new(1, -310, 0, 30), Position = UDim2.fromOffset(104, 16), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
 local currentSub = UIKit.label(currentPanel, "", {Size = UDim2.new(1, -310, 0, 22), Position = UDim2.fromOffset(104, 52), Align = "Left", Color = C.Money, Stroke = 0, MaxText = 18})
@@ -16065,7 +16240,7 @@ end)
 ---------------------------------------------------------------------
 -- ALIEN ART DEALER WINDOW
 ---------------------------------------------------------------------
-local dealerWindow, dealerContent = UIKit.window(gui, "ALIEN ART DEALER", UDim2.fromOffset(740, 580), C.Mint, "👽")
+local dealerWindow, dealerContent = UIKit.window(gui, "ALIEN ART DEALER", UDim2.fromOffset(740, 580), C.Mint, "Alien")
 UIKit.label(dealerContent, "\"Greetings, Earthling. I pay top dollar for ancient memes.\"", {
 	Size = UDim2.new(1, 0, 0, 24), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 20,
 })
@@ -16105,7 +16280,7 @@ end)
 ---------------------------------------------------------------------
 -- FLOOR ARROWS (only while you're inside a museum)
 ---------------------------------------------------------------------
--- a bright elevator bar pinned to the top center of the screen:  [▼ DOWN]  🛗 FLOOR 2/3  [UP ▲]
+-- a bright elevator bar pinned to the top center of the screen:  [▼ DOWN]  FLOOR 2/3  [UP ▲]
 -- (flat pills with no shading strips, so there are no stray lines)
 local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(360, 62), Position = UDim2.new(0.5, 0, 0, 90), AnchorPoint = Vector2.new(0.5, 0),
 	Color = C.Panel, Radius = 31, StrokeColor = C.Violet, Stroke = 4, Shade = false})
@@ -16143,7 +16318,8 @@ local upButton = pillButton("UP ▲", C.Sky, UDim2.new(1, -8, 0.5, 0), Vector2.n
 local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -236, 0, 24), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0, MaxText = 22})
 -- the price of the next floor hangs under the bar when it's still locked
 local pricePill = UIKit.panel(floorPanel, {Size = UDim2.fromOffset(190, 28), Position = UDim2.new(0.5, 0, 1, 6), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Radius = 14, Stroke = 2.5, Shade = false})
-local upPrice = UIKit.label(pricePill, "", {Size = UDim2.new(1, -16, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
+UIKit.icon(pricePill, "Lock", {Size = UDim2.fromOffset(34, 34), Position = UDim2.new(0, -6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+local upPrice = UIKit.label(pricePill, "", {Size = UDim2.new(1, -40, 0.72, 0), Position = UDim2.new(0.5, 12, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
 pricePill.Visible = false
 -- a soft glow pulsing around the bar so it's easy to spot
 local barStroke = floorPanel:FindFirstChildOfClass("UIStroke")
@@ -16191,14 +16367,14 @@ task.spawn(function()
 			local opened = string.split(museum:GetAttribute("UnlockedFloors") or "1", ",")
 			local owned = museum:GetAttribute("OwnerUserId") == player.UserId
 			local nextOpen = table.find(opened, tostring(floor + 1)) ~= nil
-			floorLabel.Text = "🛗 FLOOR " .. floor .. "/" .. topFloor
+			floorLabel.Text = "FLOOR " .. floor .. "/" .. topFloor
 			local canUp = floor < topFloor and (nextOpen or owned)
 			local buying = canUp and not nextOpen
 			setUsable(upButton, canUp, buying and C.Coral or C.Sky)
 			setUsable(downButton, floor > 1, C.Violet)
 			pricePill.Visible = buying
 			if buying then
-				upPrice.Text = "🔒 Unlock " .. ArtifactData.FormatMoney(GameConfig.FloorPrices[floor + 1])
+				upPrice.Text = "Unlock " .. ArtifactData.FormatMoney(GameConfig.FloorPrices[floor + 1])
 			end
 		end
 		task.wait(0.25)
@@ -16207,7 +16383,7 @@ end)
 ]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "RebirthClient", "LocalScript", [=[
 -- RebirthClient (LocalScript in StarterPlayer > StarterPlayerScripts)
--- The REBIRTH window (the ♻️ button on the HUD): how close you are to your next rebirth,
+-- The REBIRTH window (the Rebirth button on the HUD): how close you are to your next rebirth,
 -- what it gives you, the rebirth button, and the gem shop's Lucky Charm upgrade.
 -- The server side is RebirthManager.
 
@@ -16223,7 +16399,7 @@ local remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local player = Players.LocalPlayer
 local gui = UIKit.screen(player, "RebirthGui", 3)
-local window, content = UIKit.window(gui, "REBIRTH", UDim2.fromOffset(560, 470), C.Coral, "♻️")
+local window, content = UIKit.window(gui, "REBIRTH", UDim2.fromOffset(560, 470), C.Coral, "Rebirth")
 
 -- REBIRTH card
 local card = UIKit.panel(content, {Size = UDim2.new(1, -8, 0, 236), Position = UDim2.fromOffset(4, 4), Color = C.White, Radius = 20, Shade = false})
@@ -16235,14 +16411,14 @@ local progress = UIKit.label(track, "", {Size = UDim2.new(1, -16, 0.8, 0), Posit
 progress.ZIndex = 3
 UIKit.label(card, "You keep your memes, museum, pickaxes and worlds. Only your cash resets.", {Size = UDim2.new(1, -30, 0, 18), Position = UDim2.fromOffset(16, 138),
 	Align = "Left", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, MaxText = 14})
-local rebirthButton = UIKit.button(card, "REBIRTH", {Size = UDim2.new(1, -32, 0, 56), Position = UDim2.new(0.5, 0, 1, -70), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, MaxText = 26})
+local rebirthButton = UIKit.button(card, "REBIRTH", {Icon = "Rebirth", Size = UDim2.new(1, -32, 0, 56), Position = UDim2.new(0.5, 0, 1, -70), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, MaxText = 26})
 
 -- GEM SHOP card
 local gemCard = UIKit.panel(content, {Size = UDim2.new(1, -8, 0, 130), Position = UDim2.fromOffset(4, 252), Color = C.White, Radius = 20, Shade = false})
-UIKit.badge(gemCard, "🍀", C.Mint, {Diameter = 56, Position = UDim2.new(0, 14, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+UIKit.badge(gemCard, "Luck", C.Mint, {Diameter = 56, Position = UDim2.new(0, 14, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
 local charmTitle = UIKit.label(gemCard, "", {Size = UDim2.new(0.6, -80, 0, 28), Position = UDim2.fromOffset(84, 22), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 22})
 local charmText = UIKit.label(gemCard, "", {Size = UDim2.new(0.6, -80, 0, 40), Position = UDim2.fromOffset(84, 54), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 14})
-local charmButton = UIKit.button(gemCard, "", {Size = UDim2.new(0.36, 0, 0, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Color = C.Violet, MaxText = 20})
+local charmButton = UIKit.button(gemCard, "", {Icon = "Gem", Size = UDim2.new(0.36, 0, 0, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Color = C.Violet, MaxText = 20})
 
 local function refresh()
 	local rebirths = player:GetAttribute("Rebirths") or 0
@@ -16250,19 +16426,20 @@ local function refresh()
 	local gems = player:GetAttribute("Gems") or 0
 	local cost = GameConfig.RebirthCost(rebirths)
 	local bonus = math.floor(GameConfig.RebirthIncomeBonus * 100)
-	title.Text = "♻️ Rebirth " .. rebirths .. "  →  " .. (rebirths + 1)
+	title.Text = "Rebirth " .. rebirths .. "  →  " .. (rebirths + 1)
 	perks.Text = "Now: +" .. bonus * rebirths .. "% income.   After rebirthing: +" .. bonus * (rebirths + 1) .. "% income and +"
-		.. GameConfig.RebirthGemReward(rebirths) .. " 💎 gems."
+		.. GameConfig.RebirthGemReward(rebirths) .. " gems."
 	fill.Size = UDim2.fromScale(math.clamp(money / cost, 0, 1), 1)
 	progress.Text = ArtifactData.FormatMoney(money) .. " / " .. ArtifactData.FormatMoney(cost)
-	UIKit.setButton(rebirthButton, money >= cost and "♻️ REBIRTH NOW" or "🔒 NEED " .. ArtifactData.FormatMoney(cost), money >= cost and C.Coral or C.Grey)
+	UIKit.setButton(rebirthButton, money >= cost and "REBIRTH NOW" or "NEED " .. ArtifactData.FormatMoney(cost), money >= cost and C.Coral or C.Grey,
+		money >= cost and "Rebirth" or "Lock")
 
 	local level = player:GetAttribute("GemLuckLevel") or 0
 	local maxed = level >= GameConfig.GemLuckMaxLevel
 	local charmCost = (level + 1) * GameConfig.GemLuckCost
 	charmTitle.Text = "Lucky Charm  ·  Lv " .. level
-	charmText.Text = "+" .. math.floor(GameConfig.GemLuckPerLevel * 100 * level) .. "% luck on every dig. Each level adds +" .. math.floor(GameConfig.GemLuckPerLevel * 100) .. "%. You have " .. gems .. " 💎."
-	UIKit.setButton(charmButton, maxed and "MAXED" or ("💎 " .. charmCost), (not maxed and gems >= charmCost) and C.Violet or C.Grey)
+	charmText.Text = "+" .. math.floor(GameConfig.GemLuckPerLevel * 100 * level) .. "% luck on every dig. Each level adds +" .. math.floor(GameConfig.GemLuckPerLevel * 100) .. "%. You have " .. gems .. " gems."
+	UIKit.setButton(charmButton, maxed and "MAXED" or tostring(charmCost), (not maxed and gems >= charmCost) and C.Violet or C.Grey, maxed and "Star" or "Gem")
 end
 
 rebirthButton.MouseButton1Click:Connect(function()
@@ -16324,6 +16501,8 @@ local hint = UIKit.panel(gui, {
 hint.BackgroundTransparency = 0.12
 hint.Visible = false
 local hintDot = UIKit.panel(hint, {Size = UDim2.fromOffset(14, 14), Position = UDim2.new(0, 16, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Sun, Radius = 7, Stroke = false})
+-- messages tagged with an icon ("{Skull} ...") show that 3D icon instead of the dot
+local hintIcon = UIKit.icon(hint, nil, {Size = UDim2.fromOffset(48, 48), Position = UDim2.new(0, -2, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
 local hintText = UIKit.label(hint, "", {Size = UDim2.new(1, -56, 1, -14), Position = UDim2.new(0, 40, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
 	Align = "Left", Color = C.White, Stroke = 0, MaxText = 22})
 
@@ -16331,7 +16510,11 @@ local hintToken = 0
 local function showHint(text, color)
 	hintToken += 1
 	local myToken = hintToken
+	local icon
+	icon, text = UIKit.splitIcon(text)
 	hintText.Text = text
+	UIKit.setIcon(hintIcon, icon)
+	hintDot.Visible = icon == nil
 	hintDot.BackgroundColor3 = color or C.Sun
 	hintText.TextColor3 = (color or C.Sun):Lerp(C.White, 0.55)
 	hint.Visible = true
@@ -16352,7 +16535,8 @@ local pitPrompt = UIKit.panel(gui, {
 })
 pitPrompt.BackgroundTransparency = 0.12
 pitPrompt.Visible = false
-UIKit.label(pitPrompt, "⛏  Jump into the pit to dig!", {Size = UDim2.new(1, -24, 1, -12), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+UIKit.icon(pitPrompt, "Pickaxe", {Size = UDim2.fromOffset(40, 40), Position = UDim2.new(0, -4, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+UIKit.label(pitPrompt, "Jump into the pit to dig!", {Size = UDim2.new(1, -54, 1, -12), Position = UDim2.new(0.5, 14, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5),
 	Color = C.White, Stroke = 0, MaxText = 17})
 local insidePit = false
 
@@ -16555,7 +16739,7 @@ task.spawn(function()
 			updatePitAir(world, inPit and depth or 0, zoneIndex or #world.Zones, zone.Color)
 			depthLabel.Text = depth .. "m"
 			local bonus = GameConfig.DepthBonus(world, feetY)
-			bonusLabel.Text = bonus >= 1.01 and string.format("🍀 x%.2f LUCK", bonus) or ""
+			bonusLabel.Text = bonus >= 1.01 and string.format("x%.2f LUCK", bonus) or ""
 			zoneLabel.Text = string.upper(zone.Name)
 			zoneDot.BackgroundColor3 = zone.Color
 			if zoneStroke then zoneStroke.Color = zone.Color end
@@ -17461,7 +17645,7 @@ end
 ---------------------------------------------------------------------
 -- SHOVEL SHOP WINDOW
 ---------------------------------------------------------------------
-local window, content = UIKit.window(gui, "PICKAXE SHOP", UDim2.fromOffset(780, 580), C.Violet, "⛏️")
+local window, content = UIKit.window(gui, "PICKAXE SHOP", UDim2.fromOffset(780, 580), C.Violet, "Pickaxe")
 
 local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(180, 38), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 19})
 local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -24, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, StrokeColor = UIKit.shadeColor(C.Money, 0.6), MaxText = 24})
@@ -17491,7 +17675,7 @@ local function buildCards(world)
 		if child:IsA("GuiObject") then child:Destroy() end
 	end
 	cards = {}
-	worldLabel.Text = "🌍  " .. world.Name
+	worldLabel.Text = world.Name
 	local maxFind, maxLuck, maxPower = maxStat(world, "FindChance"), maxStat(world, "Luck"), maxStat(world, "Power")
 	local minCooldown = math.huge
 	for _, def in ipairs(world.Shovels) do minCooldown = math.min(minCooldown, def.Cooldown) end
@@ -17508,7 +17692,7 @@ local function buildCards(world)
 		-- middle column: name, depth badge, description (sized to the column so nothing overlaps)
 		UIKit.label(card, def.Name, {Size = UDim2.new(0.5, -140, 0, 26), Position = UDim2.fromOffset(134, 10), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
 		local zoneTag = UIKit.panel(card, {Size = UDim2.new(0.5, -140, 0, 24), Position = UDim2.fromOffset(134, 40), Color = zone.Color, Radius = 12})
-		UIKit.label(zoneTag, "⬇ " .. -zone.Bottom .. "m  •  " .. string.upper(zone.Name), {Size = UDim2.new(1, -14, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 15})
+		UIKit.label(zoneTag, "▼ " .. -zone.Bottom .. "m  •  " .. string.upper(zone.Name), {Size = UDim2.new(1, -14, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 15})
 		UIKit.label(card, def.Description, {Size = UDim2.new(0.5, -140, 0, 52), Position = UDim2.fromOffset(134, 70), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
 
 		-- right column: stat bars. Speed is shown as a multiplier of the starter pickaxe (1.5x = 50% faster swings)
@@ -17755,10 +17939,10 @@ local skipRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Tutor
 local player = Players.LocalPlayer
 
 local STEPS = {
-	{Icon = "⛏", Title = "Equip your pickaxe", Text = "Press 1, or click the pickaxe in your hotbar at the bottom of the screen."},
-	{Icon = "🕳", Title = "Jump into the pit", Text = "Follow the glowing trail to the dig site and hop down into the dirt!"},
-	{Icon = "🖼", Title = "Dig up a framed artifact", Text = "Click the ground to swing. Keep digging until an artifact appears, then hold E to pull it out!"},
-	{Icon = "🏛", Title = "Display it in your museum", Text = "Follow the trail home and press E at a glowing pedestal to put your meme on show."},
+	{Icon = "Pickaxe", Title = "Equip your pickaxe", Text = "Press 1, or click the pickaxe in your hotbar at the bottom of the screen."},
+	{Icon = "Hole", Title = "Jump into the pit", Text = "Follow the glowing trail to the dig site and hop down into the dirt!"},
+	{Icon = "Picture", Title = "Dig up a framed artifact", Text = "Click the ground to swing. Keep digging until an artifact appears, then hold E to pull it out!"},
+	{Icon = "Museum", Title = "Display it in your museum", Text = "Follow the trail home and press E at a glowing pedestal to put your meme on show."},
 }
 local STEP_COLORS = {C.Sun, C.Mint, C.Coral, C.Violet}
 
@@ -17784,8 +17968,7 @@ card.BackgroundTransparency = 0.08
 card.Visible = false
 local cardStroke = card:FindFirstChildOfClass("UIStroke")
 local stepTag = UIKit.label(card, "", {Size = UDim2.new(1, -110, 0, 18), Position = UDim2.fromOffset(16, 12), Align = "Left", Color = C.Sky, Stroke = 0, MaxText = 15})
-local badge = UIKit.badge(card, "", C.Sun, {Diameter = 50, Position = UDim2.fromOffset(14, 38)})
-local badgeLabel = badge:FindFirstChildWhichIsA("TextLabel", true)
+local badge, badgeIcon = UIKit.badge(card, "Pickaxe", C.Sun, {Diameter = 50, Position = UDim2.fromOffset(14, 38)})
 local title = UIKit.label(card, "", {Size = UDim2.new(1, -90, 0, 28), Position = UDim2.fromOffset(74, 38), Align = "Left", Color = C.White, Stroke = 2, MaxText = 22})
 local body = UIKit.label(card, "", {Size = UDim2.new(1, -90, 0, 58), Position = UDim2.fromOffset(74, 68), Align = "Left", VAlign = "Top",
 	Color = C.PanelTint, Stroke = 0, Font = UIKit.BodyFont, TextSize = 15})
@@ -17799,7 +17982,7 @@ skipButton.MouseButton1Click:Connect(function()
 end)
 
 -- step 1: a bouncing arrow pointing down at the hotbar
-local hotbarArrow = UIKit.label(gui, "⬇", {Size = UDim2.fromOffset(60, 60), Position = UDim2.new(0.5, 0, 1, -140), AnchorPoint = Vector2.new(0.5, 1),
+local hotbarArrow = UIKit.label(gui, "▼", {Size = UDim2.fromOffset(60, 60), Position = UDim2.new(0.5, 0, 1, -140), AnchorPoint = Vector2.new(0.5, 1),
 	Color = C.Sun, Stroke = 3, MaxText = 56})
 hotbarArrow.Visible = false
 
@@ -17807,7 +17990,8 @@ hotbarArrow.Visible = false
 local toast = UIKit.panel(gui, {Size = UDim2.fromOffset(460, 70), Position = UDim2.fromScale(0.5, 0.3), AnchorPoint = Vector2.new(0.5, 0.5),
 	Color = C.Mint, Radius = 35, Stroke = 4, StrokeColor = C.Ink})
 toast.Visible = false
-UIKit.label(toast, "🎉 TUTORIAL COMPLETE! Your meme is earning money!", {Size = UDim2.new(1, -40, 0.6, 0), Position = UDim2.fromScale(0.5, 0.5),
+UIKit.icon(toast, "Party", {Size = UDim2.fromOffset(84, 84), Position = UDim2.new(0, -18, 0.5, -6), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+UIKit.label(toast, "TUTORIAL COMPLETE! Your meme is earning money!", {Size = UDim2.new(1, -90, 0.6, 0), Position = UDim2.new(0.5, 30, 0.5, 0),
 	AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2.5, MaxText = 22})
 
 ---------------------------------------------------------------------
@@ -17828,7 +18012,7 @@ arrowGui.Size = UDim2.fromOffset(90, 90)
 arrowGui.AlwaysOnTop = true
 arrowGui.LightInfluence = 0
 arrowGui.Parent = targetPart
-local worldArrow = UIKit.label(arrowGui, "⬇", {Size = UDim2.fromScale(1, 1), Color = C.Sun, Stroke = 3, MaxText = 80})
+local worldArrow = UIKit.label(arrowGui, "▼", {Size = UDim2.fromScale(1, 1), Color = C.Sun, Stroke = 3, MaxText = 80})
 
 local beam = Instance.new("Beam")
 beam.Attachment1 = targetAttachment
@@ -17907,7 +18091,7 @@ local function showStep(step)
 	stepTag.Text = "TUTORIAL  ·  STEP " .. step .. " OF " .. #STEPS
 	title.Text = info.Title
 	body.Text = info.Text
-	if badgeLabel then badgeLabel.Text = info.Icon end
+	UIKit.setIcon(badgeIcon, info.Icon)
 	badge.BackgroundColor3 = color
 	cardStroke.Color = color
 	for i, dot in ipairs(dots) do
@@ -17982,7 +18166,7 @@ local travelRemote = remotes:WaitForChild("TravelToWorld")
 local player = Players.LocalPlayer
 local gui = UIKit.screen(player, "WorldMapGui", 3)
 
-local window, content = UIKit.window(gui, "WORLD MAP", UDim2.fromOffset(680, 560), C.Sky, "🌍")
+local window, content = UIKit.window(gui, "WORLD MAP", UDim2.fromOffset(680, 560), C.Sky, "World")
 
 local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(180, 38), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 19})
 local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -24, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, StrokeColor = UIKit.shadeColor(C.Money, 0.6), MaxText = 24})
@@ -18015,13 +18199,14 @@ for _, world in ipairs(GameConfig.Worlds) do
 	local info = WorldGimmicks[world.Id]
 	if info then
 		local tag = UIKit.panel(card, {Size = UDim2.fromOffset(170, 24), Position = UDim2.fromOffset(88, 40), Color = C.Ink, Radius = 12, Stroke = 2, StrokeColor = planetColor, Shade = false})
-		UIKit.label(tag, info.Icon .. " " .. string.upper(info.Tag), {Size = UDim2.new(1, -14, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 0, MaxText = 14})
+		UIKit.icon(tag, info.Icon, {Size = UDim2.fromOffset(34, 34), Position = UDim2.new(0, -8, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+		UIKit.label(tag, string.upper(info.Tag), {Size = UDim2.new(1, -40, 0.72, 0), Position = UDim2.new(0.5, 12, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 0, MaxText = 14})
 	end
 	local sub = world.Enabled and (world.Tagline or (#world.Shovels .. " pickaxes  •  digs down to " .. -world.Zones[#world.Zones].Bottom .. "m  •  your museum is here"))
 		or "Still being excavated... coming soon!"
 	UIKit.label(card, sub, {Size = UDim2.new(0.62, -90, 0, 34), Position = UDim2.fromOffset(88, 70), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
 
-	local b = UIKit.button(card, "", {Size = UDim2.new(0.3, 0, 0, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), MaxText = 20})
+	local b = UIKit.button(card, "", {Icon = "World", Size = UDim2.new(0.3, 0, 0, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), MaxText = 20})
 	buttons[world.Id] = b
 	b.MouseButton1Click:Connect(function()
 		local unlocked = table.find(string.split(player:GetAttribute("UnlockedWorlds") or "1", ","), tostring(world.Id))
@@ -18046,13 +18231,13 @@ local function refresh()
 	for _, world in ipairs(GameConfig.Worlds) do
 		local b = buttons[world.Id]
 		if not world.Enabled then
-			UIKit.setButton(b, "SOON • " .. ArtifactData.FormatMoney(world.Price), C.Grey)
+			UIKit.setButton(b, "SOON • " .. ArtifactData.FormatMoney(world.Price), C.Grey, "Lock")
 		elseif world.Id == current then
-			UIKit.setButton(b, "📍 YOU ARE HERE", C.Lilac)
+			UIKit.setButton(b, "YOU ARE HERE", C.Lilac, "Pin")
 		elseif table.find(unlocked, tostring(world.Id)) then
-			UIKit.setButton(b, "TRAVEL", C.Sky)
+			UIKit.setButton(b, "TRAVEL", C.Sky, "World")
 		else
-			UIKit.setButton(b, "🔒 " .. ArtifactData.FormatMoney(world.Price), money >= world.Price and C.Mint or C.Coral)
+			UIKit.setButton(b, ArtifactData.FormatMoney(world.Price), money >= world.Price and C.Mint or C.Coral, "Lock")
 		end
 	end
 end
@@ -18220,24 +18405,27 @@ local gui = UIKit.screen(player, "WorldGimmickGui", 4)
 local intro = UIKit.panel(gui, {Size = UDim2.fromOffset(330, 64), Position = UDim2.new(1, -14, 0, 12), AnchorPoint = Vector2.new(1, 0), Color = C.Ink, Radius = 18, Stroke = 2.5, StrokeColor = C.Lilac, ShadeAmount = 0.2})
 intro.BackgroundTransparency = 0.1
 intro.Visible = false
-local introTitle = UIKit.label(intro, "", {Size = UDim2.new(1, -20, 0, 22), Position = UDim2.fromOffset(12, 6), Align = "Left", Color = C.Sun, Stroke = 0, MaxText = 18})
+local introIcon = UIKit.icon(intro, nil, {Size = UDim2.fromOffset(56, 56), Position = UDim2.new(0, -18, 0, -14), ZIndex = 2})
+local introTitle = UIKit.label(intro, "", {Size = UDim2.new(1, -50, 0, 22), Position = UDim2.fromOffset(42, 6), Align = "Left", Color = C.Sun, Stroke = 0, MaxText = 18})
 local introText = UIKit.label(intro, "", {Size = UDim2.new(1, -20, 0, 32), Position = UDim2.fromOffset(12, 28), Align = "Left", VAlign = "Top",
 	Color = C.White, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
 
 -- event + boost timers (top right, small pills under the intro)
-local function pill(y, color)
+local function pill(y, color, icon)
 	local p = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 32), Position = UDim2.new(1, -14, 0, y), AnchorPoint = Vector2.new(1, 0), Color = color, Radius = 16, Stroke = 2})
 	p.Visible = false
-	local l = UIKit.label(p, "", {Size = UDim2.new(1, -20, 1, -10), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
+	UIKit.icon(p, icon, {Size = UDim2.fromOffset(40, 40), Position = UDim2.new(0, -10, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+	local l = UIKit.label(p, "", {Size = UDim2.new(1, -44, 1, -10), Position = UDim2.new(0.5, 14, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
 	return p, l
 end
-local eventPill, eventLabel = pill(84, C.Violet)
-local boostPill, boostLabel = pill(122, C.Coral)
+local eventPill, eventLabel = pill(84, C.Violet, "Star")
+local boostPill, boostLabel = pill(122, C.Coral, "Candy")
 
 -- air meter (bottom right, above the flare button's spot)
 local airPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 40), Position = UDim2.new(1, -16, 1, -196), AnchorPoint = Vector2.new(1, 1), Color = C.Ink, Radius = 20, Stroke = 2.5, StrokeColor = C.Sky})
 airPanel.Visible = false
-UIKit.label(airPanel, "🫧 AIR", {Size = UDim2.fromOffset(60, 22), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Align = "Left", Color = C.White, Stroke = 0, MaxText = 16})
+UIKit.icon(airPanel, "Bubble", {Size = UDim2.fromOffset(40, 40), Position = UDim2.new(0, -6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+UIKit.label(airPanel, "AIR", {Size = UDim2.fromOffset(40, 22), Position = UDim2.new(0, 34, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Align = "Left", Color = C.White, Stroke = 0, MaxText = 16})
 local airTrack = UIKit.panel(airPanel, {Size = UDim2.new(1, -90, 0, 14), Position = UDim2.new(0, 76, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.PanelTint, Radius = 7, Stroke = false, Shade = false})
 local airFill = UIKit.panel(airTrack, {Size = UDim2.fromScale(1, 1), Color = C.Sky, Radius = 7, Stroke = false, Shade = false})
 
@@ -18285,7 +18473,8 @@ local function showIntro(worldId)
 		return
 	end
 	local myToken = introToken
-	introTitle.Text = info.Icon .. "  " .. info.Title
+	introTitle.Text = info.Title
+	UIKit.setIcon(introIcon, info.Icon)
 	introText.Text = info.Text
 	intro.Visible = true
 	UIKit.pop(intro, 0.7)
@@ -18316,10 +18505,10 @@ RunService.RenderStepped:Connect(function(dt)
 	local eventName = player:GetAttribute("WorldEvent") or ""
 	local left = player:GetAttribute("WorldEventLeft") or 0
 	eventPill.Visible = eventName ~= ""
-	if eventPill.Visible then eventLabel.Text = "⭐ " .. eventName .. "  ·  " .. left .. "s" end
+	if eventPill.Visible then eventLabel.Text = eventName .. "  ·  " .. left .. "s" end
 	local boostName = player:GetAttribute("PersonalBoost") or ""
 	boostPill.Visible = boostName ~= ""
-	if boostPill.Visible then boostLabel.Text = "🍭 " .. boostName .. "  ·  " .. (player:GetAttribute("PersonalBoostLeft") or 0) .. "s" end
+	if boostPill.Visible then boostLabel.Text = boostName .. "  ·  " .. (player:GetAttribute("PersonalBoostLeft") or 0) .. "s" end
 
 	-- blizzard: snow falling around the camera and a cold, foggy tint
 	local blizzard = event == "BLIZZARD"
@@ -18481,10 +18670,10 @@ RunService.Heartbeat:Connect(function()
 	local parts = string.split(shift, ":")
 	local mode, angle = parts[1], math.rad(tonumber(parts[2]) or 0)
 	if mode == "Up" then
-		alert("⚠️ GRAVITY SHIFT! Gravity flips upward!", C.Lilac, 2.5)
+		alert("GRAVITY SHIFT! Gravity flips upward!", C.Lilac, 2.5)
 		player:SetAttribute("GravityOverride", -30) -- WorldGimmickClient applies it
 	else
-		alert("⚠️ GRAVITY SHIFT! Gravity pulls sideways!", C.Lilac, 2.5)
+		alert("GRAVITY SHIFT! Gravity pulls sideways!", C.Lilac, 2.5)
 		player:SetAttribute("GravityOverride", 25)
 		local push = Vector3.new(math.cos(angle), 0.2, math.sin(angle)) * 40
 		task.spawn(function()
@@ -18500,7 +18689,7 @@ end)
 -- TORCH FLARE (Frostbyte Tundra): F key or the button, while in a world that has it
 ---------------------------------------------------------------------
 local torchFlare = remote("TorchFlare")
-local flareButton = UIKit.button(gui, "🔥 FLARE [F]", {Size = UDim2.fromOffset(170, 50), Position = UDim2.new(1, -16, 1, -130), AnchorPoint = Vector2.new(1, 1), Color = C.Coral, MaxText = 20})
+local flareButton = UIKit.button(gui, "FLARE [F]", {Icon = "Fire", Size = UDim2.fromOffset(180, 50), Position = UDim2.new(1, -16, 1, -130), AnchorPoint = Vector2.new(1, 1), Color = C.Coral, MaxText = 20})
 flareButton.Visible = false
 local flareLabel = flareButton:FindFirstChild("Label")
 local function fireFlare()
@@ -18518,13 +18707,13 @@ task.spawn(function()
 			local now = os.time()
 			local heat, ready = player:GetAttribute("HeatUntil") or 0, player:GetAttribute("FlareReadyAt") or 0
 			if heat > now then
-				flareLabel.Text = "🔥 HOT " .. (heat - now) .. "s"
+				flareLabel.Text = "HOT " .. (heat - now) .. "s"
 				flareButton.BackgroundColor3 = C.Sun
 			elseif ready > now then
-				flareLabel.Text = "⏳ " .. (ready - now) .. "s"
+				flareLabel.Text = "WAIT " .. (ready - now) .. "s"
 				flareButton.BackgroundColor3 = C.Grey
 			else
-				flareLabel.Text = "🔥 FLARE [F]"
+				flareLabel.Text = "FLARE [F]"
 				flareButton.BackgroundColor3 = C.Coral
 			end
 		end
@@ -18538,7 +18727,8 @@ end)
 local qte = UIKit.panel(gui, {Size = UDim2.fromOffset(360, 170), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Radius = 26, Stroke = 4, StrokeColor = C.Violet, Shade = false})
 qte.BackgroundTransparency = 0.05
 qte.Visible = false
-UIKit.label(qte, "☠️ CURSE TRAP!", {Size = UDim2.new(1, -30, 0, 34), Position = UDim2.new(0.5, 0, 0, 12), AnchorPoint = Vector2.new(0.5, 0), Color = C.Lilac, Stroke = 0, MaxText = 30})
+UIKit.icon(qte, "Skull", {Size = UDim2.fromOffset(76, 76), Position = UDim2.new(0, -24, 0, -30), ZIndex = 2})
+UIKit.label(qte, "CURSE TRAP!", {Size = UDim2.new(1, -30, 0, 34), Position = UDim2.new(0.5, 0, 0, 12), AnchorPoint = Vector2.new(0.5, 0), Color = C.Lilac, Stroke = 0, MaxText = 30})
 local qteKey = UIKit.button(qte, "PRESS [E]", {Size = UDim2.fromOffset(220, 60), Position = UDim2.new(0.5, 0, 0, 56), AnchorPoint = Vector2.new(0.5, 0), Color = C.Violet, MaxText = 28})
 local qteTrack = UIKit.panel(qte, {Size = UDim2.new(1, -40, 0, 12), Position = UDim2.new(0.5, 0, 1, -24), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 6, Stroke = false, Shade = false})
 local qteFill = UIKit.panel(qteTrack, {Size = UDim2.fromScale(1, 1), Color = C.Coral, Radius = 6, Stroke = false, Shade = false})
@@ -18582,7 +18772,8 @@ end)
 local hack = UIKit.panel(gui, {Size = UDim2.fromOffset(340, 300), Position = UDim2.fromScale(0.5, 0.45), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Radius = 26, Stroke = 4, StrokeColor = C.Mint, Shade = false})
 hack.BackgroundTransparency = 0.05
 hack.Visible = false
-UIKit.label(hack, "💾 HACKING DATA NODE", {Size = UDim2.new(1, -30, 0, 28), Position = UDim2.new(0.5, 0, 0, 12), AnchorPoint = Vector2.new(0.5, 0), Color = C.Mint, Stroke = 0, MaxText = 24})
+UIKit.icon(hack, "Disk", {Size = UDim2.fromOffset(70, 70), Position = UDim2.new(0, -22, 0, -28), ZIndex = 2})
+UIKit.label(hack, "HACKING DATA NODE", {Size = UDim2.new(1, -30, 0, 28), Position = UDim2.new(0.5, 0, 0, 12), AnchorPoint = Vector2.new(0.5, 0), Color = C.Mint, Stroke = 0, MaxText = 24})
 UIKit.label(hack, "Tap / click / Space when the rings line up!", {Size = UDim2.new(1, -30, 0, 18), Position = UDim2.new(0.5, 0, 0, 42), AnchorPoint = Vector2.new(0.5, 0), Color = C.White, Stroke = 0, Font = UIKit.BodyFont, MaxText = 15})
 local function ring(size, color, thickness)
 	local r = Instance.new("Frame")
@@ -18654,4 +18845,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 16:38). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 18:03). Now save the place (Ctrl+S).")

@@ -30,24 +30,27 @@ local gui = UIKit.screen(player, "WorldGimmickGui", 4)
 local intro = UIKit.panel(gui, {Size = UDim2.fromOffset(330, 64), Position = UDim2.new(1, -14, 0, 12), AnchorPoint = Vector2.new(1, 0), Color = C.Ink, Radius = 18, Stroke = 2.5, StrokeColor = C.Lilac, ShadeAmount = 0.2})
 intro.BackgroundTransparency = 0.1
 intro.Visible = false
-local introTitle = UIKit.label(intro, "", {Size = UDim2.new(1, -20, 0, 22), Position = UDim2.fromOffset(12, 6), Align = "Left", Color = C.Sun, Stroke = 0, MaxText = 18})
+local introIcon = UIKit.icon(intro, nil, {Size = UDim2.fromOffset(56, 56), Position = UDim2.new(0, -18, 0, -14), ZIndex = 2})
+local introTitle = UIKit.label(intro, "", {Size = UDim2.new(1, -50, 0, 22), Position = UDim2.fromOffset(42, 6), Align = "Left", Color = C.Sun, Stroke = 0, MaxText = 18})
 local introText = UIKit.label(intro, "", {Size = UDim2.new(1, -20, 0, 32), Position = UDim2.fromOffset(12, 28), Align = "Left", VAlign = "Top",
 	Color = C.White, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
 
 -- event + boost timers (top right, small pills under the intro)
-local function pill(y, color)
+local function pill(y, color, icon)
 	local p = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 32), Position = UDim2.new(1, -14, 0, y), AnchorPoint = Vector2.new(1, 0), Color = color, Radius = 16, Stroke = 2})
 	p.Visible = false
-	local l = UIKit.label(p, "", {Size = UDim2.new(1, -20, 1, -10), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
+	UIKit.icon(p, icon, {Size = UDim2.fromOffset(40, 40), Position = UDim2.new(0, -10, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+	local l = UIKit.label(p, "", {Size = UDim2.new(1, -44, 1, -10), Position = UDim2.new(0.5, 14, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
 	return p, l
 end
-local eventPill, eventLabel = pill(84, C.Violet)
-local boostPill, boostLabel = pill(122, C.Coral)
+local eventPill, eventLabel = pill(84, C.Violet, "Star")
+local boostPill, boostLabel = pill(122, C.Coral, "Candy")
 
 -- air meter (bottom right, above the flare button's spot)
 local airPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 40), Position = UDim2.new(1, -16, 1, -196), AnchorPoint = Vector2.new(1, 1), Color = C.Ink, Radius = 20, Stroke = 2.5, StrokeColor = C.Sky})
 airPanel.Visible = false
-UIKit.label(airPanel, "🫧 AIR", {Size = UDim2.fromOffset(60, 22), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Align = "Left", Color = C.White, Stroke = 0, MaxText = 16})
+UIKit.icon(airPanel, "Bubble", {Size = UDim2.fromOffset(40, 40), Position = UDim2.new(0, -6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+UIKit.label(airPanel, "AIR", {Size = UDim2.fromOffset(40, 22), Position = UDim2.new(0, 34, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Align = "Left", Color = C.White, Stroke = 0, MaxText = 16})
 local airTrack = UIKit.panel(airPanel, {Size = UDim2.new(1, -90, 0, 14), Position = UDim2.new(0, 76, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.PanelTint, Radius = 7, Stroke = false, Shade = false})
 local airFill = UIKit.panel(airTrack, {Size = UDim2.fromScale(1, 1), Color = C.Sky, Radius = 7, Stroke = false, Shade = false})
 
@@ -95,7 +98,8 @@ local function showIntro(worldId)
 		return
 	end
 	local myToken = introToken
-	introTitle.Text = info.Icon .. "  " .. info.Title
+	introTitle.Text = info.Title
+	UIKit.setIcon(introIcon, info.Icon)
 	introText.Text = info.Text
 	intro.Visible = true
 	UIKit.pop(intro, 0.7)
@@ -126,10 +130,10 @@ RunService.RenderStepped:Connect(function(dt)
 	local eventName = player:GetAttribute("WorldEvent") or ""
 	local left = player:GetAttribute("WorldEventLeft") or 0
 	eventPill.Visible = eventName ~= ""
-	if eventPill.Visible then eventLabel.Text = "⭐ " .. eventName .. "  ·  " .. left .. "s" end
+	if eventPill.Visible then eventLabel.Text = eventName .. "  ·  " .. left .. "s" end
 	local boostName = player:GetAttribute("PersonalBoost") or ""
 	boostPill.Visible = boostName ~= ""
-	if boostPill.Visible then boostLabel.Text = "🍭 " .. boostName .. "  ·  " .. (player:GetAttribute("PersonalBoostLeft") or 0) .. "s" end
+	if boostPill.Visible then boostLabel.Text = boostName .. "  ·  " .. (player:GetAttribute("PersonalBoostLeft") or 0) .. "s" end
 
 	-- blizzard: snow falling around the camera and a cold, foggy tint
 	local blizzard = event == "BLIZZARD"

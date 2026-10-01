@@ -80,7 +80,7 @@ def write_lua(done):
     lines = [
         "-- ArtifactImages (ModuleScript in ReplicatedStorage)",
         "-- Written by tools/upload_meme_images.py: the uploaded meme picture for each artifact.",
-        "-- Any artifact without a picture here shows its emoji icon instead (see ArtifactIcons).",
+        "-- Any artifact without a picture here shows its 3D figure instead (see ArtifactModels).",
         "",
         "return {",
     ]

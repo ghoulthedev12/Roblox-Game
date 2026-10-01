@@ -21,7 +21,7 @@ local travelRemote = remotes:WaitForChild("TravelToWorld")
 local player = Players.LocalPlayer
 local gui = UIKit.screen(player, "WorldMapGui", 3)
 
-local window, content = UIKit.window(gui, "WORLD MAP", UDim2.fromOffset(680, 560), C.Sky, "🌍")
+local window, content = UIKit.window(gui, "WORLD MAP", UDim2.fromOffset(680, 560), C.Sky, "World")
 
 local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(180, 38), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 19})
 local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -24, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, StrokeColor = UIKit.shadeColor(C.Money, 0.6), MaxText = 24})
@@ -54,13 +54,14 @@ for _, world in ipairs(GameConfig.Worlds) do
 	local info = WorldGimmicks[world.Id]
 	if info then
 		local tag = UIKit.panel(card, {Size = UDim2.fromOffset(170, 24), Position = UDim2.fromOffset(88, 40), Color = C.Ink, Radius = 12, Stroke = 2, StrokeColor = planetColor, Shade = false})
-		UIKit.label(tag, info.Icon .. " " .. string.upper(info.Tag), {Size = UDim2.new(1, -14, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 0, MaxText = 14})
+		UIKit.icon(tag, info.Icon, {Size = UDim2.fromOffset(34, 34), Position = UDim2.new(0, -8, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+		UIKit.label(tag, string.upper(info.Tag), {Size = UDim2.new(1, -40, 0.72, 0), Position = UDim2.new(0.5, 12, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 0, MaxText = 14})
 	end
 	local sub = world.Enabled and (world.Tagline or (#world.Shovels .. " pickaxes  •  digs down to " .. -world.Zones[#world.Zones].Bottom .. "m  •  your museum is here"))
 		or "Still being excavated... coming soon!"
 	UIKit.label(card, sub, {Size = UDim2.new(0.62, -90, 0, 34), Position = UDim2.fromOffset(88, 70), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
 
-	local b = UIKit.button(card, "", {Size = UDim2.new(0.3, 0, 0, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), MaxText = 20})
+	local b = UIKit.button(card, "", {Icon = "World", Size = UDim2.new(0.3, 0, 0, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), MaxText = 20})
 	buttons[world.Id] = b
 	b.MouseButton1Click:Connect(function()
 		local unlocked = table.find(string.split(player:GetAttribute("UnlockedWorlds") or "1", ","), tostring(world.Id))
@@ -85,13 +86,13 @@ local function refresh()
 	for _, world in ipairs(GameConfig.Worlds) do
 		local b = buttons[world.Id]
 		if not world.Enabled then
-			UIKit.setButton(b, "SOON • " .. ArtifactData.FormatMoney(world.Price), C.Grey)
+			UIKit.setButton(b, "SOON • " .. ArtifactData.FormatMoney(world.Price), C.Grey, "Lock")
 		elseif world.Id == current then
-			UIKit.setButton(b, "📍 YOU ARE HERE", C.Lilac)
+			UIKit.setButton(b, "YOU ARE HERE", C.Lilac, "Pin")
 		elseif table.find(unlocked, tostring(world.Id)) then
-			UIKit.setButton(b, "TRAVEL", C.Sky)
+			UIKit.setButton(b, "TRAVEL", C.Sky, "World")
 		else
-			UIKit.setButton(b, "🔒 " .. ArtifactData.FormatMoney(world.Price), money >= world.Price and C.Mint or C.Coral)
+			UIKit.setButton(b, ArtifactData.FormatMoney(world.Price), money >= world.Price and C.Mint or C.Coral, "Lock")
 		end
 	end
 end

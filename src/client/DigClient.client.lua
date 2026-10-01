@@ -64,8 +64,9 @@ local function headerCard(size, position, color, title)
 	return card, titleLabel, paint
 end
 
-local mini = headerCard(UDim2.fromOffset(480, 160), UDim2.fromScale(0.5, 0.7), C.Sun, "🍀 LUCKY DIG!")
+local mini = headerCard(UDim2.fromOffset(480, 160), UDim2.fromScale(0.5, 0.7), C.Sun, "LUCKY DIG!")
 mini.Visible = false
+UIKit.icon(mini, "Luck", {Size = UDim2.fromOffset(64, 64), Position = UDim2.fromOffset(-14, -22), ZIndex = 3})
 UIKit.label(mini, "Stop in the green for bonus luck!", {Size = UDim2.new(0.9, 0, 0, 22), Position = UDim2.new(0.5, 0, 0, 58), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0, MaxText = 20})
 
 local bar = UIKit.panel(mini, {Size = UDim2.new(0.88, 0, 0, 30), Position = UDim2.new(0.5, 0, 0, 88), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 15, Stroke = 3, StrokeColor = C.Ink, Shade = false})
@@ -259,7 +260,7 @@ pullRemote.OnClientEvent:Connect(function(finder, _painting, info)
 	if finder ~= player or typeof(info) ~= "table" then return end
 	clearBuried()
 	task.delay(0.9, function()
-		say(foundText, foundStroke, "✨ You found " .. info.Name .. "!  " .. string.upper(info.Rarity) .. "  ·  +"
+		say(foundText, foundStroke, "You found " .. info.Name .. "!  " .. string.upper(info.Rarity) .. "  ·  +"
 			.. ArtifactData.FormatMoney(info.Income) .. "/s", info.Color:Lerp(C.White, 0.25), 3.5)
 	end)
 end)
@@ -271,14 +272,16 @@ local banner = UIKit.panel(gui, {Size = UDim2.fromOffset(640, 54), Position = UD
 banner.BackgroundTransparency = 0.08
 banner.Visible = false
 local bannerStroke = banner:FindFirstChildOfClass("UIStroke")
-local bannerStar = UIKit.badge(banner, "🎉", C.Sun, {Diameter = 44, Position = UDim2.new(0, 6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+local bannerStar, bannerIcon = UIKit.badge(banner, "Party", C.Sun, {Diameter = 44, Position = UDim2.new(0, 6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
 local bannerText = UIKit.label(banner, "", {Size = UDim2.new(1, -80, 0.56, 0), Position = UDim2.new(0, 62, 0.22, 0), Align = "Left", Color = C.White, Stroke = 0, MaxText = 24})
 
 local bannerToken = 0
 announceRemote.OnClientEvent:Connect(function(message, color)
 	bannerToken += 1
 	local myToken = bannerToken
-	bannerText.Text = message
+	local icon, text = UIKit.splitIcon(message)
+	bannerText.Text = text
+	UIKit.setIcon(bannerIcon, icon or "Party")
 	local accent = typeof(color) == "Color3" and color or C.Sun
 	bannerStar.BackgroundColor3 = accent
 	bannerStroke.Color = accent

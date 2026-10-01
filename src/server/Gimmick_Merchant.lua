@@ -34,7 +34,7 @@ function Gimmick.Start(ctx)
 	local root = merchant:FindFirstChild("HumanoidRootPart")
 	if not humanoid or not root then return end
 	humanoid.WalkSpeed = 8
-	humanoid.DisplayName = "🍭 Alien Merchant"
+	humanoid.DisplayName = "Alien Merchant"
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Viewer
 	humanoid.NameDisplayDistance = 60
 
@@ -68,7 +68,7 @@ function Gimmick.Start(ctx)
 			return
 		end
 		ctx.Boosts.GivePersonal(player, table.clone(BOOST), BOOST_SECONDS)
-		ReplicatedStorage.Remotes.DigProgress:FireClient(player, "🍭 SUGAR RUSH! You dig 1.5x faster for 3 minutes!", Color3.fromRGB(255, 150, 220))
+		ReplicatedStorage.Remotes.DigProgress:FireClient(player, "{Candy} SUGAR RUSH! You dig 1.5x faster for 3 minutes!", Color3.fromRGB(255, 150, 220))
 	end)
 
 	local function stop(i)

@@ -30,7 +30,7 @@ function Gimmick.Start(ctx)
 	local function fail(player)
 		traps[player] = nil
 		GimmickHooks.LockDig(player, LOCK_SECONDS)
-		Api.Message(player, "☠️ The curse got you! Your pickaxe is locked for 3 seconds.", Color3.fromRGB(200, 120, 255))
+		Api.Message(player, "{Skull} The curse got you! Your pickaxe is locked for 3 seconds.", Color3.fromRGB(200, 120, 255))
 	end
 
 	GimmickHooks.Register(world.Id, "AfterDig", function(player, dig)
@@ -52,7 +52,7 @@ function Gimmick.Start(ctx)
 		if pressed == trap.Key and os.clock() <= trap.Deadline then
 			traps[player] = nil
 			PlayerData.AddMoney(player, reward)
-			Api.Message(player, "🪙 Curse broken! +" .. ArtifactData.FormatMoney(reward) .. " in ancient gold!", Color3.fromRGB(255, 214, 90))
+			Api.Message(player, "{Coin} Curse broken! +" .. ArtifactData.FormatMoney(reward) .. " in ancient gold!", Color3.fromRGB(255, 214, 90))
 		else
 			fail(player)
 		end

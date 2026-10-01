@@ -83,12 +83,13 @@ playMusic(player:GetAttribute("CurrentWorld") or 1)
 -- SETTINGS WINDOW
 ---------------------------------------------------------------------
 local gui = UIKit.screen(player, "SettingsGui", 8)
-local window, content = UIKit.window(gui, "SETTINGS", UDim2.fromOffset(460, 330), C.Sky, "⚙️")
+local window, content = UIKit.window(gui, "SETTINGS", UDim2.fromOffset(460, 330), C.Sky, "Settings")
 
 -- one row: icon + name, a mute button, and a slider underneath
 local function audioRow(y, icon, title, volumeKey, mutedKey)
-	UIKit.label(content, icon .. "  " .. title, {Size = UDim2.new(0.6, 0, 0, 30), Position = UDim2.fromOffset(8, y), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
-	local mute = UIKit.button(content, "", {Size = UDim2.fromOffset(120, 38), Position = UDim2.new(1, -8, 0, y - 4), AnchorPoint = Vector2.new(1, 0), Radius = 19, MaxText = 16})
+	UIKit.icon(content, icon, {Size = UDim2.fromOffset(40, 40), Position = UDim2.fromOffset(4, y - 5)})
+	UIKit.label(content, title, {Size = UDim2.new(0.6, -48, 0, 30), Position = UDim2.fromOffset(50, y), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
+	local mute = UIKit.button(content, "", {Size = UDim2.fromOffset(130, 40), Position = UDim2.new(1, -8, 0, y - 5), AnchorPoint = Vector2.new(1, 0), Radius = 19, MaxText = 16, Icon = "SoundOn"})
 	local track = UIKit.panel(content, {Size = UDim2.new(1, -90, 0, 14), Position = UDim2.fromOffset(8, y + 50), Color = C.PanelTint, Radius = 7, Stroke = 2, StrokeColor = C.Lilac, Shade = false})
 	local fill = UIKit.panel(track, {Size = UDim2.fromScale(1, 1), Color = C.Sky, Radius = 7, Stroke = false, Shade = false})
 	local knob = UIKit.panel(track, {Size = UDim2.fromOffset(26, 26), Position = UDim2.fromScale(1, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Radius = 13, Stroke = 3, StrokeColor = C.Sky, Shade = false})
@@ -99,7 +100,7 @@ local function audioRow(y, icon, title, volumeKey, mutedKey)
 		knob.Position = UDim2.fromScale(v, 0.5)
 		percent.Text = math.floor(v * 100 + 0.5) .. "%"
 		local muted = settings[mutedKey]
-		UIKit.setButton(mute, muted and "🔇 MUTED" or "🔊 ON", muted and C.Coral or C.Mint)
+		UIKit.setButton(mute, muted and "MUTED" or "ON", muted and C.Coral or C.Mint, muted and "SoundOff" or "SoundOn")
 		fill.BackgroundColor3 = muted and C.Grey or C.Sky
 	end
 	mute.MouseButton1Click:Connect(function()
@@ -135,8 +136,8 @@ local function audioRow(y, icon, title, volumeKey, mutedKey)
 	return refresh
 end
 
-local refreshMusic = audioRow(14, "🎵", "Music", "MusicVolume", "MusicMuted")
-local refreshSfx = audioRow(118, "🔔", "Sound Effects", "SfxVolume", "SfxMuted")
+local refreshMusic = audioRow(14, "Music", "Music", "MusicVolume", "MusicMuted")
+local refreshSfx = audioRow(118, "Bell", "Sound Effects", "SfxVolume", "SfxMuted")
 UIKit.label(content, "Your settings are saved and stick between visits.", {Size = UDim2.new(1, -16, 0, 20), Position = UDim2.new(0.5, 0, 1, -30), AnchorPoint = Vector2.new(0.5, 0),
 	Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, MaxText = 15})
 

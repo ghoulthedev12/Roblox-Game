@@ -41,7 +41,7 @@ rebirthRemote.OnServerEvent:Connect(function(player)
 			data.Gems += gems
 			data.Money = GameConfig.StartingMoney
 			PlayerData.Refresh(player)
-			messageRemote:FireClient(player, "♻️ REBIRTH " .. data.Rebirths .. "! +" .. math.floor(GameConfig.RebirthIncomeBonus * 100) .. "% income forever and +" .. gems .. " 💎", true)
+			messageRemote:FireClient(player, "{Rebirth} REBIRTH " .. data.Rebirths .. "! +" .. math.floor(GameConfig.RebirthIncomeBonus * 100) .. "% income forever and +" .. gems .. " gems", true)
 			announceRemote:FireAllClients(player.DisplayName .. " reached Rebirth " .. data.Rebirths .. "!", Color3.fromRGB(255, 130, 150))
 		end
 	end
@@ -58,13 +58,13 @@ gemUpgradeRemote.OnServerEvent:Connect(function(player)
 	end
 	local cost = (data.GemLuckLevel + 1) * GameConfig.GemLuckCost
 	if data.Gems < cost then
-		messageRemote:FireClient(player, "You need " .. cost .. " 💎 for the next Lucky Charm level.", false)
+		messageRemote:FireClient(player, "{Gem} You need " .. cost .. " gems for the next Lucky Charm level.", false)
 		return
 	end
 	data.Gems -= cost
 	data.GemLuckLevel += 1
 	PlayerData.Refresh(player)
-	messageRemote:FireClient(player, "🍀 Lucky Charm level " .. data.GemLuckLevel .. "! +" .. math.floor(GameConfig.GemLuckPerLevel * 100 * data.GemLuckLevel) .. "% luck", true)
+	messageRemote:FireClient(player, "{Luck} Lucky Charm level " .. data.GemLuckLevel .. "! +" .. math.floor(GameConfig.GemLuckPerLevel * 100 * data.GemLuckLevel) .. "% luck", true)
 end)
 
 Players.PlayerRemoving:Connect(function(player)

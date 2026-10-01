@@ -16,10 +16,10 @@ local skipRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Tutor
 local player = Players.LocalPlayer
 
 local STEPS = {
-	{Icon = "⛏", Title = "Equip your pickaxe", Text = "Press 1, or click the pickaxe in your hotbar at the bottom of the screen."},
-	{Icon = "🕳", Title = "Jump into the pit", Text = "Follow the glowing trail to the dig site and hop down into the dirt!"},
-	{Icon = "🖼", Title = "Dig up a framed artifact", Text = "Click the ground to swing. Keep digging until an artifact appears, then hold E to pull it out!"},
-	{Icon = "🏛", Title = "Display it in your museum", Text = "Follow the trail home and press E at a glowing pedestal to put your meme on show."},
+	{Icon = "Pickaxe", Title = "Equip your pickaxe", Text = "Press 1, or click the pickaxe in your hotbar at the bottom of the screen."},
+	{Icon = "Hole", Title = "Jump into the pit", Text = "Follow the glowing trail to the dig site and hop down into the dirt!"},
+	{Icon = "Picture", Title = "Dig up a framed artifact", Text = "Click the ground to swing. Keep digging until an artifact appears, then hold E to pull it out!"},
+	{Icon = "Museum", Title = "Display it in your museum", Text = "Follow the trail home and press E at a glowing pedestal to put your meme on show."},
 }
 local STEP_COLORS = {C.Sun, C.Mint, C.Coral, C.Violet}
 
@@ -45,8 +45,7 @@ card.BackgroundTransparency = 0.08
 card.Visible = false
 local cardStroke = card:FindFirstChildOfClass("UIStroke")
 local stepTag = UIKit.label(card, "", {Size = UDim2.new(1, -110, 0, 18), Position = UDim2.fromOffset(16, 12), Align = "Left", Color = C.Sky, Stroke = 0, MaxText = 15})
-local badge = UIKit.badge(card, "", C.Sun, {Diameter = 50, Position = UDim2.fromOffset(14, 38)})
-local badgeLabel = badge:FindFirstChildWhichIsA("TextLabel", true)
+local badge, badgeIcon = UIKit.badge(card, "Pickaxe", C.Sun, {Diameter = 50, Position = UDim2.fromOffset(14, 38)})
 local title = UIKit.label(card, "", {Size = UDim2.new(1, -90, 0, 28), Position = UDim2.fromOffset(74, 38), Align = "Left", Color = C.White, Stroke = 2, MaxText = 22})
 local body = UIKit.label(card, "", {Size = UDim2.new(1, -90, 0, 58), Position = UDim2.fromOffset(74, 68), Align = "Left", VAlign = "Top",
 	Color = C.PanelTint, Stroke = 0, Font = UIKit.BodyFont, TextSize = 15})
@@ -60,7 +59,7 @@ skipButton.MouseButton1Click:Connect(function()
 end)
 
 -- step 1: a bouncing arrow pointing down at the hotbar
-local hotbarArrow = UIKit.label(gui, "⬇", {Size = UDim2.fromOffset(60, 60), Position = UDim2.new(0.5, 0, 1, -140), AnchorPoint = Vector2.new(0.5, 1),
+local hotbarArrow = UIKit.label(gui, "▼", {Size = UDim2.fromOffset(60, 60), Position = UDim2.new(0.5, 0, 1, -140), AnchorPoint = Vector2.new(0.5, 1),
 	Color = C.Sun, Stroke = 3, MaxText = 56})
 hotbarArrow.Visible = false
 
@@ -68,7 +67,8 @@ hotbarArrow.Visible = false
 local toast = UIKit.panel(gui, {Size = UDim2.fromOffset(460, 70), Position = UDim2.fromScale(0.5, 0.3), AnchorPoint = Vector2.new(0.5, 0.5),
 	Color = C.Mint, Radius = 35, Stroke = 4, StrokeColor = C.Ink})
 toast.Visible = false
-UIKit.label(toast, "🎉 TUTORIAL COMPLETE! Your meme is earning money!", {Size = UDim2.new(1, -40, 0.6, 0), Position = UDim2.fromScale(0.5, 0.5),
+UIKit.icon(toast, "Party", {Size = UDim2.fromOffset(84, 84), Position = UDim2.new(0, -18, 0.5, -6), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+UIKit.label(toast, "TUTORIAL COMPLETE! Your meme is earning money!", {Size = UDim2.new(1, -90, 0.6, 0), Position = UDim2.new(0.5, 30, 0.5, 0),
 	AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2.5, MaxText = 22})
 
 ---------------------------------------------------------------------
@@ -89,7 +89,7 @@ arrowGui.Size = UDim2.fromOffset(90, 90)
 arrowGui.AlwaysOnTop = true
 arrowGui.LightInfluence = 0
 arrowGui.Parent = targetPart
-local worldArrow = UIKit.label(arrowGui, "⬇", {Size = UDim2.fromScale(1, 1), Color = C.Sun, Stroke = 3, MaxText = 80})
+local worldArrow = UIKit.label(arrowGui, "▼", {Size = UDim2.fromScale(1, 1), Color = C.Sun, Stroke = 3, MaxText = 80})
 
 local beam = Instance.new("Beam")
 beam.Attachment1 = targetAttachment
@@ -168,7 +168,7 @@ local function showStep(step)
 	stepTag.Text = "TUTORIAL  ·  STEP " .. step .. " OF " .. #STEPS
 	title.Text = info.Title
 	body.Text = info.Text
-	if badgeLabel then badgeLabel.Text = info.Icon end
+	UIKit.setIcon(badgeIcon, info.Icon)
 	badge.BackgroundColor3 = color
 	cardStroke.Color = color
 	for i, dot in ipairs(dots) do

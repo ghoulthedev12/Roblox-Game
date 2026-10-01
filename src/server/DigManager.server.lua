@@ -417,7 +417,7 @@ end
 swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	if resetting or sessions[player] then return end
 	if GimmickHooks.IsLocked(player) then
-		digMessageRemote:FireClient(player, "☠️ Your pickaxe is cursed! It unlocks in a moment...", Color3.fromRGB(200, 130, 255))
+		digMessageRemote:FireClient(player, "{Skull} Your pickaxe is cursed! It unlocks in a moment...", Color3.fromRGB(200, 130, 255))
 		return
 	end
 	local data = PlayerData.Get(player)
@@ -650,7 +650,7 @@ buyShovelRemote.OnServerEvent:Connect(function(player, shovelId)
 	data.EquippedShovels[tostring(def.World)] = def.Id
 	updateAttributes(player)
 	giveShovel(player)
-	shopMessageRemote:FireClient(player, "You bought the " .. def.Name .. "! It digs down to " .. -GameConfig.GetWorld(def.World).Zones[def.MaxZone].Bottom .. "m.", true)
+	shopMessageRemote:FireClient(player, "{Pickaxe} You bought the " .. def.Name .. "! It digs down to " .. -GameConfig.GetWorld(def.World).Zones[def.MaxZone].Bottom .. "m.", true)
 end)
 
 equipShovelRemote.OnServerEvent:Connect(function(player, shovelId)

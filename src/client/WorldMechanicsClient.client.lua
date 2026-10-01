@@ -98,10 +98,10 @@ RunService.Heartbeat:Connect(function()
 	local parts = string.split(shift, ":")
 	local mode, angle = parts[1], math.rad(tonumber(parts[2]) or 0)
 	if mode == "Up" then
-		alert("⚠️ GRAVITY SHIFT! Gravity flips upward!", C.Lilac, 2.5)
+		alert("GRAVITY SHIFT! Gravity flips upward!", C.Lilac, 2.5)
 		player:SetAttribute("GravityOverride", -30) -- WorldGimmickClient applies it
 	else
-		alert("⚠️ GRAVITY SHIFT! Gravity pulls sideways!", C.Lilac, 2.5)
+		alert("GRAVITY SHIFT! Gravity pulls sideways!", C.Lilac, 2.5)
 		player:SetAttribute("GravityOverride", 25)
 		local push = Vector3.new(math.cos(angle), 0.2, math.sin(angle)) * 40
 		task.spawn(function()
@@ -117,7 +117,7 @@ end)
 -- TORCH FLARE (Frostbyte Tundra): F key or the button, while in a world that has it
 ---------------------------------------------------------------------
 local torchFlare = remote("TorchFlare")
-local flareButton = UIKit.button(gui, "🔥 FLARE [F]", {Size = UDim2.fromOffset(170, 50), Position = UDim2.new(1, -16, 1, -130), AnchorPoint = Vector2.new(1, 1), Color = C.Coral, MaxText = 20})
+local flareButton = UIKit.button(gui, "FLARE [F]", {Icon = "Fire", Size = UDim2.fromOffset(180, 50), Position = UDim2.new(1, -16, 1, -130), AnchorPoint = Vector2.new(1, 1), Color = C.Coral, MaxText = 20})
 flareButton.Visible = false
 local flareLabel = flareButton:FindFirstChild("Label")
 local function fireFlare()
@@ -135,13 +135,13 @@ task.spawn(function()
 			local now = os.time()
 			local heat, ready = player:GetAttribute("HeatUntil") or 0, player:GetAttribute("FlareReadyAt") or 0
 			if heat > now then
-				flareLabel.Text = "🔥 HOT " .. (heat - now) .. "s"
+				flareLabel.Text = "HOT " .. (heat - now) .. "s"
 				flareButton.BackgroundColor3 = C.Sun
 			elseif ready > now then
-				flareLabel.Text = "⏳ " .. (ready - now) .. "s"
+				flareLabel.Text = "WAIT " .. (ready - now) .. "s"
 				flareButton.BackgroundColor3 = C.Grey
 			else
-				flareLabel.Text = "🔥 FLARE [F]"
+				flareLabel.Text = "FLARE [F]"
 				flareButton.BackgroundColor3 = C.Coral
 			end
 		end
@@ -155,7 +155,8 @@ end)
 local qte = UIKit.panel(gui, {Size = UDim2.fromOffset(360, 170), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Radius = 26, Stroke = 4, StrokeColor = C.Violet, Shade = false})
 qte.BackgroundTransparency = 0.05
 qte.Visible = false
-UIKit.label(qte, "☠️ CURSE TRAP!", {Size = UDim2.new(1, -30, 0, 34), Position = UDim2.new(0.5, 0, 0, 12), AnchorPoint = Vector2.new(0.5, 0), Color = C.Lilac, Stroke = 0, MaxText = 30})
+UIKit.icon(qte, "Skull", {Size = UDim2.fromOffset(76, 76), Position = UDim2.new(0, -24, 0, -30), ZIndex = 2})
+UIKit.label(qte, "CURSE TRAP!", {Size = UDim2.new(1, -30, 0, 34), Position = UDim2.new(0.5, 0, 0, 12), AnchorPoint = Vector2.new(0.5, 0), Color = C.Lilac, Stroke = 0, MaxText = 30})
 local qteKey = UIKit.button(qte, "PRESS [E]", {Size = UDim2.fromOffset(220, 60), Position = UDim2.new(0.5, 0, 0, 56), AnchorPoint = Vector2.new(0.5, 0), Color = C.Violet, MaxText = 28})
 local qteTrack = UIKit.panel(qte, {Size = UDim2.new(1, -40, 0, 12), Position = UDim2.new(0.5, 0, 1, -24), AnchorPoint = Vector2.new(0.5, 0), Color = C.PanelTint, Radius = 6, Stroke = false, Shade = false})
 local qteFill = UIKit.panel(qteTrack, {Size = UDim2.fromScale(1, 1), Color = C.Coral, Radius = 6, Stroke = false, Shade = false})
@@ -199,7 +200,8 @@ end)
 local hack = UIKit.panel(gui, {Size = UDim2.fromOffset(340, 300), Position = UDim2.fromScale(0.5, 0.45), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Radius = 26, Stroke = 4, StrokeColor = C.Mint, Shade = false})
 hack.BackgroundTransparency = 0.05
 hack.Visible = false
-UIKit.label(hack, "💾 HACKING DATA NODE", {Size = UDim2.new(1, -30, 0, 28), Position = UDim2.new(0.5, 0, 0, 12), AnchorPoint = Vector2.new(0.5, 0), Color = C.Mint, Stroke = 0, MaxText = 24})
+UIKit.icon(hack, "Disk", {Size = UDim2.fromOffset(70, 70), Position = UDim2.new(0, -22, 0, -28), ZIndex = 2})
+UIKit.label(hack, "HACKING DATA NODE", {Size = UDim2.new(1, -30, 0, 28), Position = UDim2.new(0.5, 0, 0, 12), AnchorPoint = Vector2.new(0.5, 0), Color = C.Mint, Stroke = 0, MaxText = 24})
 UIKit.label(hack, "Tap / click / Space when the rings line up!", {Size = UDim2.new(1, -30, 0, 18), Position = UDim2.new(0.5, 0, 0, 42), AnchorPoint = Vector2.new(0.5, 0), Color = C.White, Stroke = 0, Font = UIKit.BodyFont, MaxText = 15})
 local function ring(size, color, thickness)
 	local r = Instance.new("Frame")

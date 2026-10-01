@@ -233,7 +233,7 @@ local gui = UIKit.screen(player, "MuseumGui", 3)
 ---------------------------------------------------------------------
 -- DISPLAY WINDOW (opened from a slot)
 ---------------------------------------------------------------------
-local displayWindow, displayContent = UIKit.window(gui, "DISPLAY", UDim2.fromOffset(740, 580), C.Violet, "🏛️")
+local displayWindow, displayContent = UIKit.window(gui, "DISPLAY", UDim2.fromOffset(740, 580), C.Violet, "Museum")
 local currentPanel = UIKit.panel(displayContent, {Size = UDim2.new(1, 0, 0, 96), Color = C.PanelTint, Radius = 20, StrokeColor = C.Lilac})
 local currentTitle = UIKit.label(currentPanel, "", {Size = UDim2.new(1, -310, 0, 30), Position = UDim2.fromOffset(104, 16), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
 local currentSub = UIKit.label(currentPanel, "", {Size = UDim2.new(1, -310, 0, 22), Position = UDim2.fromOffset(104, 52), Align = "Left", Color = C.Money, Stroke = 0, MaxText = 18})
@@ -304,7 +304,7 @@ end)
 ---------------------------------------------------------------------
 -- ALIEN ART DEALER WINDOW
 ---------------------------------------------------------------------
-local dealerWindow, dealerContent = UIKit.window(gui, "ALIEN ART DEALER", UDim2.fromOffset(740, 580), C.Mint, "👽")
+local dealerWindow, dealerContent = UIKit.window(gui, "ALIEN ART DEALER", UDim2.fromOffset(740, 580), C.Mint, "Alien")
 UIKit.label(dealerContent, "\"Greetings, Earthling. I pay top dollar for ancient memes.\"", {
 	Size = UDim2.new(1, 0, 0, 24), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 20,
 })
@@ -344,7 +344,7 @@ end)
 ---------------------------------------------------------------------
 -- FLOOR ARROWS (only while you're inside a museum)
 ---------------------------------------------------------------------
--- a bright elevator bar pinned to the top center of the screen:  [▼ DOWN]  🛗 FLOOR 2/3  [UP ▲]
+-- a bright elevator bar pinned to the top center of the screen:  [▼ DOWN]  FLOOR 2/3  [UP ▲]
 -- (flat pills with no shading strips, so there are no stray lines)
 local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(360, 62), Position = UDim2.new(0.5, 0, 0, 90), AnchorPoint = Vector2.new(0.5, 0),
 	Color = C.Panel, Radius = 31, StrokeColor = C.Violet, Stroke = 4, Shade = false})
@@ -382,7 +382,8 @@ local upButton = pillButton("UP ▲", C.Sky, UDim2.new(1, -8, 0.5, 0), Vector2.n
 local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -236, 0, 24), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0, MaxText = 22})
 -- the price of the next floor hangs under the bar when it's still locked
 local pricePill = UIKit.panel(floorPanel, {Size = UDim2.fromOffset(190, 28), Position = UDim2.new(0.5, 0, 1, 6), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Radius = 14, Stroke = 2.5, Shade = false})
-local upPrice = UIKit.label(pricePill, "", {Size = UDim2.new(1, -16, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
+UIKit.icon(pricePill, "Lock", {Size = UDim2.fromOffset(34, 34), Position = UDim2.new(0, -6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+local upPrice = UIKit.label(pricePill, "", {Size = UDim2.new(1, -40, 0.72, 0), Position = UDim2.new(0.5, 12, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
 pricePill.Visible = false
 -- a soft glow pulsing around the bar so it's easy to spot
 local barStroke = floorPanel:FindFirstChildOfClass("UIStroke")
@@ -430,14 +431,14 @@ task.spawn(function()
 			local opened = string.split(museum:GetAttribute("UnlockedFloors") or "1", ",")
 			local owned = museum:GetAttribute("OwnerUserId") == player.UserId
 			local nextOpen = table.find(opened, tostring(floor + 1)) ~= nil
-			floorLabel.Text = "🛗 FLOOR " .. floor .. "/" .. topFloor
+			floorLabel.Text = "FLOOR " .. floor .. "/" .. topFloor
 			local canUp = floor < topFloor and (nextOpen or owned)
 			local buying = canUp and not nextOpen
 			setUsable(upButton, canUp, buying and C.Coral or C.Sky)
 			setUsable(downButton, floor > 1, C.Violet)
 			pricePill.Visible = buying
 			if buying then
-				upPrice.Text = "🔒 Unlock " .. ArtifactData.FormatMoney(GameConfig.FloorPrices[floor + 1])
+				upPrice.Text = "Unlock " .. ArtifactData.FormatMoney(GameConfig.FloorPrices[floor + 1])
 			end
 		end
 		task.wait(0.25)

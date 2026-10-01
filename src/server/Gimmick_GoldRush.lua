@@ -33,7 +33,7 @@ function Gimmick.Start(ctx)
 	ctx.EventLoop({
 		Every = 150, Duration = 45, Name = "GOLD RUSH",
 		Boost = {FindMult = 3, LuckMult = 1.3},
-		Message = "🪙 GOLD RUSH! You find artifacts 3x as often for 45 seconds!",
+		Message = "{Coin} GOLD RUSH! You find artifacts 3x as often for 45 seconds!",
 		Color = Color3.fromRGB(255, 214, 90),
 		OnStart = function() glitter.Enabled = true end,
 		OnStop = function() glitter.Enabled = false end,

@@ -19,7 +19,6 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
-local ArtifactIcons = require(ReplicatedStorage:WaitForChild("ArtifactIcons"))
 local ArtifactImages = require(ReplicatedStorage:WaitForChild("ArtifactImages"))
 local MemeFigures = require(ReplicatedStorage:WaitForChild("MemeFigures"))
 
@@ -173,11 +172,34 @@ local function art(target, artifact, face, opts)
 			item.ImageTransparency = transparency
 			if tint then item.ImageColor3 = tint end
 		else
-			item = Instance.new("TextLabel")
-			item.Text = ArtifactIcons[iconId] or "🗿"
-			item.TextScaled = true
-			item.Font = Enum.Font.GothamBold
-			item.TextTransparency = transparency
+			-- no picture: the meme's own 3D figure (its Blender mesh or part-built figure) in a
+			-- little viewport, tinted like the material; the faint shadow copies are skipped
+			if transparency >= 0.7 then return nil end
+			local ok, figure = pcall(ArtifactModels.sculpture, artifact)
+			if ok and figure and figure:FindFirstChildWhichIsA("BasePart", true) then
+				item = Instance.new("ViewportFrame")
+				item.Ambient = rgb(190, 190, 200)
+				item.LightColor = rgb(255, 250, 240)
+				item.LightDirection = Vector3.new(0.4, -1, -0.7)
+				item.ImageTransparency = transparency
+				if tint then item.ImageColor3 = tint:Lerp(Color3.new(1, 1, 1), 0.45) end
+				figure.Parent = item
+				local lo, hi = MemeFigures.bounds(figure)
+				local centre = (lo + hi) / 2
+				local span = math.max(hi.X - lo.X, hi.Y - lo.Y)
+				local camera = Instance.new("Camera")
+				camera.FieldOfView = 20
+				camera.CFrame = CFrame.lookAt(centre + Vector3.new(0, 0, -span * 0.6 / math.tan(math.rad(10))), centre)
+				camera.Parent = item
+				item.CurrentCamera = camera
+			else
+				item = Instance.new("TextLabel")
+				item.Text = string.upper(artifact.Name)
+				item.TextScaled = true
+				item.Font = Enum.Font.GothamBlack
+				item.TextColor3 = (tint or rgb(60, 50, 40)):Lerp(Color3.new(0, 0, 0), 0.5)
+				item.TextTransparency = transparency
+			end
 		end
 		item.BackgroundTransparency = 1
 		item.Size = UDim2.fromScale(size, size)

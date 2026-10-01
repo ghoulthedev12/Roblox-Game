@@ -6,6 +6,7 @@
 --   * windows with a full-width colored header bar, an icon, and the close button inside it
 --   * text that scales with its box but never past a sensible size (so nothing looks huge)
 --   * live 3D pickaxe icons (ViewportFrames that render the real pickaxe model)
+--   * chunky cartoon 3D icons for everything else (UIKit.icon), no emoji anywhere
 
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -217,11 +218,46 @@ function UIKit.button(parent, text, props)
 	local gloss = Instance.new("UIGradient")
 	gloss.Rotation = 90
 	gloss.Parent = b
+	-- a faint grid of rounded studs across the face (the classic chunky-button texture)
+	local size = b.Size
+	if props.Pattern ~= false and (size.Y.Scale > 0 or size.Y.Offset >= 34) then
+		local pattern = Instance.new("Frame")
+		pattern.Name = "Studs"
+		pattern.BackgroundTransparency = 1
+		pattern.Size = UDim2.new(1, -8, 1, -8)
+		pattern.Position = UDim2.fromScale(0.5, 0.5)
+		pattern.AnchorPoint = Vector2.new(0.5, 0.5)
+		pattern.ClipsDescendants = true
+		pattern.Parent = b
+		local grid = Instance.new("UIGridLayout")
+		grid.CellSize = UDim2.fromOffset(11, 11)
+		grid.CellPadding = UDim2.fromOffset(7, 7)
+		grid.Parent = pattern
+		local w = size.X.Scale > 0 and 420 or size.X.Offset
+		local h = size.Y.Scale > 0 and 90 or size.Y.Offset
+		for _ = 1, math.min(math.ceil(w / 18) * math.ceil(h / 18), 140) do
+			local stud = Instance.new("Frame")
+			stud.BorderSizePixel = 0
+			stud.BackgroundColor3 = Color3.new(1, 1, 1)
+			stud.BackgroundTransparency = 0.86
+			stud.Parent = pattern
+			UIKit.corner(stud, 3)
+		end
+	end
 	local label = UIKit.label(b, text, {
 		Size = UDim2.new(1, -16, 1, -14), Position = UDim2.new(0.5, 0, 0.5, -2), AnchorPoint = Vector2.new(0.5, 0.5),
 		Color = props.TextColor or C.White, Stroke = 3, MaxText = props.MaxText or 26,
 	})
 	label.Name = "Label"
+	label.ZIndex = 2
+	-- optional 3D icon on the left (props.Icon)
+	if props.Icon then
+		local h = size.Y.Offset > 0 and size.Y.Offset or 44
+		UIKit.icon(b, props.Icon, {Name = "ButtonIcon", Size = UDim2.fromOffset(h + 6, h + 6), Position = UDim2.new(0, 2, 0.5, -1),
+			AnchorPoint = Vector2.new(0, 0.5), ZIndex = 3})
+		label.Size = UDim2.new(1, -h - 16, 1, -14)
+		label.Position = UDim2.new(0.5, (h - 2) / 2, 0.5, -2)
+	end
 	local labelStroke = label:FindFirstChildOfClass("UIStroke")
 
 	local function paint()
@@ -258,10 +294,13 @@ function UIKit.button(parent, text, props)
 	return b, label
 end
 
-function UIKit.setButton(button, text, color)
+-- icon (optional): a different 3D icon for buttons made with props.Icon
+function UIKit.setButton(button, text, color, icon)
 	button.BackgroundColor3 = color
 	local label = button:FindFirstChild("Label")
 	if label then label.Text = text end
+	local holder = button:FindFirstChild("ButtonIcon")
+	if holder and icon ~= nil then UIKit.setIcon(holder, icon) end
 end
 
 -- Pops a frame in with a bouncy scale
@@ -278,14 +317,101 @@ function UIKit.pop(frame, from)
 	TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = base}):Play()
 end
 
--- A round colored badge with an emoji (or short text) in it
-function UIKit.badge(parent, iconText, color, props)
+---------------------------------------------------------------------
+-- 3D UI ICONS: chunky cartoon icons with thick outlines, made in Blender
+-- (tools/blender/ui_icons.py, pictures in assets/ui/icons). File > Import 3D of
+-- assets/models/UIIcons.fbx + the installer put them in ReplicatedStorage > UIIcons; each
+-- shows as a live 3D model in a ViewportFrame. Names: see UIIconList.
+-- Messages can start with an icon tag, "{Skull} The curse got you!" (see UIKit.splitIcon).
+---------------------------------------------------------------------
+local iconNames -- [name] = true, loaded on first use
+local function isIcon(name)
+	if not iconNames then
+		iconNames = {}
+		for _, n in ipairs(require(ReplicatedStorage:WaitForChild("UIIconList"))) do iconNames[n] = true end
+	end
+	return typeof(name) == "string" and iconNames[name] == true
+end
+UIKit.isIcon = isIcon
+
+local function iconSource(name)
+	local folder = ReplicatedStorage:FindFirstChild("UIIcons")
+	local item = folder and folder:FindFirstChild(name)
+	if item and not item:IsA("BasePart") then item = item:FindFirstChildWhichIsA("BasePart", true) end
+	return item
+end
+
+-- shows a different icon in a holder made by UIKit.icon (nil or "" clears it)
+function UIKit.setIcon(holder, name)
+	if holder:GetAttribute("Icon") == name and #holder:GetChildren() > 0 then return end
+	holder:SetAttribute("Icon", name)
+	for _, child in ipairs(holder:GetChildren()) do
+		if child:IsA("BasePart") or child:IsA("Camera") or child.Name == "Fallback" then child:Destroy() end
+	end
+	if not name or name == "" then return end
+	local source = iconSource(name)
+	if source then
+		local part = source:Clone()
+		part.Anchored = true
+		part.CFrame = CFrame.new()
+		part.Parent = holder
+		-- the icon's front faces +Z; a slightly turned, slightly raised view, filling the frame
+		local camera = Instance.new("Camera")
+		camera.FieldOfView = 20
+		local span = math.max(part.Size.X, part.Size.Y, part.Size.Z * 0.8)
+		local distance = span * 0.6 / math.tan(math.rad(10))
+		local turn, tilt = math.rad(-12), math.rad(8)
+		camera.CFrame = CFrame.lookAt(Vector3.new(math.sin(turn), math.sin(tilt), math.cos(turn)) * distance, Vector3.zero)
+		camera.Parent = holder
+		holder.CurrentCamera = camera
+	else
+		-- not imported yet: a plain round chip with the first letter
+		local chip = UIKit.panel(holder, {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+			Color = C.Lilac, Radius = 999, Stroke = 2})
+		chip.Name = "Fallback"
+		UIKit.label(chip, string.sub(name, 1, 1), {Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+	end
+end
+
+-- A 3D icon. props: Size, Position, AnchorPoint, ZIndex, Name
+function UIKit.icon(parent, name, props)
+	props = props or {}
+	local holder = Instance.new("ViewportFrame")
+	holder.Name = props.Name or "Icon"
+	holder.BackgroundTransparency = 1
+	holder.Size = props.Size or UDim2.fromOffset(44, 44)
+	holder.Position = props.Position or UDim2.new()
+	holder.AnchorPoint = props.AnchorPoint or Vector2.zero
+	if props.ZIndex then holder.ZIndex = props.ZIndex end
+	holder.Ambient = rgb(205, 205, 215)
+	holder.LightColor = rgb(255, 252, 245)
+	holder.LightDirection = Vector3.new(0.5, -1, -0.6)
+	holder.Parent = parent
+	UIKit.setIcon(holder, name)
+	return holder
+end
+
+-- "{Skull} The curse got you!" -> "Skull", "The curse got you!"  (no tag: nil, text)
+function UIKit.splitIcon(text)
+	if typeof(text) ~= "string" then return nil, "" end
+	local name, rest = string.match(text, "^{(%w+)}%s*(.*)$")
+	if name and isIcon(name) then return name, rest end
+	return nil, text
+end
+
+-- A round colored badge with a 3D icon (or short text, like a number) in it
+function UIKit.badge(parent, iconOrText, color, props)
 	props = props or {}
 	local d = props.Diameter or 44
 	local circle = UIKit.panel(parent, {Size = UDim2.fromOffset(d, d), Position = props.Position, AnchorPoint = props.AnchorPoint,
 		Color = color, Radius = d, Stroke = props.Stroke or 2.5})
-	local icon = UIKit.label(circle, iconText, {Size = UDim2.fromScale(0.64, 0.64), Position = UDim2.fromScale(0.5, 0.5),
-		AnchorPoint = Vector2.new(0.5, 0.5), Stroke = props.TextStroke or 0, MaxText = 60, Font = props.Font or Enum.Font.GothamBlack})
+	local icon
+	if isIcon(iconOrText) then
+		icon = UIKit.icon(circle, iconOrText, {Size = UDim2.fromScale(0.86, 0.86), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5)})
+	else
+		icon = UIKit.label(circle, iconOrText, {Size = UDim2.fromScale(0.64, 0.64), Position = UDim2.fromScale(0.5, 0.5),
+			AnchorPoint = Vector2.new(0.5, 0.5), Stroke = props.TextStroke or 0, MaxText = 60, Font = props.Font or Enum.Font.GothamBlack})
+	end
 	icon.Name = "Icon"
 	return circle, icon
 end
@@ -328,8 +454,9 @@ function UIKit.window(gui, title, size, accent, icon)
 
 	local titleX = 22
 	if icon then
-		UIKit.badge(header, icon, UIKit.shadeColor(accent, -0.25), {Diameter = 40, Position = UDim2.new(0, 14, 0.5, -2), AnchorPoint = Vector2.new(0, 0.5)})
-		titleX = 64
+		-- a big 3D icon that pokes out over the top-left of the header
+		UIKit.icon(header, icon, {Size = UDim2.fromOffset(64, 64), Position = UDim2.new(0, 6, 0.5, -8), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 3})
+		titleX = 76
 	end
 	local titleLabel = UIKit.label(header, title, {Size = UDim2.new(1, -titleX - 70, 0, 38), Position = UDim2.new(0, titleX, 0.5, -2), AnchorPoint = Vector2.new(0, 0.5),
 		Align = "Left", Stroke = 3.5, StrokeColor = C.Outline, MaxText = 34})
@@ -514,7 +641,7 @@ function UIKit.artifactIcon(parent, artifact, props)
 	if props.Badge ~= false then
 		local badge = UIKit.panel(tile, {Size = UDim2.fromScale(0.36, 0.26), Position = UDim2.new(1, 4, 0, -4), AnchorPoint = Vector2.new(1, 0),
 			Color = color, Radius = 8, Stroke = 2, Shade = false})
-		UIKit.label(badge, rarity and (rarity.Secret and "★" or rarity.Code) or "?", {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5),
+		UIKit.label(badge, rarity and (rarity.Secret and "S" or rarity.Code) or "?", {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5),
 			AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
 	end
 	return tile

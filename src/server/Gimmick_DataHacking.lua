@@ -61,11 +61,11 @@ function Gimmick.Start(ctx)
 			local base = ArtifactData.RollForZone(node.Zone, node.Luck)
 			local corrupted = ArtifactData.GetCorrupted(base) or base
 			if Api.GiveFind(player, node.Zone, node.Luck, node.Position, corrupted) then
-				Api.Message(player, "💾 HACKED! A Corrupted meme (2x income) is waiting in the dirt!", Color3.fromRGB(80, 255, 220))
+				Api.Message(player, "{Disk} HACKED! A Corrupted meme (2x income) is waiting in the dirt!", Color3.fromRGB(80, 255, 220))
 			end
 		else
 			Api.Burst(node.Position, Color3.fromRGB(255, 60, 120), 24, 12)
-			Api.Message(player, "💥 Hack failed, the Data Node crashed.", Color3.fromRGB(255, 110, 150))
+			Api.Message(player, "{Boom} Hack failed, the Data Node crashed.", Color3.fromRGB(255, 110, 150))
 		end
 	end)
 end

@@ -78,7 +78,7 @@ function Gimmick.Start(ctx)
 				if inPit and root.Position.Y - 3 < top then
 					Api.SendToSurface(player)
 					ctx.Boosts.GivePersonal(player, table.clone(SCORCH), SCORCH_SECONDS)
-					Api.Message(player, "🔥 The lava got you! Knocked to the surface and SCORCHED (slower swings for 20s).", Color3.fromRGB(255, 130, 70))
+					Api.Message(player, "{Fire} The lava got you! Knocked to the surface and SCORCHED (slower swings for 20s).", Color3.fromRGB(255, 130, 70))
 				end
 			end
 		end
@@ -88,7 +88,7 @@ function Gimmick.Start(ctx)
 		task.wait(EVERY * 0.6)
 		while ctx.Container.Parent do
 			if #ctx.PlayersInWorld() > 0 then
-				ctx.Announce("🌋 LAVA SURGE in " .. WARNING .. " seconds! Get up to a glowing ledge or the surface!", Color3.fromRGB(255, 120, 60))
+				ctx.Announce("{Volcano} LAVA SURGE in " .. WARNING .. " seconds! Get up to a glowing ledge or the surface!", Color3.fromRGB(255, 120, 60))
 				ctx.Container:SetAttribute("Event", "LAVA SURGE")
 				task.wait(WARNING)
 				lava.Transparency = 0.15

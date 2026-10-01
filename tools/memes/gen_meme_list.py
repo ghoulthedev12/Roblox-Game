@@ -1,4 +1,4 @@
-"""Writes src/shared/MemeList.lua and src/shared/ArtifactIcons.lua from meme_list_data.py.
+"""Writes src/shared/MemeList.lua from meme_list_data.py (no emoji icons: the UI uses 3D models).
 Run: python3 tools/memes/gen_meme_list.py"""
 import os
 import sys
@@ -49,12 +49,4 @@ for k in range(1, 10):
     out.append("\t}},")
 out += ["}", "", "return MemeList", ""]
 open(ROOT + "src/shared/MemeList.lua", "w").write("\n".join(out))
-icons = ["-- ArtifactIcons (ModuleScript in ReplicatedStorage)",
-         "-- One emoji per meme, used where a small flat icon is needed (the 3D model is used everywhere else).",
-         "-- (Only emoji from Unicode 11 or older are used, so they show up on every device.)", "", "return {"]
-for k in range(1, 10):
-    icons.append("\t-- World %d: %s" % (k, WORLD_NAMES[k]))
-    icons.append("\t" + " ".join("%s = %s," % (e[1], lua(e[4])) for e in W[k]))
-icons += ["}", ""]
-open(ROOT + "src/shared/ArtifactIcons.lua", "w").write("\n".join(icons))
 print(len(secrets), secrets)

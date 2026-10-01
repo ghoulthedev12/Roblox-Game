@@ -150,7 +150,7 @@ local function refreshSlot(player, museum, index)
 		setText(plaque, "LOCKED  •  " .. ArtifactData.FormatMoney(price))
 		setText(facts[1], "SLOT " .. index .. " LOCKED", LOCKED_COLOR)
 		setText(facts[2], floorOpen and ("Unlock it for " .. ArtifactData.FormatMoney(price)) or ("Unlock floor " .. floor .. " first"))
-		setText(nameLabel, "🔒 LOCKED", LOCKED_COLOR)
+		setText(nameLabel, "LOCKED", LOCKED_COLOR)
 		setText(incomeLabel, ArtifactData.FormatMoney(price))
 		if slotPrompt then
 			slotPrompt.ActionText = floorOpen and ("Unlock  " .. ArtifactData.FormatMoney(price)) or ("Floor " .. floor .. " locked")
@@ -339,7 +339,7 @@ placeAllRemote.OnServerEvent:Connect(function(player)
 	end
 	inventoryChangedRemote:FireClient(player)
 	if placed > 0 then
-		messageRemote:FireClient(player, "🏛️ Placed " .. placed .. " meme" .. (placed == 1 and "" or "s") .. " in your museum! Now earning " .. ArtifactData.FormatMoney(PlayerData.GetIncome(player)) .. "/s", true)
+		messageRemote:FireClient(player, "{Museum} Placed " .. placed .. " meme" .. (placed == 1 and "" or "s") .. " in your museum! Now earning " .. ArtifactData.FormatMoney(PlayerData.GetIncome(player)) .. "/s", true)
 	elseif #memes == 0 then
 		messageRemote:FireClient(player, "Your bag is empty. Go dig up some memes!", false)
 	else

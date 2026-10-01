@@ -9,7 +9,8 @@ local TweenService = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
-local ArtifactIcons = require(ReplicatedStorage:WaitForChild("ArtifactIcons"))
+local ArtifactModels = require(ReplicatedStorage:WaitForChild("ArtifactModels"))
+local MemeFigures = require(ReplicatedStorage:WaitForChild("MemeFigures"))
 local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
 
 local Gimmick = {}
@@ -52,13 +53,25 @@ local function makeGhost(folder, artifact, position)
 	face.LightInfluence = 0
 	face.AlwaysOnTop = true
 	face.Parent = body
-	local emoji = Instance.new("TextLabel")
-	emoji.BackgroundTransparency = 1
-	emoji.Size = UDim2.fromScale(1, 1)
-	emoji.Text = ArtifactIcons[ArtifactData.IconId(artifact.Id)] or "👻"
-	emoji.TextScaled = true
-	emoji.Font = Enum.Font.GothamBold
-	emoji.Parent = face
+	-- the escaped meme itself, as a little 3D figure floating in the ghost
+	local view = Instance.new("ViewportFrame")
+	view.BackgroundTransparency = 1
+	view.Size = UDim2.fromScale(1, 1)
+	view.Ambient = Color3.fromRGB(220, 220, 235)
+	view.LightColor = Color3.new(1, 1, 1)
+	view.ImageTransparency = 0.15
+	view.Parent = face
+	local ok, figure = pcall(ArtifactModels.sculpture, artifact)
+	if ok and figure and figure:FindFirstChildWhichIsA("BasePart", true) then
+		figure.Parent = view
+		local lo, hi = MemeFigures.bounds(figure)
+		local centre = (lo + hi) / 2
+		local camera = Instance.new("Camera")
+		camera.FieldOfView = 20
+		camera.CFrame = CFrame.lookAt(centre + Vector3.new(0, 0, -math.max(hi.X - lo.X, hi.Y - lo.Y) * 0.6 / math.tan(math.rad(10))), centre)
+		camera.Parent = view
+		view.CurrentCamera = camera
+	end
 	local light = Instance.new("PointLight")
 	light.Color = color
 	light.Range = 14
@@ -91,7 +104,7 @@ function Gimmick.Start(ctx)
 			local ghost = makeGhost(ctx.Folder, artifact, position + Vector3.new(0, 2, 0))
 			local entry = {Owner = player, Artifact = artifact, Hits = 0}
 			ghosts[ghost] = entry
-			Api.Message(player, "👻 The " .. artifact.Name .. " escaped as a ghost! Click it " .. HITS_NEEDED .. " times to capture it!", Color3.fromRGB(255, 170, 230))
+			Api.Message(player, "{Ghost} The " .. artifact.Name .. " escaped as a ghost! Click it " .. HITS_NEEDED .. " times to capture it!", Color3.fromRGB(255, 170, 230))
 			-- dart around the pit until it's caught or gets away
 			local started = os.clock()
 			task.spawn(function()
@@ -143,7 +156,7 @@ function Gimmick.Start(ctx)
 			Api.Burst(body.Position, body.Color, 40, 14)
 			ghost:Destroy()
 			Api.AddArtifactNow(player, entry.Artifact)
-			Api.Message(player, "👻 Captured! The " .. entry.Artifact.Name .. " is in your bag.", Color3.fromRGB(150, 255, 200))
+			Api.Message(player, "{Ghost} Captured! The " .. entry.Artifact.Name .. " is in your bag.", Color3.fromRGB(150, 255, 200))
 		end
 	end)
 end

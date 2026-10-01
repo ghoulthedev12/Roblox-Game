@@ -33,7 +33,7 @@ function Gimmick.Start(ctx)
 		Api.Burst(dig.Position + Vector3.new(0, 2, 0), Color3.fromRGB(200, 240, 255), 16, 14)
 		if os.clock() - (lastMessage[player] or 0) > 3 then
 			lastMessage[player] = os.clock()
-			Api.Message(player, "🧊 Permafrost! Use a Torch Flare [F] to melt it, or get a heated pickaxe.", Color3.fromRGB(170, 225, 255))
+			Api.Message(player, "{Ice} Permafrost! Use a Torch Flare [F] to melt it, or get a heated pickaxe.", Color3.fromRGB(170, 225, 255))
 		end
 		return "block"
 	end)
@@ -62,7 +62,7 @@ function Gimmick.Start(ctx)
 				light:Destroy()
 			end)
 		end
-		Api.Message(player, "🔥 Torch Flare! You melt through permafrost for 20 seconds.", Color3.fromRGB(255, 170, 80))
+		Api.Message(player, "{Fire} Torch Flare! You melt through permafrost for 20 seconds.", Color3.fromRGB(255, 170, 80))
 	end)
 end
 

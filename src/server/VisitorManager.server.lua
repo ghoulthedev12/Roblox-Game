@@ -2,7 +2,7 @@
 -- Autonomous NPC visitors on World 1 (they never give money; they make the island feel alive).
 --   * Humans from 2050 appear on a museum's plaza, walk in with PathfindingService, visit a
 --     few display slots that have a meme on them (taking the "lift" to the right floor),
---     react to each one with a floating emoji, then walk back out and fade away.
+--     react to each one with a floating 3D face, then walk back out and fade away.
 --   * Aliens come through glowing portals at the far lookouts of the island (AlienPortal):
 --     they grow out of the vortex in a burst of sparks, roam the island on its paths
 --     (the dig site, the boulevard, other lookouts), wander into a museum to inspect the
@@ -16,6 +16,7 @@ local TweenService = game:GetService("TweenService")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
 local buildVisitor = require(script.Parent:WaitForChild("VisitorModels"))
 local AlienPortal = require(script.Parent:WaitForChild("AlienPortal"))
 local RunService = game:GetService("RunService")
@@ -37,11 +38,11 @@ local STEP_TIMEOUT = 4           -- give up on a waypoint after this many second
 local WALK_ANIMATION = "rbxassetid://507777826"
 local IDLE_ANIMATION = "rbxassetid://507766388"
 
--- Emoji reactions by how rare the meme is
+-- Reactions by how rare the meme is (3D icons from UIKit, see tools/blender/ui_icons.py)
 local REACTIONS = {
-	Low = {"😐", "🥱", "🤔", "🙂", "🤮", "😬", "🙄"},
-	Mid = {"😮", "😄", "👍", "😂", "👏", "🤔", "😎"},
-	High = {"🤩", "😍", "🔥", "🤯", "😱", "👑", "💯"},
+	Low = {"FaceMeh", "FaceSick", "FaceMeh", "FaceHappy"},
+	Mid = {"FaceHappy", "FaceWow", "FaceLaugh", "FaceCool", "Heart"},
+	High = {"FaceLove", "FaceWow", "Fire", "Crown", "Star"},
 }
 
 -- Visitors don't bump into players (or each other); they still stand on the floors
@@ -118,7 +119,7 @@ local function occupiedSlots(museum)
 end
 
 ---------------------------------------------------------------------
--- EMOJI REACTIONS (BillboardGui over the visitor's head)
+-- REACTIONS (a speech bubble with a 3D face over the visitor's head)
 ---------------------------------------------------------------------
 local function react(npc, artifact)
 	local head = npc:FindFirstChild("Head")
@@ -150,15 +151,8 @@ local function react(npc, artifact)
 	stroke.Thickness = 3
 	stroke.Color = ArtifactData.GetRarity(artifact.Rarity).Color
 	stroke.Parent = bubble
-	local emoji = Instance.new("TextLabel")
-	emoji.BackgroundTransparency = 1
-	emoji.Size = UDim2.fromScale(0.78, 0.78)
-	emoji.Position = UDim2.fromScale(0.5, 0.5)
-	emoji.AnchorPoint = Vector2.new(0.5, 0.5)
-	emoji.Text = pool[rng:NextInteger(1, #pool)]
-	emoji.TextScaled = true
-	emoji.Font = Enum.Font.GothamBold
-	emoji.Parent = bubble
+	local face = UIKit.icon(bubble, pool[rng:NextInteger(1, #pool)], {Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = Vector2.new(0.5, 0.5)})
 
 	-- pop in, hover, fade out
 	TweenService:Create(gui, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromScale(2.6, 2.6)}):Play()
@@ -168,7 +162,7 @@ local function react(npc, artifact)
 		local fade = TweenInfo.new(0.4)
 		TweenService:Create(bubble, fade, {BackgroundTransparency = 1}):Play()
 		TweenService:Create(stroke, fade, {Transparency = 1}):Play()
-		TweenService:Create(emoji, fade, {TextTransparency = 1}):Play()
+		TweenService:Create(face, fade, {ImageTransparency = 1}):Play()
 		task.delay(0.45, function() gui:Destroy() end)
 	end)
 end

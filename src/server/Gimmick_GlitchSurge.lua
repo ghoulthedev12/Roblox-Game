@@ -9,7 +9,7 @@ function Gimmick.Start(ctx)
 	ctx.EventLoop({
 		Every = 170, Duration = 30, Name = "GLITCH SURGE",
 		Boost = {CooldownMult = 0.5, LuckMult = 1.5},
-		Message = "👾 GLITCH SURGE! Swing 2x faster with 1.5x luck for 30 seconds!",
+		Message = "{Income} GLITCH SURGE! Swing 2x faster with 1.5x luck for 30 seconds!",
 		Color = Color3.fromRGB(190, 120, 255),
 	})
 end

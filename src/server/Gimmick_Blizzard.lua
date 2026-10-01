@@ -8,7 +8,7 @@ function Gimmick.Start(ctx)
 	ctx.EventLoop({
 		Every = 170, Duration = 40, Name = "BLIZZARD",
 		Boost = {LuckMult = 2},
-		Message = "❄️ A BLIZZARD rolls in! The storm stirs up relics: 2x luck for 40 seconds!",
+		Message = "{Snowflake} A BLIZZARD rolls in! The storm stirs up relics: 2x luck for 40 seconds!",
 		Color = Color3.fromRGB(170, 230, 255),
 	})
 end

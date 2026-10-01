@@ -36,6 +36,8 @@ local hint = UIKit.panel(gui, {
 hint.BackgroundTransparency = 0.12
 hint.Visible = false
 local hintDot = UIKit.panel(hint, {Size = UDim2.fromOffset(14, 14), Position = UDim2.new(0, 16, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = C.Sun, Radius = 7, Stroke = false})
+-- messages tagged with an icon ("{Skull} ...") show that 3D icon instead of the dot
+local hintIcon = UIKit.icon(hint, nil, {Size = UDim2.fromOffset(48, 48), Position = UDim2.new(0, -2, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
 local hintText = UIKit.label(hint, "", {Size = UDim2.new(1, -56, 1, -14), Position = UDim2.new(0, 40, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
 	Align = "Left", Color = C.White, Stroke = 0, MaxText = 22})
 
@@ -43,7 +45,11 @@ local hintToken = 0
 local function showHint(text, color)
 	hintToken += 1
 	local myToken = hintToken
+	local icon
+	icon, text = UIKit.splitIcon(text)
 	hintText.Text = text
+	UIKit.setIcon(hintIcon, icon)
+	hintDot.Visible = icon == nil
 	hintDot.BackgroundColor3 = color or C.Sun
 	hintText.TextColor3 = (color or C.Sun):Lerp(C.White, 0.55)
 	hint.Visible = true
@@ -64,7 +70,8 @@ local pitPrompt = UIKit.panel(gui, {
 })
 pitPrompt.BackgroundTransparency = 0.12
 pitPrompt.Visible = false
-UIKit.label(pitPrompt, "⛏  Jump into the pit to dig!", {Size = UDim2.new(1, -24, 1, -12), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+UIKit.icon(pitPrompt, "Pickaxe", {Size = UDim2.fromOffset(40, 40), Position = UDim2.new(0, -4, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+UIKit.label(pitPrompt, "Jump into the pit to dig!", {Size = UDim2.new(1, -54, 1, -12), Position = UDim2.new(0.5, 14, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5),
 	Color = C.White, Stroke = 0, MaxText = 17})
 local insidePit = false
 
@@ -267,7 +274,7 @@ task.spawn(function()
 			updatePitAir(world, inPit and depth or 0, zoneIndex or #world.Zones, zone.Color)
 			depthLabel.Text = depth .. "m"
 			local bonus = GameConfig.DepthBonus(world, feetY)
-			bonusLabel.Text = bonus >= 1.01 and string.format("🍀 x%.2f LUCK", bonus) or ""
+			bonusLabel.Text = bonus >= 1.01 and string.format("x%.2f LUCK", bonus) or ""
 			zoneLabel.Text = string.upper(zone.Name)
 			zoneDot.BackgroundColor3 = zone.Color
 			if zoneStroke then zoneStroke.Color = zone.Color end
@@ -1173,7 +1180,7 @@ end
 ---------------------------------------------------------------------
 -- SHOVEL SHOP WINDOW
 ---------------------------------------------------------------------
-local window, content = UIKit.window(gui, "PICKAXE SHOP", UDim2.fromOffset(780, 580), C.Violet, "⛏️")
+local window, content = UIKit.window(gui, "PICKAXE SHOP", UDim2.fromOffset(780, 580), C.Violet, "Pickaxe")
 
 local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(180, 38), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 19})
 local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -24, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, StrokeColor = UIKit.shadeColor(C.Money, 0.6), MaxText = 24})
@@ -1203,7 +1210,7 @@ local function buildCards(world)
 		if child:IsA("GuiObject") then child:Destroy() end
 	end
 	cards = {}
-	worldLabel.Text = "🌍  " .. world.Name
+	worldLabel.Text = world.Name
 	local maxFind, maxLuck, maxPower = maxStat(world, "FindChance"), maxStat(world, "Luck"), maxStat(world, "Power")
 	local minCooldown = math.huge
 	for _, def in ipairs(world.Shovels) do minCooldown = math.min(minCooldown, def.Cooldown) end
@@ -1220,7 +1227,7 @@ local function buildCards(world)
 		-- middle column: name, depth badge, description (sized to the column so nothing overlaps)
 		UIKit.label(card, def.Name, {Size = UDim2.new(0.5, -140, 0, 26), Position = UDim2.fromOffset(134, 10), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
 		local zoneTag = UIKit.panel(card, {Size = UDim2.new(0.5, -140, 0, 24), Position = UDim2.fromOffset(134, 40), Color = zone.Color, Radius = 12})
-		UIKit.label(zoneTag, "⬇ " .. -zone.Bottom .. "m  •  " .. string.upper(zone.Name), {Size = UDim2.new(1, -14, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 15})
+		UIKit.label(zoneTag, "▼ " .. -zone.Bottom .. "m  •  " .. string.upper(zone.Name), {Size = UDim2.new(1, -14, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 15})
 		UIKit.label(card, def.Description, {Size = UDim2.new(0.5, -140, 0, 52), Position = UDim2.fromOffset(134, 70), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
 
 		-- right column: stat bars. Speed is shown as a multiplier of the starter pickaxe (1.5x = 50% faster swings)

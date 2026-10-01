@@ -43,15 +43,14 @@ local function counter(y, height, icon, color, maxText)
 	row.Size = UDim2.new(1, 0, 0, height)
 	row.Position = UDim2.fromOffset(0, y)
 	row.Parent = wallet
-	local iconLabel = UIKit.label(row, icon, {Size = UDim2.fromOffset(height, height), Stroke = 0, MaxText = 80, Font = Enum.Font.GothamBold})
-	iconLabel.Name = "Icon"
-	local text = UIKit.label(row, "", {Size = UDim2.new(1, -height - 6, 1, -4), Position = UDim2.new(0, height + 6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+	UIKit.icon(row, icon, {Size = UDim2.fromOffset(height * 1.3, height * 1.3), Position = UDim2.new(0, -height * 0.15, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+	local text = UIKit.label(row, "", {Size = UDim2.new(1, -height - 10, 1, -4), Position = UDim2.new(0, height + 10, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
 		Align = "Left", Color = color, Stroke = 3.5, MaxText = maxText})
 	return row, text
 end
-local _, gemText = counter(0, 40, "💎", Color3.fromRGB(230, 110, 255), 34)
-local moneyRow, moneyText = counter(44, 52, "💵", Color3.fromRGB(80, 235, 90), 44)
-local _, incomeText = counter(100, 30, "⚡", C.Sun, 24)
+local _, gemText = counter(0, 40, "Gem", Color3.fromRGB(230, 110, 255), 34)
+local moneyRow, moneyText = counter(44, 52, "Cash", Color3.fromRGB(80, 235, 90), 44)
+local _, incomeText = counter(100, 30, "Income", C.Sun, 24)
 
 local worldText = UIKit.label(gui, "", {Size = UDim2.fromOffset(520, 26), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0),
 	Color = C.White, Stroke = 3, MaxText = 22})
@@ -78,7 +77,7 @@ end
 local function refreshWorld()
 	local world = GameConfig.GetWorld(player:GetAttribute("CurrentWorld") or 1)
 	local rebirths = player:GetAttribute("Rebirths") or 0
-	worldText.Text = "🌍 " .. (world and world.Name or "") .. (rebirths > 0 and ("   ♻️ Rebirth " .. rebirths) or "")
+	worldText.Text = (world and world.Name or "") .. (rebirths > 0 and ("   ·   Rebirth " .. rebirths) or "")
 end
 player:GetAttributeChangedSignal("Money"):Connect(refreshMoney)
 player:GetAttributeChangedSignal("Income"):Connect(refreshIncome)
@@ -100,7 +99,7 @@ local remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local menu = Instance.new("Frame")
 menu.BackgroundTransparency = 1
-menu.Size = UDim2.fromOffset(96, 470)
+menu.Size = UDim2.fromOffset(100, 7 * 68)
 menu.Position = UDim2.new(0, 8, 0, 58)
 menu.AnchorPoint = Vector2.new(0, 0)
 menu.Parent = gui
@@ -115,32 +114,22 @@ local function menuButton(order, icon, label, onClick, key)
 	b.Name = label
 	b.Text = ""
 	b.BackgroundTransparency = 1
-	b.Size = UDim2.fromOffset(96, 66)
+	b.Size = UDim2.fromOffset(100, 68)
 	b.LayoutOrder = order
 	b.Parent = menu
-	-- the icon, with a soft dark copy under it as a drop shadow
-	for k, offset in ipairs({3, 0}) do
-		local e = Instance.new("TextLabel")
-		e.Name = k == 1 and "IconShadow" or "Icon"
-		e.BackgroundTransparency = 1
-		e.Size = UDim2.fromOffset(44, 44)
-		e.Position = UDim2.new(0.5, offset, 0, offset)
-		e.AnchorPoint = Vector2.new(0.5, 0)
-		e.Text = icon
-		e.TextScaled = true
-		e.Font = Enum.Font.GothamBold
-		if k == 1 then
-			e.TextColor3 = Color3.new(0, 0, 0)
-			e.TextTransparency = 0.55
-		end
-		e.Parent = b
-	end
-	UIKit.label(b, label .. (key and (" [" .. key .. "]") or ""), {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.new(0.5, 0, 0, 44), AnchorPoint = Vector2.new(0.5, 0),
+	-- a soft dark disc behind a big 3D icon, with a bold label across the bottom of it
+	local disc = UIKit.panel(b, {Size = UDim2.fromOffset(52, 52), Position = UDim2.new(0.5, 0, 0, 2), AnchorPoint = Vector2.new(0.5, 0),
+		Color = Color3.new(0, 0, 0), Radius = 999, Stroke = false, Shade = false})
+	disc.BackgroundTransparency = 0.72
+	UIKit.icon(b, icon, {Size = UDim2.fromOffset(66, 66), Position = UDim2.new(0.5, 0, 0, -8), AnchorPoint = Vector2.new(0.5, 0)})
+	local caption = UIKit.label(b, label .. (key and (" [" .. key .. "]") or ""), {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.new(0.5, 0, 0, 46), AnchorPoint = Vector2.new(0.5, 0),
 		Stroke = 3, MaxText = 19})
+	caption.ZIndex = 2
 	-- the red alert badge (hidden until something needs you)
 	local alert = UIKit.panel(b, {Size = UDim2.fromOffset(28, 28), Position = UDim2.new(0.5, 26, 0, -4), AnchorPoint = Vector2.new(0.5, 0),
 		Color = C.Coral, Radius = 14, Stroke = 2.5, StrokeColor = C.Outline, ShadeAmount = 0.15})
 	alert.Name = "Alert"
+	alert.ZIndex = 4
 	alert.Visible = false
 	local alertText = UIKit.label(alert, "!", {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, MaxText = 18})
 	local scale = Instance.new("UIScale")
@@ -163,22 +152,19 @@ local function menuButton(order, icon, label, onClick, key)
 	end
 end
 
-local _, shopAlert = menuButton(1, "🛒", "Shop", function() UIBus.Fire("Shop") end)
-menuButton(2, "🏛️", "Museum", function()
+local _, shopAlert = menuButton(1, "Shop", "Shop", function() UIBus.Fire("Shop") end)
+menuButton(2, "Museum", "Museum", function()
 	local goHome = remotes:FindFirstChild("GoHome")
 	if goHome then goHome:FireServer() end
 end)
-menuButton(3, "🌍", "Worlds", function() UIBus.Fire("Teleport") end)
-local _, rebirthAlert = menuButton(4, "♻️", "Rebirth", function() UIBus.Fire("Rebirth") end)
-local bagButton, bagAlert = menuButton(5, "🎒", "Bag", function() UIBus.Fire("Inventory") end, "B")
-menuButton(6, "⚙️", "Settings", function() UIBus.Fire("Settings") end)
-local soundButton = menuButton(7, "🔊", "Sound", function() UIBus.Fire("ToggleSound") end)
+menuButton(3, "World", "Worlds", function() UIBus.Fire("Teleport") end)
+local _, rebirthAlert = menuButton(4, "Rebirth", "Rebirth", function() UIBus.Fire("Rebirth") end)
+local bagButton, bagAlert = menuButton(5, "Bag", "Bag", function() UIBus.Fire("Inventory") end, "B")
+menuButton(6, "Settings", "Settings", function() UIBus.Fire("Settings") end)
+local soundButton = menuButton(7, "SoundOn", "Sound", function() UIBus.Fire("ToggleSound") end)
 local function refreshSound()
-	local icon = player:GetAttribute("SoundMuted") and "🔇" or "🔊"
-	for _, name in ipairs({"Icon", "IconShadow"}) do
-		local e = soundButton:FindFirstChild(name)
-		if e then e.Text = icon end
-	end
+	local holder = soundButton:FindFirstChild("Icon")
+	if holder then UIKit.setIcon(holder, player:GetAttribute("SoundMuted") and "SoundOff" or "SoundOn") end
 end
 player:GetAttributeChangedSignal("SoundMuted"):Connect(refreshSound)
 refreshSound()

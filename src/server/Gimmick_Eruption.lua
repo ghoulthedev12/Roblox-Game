@@ -86,7 +86,7 @@ function Gimmick.Start(ctx)
 			if not rock.Parent or rock:GetAttribute("Taken") then return end
 			rock:SetAttribute("Taken", true)
 			PlayerData.AddMoney(player, reward)
-			ReplicatedStorage.Remotes.DigProgress:FireClient(player, "🌋 Forge Nugget! +" .. ArtifactData.FormatMoney(reward), Color3.fromRGB(255, 170, 70))
+			ReplicatedStorage.Remotes.DigProgress:FireClient(player, "{Volcano} Forge Nugget! +" .. ArtifactData.FormatMoney(reward), Color3.fromRGB(255, 170, 70))
 			burst(ctx.Folder, rock.Position, Color3.fromRGB(255, 150, 40), 20)
 			rock:Destroy()
 		end)
@@ -122,7 +122,7 @@ function Gimmick.Start(ctx)
 
 	ctx.EventLoop({
 		Every = 140, Duration = 12, Name = "ERUPTION",
-		Message = "🌋 ERUPTION! Lava bombs are raining into the pit. Grab the glowing Forge Nuggets!",
+		Message = "{Volcano} ERUPTION! Lava bombs are raining into the pit. Grab the glowing Forge Nuggets!",
 		Color = Color3.fromRGB(255, 140, 60),
 		OnStart = function()
 			for i = 1, BOMBS do
