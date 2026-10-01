@@ -43,6 +43,11 @@ for _name, _c in [
     ("chocolate", (90, 50, 30)), ("milkchoc", (130, 80, 45)), ("hippo", (130, 110, 115)), ("hippopink", (235, 150, 150)),
     ("shark", (110, 140, 170)), ("coffee", (150, 100, 60)), ("foam", (240, 225, 200)), ("teeth", (250, 248, 235)),
     ("redbrown", (160, 70, 50)), ("orangutan", (205, 110, 45)), ("macaque", (175, 145, 115)), ("macaqueface", (230, 165, 150)),
+    # batch 2 (new colors only ever go at the end, so earlier models keep their UVs)
+    ("visor", (150, 210, 235)), ("gorilla", (48, 45, 52)), ("silverback", (125, 125, 132)), ("gorillaface", (85, 78, 80)),
+    ("raccoon", (125, 120, 118)), ("raccoondark", (50, 46, 48)), ("mememan", (215, 220, 235)), ("crocgreen", (70, 135, 65)),
+    ("zombie", (95, 165, 95)), ("zombieshirt", (40, 170, 190)), ("chicken", (248, 248, 242)), ("beak", (245, 160, 40)),
+    ("cowpink", (245, 170, 175)), ("pillyellow", (255, 215, 50)), ("rock", (120, 112, 104)), ("turntable", (35, 35, 40)),
 ]:
     rgb(_name, *_c)
 
@@ -110,6 +115,19 @@ class Meme:
         """Smooth ellipsoid. size = full width/depth/height (x, y, z)."""
         bpy.ops.mesh.primitive_uv_sphere_add(segments=seg, ring_count=max(8, seg // 2), radius=0.5)
         o = bpy.context.object
+        self._place(o, loc, rot, size)
+        return self._add(o, color)
+
+    def squircle(self, color, size, loc=(0, 0, 0), rot=(0, 0, 0), power=4.0, seg=32):
+        """A smooth rounded box (superellipsoid): power 2 = ellipsoid, higher = squarer.
+        Good for sculpted forms with flat-ish sides: jaws, heads, bodies, cushions."""
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=seg, ring_count=seg // 2, radius=1)
+        o = bpy.context.object
+        for v in o.data.vertices:
+            c = v.co
+            k = (abs(c.x) ** power + abs(c.y) ** power + abs(c.z) ** power) ** (1 / power)
+            if k > 0:
+                v.co = c / k * 0.5
         self._place(o, loc, rot, size)
         return self._add(o, color)
 

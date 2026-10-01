@@ -8,8 +8,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bpy  # noqa: E402
 import memekit  # noqa: E402
 import memes_batch1  # noqa: E402
+import memes_batch2  # noqa: E402
 
-BUILDERS = memes_batch1.ALL
+BUILDERS = memes_batch1.ALL + memes_batch2.ALL
 PREVIEW = os.path.join(memekit.ROOT, "assets", "models", "previews")
 
 
