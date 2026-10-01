@@ -16706,6 +16706,7 @@ local TOSS_FROM, TOSS_TO, TOSS_HEIGHT, TOSS_SPINS = 0.22, 0.5, 3.4, 2
 local onEquipCatch -- camera jolt + sound for our own catch (set further down)
 
 local rigs = {} -- [character] = rig
+local warnedR6 = false
 local puppetFolder = Instance.new("Folder")
 puppetFolder.Name = "ShovelPuppets"
 puppetFolder.Parent = workspace
@@ -16757,7 +16758,13 @@ local function createRig(character, tool)
 		LU = character:FindFirstChild("LeftUpperArm"), LH = character:FindFirstChild("LeftHand"),
 	}
 	-- the pose needs an R15 body; R6 characters keep Roblox's default hold
-	if not (humanoid and root and upperTorso and parts.RU and parts.RH) then return nil end
+	if not (humanoid and root and upperTorso and parts.RU and parts.RH) then
+		if humanoid and humanoid.RigType == Enum.HumanoidRigType.R6 and not warnedR6 then
+			warnedR6 = true
+			warn("Pickaxe animations need R15 avatars: Home > Game Settings > Avatar > Avatar Type = R15")
+		end
+		return nil
+	end
 	local def = GameConfig.GetShovel(tool:GetAttribute("ShovelId"))
 	if not def then return nil end
 
@@ -18611,4 +18618,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 15:12). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 15:19). Now save the place (Ctrl+S).")
