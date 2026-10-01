@@ -149,7 +149,6 @@ GameConfig.Worlds = {
 		PitRadius = 41,          -- how far from the center you can dig
 		CenterNoDigRadius = 9,   -- keeps the giant hard drive standing
 		HubPaths = true,         -- world 1 has the 6 walkways around the pit
-		TopMaterial = "Slate",   -- the stone plaza around the pit (no lawn)
 		WorkYard = {Radius = 124, Material = "Ground"}, -- the dirt work yard around the dig site
 		Zones = zones({
 			-- the layers you dig through: Topsoil -> Dense Clay -> (rocky crust bands) ->
@@ -400,6 +399,19 @@ function GameConfig.FillDigTerrain(terrain, world)
 			local dir = Vector3.new(math.cos(a), 0, math.sin(a))
 			local mid = origin + dir * 88
 			terrain:FillBlock(CFrame.lookAt(mid, mid + dir) * CFrame.new(0, 4, 0), Vector3.new(14, 16, 84), Enum.Material.Air)
+		end
+		-- the walkways sit 2.6 studs up: sloped banks of earth along both sides rise to meet
+		-- them, so you can walk from the ground straight onto a walkway (no wall to jump)
+		local bank = Enum.Material[world.WorkYard and world.WorkYard.Material or world.TopMaterial or "Grass"]
+		for k = 0, 5 do
+			local a = math.rad(k * 60)
+			local dir = Vector3.new(math.cos(a), 0, math.sin(a))
+			local side = Vector3.new(-dir.Z, 0, dir.X)
+			for _, s in ipairs({-1, 1}) do
+				local toWalk = -side * s -- the bank's high side faces the walkway
+				local pos = origin + dir * 81 + side * s * (7 + 4.5) + Vector3.new(0, 1.35, 0)
+				terrain:FillWedge(CFrame.fromMatrix(pos, Vector3.yAxis:Cross(toWalk), Vector3.yAxis), Vector3.new(66, 2.7, 9), bank)
+			end
 		end
 	end
 	-- the 4 depth zones

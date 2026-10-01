@@ -38,6 +38,11 @@ local terrain = workspace.Terrain
 for materialName, color in pairs(GameConfig.TerrainColors) do
 	terrain:SetMaterialColor(Enum.Material[materialName], color)
 end
+-- short, neat lawn blades instead of long wild grass
+pcall(function()
+	terrain.Decoration = true
+	terrain.GrassLength = 0.3
+end)
 
 ---------------------------------------------------------------------
 -- MAIN ISLAND + DIG SITE

@@ -276,6 +276,19 @@ end
 return function(digSite, world)
 	if digSite:GetAttribute("Cartoon2050") then return end
 	recolor(digSite)
+	-- the walkway curbs were tall walls; lower them to a slim edge just above the walkway
+	-- (the ground banks up to the walkway level beside them, see GameConfig.FillDigTerrain)
+	for _, d in ipairs(digSite:GetDescendants()) do
+		if d:IsA("BasePart") and (d.Name == "Curb" or d.Name == "CurbGlow") then
+			local bottom = d.CFrame.Position.Y - d.Size.Y / 2
+			if d.Name == "Curb" then
+				d.Size = Vector3.new(d.Size.X, 2.75 - bottom, d.Size.Z)
+				d.CFrame = d.CFrame + Vector3.new(0, (bottom + d.Size.Y / 2) - d.CFrame.Position.Y, 0)
+			else
+				d.CFrame = d.CFrame + Vector3.new(0, 2.8 - d.CFrame.Position.Y, 0)
+			end
+		end
+	end
 
 	local folder = Instance.new("Model")
 	folder.Name = "Cartoon2050"

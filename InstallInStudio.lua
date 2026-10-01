@@ -1146,7 +1146,6 @@ GameConfig.Worlds = {
 		PitRadius = 41,          -- how far from the center you can dig
 		CenterNoDigRadius = 9,   -- keeps the giant hard drive standing
 		HubPaths = true,         -- world 1 has the 6 walkways around the pit
-		TopMaterial = "Slate",   -- the stone plaza around the pit (no lawn)
 		WorkYard = {Radius = 124, Material = "Ground"}, -- the dirt work yard around the dig site
 		Zones = zones({
 			-- the layers you dig through: Topsoil -> Dense Clay -> (rocky crust bands) ->
@@ -1397,6 +1396,19 @@ function GameConfig.FillDigTerrain(terrain, world)
 			local dir = Vector3.new(math.cos(a), 0, math.sin(a))
 			local mid = origin + dir * 88
 			terrain:FillBlock(CFrame.lookAt(mid, mid + dir) * CFrame.new(0, 4, 0), Vector3.new(14, 16, 84), Enum.Material.Air)
+		end
+		-- the walkways sit 2.6 studs up: sloped banks of earth along both sides rise to meet
+		-- them, so you can walk from the ground straight onto a walkway (no wall to jump)
+		local bank = Enum.Material[world.WorkYard and world.WorkYard.Material or world.TopMaterial or "Grass"]
+		for k = 0, 5 do
+			local a = math.rad(k * 60)
+			local dir = Vector3.new(math.cos(a), 0, math.sin(a))
+			local side = Vector3.new(-dir.Z, 0, dir.X)
+			for _, s in ipairs({-1, 1}) do
+				local toWalk = -side * s -- the bank's high side faces the walkway
+				local pos = origin + dir * 81 + side * s * (7 + 4.5) + Vector3.new(0, 1.35, 0)
+				terrain:FillWedge(CFrame.fromMatrix(pos, Vector3.yAxis:Cross(toWalk), Vector3.yAxis), Vector3.new(66, 2.7, 9), bank)
+			end
 		end
 	end
 	-- the 4 depth zones
@@ -6238,6 +6250,19 @@ end
 return function(digSite, world)
 	if digSite:GetAttribute("Cartoon2050") then return end
 	recolor(digSite)
+	-- the walkway curbs were tall walls; lower them to a slim edge just above the walkway
+	-- (the ground banks up to the walkway level beside them, see GameConfig.FillDigTerrain)
+	for _, d in ipairs(digSite:GetDescendants()) do
+		if d:IsA("BasePart") and (d.Name == "Curb" or d.Name == "CurbGlow") then
+			local bottom = d.CFrame.Position.Y - d.Size.Y / 2
+			if d.Name == "Curb" then
+				d.Size = Vector3.new(d.Size.X, 2.75 - bottom, d.Size.Z)
+				d.CFrame = d.CFrame + Vector3.new(0, (bottom + d.Size.Y / 2) - d.CFrame.Position.Y, 0)
+			else
+				d.CFrame = d.CFrame + Vector3.new(0, 2.8 - d.CFrame.Position.Y, 0)
+			end
+		end
+	end
 
 	local folder = Instance.new("Model")
 	folder.Name = "Cartoon2050"
@@ -7508,9 +7533,9 @@ local function buildTerrain(rng)
 		local d = rng:NextNumber(R * 0.4, R * 0.85)
 		terrain:FillBall(Vector3.new(math.cos(a) * d, rng:NextNumber(-80, -36), math.sin(a) * d), rng:NextNumber(18, 34), Enum.Material.Slate)
 	end
-	-- a light stone plaza on top instead of one flat lawn (WorldOneDecor adds the mosaic
+	-- short trimmed grass on top (MapStyle shortens the blades; WorldOneDecor adds the mosaic
 	-- rings, inlay lines and garden planters; the Dig Site refills its own square)
-	terrain:FillCylinder(CFrame.new(0, -2, 0), 4, R, Enum.Material.Slate)
+	terrain:FillCylinder(CFrame.new(0, -2, 0), 4, R, Enum.Material.Grass)
 end
 
 ---------------------------------------------------------------------
@@ -7791,6 +7816,18 @@ function MainIsland.build(parent)
 			terrain:FillCylinder(CFrame.new(part.Position.X, -2, part.Position.Z), 4, part.Size.Y / 2 + 1, Enum.Material.Slate)
 		end
 	end
+	-- sink the roads, sidewalks and walkways so their tops sit flush with the ground: you
+	-- walk straight onto them instead of bumping into a ledge
+	local FLUSH_TOP = {Boulevard = 0.06, SidewalkIn = 0.1, SidewalkOut = 0.1, Avenue = 0.06, MuseumWalk = 0.1, Lookout = 0.1,
+		LaneGlow = 0.12, AvenueGlow = 0.12, LookoutGlow = 0.3}
+	for _, part in ipairs(ground:GetChildren()) do
+		local top = FLUSH_TOP[part.Name]
+		if top and part:IsA("BasePart") then
+			-- the Lookout is a standing disc (its height runs along its X); everything else is flat (Y)
+			local height = part.Name == "Lookout" and part.Size.X or part.Size.Y
+			part.CFrame = part.CFrame + Vector3.new(0, top - (part.CFrame.Position.Y + height / 2), 0)
+		end
+	end
 	for _, part in ipairs(ground:GetChildren()) do
 		if part.Name == "EdgeBarrier" then
 			part.Transparency = 1
@@ -7864,6 +7901,11 @@ local terrain = workspace.Terrain
 for materialName, color in pairs(GameConfig.TerrainColors) do
 	terrain:SetMaterialColor(Enum.Material[materialName], color)
 end
+-- short, neat lawn blades instead of long wild grass
+pcall(function()
+	terrain.Decoration = true
+	terrain.GrassLength = 0.3
+end)
 
 ---------------------------------------------------------------------
 -- MAIN ISLAND + DIG SITE
@@ -18269,4 +18311,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 14:29). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 14:44). Now save the place (Ctrl+S).")

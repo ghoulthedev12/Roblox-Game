@@ -104,9 +104,9 @@ local function buildTerrain(rng)
 		local d = rng:NextNumber(R * 0.4, R * 0.85)
 		terrain:FillBall(Vector3.new(math.cos(a) * d, rng:NextNumber(-80, -36), math.sin(a) * d), rng:NextNumber(18, 34), Enum.Material.Slate)
 	end
-	-- a light stone plaza on top instead of one flat lawn (WorldOneDecor adds the mosaic
+	-- short trimmed grass on top (MapStyle shortens the blades; WorldOneDecor adds the mosaic
 	-- rings, inlay lines and garden planters; the Dig Site refills its own square)
-	terrain:FillCylinder(CFrame.new(0, -2, 0), 4, R, Enum.Material.Slate)
+	terrain:FillCylinder(CFrame.new(0, -2, 0), 4, R, Enum.Material.Grass)
 end
 
 ---------------------------------------------------------------------
@@ -385,6 +385,18 @@ function MainIsland.build(parent)
 			terrain:FillBlock(CFrame.new(pos.X, -2, pos.Z) * part.CFrame.Rotation, Vector3.new(part.Size.X + 2, 4, part.Size.Z + 2), Enum.Material.Slate)
 		elseif part.Name == "Lookout" then
 			terrain:FillCylinder(CFrame.new(part.Position.X, -2, part.Position.Z), 4, part.Size.Y / 2 + 1, Enum.Material.Slate)
+		end
+	end
+	-- sink the roads, sidewalks and walkways so their tops sit flush with the ground: you
+	-- walk straight onto them instead of bumping into a ledge
+	local FLUSH_TOP = {Boulevard = 0.06, SidewalkIn = 0.1, SidewalkOut = 0.1, Avenue = 0.06, MuseumWalk = 0.1, Lookout = 0.1,
+		LaneGlow = 0.12, AvenueGlow = 0.12, LookoutGlow = 0.3}
+	for _, part in ipairs(ground:GetChildren()) do
+		local top = FLUSH_TOP[part.Name]
+		if top and part:IsA("BasePart") then
+			-- the Lookout is a standing disc (its height runs along its X); everything else is flat (Y)
+			local height = part.Name == "Lookout" and part.Size.X or part.Size.Y
+			part.CFrame = part.CFrame + Vector3.new(0, top - (part.CFrame.Position.Y + height / 2), 0)
 		end
 	end
 	for _, part in ipairs(ground:GetChildren()) do
