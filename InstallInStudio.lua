@@ -3159,8 +3159,8 @@ install(game:GetService("ReplicatedStorage"), "UIIconImages", "ModuleScript", [=
 -- uploaded to Roblox. UIKit.icon uses the picture when an icon is listed here.
 return {
 	Bag = "rbxassetid://122516421367525",
-	Cash = "rbxassetid://138944274036705",
-	Gem = "rbxassetid://100994207314026",
+	Cash = "rbxassetid://126571281777122",
+	Gem = "rbxassetid://111005589199418",
 	Rebirth = "rbxassetid://84292147523245",
 	Settings = "rbxassetid://123962860909979",
 }
@@ -19229,4 +19229,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 00:18). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 00:25). Now save the place (Ctrl+S).")

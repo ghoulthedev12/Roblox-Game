@@ -290,19 +290,25 @@ def build_bag():
 
 
 def build_gem():
-    """A tall faceted purple crystal: a six-sided body with a pointed top and bottom."""
-    purple = material("GemPurple", rgb(156, 44, 246), rough=0.05, coat=1.0)
-    sides, radius, half, top, bottom = 6, 0.95, 0.55, 1.75, -1.75
+    """A cartoon purple diamond (brilliant cut): an octagonal table on top, triangle facets
+    around the crown, a pointed base; the facets come in three shades of lavender."""
+    light = material("GemLight", rgb(190, 128, 255), rough=0.5, coat=0.25)
+    mid = material("GemMid", rgb(160, 92, 246), rough=0.5, coat=0.25)
+    dark = material("GemDark", rgb(118, 54, 210), rough=0.5, coat=0.25)
+    table_r, girdle_r, crown_h, tip = 0.62, 1.25, 0.5, -1.3
     bm = bmesh.new()
-    upper = [bm.verts.new((math.cos(R(60 * i + 30)) * radius, math.sin(R(60 * i + 30)) * radius, half)) for i in range(sides)]
-    lower = [bm.verts.new((math.cos(R(60 * i + 30)) * radius, math.sin(R(60 * i + 30)) * radius, -half)) for i in range(sides)]
-    tip_top = bm.verts.new((0, 0, top))
-    tip_bottom = bm.verts.new((0, 0, bottom))
-    for i in range(sides):
-        j = (i + 1) % sides
-        bm.faces.new((lower[i], lower[j], upper[j], upper[i]))
-        bm.faces.new((upper[i], upper[j], tip_top))
-        bm.faces.new((lower[j], lower[i], tip_bottom))
+    t = [bm.verts.new((math.cos(R(45 * i + 22.5)) * table_r, math.sin(R(45 * i + 22.5)) * table_r, crown_h)) for i in range(8)]
+    g = [bm.verts.new((math.cos(R(22.5 * k)) * girdle_r, math.sin(R(22.5 * k)) * girdle_r, 0)) for k in range(16)]
+    bottom = bm.verts.new((0, 0, tip))
+    faces = []  # (face, shade)
+    faces.append((bm.faces.new(t), 0))
+    for i in range(8):
+        j = (i + 1) % 8
+        faces.append((bm.faces.new((t[i], t[j], g[(2 * i + 2) % 16])), 0))           # star facets
+        faces.append((bm.faces.new((t[i], g[(2 * i + 1) % 16], g[(2 * i + 2) % 16])), 1))
+        faces.append((bm.faces.new((t[j], g[(2 * i + 2) % 16], g[(2 * i + 3) % 16])), 1))
+    for k in range(16):
+        faces.append((bm.faces.new((g[(k + 1) % 16], g[k], bottom)), 1 if k % 2 == 0 else 2))
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     me = bpy.data.meshes.new("Gem")
     bm.to_mesh(me)
@@ -310,28 +316,64 @@ def build_gem():
     o = bpy.data.objects.new("Gem", me)
     bpy.context.scene.collection.objects.link(o)
     link(o)
-    o.rotation_euler = (R(-8), R(-28), R(12))
-    finish(o, purple, bevel=0.035, segments=2, smooth=False)
-    return 4.3, (12, -18), 0.0
+    for m in (light, mid, dark):
+        o.data.materials.append(m)
+    shades = [shade for _, shade in faces]
+    for poly, shade in zip(o.data.polygons, shades):
+        poly.material_index = shade
+    # point down, the table tipped toward the camera and the whole gem leaning to one side
+    o.rotation_euler = (R(14), R(-20), R(8))
+    o.location = (0, 0, 0.2)
+    finish(o, light, bevel=0, smooth=False)
+    o.data.materials.pop(index=3)  # finish() appended `light` again
+    return 3.6, (8, -10), -0.1
 
 
 def build_cash():
-    """A stack of green bills held together by a yellow paper band."""
-    green = material("Bill", rgb(64, 168, 74), rough=0.45, coat=0.35)
-    greenEdge = material("BillLight", rgb(96, 190, 92), rough=0.45, coat=0.35)
-    ink = material("PrintInk", rgb(38, 128, 58), rough=0.5, coat=0.2)
-    seal = material("PrintSeal", rgb(176, 232, 160), rough=0.45, coat=0.3)
-    band = material("Band", rgb(255, 210, 60), rough=0.3, coat=0.6)
-    for k, (dx, turn) in enumerate(((0.06, -3), (-0.05, 2), (0.04, -1), (0, 0))):
-        rounded_box("Bill", (3.0, 1.5, 0.2), green if k % 2 else greenEdge, loc=(dx, 0, -0.45 + k * 0.22),
-                    rot=(0, 0, R(turn)), bevel=0.06)
-    top = -0.45 + 3 * 0.22 + 0.105
-    rounded_box("PrintFrame", (2.5, 1.04, 0.03), ink, loc=(0, 0, top), bevel=0.01)
-    rounded_box("PrintFace", (2.34, 0.88, 0.04), green, loc=(0, 0, top + 0.01), bevel=0.01)
-    cylinder("PrintSeal", 0.36, 0.06, seal, loc=(0, 0, top + 0.03), bevel=0.0)
-    cylinder("PrintSeal", 0.22, 0.08, ink, loc=(0, 0, top + 0.04), bevel=0.0)
-    rounded_box("Band", (0.62, 1.62, 1.02), band, loc=(0, 0, -0.12), bevel=0.08)
-    return 4.4, (42, -22), -0.05
+    """A thick stack of green bills tied with a yellow band with a $ on it."""
+    side = material("BillSide", rgb(38, 132, 58), rough=0.45, coat=0.3)
+    sideLight = material("BillSideLight", rgb(62, 160, 74), rough=0.45, coat=0.3)
+    face = material("BillFace", rgb(124, 204, 112), rough=0.45, coat=0.35)
+    frame = material("PrintFrame", rgb(46, 146, 66), rough=0.5, coat=0.2)
+    oval = material("PrintOval", rgb(38, 128, 56), rough=0.5, coat=0.2)
+    band = material("Band", rgb(255, 228, 92), rough=0.3, coat=0.5)
+    bandEdge = material("BandEdge", rgb(244, 166, 50), rough=0.3, coat=0.5)
+    dollar = material("Dollar", rgb(34, 140, 60), rough=0.35, coat=0.4)
+    n, h = 5, 0.2
+    for k in range(n):
+        dx, turn = ((0.08, -2), (-0.06, 1.5), (0.05, -1), (-0.03, 1), (0, 0))[k]
+        rounded_box("Bill", (3.2, 1.62, h), sideLight if k % 2 else side, loc=(dx, 0, -0.5 + k * (h + 0.02)),
+                    rot=(0, 0, R(turn)), bevel=0.07)
+    top = -0.5 + (n - 1) * (h + 0.02) + h / 2
+    rounded_box("PrintFrame", (2.95, 1.38, 0.03), frame, loc=(0, 0, top + 0.005), bevel=0.012)
+    rounded_box("PrintFace", (2.75, 1.2, 0.04), face, loc=(0, 0, top + 0.012), bevel=0.012)
+    for x in (-0.95, 0.95):
+        o = cylinder("PrintOval", 0.3, 0.05, oval, loc=(x, 0, top + 0.03), bevel=0.0)
+        o.scale = (1.25, 0.95, 1)
+    # the band wraps the middle of the stack, with orange edges and a green $ on top
+    stack_h = n * (h + 0.02) + 0.06
+    mid_z = -0.5 + (n - 1) * (h + 0.02) / 2
+    rounded_box("Band", (0.92, 1.74, stack_h), band, loc=(0, 0, mid_z), bevel=0.06)
+    for x in (-0.48, 0.48):
+        rounded_box("BandEdge", (0.07, 1.76, stack_h + 0.02), bandEdge, loc=(x, 0, mid_z), bevel=0.02)
+    curve = bpy.data.curves.new("Dollar", "FONT")
+    curve.body = "$"
+    curve.size = 1.05
+    curve.extrude = 0.035
+    curve.align_x = "CENTER"
+    curve.align_y = "CENTER"
+    text = bpy.data.objects.new("PrintDollar", curve)
+    bpy.context.scene.collection.objects.link(text)
+    text.location = (0, 0, mid_z + stack_h / 2 + 0.02)
+    bpy.context.view_layer.objects.active = text
+    for other in bpy.context.selected_objects:
+        other.select_set(False)
+    text.select_set(True)
+    bpy.ops.object.convert(target="MESH")
+    text = bpy.context.active_object
+    link(text)
+    text.data.materials.append(dollar)
+    return 4.6, (40, -20), -0.15
 
 
 def build_settings():
