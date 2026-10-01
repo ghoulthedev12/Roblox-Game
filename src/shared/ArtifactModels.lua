@@ -23,6 +23,12 @@ local ArtifactIcons = require(ReplicatedStorage:WaitForChild("ArtifactIcons"))
 local ArtifactImages = require(ReplicatedStorage:WaitForChild("ArtifactImages"))
 local MemeFigures = require(ReplicatedStorage:WaitForChild("MemeFigures"))
 
+-- the sculpted Blender meshes (tools/blender) arrive as MeshParts in ReplicatedStorage >
+-- MemeMeshes, each named after its artifact id. A meme with a mesh uses it everywhere: in
+-- the pit, in the backpack, in your hand and on the museum pedestal.
+-- If the imported meshes ever face the wrong way, turn them here.
+local MESH_TURN = CFrame.Angles(0, 0, 0)
+
 local ArtifactModels = {}
 local rgb = Color3.fromRGB
 
@@ -43,7 +49,17 @@ local FORMS_BY_SPEC = {Statue = "Statue", Painting = "Painting", Coin = "Coin", 
 local FALLBACK = {"Painting", "Painting", "Painting", "Statue", "Statue", "Coin", "Tablet", "Tablet", "Crystal"}
 
 -- which form an artifact takes (always the same for the same artifact)
+-- the sculpted mesh for an artifact, or nil if it hasn't been made/imported yet
+function ArtifactModels.meshFor(artifact)
+	local folder = ReplicatedStorage:FindFirstChild("MemeMeshes")
+	local id = artifact and (artifact.BaseId or artifact.Id)
+	local found = folder and id and folder:FindFirstChild(id, true)
+	if found and found:IsA("MeshPart") then return found end
+	return nil
+end
+
 function ArtifactModels.formOf(artifact)
+	if ArtifactModels.meshFor(artifact) then return "Figure" end
 	local figure = MemeFigures.For(artifact)
 	if figure then return figure.Form or "Figure" end
 	-- the form the asset spec gave it (a Statue with no built figure yet is a marble statue)
@@ -288,9 +304,36 @@ function FORMS.Relic(model, artifact, color, rarityIndex)
 	return Vector3.new(2.9, 4.4, 2.1)
 end
 
+-- the meme as a 3D sculpture (its Blender mesh, else its part-built MemeFigure), standing
+-- on y = 0 and facing -Z
+local function sculpture(artifact)
+	local template = ArtifactModels.meshFor(artifact)
+	if template then
+		local holder = Instance.new("Model")
+		holder.Name = "MemeMesh"
+		local mesh = template:Clone()
+		mesh.Name = "Sculpture"
+		for _, p in ipairs({mesh, table.unpack(mesh:GetDescendants())}) do
+			if p:IsA("BasePart") then
+				p.Anchored = true
+				p.CanCollide = false
+				p.CanQuery = false
+				p.CanTouch = false
+			end
+		end
+		mesh.CFrame = MESH_TURN
+		mesh.Parent = holder
+		local lo, hi = MemeFigures.bounds(holder)
+		mesh.CFrame = mesh.CFrame + Vector3.new(-(lo.X + hi.X) / 2, -lo.Y, -(lo.Z + hi.Z) / 2)
+		return holder
+	end
+	return MemeFigures.build(MemeFigures.For(artifact))
+end
+ArtifactModels.sculpture = sculpture
+
 -- a real 3D sculpture of the meme on a marble plinth with a brass name plate
 function FORMS.Figure(model, artifact, color, rarityIndex)
-	local figure = MemeFigures.build(MemeFigures.For(artifact))
+	local figure = sculpture(artifact)
 	local W, H, BASE = 3, 3.9, 0.55
 	MemeFigures.fit(figure, W - 0.2, H)
 	local lo, hi = MemeFigures.bounds(figure)
@@ -414,6 +457,34 @@ function FORMS.Crystal(model, artifact, color)
 	local relief = part(model, "Relief", Vector3.new(1.6, 1.1, 0.3), CFrame.new(0, -1.25, -0.95) * CFrame.Angles(math.rad(-12), 0, 0), STONE:Lerp(Color3.new(1, 1, 1), 0.08), Enum.Material.Slate)
 	art(relief, artifact, Enum.NormalId.Front, {Style = "Engraved", Tint = STONE, EmojiSize = 0.85})
 	return Vector3.new(3, 4.4, 2.2)
+end
+
+-- the meme to hold in your hand or show in the backpack: just the sculpture, no plinth,
+-- about `height` studs tall, centered on its PrimaryPart "Core". Memes with no sculpture
+-- yet use their whole display object, shrunk to fit.
+function ArtifactModels.buildHeld(artifact, height)
+	height = height or 2.4
+	if ArtifactModels.meshFor(artifact) or MemeFigures.For(artifact) then
+		local model = sculpture(artifact)
+		model.Name = "Held_" .. artifact.Id
+		MemeFigures.fit(model, height, height)
+		local lo, hi = MemeFigures.bounds(model)
+		local center = (lo + hi) / 2
+		for _, p in ipairs(model:GetDescendants()) do
+			if p:IsA("BasePart") then p.CFrame = p.CFrame - center end
+		end
+		local rarity = ArtifactData.GetRarity(artifact.Rarity)
+		local core = part(model, "Core", Vector3.one * 0.3, CFrame.new(), rarity and rarity.Color or rgb(200, 200, 200), Enum.Material.SmoothPlastic, {Transparency = 1})
+		model.PrimaryPart = core
+		model:SetAttribute("HalfHeight", (hi.Y - lo.Y) / 2)
+		model:SetAttribute("Width", math.max(hi.X - lo.X, hi.Z - lo.Z))
+		return model
+	end
+	local model = ArtifactModels.build(artifact)
+	local scale = height / ((model:GetAttribute("HalfHeight") or 2) * 2)
+	pcall(function() model:ScaleTo(scale) end)
+	model:SetAttribute("HalfHeight", (model:GetAttribute("HalfHeight") or 2) * scale)
+	return model
 end
 
 function ArtifactModels.build(artifact)

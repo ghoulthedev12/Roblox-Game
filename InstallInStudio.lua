@@ -15,6 +15,28 @@ end
 pcall(function() game:GetService("Lighting").Technology = Enum.Technology.Future end)
 pcall(function() workspace.FallenPartsDestroyHeight = -3000 end)
 pcall(function() game:GetService("MaterialService").Use2022Materials = true end)
+do
+	local imported = workspace:FindFirstChild("MemeMeshes")
+	if not imported then
+		for _, child in ipairs(workspace:GetChildren()) do
+			if child:IsA("Model") and child:FindFirstChild("ChillDude", true) and child:FindFirstChild("LogBatGuy", true) then imported = child break end
+		end
+	end
+	if imported then
+		local RS = game:GetService("ReplicatedStorage")
+		local old = RS:FindFirstChild("MemeMeshes")
+		if old then old:Destroy() end
+		local count = 0
+		for _, d in ipairs(imported:GetDescendants()) do
+			if d:IsA("BasePart") then d.Anchored = true d.CanCollide = false count += (d:IsA("MeshPart") and 1 or 0) end
+		end
+		imported.Name = "MemeMeshes"
+		imported.Parent = RS
+		print("Moved " .. count .. " meme meshes into ReplicatedStorage > MemeMeshes")
+	elseif not game:GetService("ReplicatedStorage"):FindFirstChild("MemeMeshes") then
+		warn("No meme meshes yet: File > Import 3D > assets/models/MemeMeshes.fbx, then run this installer again")
+	end
+end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("DataManager") if old then old:Destroy() print("Removed DataManager") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
 do local old = game:GetService("ReplicatedStorage"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
@@ -272,23 +294,23 @@ install(game:GetService("ReplicatedStorage"), "ArtifactIcons", "ModuleScript", [
 
 return {
 	-- World 1: Grassland Dig Pit
-	DaWaeEchidna = "🔴", LampMoth = "💡", AisleYodelSet = "🤠", ConvinceMeTable = "💺", ShockedRodent = "😮", IsThisABird = "🦋", ChonkyBunny = "🐰", SpicyLasagna = "🍝", SpikedShellCrown = "👑", GrapeSurgery = "🍇", BadBoyHatchback = "🚙", TempleTap = "🤔", SteamedClams = "🍔", MegaSealTape = "🚣", PurpleTitanBuggy = "🚗", MobileAdAlien = "👽", NeverMissDartboard = "🎯", CrimeTownBoss = "🤵", BoneComedian = "💀", SugarSneakJohnny = "🍬",
+	DaWaeEchidna = "🔴", SeaShantyMug = "🍺", AisleYodelSet = "🤠", ConvinceMeTable = "💺", ShockedRodent = "😮", IsThisABird = "🦋", ChonkyBunny = "🐰", SpicyLasagna = "🍝", SpikedShellCrown = "👑", GrapeSurgery = "🍇", BadBoyHatchback = "🚙", TempleTap = "🤔", SteamedClams = "🍔", MegaSealTape = "🚣", PurpleTitanBuggy = "🚗", OrcaRebellionBoat = "🐋", NeverMissDartboard = "🎯", CrimeTownBoss = "🤵", BoneComedian = "💀", SugarSneakJohnny = "🍬",
 	-- World 2: Frozen Ice Age
-	FrostFlask = "🧴", BreathtakingCyberGuy = "🤖", EnslavedMoisture = "❄️", StonksHead = "📈", AhShucks = "🚲", UncannyHedgehog = "🦔", SpaceInfant = "👶", MeAndTheCrew = "👬", CyberWedgeTruck = "🚚", YelledAtCat = "🐱", RaidAlien = "🛸", AngelWingDancer = "🕺", KombuchaDisgust = "🍾", DoubleTakeBlink = "😳", TallPinkPiglet = "🐷", SpongeLeaving = "🧽", NoThanksCaptain = "🙅", FrozenCoffinDance = "⚰️", WideWalkingSuit = "👔", FrozenTearCat = "😿",
+	FrostFlask = "🧴", BreathtakingCyberGuy = "🤖", EnslavedMoisture = "❄️", StonksHead = "📈", AhShucks = "🚲", UncannyHedgehog = "🦔", SpaceInfant = "👶", MeAndTheCrew = "👬", CyberWedgeTruck = "🚚", YelledAtCat = "🐱", RaidAlien = "🛸", AngelWingDancer = "🕺", KombuchaDisgust = "🍾", DoubleTakeBlink = "😳", TallPinkPiglet = "🐷", SpongeLeaving = "🧽", CappuccinoBallerina = "☕", FrozenCoffinDance = "⚰️", HundredMenGorilla = "🦍", GothDanceHands = "🖤",
 	-- World 3: Volcanic Lava Trench
-	NatureHealingSwan = "🦢", OnceAgainLectern = "📋", LockdownSourdough = "🍞", HeadBobCat = "🐈", PallbearerCoin = "⚰️", TumbleJellyBean = "🍬", SwoleVsSmol = "💪", PointingLaughChair = "📺", PolkaSpinCow = "🐄", SusBean = "🔴", PartyCornerGuy = "🎉", BeepBopMicKid = "🎤", TradeOfferScroll = "📜", BigMittensChair = "🧤", ThinkSonThink = "🦸", FadingAwayGuy = "👻", JawlineChad = "🗿", BingChillingCone = "🍦", SigmaGrindset = "🌅", EmotionalDamage = "💔",
+	NatureHealingSwan = "🦢", OnceAgainLectern = "📋", LockdownSourdough = "🍞", HeadBobCat = "🐈", PallbearerCoin = "⚰️", TumbleJellyBean = "🍬", SwoleVsSmol = "💪", PointingLaughChair = "📺", PolkaSpinCow = "🐄", SusBean = "🔴", PartyCornerGuy = "🎉", BeepBopMicKid = "🎤", TradeOfferScroll = "📜", BigMittensChair = "🧤", ThinkSonThink = "🦸", SneakerShark = "🦈", JawlineChad = "🗿", BingChillingCone = "🍦", SigmaGrindset = "🌅", EmotionalDamage = "💔",
 	-- World 4: Ancient Egyptian Catacombs
-	YesNoLabDog = "🐶", AssistantSam = "📱", LampOilMerchant = "🛢️", MaulingTimeVampire = "🦇", GentlePillSquad = "🕶️", WiseMysticalTree = "🌳", ItsCornCob = "🌽", UncannySuperDad = "🖼️", SquishedSponge = "🥞", PhonkEyebrowSpeaker = "🔊", GrindsetCigarCase = "💼", ClangingPipe = "🔩", BetterCallPaul = "⚖️", GoofyYearbook = "📸", OhioFinalBoss = "🌽", OhYeahVillain = "🧡", SkibidiMonolith = "🚽", ShailushaiCat = "🍄", PurpleBirthdayShake = "🥤", WhistleEdit = "🎵",
+	YesNoLabDog = "🐶", AssistantSam = "📱", LampOilMerchant = "🛢️", MaulingTimeVampire = "🦇", GentlePillSquad = "🕶️", WiseMysticalTree = "🌳", ItsCornCob = "🌽", UncannySuperDad = "🖼️", GirlDinnerPlate = "🧀", PhonkEyebrowSpeaker = "🔊", RizzFaceMask = "🤨", ClangingPipe = "🔩", BetterCallPaul = "⚖️", KingPrawnCrooner = "🦐", OhioFinalBoss = "🌽", OhYeahVillain = "🧡", LogBatGuy = "🏏", ShailushaiCat = "🍄", BirthdayShake = "🥤", WhistleEdit = "🎵",
 	-- World 5: Cyber Glitch Grid
-	PeachesTurtleKing = "🎹", KindergartenMascot = "🎈", CursedCartoonTape = "📼", AwkwardSmileGuy = "🙂", LaughCryCarSeat = "🚘", CanonEventWeb = "🕸️", PinkbombFeature = "🎬", BoulderEyebrow = "🤨", PointingSuits = "👉", MewingHush = "🤫", EnglishSpanishChair = "💺", AHyuckDog = "🐕", NoScopeOlympian = "🎯", PommelHorseLegend = "🐎", BratGreenSlab = "💚", PedroRaccoon = "🦝", CowboyHawk = "🦅", ChillDude = "🐶", BouncyBabyHippo = "🦛", KangarooBreaker = "🦘",
+	PeachesTurtleKing = "🎹", KindergartenMascot = "🎈", CursedCartoonTape = "📼", AwkwardSmileGuy = "🙂", LaughCryCarSeat = "🚘", CanonEventWeb = "🕸️", PinkbombFeature = "🎬", BoulderEyebrow = "🤨", PointingSuits = "👉", MewingHush = "🤫", EnglishSpanishChair = "💺", AHyuckDog = "🐕", NoScopeOlympian = "🎯", PommelHorseLegend = "🐎", BratGreenSlab = "💚", PedroRaccoon = "🦝", CrocBomber = "🐊", ChillDude = "🐶", BabyHippo = "🦛", DubaiChocolate = "🍫",
 	-- World 6: Deep Ocean Trench
-	MassiveTaperFade = "💈", ShushUpTablet = "🤐", BigGamerChair = "🎮", SixSevenScale = "⚖️", TakeEggCushion = "🥚", IbizaBossDancer = "🕺", BoutiqueRock = "🏷️", LittleFrenchFish = "🐟", GurtSaysYo = "👋", PapaContestant = "🦑", MidnightClock = "🕛", StandingOnBusiness = "💼", AuraBoatBow = "🚤", PaperclipHelper = "📎", ZombieChickenRider = "🐔", JetTooHoliday = "✈️", PressureDiverHelmet = "🌊", AbyssalAngler = "🐡", GlitchWhale = "🐋", AtlantisJawlineChad = "🔱",
+	LowTaperFade = "💈", ShushUpTablet = "🤐", BigGamerChair = "🎮", SixSevenHands = "🙌", TakeEggCushion = "🥚", IbizaBossDancer = "🕺", BoutiqueRock = "🏷️", LittleFrenchFish = "🐟", VeryDemureTeacup = "🍵", JohnPorkPhone = "📞", BeforeGTA6Hourglass = "⏳", StandingOnBusiness = "💼", AuraBoatBow = "🚤", PaperclipHelper = "📎", ZombieChickenRider = "🐔", JetTooHoliday = "✈️", PressureDiverHelmet = "🌊", AbyssalAngler = "🐡", GlitchWhale = "🐋", AtlantisJawlineChad = "🔱",
 	-- World 7: Haunted Cemetery
-	SpookySkeleton = "💀", PumpkinDancer = "🎃", GhostlySwampFrog = "🐸", BonkShiba = "🏏", SadViolinHamster = "🐹", ConfusedMathCat = "🙀", JellyTimeBanana = "🍌", RainbowPastryCat = "🌈", WowShiba = "🐕", ProblemGrinCoin = "😏", MeLikeyTablet = "😌", RageScreamTablet = "😡", ForeverAlone = "😢", BadLuckBryan = "🍀", FrowningCat = "😾", SuccessFistCoin = "✊", PhantomChonkyBunny = "👻", CemeterySpecter = "🏮", UndeadSanic = "🧟", GraveyardOssuary = "⚰️",
+	SpookySkeleton = "💀", PumpkinDancer = "🎃", GhostlySwampFrog = "🐸", BonkShiba = "🏏", SadViolinHamster = "🐹", ConfusedMathCat = "🙀", JellyTimeBanana = "🍌", RainbowPastryCat = "🌈", WowShiba = "🐕", ProblemGrinCoin = "😏", MeLikeyTablet = "😌", RageScreamTablet = "😡", ForeverAlone = "😢", BadLuckBryan = "🍀", FrowningCat = "😾", PunchMonkey = "🐒", PhantomChonkyBunny = "👻", CemeterySpecter = "🏮", UndeadSanic = "🧟", GraveyardOssuary = "⚰️",
 	-- World 8: Multiverse Glitch Void
 	CyberWowShiba = "🤖", GlitchSwampFrog = "🐸", QuantumShockedRodent = "⚛️", VoidStonks = "📉", MultiverseSpaceInfant = "👶", BulletDodgeGuy = "🕶️", NeonSusBean = "🔴", HoloJawlineChad = "🗿", CosmicShake = "🌌", SpacePolkaCow = "🐄", InterdimensionalChillDude = "🌀", CyberSingingThrone = "🚽", UniversalSanic = "🌠", ExponentialOgre = "👹", MiraculousGnome = "🎅", ApexWowShiba = "🏔️", GoldenSwampFrog = "🐸", ToorngEntity = "👁️", HighRollerBrainrot = "🎲", ImmeasupremeOverlord = "👑",
 	-- World 9: Quantum Dimension
-	QuantumDatFrog = "🐸", SubatomicSwampFrog = "⚛️", ParticleWowShiba = "✨", AntimatterEchidna = "🔵", StringTheoryBunny = "🧶", WarpSpeedStonks = "🚀", ParallelJawlineChad = "👥", RealityWarpedSponge = "🌀", TimeFoldPanels = "🙅", DarkMatterHippo = "🦛", VoidCowboyHawk = "🦅", HypercubeChillDude = "🔷", ZeroPointThrone = "🚽", TesseractShake = "🥤", SingularityGrinCoin = "🕳️", EventHorizonShiba = "🌑", NeverGonnaStair = "🕺", QuantumBrainrotGod = "🔱", MemeMatrix = "💠", OriginalShiba = "🌟",
+	QuantumDatFrog = "🐸", SubatomicSwampFrog = "⚛️", ParticleWowShiba = "✨", AntimatterEchidna = "🔵", StringTheoryBunny = "🧶", WarpSpeedStonks = "🚀", ParallelJawlineChad = "👥", RealityWarpedSponge = "🌀", TimeFoldPanels = "🙅", DarkMatterHippo = "🦛", RomanEmpireBust = "🏛️", HypercubeChillDude = "🔷", ZeroPointThrone = "🚽", TesseractShake = "🥤", SingularityGrinCoin = "🕳️", EventHorizonShiba = "🌑", NeverGonnaStair = "🕺", QuantumBrainrotGod = "🔱", MemeMatrix = "💠", OriginalShiba = "🌟",
 }
 ]=])
 install(game:GetService("ReplicatedStorage"), "ArtifactImages", "ModuleScript", [=[
@@ -327,6 +349,12 @@ local ArtifactIcons = require(ReplicatedStorage:WaitForChild("ArtifactIcons"))
 local ArtifactImages = require(ReplicatedStorage:WaitForChild("ArtifactImages"))
 local MemeFigures = require(ReplicatedStorage:WaitForChild("MemeFigures"))
 
+-- the sculpted Blender meshes (tools/blender) arrive as MeshParts in ReplicatedStorage >
+-- MemeMeshes, each named after its artifact id. A meme with a mesh uses it everywhere: in
+-- the pit, in the backpack, in your hand and on the museum pedestal.
+-- If the imported meshes ever face the wrong way, turn them here.
+local MESH_TURN = CFrame.Angles(0, 0, 0)
+
 local ArtifactModels = {}
 local rgb = Color3.fromRGB
 
@@ -347,7 +375,17 @@ local FORMS_BY_SPEC = {Statue = "Statue", Painting = "Painting", Coin = "Coin", 
 local FALLBACK = {"Painting", "Painting", "Painting", "Statue", "Statue", "Coin", "Tablet", "Tablet", "Crystal"}
 
 -- which form an artifact takes (always the same for the same artifact)
+-- the sculpted mesh for an artifact, or nil if it hasn't been made/imported yet
+function ArtifactModels.meshFor(artifact)
+	local folder = ReplicatedStorage:FindFirstChild("MemeMeshes")
+	local id = artifact and (artifact.BaseId or artifact.Id)
+	local found = folder and id and folder:FindFirstChild(id, true)
+	if found and found:IsA("MeshPart") then return found end
+	return nil
+end
+
 function ArtifactModels.formOf(artifact)
+	if ArtifactModels.meshFor(artifact) then return "Figure" end
 	local figure = MemeFigures.For(artifact)
 	if figure then return figure.Form or "Figure" end
 	-- the form the asset spec gave it (a Statue with no built figure yet is a marble statue)
@@ -592,9 +630,36 @@ function FORMS.Relic(model, artifact, color, rarityIndex)
 	return Vector3.new(2.9, 4.4, 2.1)
 end
 
+-- the meme as a 3D sculpture (its Blender mesh, else its part-built MemeFigure), standing
+-- on y = 0 and facing -Z
+local function sculpture(artifact)
+	local template = ArtifactModels.meshFor(artifact)
+	if template then
+		local holder = Instance.new("Model")
+		holder.Name = "MemeMesh"
+		local mesh = template:Clone()
+		mesh.Name = "Sculpture"
+		for _, p in ipairs({mesh, table.unpack(mesh:GetDescendants())}) do
+			if p:IsA("BasePart") then
+				p.Anchored = true
+				p.CanCollide = false
+				p.CanQuery = false
+				p.CanTouch = false
+			end
+		end
+		mesh.CFrame = MESH_TURN
+		mesh.Parent = holder
+		local lo, hi = MemeFigures.bounds(holder)
+		mesh.CFrame = mesh.CFrame + Vector3.new(-(lo.X + hi.X) / 2, -lo.Y, -(lo.Z + hi.Z) / 2)
+		return holder
+	end
+	return MemeFigures.build(MemeFigures.For(artifact))
+end
+ArtifactModels.sculpture = sculpture
+
 -- a real 3D sculpture of the meme on a marble plinth with a brass name plate
 function FORMS.Figure(model, artifact, color, rarityIndex)
-	local figure = MemeFigures.build(MemeFigures.For(artifact))
+	local figure = sculpture(artifact)
 	local W, H, BASE = 3, 3.9, 0.55
 	MemeFigures.fit(figure, W - 0.2, H)
 	local lo, hi = MemeFigures.bounds(figure)
@@ -718,6 +783,34 @@ function FORMS.Crystal(model, artifact, color)
 	local relief = part(model, "Relief", Vector3.new(1.6, 1.1, 0.3), CFrame.new(0, -1.25, -0.95) * CFrame.Angles(math.rad(-12), 0, 0), STONE:Lerp(Color3.new(1, 1, 1), 0.08), Enum.Material.Slate)
 	art(relief, artifact, Enum.NormalId.Front, {Style = "Engraved", Tint = STONE, EmojiSize = 0.85})
 	return Vector3.new(3, 4.4, 2.2)
+end
+
+-- the meme to hold in your hand or show in the backpack: just the sculpture, no plinth,
+-- about `height` studs tall, centered on its PrimaryPart "Core". Memes with no sculpture
+-- yet use their whole display object, shrunk to fit.
+function ArtifactModels.buildHeld(artifact, height)
+	height = height or 2.4
+	if ArtifactModels.meshFor(artifact) or MemeFigures.For(artifact) then
+		local model = sculpture(artifact)
+		model.Name = "Held_" .. artifact.Id
+		MemeFigures.fit(model, height, height)
+		local lo, hi = MemeFigures.bounds(model)
+		local center = (lo + hi) / 2
+		for _, p in ipairs(model:GetDescendants()) do
+			if p:IsA("BasePart") then p.CFrame = p.CFrame - center end
+		end
+		local rarity = ArtifactData.GetRarity(artifact.Rarity)
+		local core = part(model, "Core", Vector3.one * 0.3, CFrame.new(), rarity and rarity.Color or rgb(200, 200, 200), Enum.Material.SmoothPlastic, {Transparency = 1})
+		model.PrimaryPart = core
+		model:SetAttribute("HalfHeight", (hi.Y - lo.Y) / 2)
+		model:SetAttribute("Width", math.max(hi.X - lo.X, hi.Z - lo.Z))
+		return model
+	end
+	local model = ArtifactModels.build(artifact)
+	local scale = height / ((model:GetAttribute("HalfHeight") or 2) * 2)
+	pcall(function() model:ScaleTo(scale) end)
+	model:SetAttribute("HalfHeight", (model:GetAttribute("HalfHeight") or 2) * scale)
+	return model
 end
 
 function ArtifactModels.build(artifact)
@@ -1336,8 +1429,6 @@ MemeFigures.ById = {
 	SusBean = {Kind = "SusBean"},
 	JawlineChad = {Kind = "JawlineChad"},
 	-- World 4
-	SkibidiMonolith = {Kind = "ToiletHead", Tint = rgb(236, 196, 90), TintAmount = 0.75, Material = Enum.Material.Metal},
-	PurpleBirthdayShake = {Kind = "PurpleShake"},
 	-- World 5
 	PointingSuits = {Kind = "PointingSuits"},
 	ChillDude = {Kind = "ChillDude"},
@@ -2099,7 +2190,7 @@ MemeList.Worlds = {
 	-- WORLD 1: GRASSLAND DIG PIT
 	{Name = "Grassland Dig Pit", Memes = {
 		{"Basic", "DaWaeEchidna", "Da Wae Red Echidna", "Statue", "A stubby red echidna that always knew the way. Nobody else did."},
-		{"Basic", "LampMoth", "Lamp-Craving Moth", "Relic", "Found hugging a lamp. Refused to let go for 30 years."},
+		{"Basic", "SeaShantyMug", "Sea Shanty Mug", "Relic", "Soon may the Wellerman come. A whole internet sang along in 2021."},
 		{"Basic", "AisleYodelSet", "Aisle Yodel Cowboy Set", "Relic", "A tiny hat and boots left in a store aisle. The yodel still echoes."},
 		{"Basic", "ConvinceMeTable", "Convince Me Otherwise Table", "Relic", "A folding table where humans argued with strangers. Nobody's mind was changed."},
 		{"Common", "ShockedRodent", "Shocked Yellow Rodent", "Statue", "Frozen forever with its mouth wide open. Used whenever anyone acted surprised."},
@@ -2113,7 +2204,7 @@ MemeList.Worlds = {
 		{"Rare", "SteamedClams", "Steamed Clams at Noon Platter", "Relic", "A platter of burgers and an aurora in the kitchen. Localized entirely within it."},
 		{"Rare", "MegaSealTape", "Mega Seal Tape", "Relic", "Held a sawn-in-half boat together. The water stayed in."},
 		{"Rare", "PurpleTitanBuggy", "Purple Titan Buggy", "Statue", "A giant purple conqueror's tiny car. He could snap his fingers but still drove this."},
-		{"Rare", "MobileAdAlien", "Howard the Mobile-Ad Alien", "Statue", "Starred in a phone game ad nobody asked for. Everybody remembers him."},
+		{"Rare", "OrcaRebellionBoat", "Orca Rebellion Boat", "Statue", "The orcas started sinking boats in 2023. The internet picked a side."},
 		{"Epic", "NeverMissDartboard", "Never-Miss Dartboard", "Relic", "Hit or miss? It never misses, huh."},
 		{"Epic", "CrimeTownBoss", "Crime Town Big Boss", "Statue", "That's how crime works. Learned from a thousand phone ads."},
 		{"Legendary", "BoneComedian", "Bone Comedian Fighter", "Statue", "A grinning skeleton who crashed the biggest fighting game party. Bad time guaranteed."},
@@ -2137,10 +2228,10 @@ MemeList.Worlds = {
 		{"Epic", "DoubleTakeBlink", "Double-Take Blink Bust", "Statue", "Blinked in disbelief. Humans have been blinking back ever since."},
 		{"Epic", "TallPinkPiglet", "Absurdly Tall Pink Piglet", "Statue", "Scientists calculated her real height. They regret it."},
 		{"Legendary", "SpongeLeaving", "Yellow Porous Sponge Leavin'", "Statue", "Aight, imma head out. The most famous exit in history."},
-		{"Legendary", "NoThanksCaptain", "No Thanks Captain", "Statue", "Asked to do something. Said no, I don't think I will."},
+		{"Legendary", "CappuccinoBallerina", "Cappuccino Ballerina", "Statue", "Half dancer, half coffee cup. Pirouettes until the foam spills."},
 		{"Exotic", "FrozenCoffinDance", "Frozen Coffin Dance Crew", "Statue", "They danced the dead to the grave. On ice."},
-		{"Mythical", "WideWalkingSuit", "Wide Walking Suit", "Statue", "A suit stretched to twice its width, walking with total confidence."},
-		{"Uncommon", "FrozenTearCat", "Frozen-Tear Cat", "Statue", "Cried so hard in the Ice Age that the tear froze."},
+		{"Mythical", "HundredMenGorilla", "100 Men vs 1 Gorilla", "Statue", "Who would win? The internet argued for a whole month."},
+		{"Uncommon", "GothDanceHands", "Goth Dance Freeze", "Statue", "The jerky goth dance everyone copied at the school dance."},
 	}},
 	-- WORLD 3: VOLCANIC LAVA TRENCH
 	{Name = "Volcanic Lava Trench", Memes = {
@@ -2159,7 +2250,7 @@ MemeList.Worlds = {
 		{"Epic", "TradeOfferScroll", "Trade Offer Scroll", "Relic", "I receive: your meme. You receive: nothing. Deal?"},
 		{"Epic", "BigMittensChair", "Big Mittens Folding Chair", "Relic", "A cozy pair of mittens on a folding chair. Photoshopped into every place on Earth."},
 		{"Legendary", "ThinkSonThink", "Think, Son, Think! Hero", "Statue", "Shouted a question so loud it became a meme. Think!"},
-		{"Legendary", "FadingAwayGuy", "Fading Away Guy", "Statue", "Disappeared from the photo one cube at a time."},
+		{"Legendary", "SneakerShark", "Three-Legged Sneaker Shark", "Statue", "A shark on three legs in blue sneakers. The face of Italian brainrot."},
 		{"Godly", "JawlineChad", "Mega Jawline Chad", "Statue", "The most perfect jawline ever photographed, turned in the most dramatic direction."},
 		{"Miracle", "BingChillingCone", "Bing Chilling Cone", "Relic", "Zao shang hao. The coldest ice cream in the lava trench."},
 		{"Exotic", "SigmaGrindset", "Sigma Grindset Statue", "Statue", "Stares at the sunset alone. Refuses to have fun. Grinds."},
@@ -2175,17 +2266,17 @@ MemeList.Worlds = {
 		{"Common", "WiseMysticalTree", "Wise Mystical Tree", "Statue", "I am the wise mystical tree. Ask me anything."},
 		{"Uncommon", "ItsCornCob", "It's Corn Cob", "Relic", "A big lump with knobs. It has the juice."},
 		{"Uncommon", "UncannySuperDad", "Uncanny Super Dad", "Painting", "The face gets darker the longer you look."},
-		{"Uncommon", "SquishedSponge", "Squished Sponge Pancake", "Relic", "Flattened completely. Still yellow. Still smiling."},
+		{"Uncommon", "GirlDinnerPlate", "Girl Dinner Plate", "Relic", "Bread, cheese, grapes, a pickle. Dinner is served."},
 		{"Rare", "PhonkEyebrowSpeaker", "Phonk Eyebrow Speaker", "Relic", "Raises an eyebrow every time the bass drops."},
-		{"Rare", "GrindsetCigarCase", "Grindset Cigar Case", "Relic", "What color is your car? Doesn't matter. It's in the museum now."},
+		{"Rare", "RizzFaceMask", "Rizz Face Mask", "Relic", "One eyebrow up, lips pressed. The rizz face, preserved forever."},
 		{"Rare", "ClangingPipe", "Clanging Metal Pipe", "Relic", "The loudest sound effect in human history. CLANG."},
 		{"Epic", "BetterCallPaul", "Better Call Paul Lawyer", "Statue", "Did you know you have rights? This lawyer spins in 3D."},
-		{"Epic", "GoofyYearbook", "Goofy Yearbook Portrait", "Painting", "The goofiest yearbook photo ever taken. Laser background included."},
+		{"Epic", "KingPrawnCrooner", "King Prawn Crooner", "Statue", "A prawn in a pinstripe suit, singing his heart out."},
 		{"Legendary", "OhioFinalBoss", "Ohio Final Boss", "Statue", "Only in Ohio. It wears a traffic cone as a crown."},
 		{"Legendary", "OhYeahVillain", "Oh Yeah Orange-Suit Villain", "Statue", "Committed crimes with both direction and magnitude. OH YEAH!"},
-		{"Eternal", "SkibidiMonolith", "The Singing Toilet Monolith", "Statue", "A golden toilet with a singing head. It hums when someone says 'Ohio'."},
+		{"Eternal", "LogBatGuy", "Tung-Tung Log Guy", "Statue", "A wooden log with a baseball bat. It knocks three times before it arrives."},
 		{"Supreme", "ShailushaiCat", "Shailushai Blue Cat", "Statue", "We live, we love, we lie. A blue cat walking the catacombs."},
-		{"Insane", "PurpleBirthdayShake", "Sus Purple Birthday Milkshake", "Relic", "One sip and the humans in the video were never seen again."},
+		{"Insane", "BirthdayShake", "Sus Purple Birthday Shake", "Relic", "One sip and the humans in the video were never seen again."},
 		{"Foresaken", "WhistleEdit", "Whistle Edit Relic", "Relic", "The whistle that played over a thousand edits of the same actor."},
 	}},
 	-- WORLD 5: CYBER GLITCH GRID
@@ -2206,24 +2297,24 @@ MemeList.Worlds = {
 		{"Epic", "PommelHorseLegend", "Pommel Horse Legend", "Statue", "Waited all day for one routine. Nailed it."},
 		{"Legendary", "BratGreenSlab", "Brat Green Slab", "Tablet", "A whole summer, carved in lime green."},
 		{"Legendary", "PedroRaccoon", "Pedro Pedro Raccoon", "Statue", "Pedro, Pedro, Pedro. Spins forever."},
-		{"Diabolical", "CowboyHawk", "Cowboy Hawk", "Statue", "A hawk in a cowboy hat. Holds a microphone. Says nothing."},
+		{"Diabolical", "CrocBomber", "Crocodile Bomber Plane", "Statue", "A crocodile that is also a war plane. Nobody asked questions."},
 		{"Celestial", "ChillDude", "Chill Dude in a Sweater", "Statue", "Hands in pockets, zero worries. Just a chill dude."},
-		{"Unreal", "BouncyBabyHippo", "Bouncy Baby Hippo", "Statue", "A tiny wet hippo who bit everyone and was loved for it."},
-		{"Forbidden", "KangarooBreaker", "Kangaroo Hop Breaker", "Statue", "The most talked-about breakdance of all time."},
+		{"Unreal", "BabyHippo", "Bouncy Baby Hippo", "Statue", "A tiny wet hippo who bit everyone and was loved for it."},
+		{"Forbidden", "DubaiChocolate", "Dubai Chocolate Bar", "Relic", "Snapped in half, oozing pistachio. The most expensive snack of 2025."},
 	}},
 	-- WORLD 6: DEEP OCEAN TRENCH
 	{Name = "Deep Ocean Trench", Memes = {
-		{"Basic", "MassiveTaperFade", "Massive Low Taper Fade", "Relic", "Imagine if this haircut was still trending. It's massive."},
+		{"Basic", "LowTaperFade", "Massive Low Taper Fade", "Statue", "Imagine if this haircut was still trending. It's massive."},
 		{"Basic", "ShushUpTablet", "Shush Up Tablet", "Tablet", "A stone tablet that tells everyone to be quiet."},
 		{"Basic", "BigGamerChair", "Big Gamer Chair", "Relic", "The biggest gaming chair in the ocean. The snacks are gone."},
-		{"Common", "SixSevenScale", "Six-Seven Scale", "Relic", "Six? Seven? The scale never decides."},
+		{"Common", "SixSevenHands", "Six-Seven Hands", "Statue", "Six... seven. Palms up, one high, one low. 2025's word of the year."},
 		{"Common", "TakeEggCushion", "Take Egg Cushion", "Relic", "Take egg. Just one egg. On a cushion."},
 		{"Common", "IbizaBossDancer", "Ibiza Final Boss Dancer", "Statue", "The final boss of every beach party."},
 		{"Uncommon", "BoutiqueRock", "Overpriced Boutique Rock", "Relic", "A plain rock. $200. Sold out."},
 		{"Uncommon", "LittleFrenchFish", "Steve the Little French Fish", "Statue", "Oui oui. A little fish with a big baguette."},
-		{"Uncommon", "GurtSaysYo", "Gurt Says Yo", "Statue", "Yo."},
-		{"Rare", "PapaContestant", "Papa Game Contestant", "Statue", "The oldest player in the deadliest game. Smiling anyway."},
-		{"Rare", "MidnightClock", "Midnight Clock Strike", "Relic", "When the clock strikes twelve, the brainrot begins."},
+		{"Uncommon", "VeryDemureTeacup", "Very Demure Teacup", "Relic", "Very mindful. Very demure. Pinky out at all times."},
+		{"Rare", "JohnPorkPhone", "John Pork Is Calling", "Relic", "A pig in a suit is calling. Do not pick up."},
+		{"Rare", "BeforeGTA6Hourglass", "Before-GTA6 Hourglass", "Relic", "Everything happened before the next big game came out. The sand is still falling."},
 		{"Rare", "StandingOnBusiness", "Standing on Business Briefcase", "Relic", "Literally standing on business."},
 		{"Epic", "AuraBoatBow", "Aura Boat Bow", "Relic", "So much aura it glows. Farmed on a racing boat."},
 		{"Epic", "PaperclipHelper", "Paperclip Helper", "Statue", "It looks like you're digging up memes. Need help?"},
@@ -2251,7 +2342,7 @@ MemeList.Worlds = {
 		{"Epic", "ForeverAlone", "Forever Alone Monument", "Tablet", "A lonely stone face that every human secretly related to."},
 		{"Epic", "BadLuckBryan", "Bad Luck Bryan Portrait", "Painting", "Took his driving test. Passed. Crashed into the building."},
 		{"Legendary", "FrowningCat", "Frowning Cat Bust", "Statue", "Never smiled once. Earned millions anyway."},
-		{"Legendary", "SuccessFistCoin", "Success Fist Coin", "Coin", "A fist full of sand and pure victory."},
+		{"Legendary", "PunchMonkey", "Punch & His Plushie", "Statue", "A baby monkey who never let go of his stuffed orangutan."},
 		{"Ultimate", "PhantomChonkyBunny", "Phantom Chonky Bunny", "Statue", "The biggest bunny ever came back as a ghost. Still big."},
 		{"Beyond", "CemeterySpecter", "Cemetery Specter", "Statue", "A sheet ghost with a lantern, floating over the graves."},
 		{"Immortal", "UndeadSanic", "Undead Sanic", "Statue", "Gotta go fast. Even after death."},
@@ -2292,7 +2383,7 @@ MemeList.Worlds = {
 		{"Uncommon", "RealityWarpedSponge", "Reality-Warped Porous Sponge", "Statue", "Heading out so fast he twisted reality."},
 		{"Uncommon", "TimeFoldPanels", "Time Fold Nah-Yeah Panels", "Tablet", "Nah. Yeah. Folded through time."},
 		{"Rare", "DarkMatterHippo", "Dark Matter Baby Hippo", "Statue", "A tiny hippo made of dark matter. Still bites."},
-		{"Rare", "VoidCowboyHawk", "Void Cowboy Hawk", "Statue", "The cowboy hawk, lost in the void."},
+		{"Rare", "RomanEmpireBust", "Roman Empire Bust", "Statue", "How often do you think about the Roman Empire? Every day."},
 		{"Rare", "HypercubeChillDude", "Hypercube Chill Dude", "Statue", "Chilling in four dimensions."},
 		{"Epic", "ZeroPointThrone", "Zero Point Singing Throne", "Statue", "A crystal singing toilet that floats on zero-point energy."},
 		{"Epic", "TesseractShake", "Tesseract Birthday Shake", "Relic", "A birthday shake inside a four-dimensional cube."},
@@ -3342,15 +3433,43 @@ function UIKit.shovelIcon(parent, def, props)
 end
 
 ---------------------------------------------------------------------
--- MEME ICON: the artifact's emoji on a tile in its rarity color, with a rarity badge
+-- MEME ICON: the meme's actual 3D model in a little viewport, on a tile in its rarity
+-- color, with a rarity badge. (No emoji or pictures: what you see is the real object.)
 ---------------------------------------------------------------------
-local ArtifactData, ArtifactIcons, ArtifactImages -- loaded on first use
+local ArtifactData, ArtifactModels -- loaded on first use
+
+local function modelViewport(tile, artifact, radius)
+	local viewport = Instance.new("ViewportFrame")
+	viewport.Name = "Model3D"
+	viewport.BackgroundTransparency = 1
+	viewport.Size = UDim2.new(1, -6, 1, -6)
+	viewport.Position = UDim2.fromScale(0.5, 0.5)
+	viewport.AnchorPoint = Vector2.new(0.5, 0.5)
+	viewport.Ambient = Color3.fromRGB(170, 170, 185)
+	viewport.LightColor = Color3.fromRGB(255, 250, 240)
+	viewport.LightDirection = Vector3.new(-0.6, -1, -0.8)
+	viewport.Parent = tile
+	UIKit.corner(viewport, math.max(radius - 3, 4))
+	local ok, model = pcall(ArtifactModels.buildHeld, artifact, 4)
+	if not ok or not model then return viewport end
+	model:PivotTo(CFrame.new())
+	model.Parent = viewport
+	local half = math.max(model:GetAttribute("HalfHeight") or 2, (model:GetAttribute("Width") or 4) / 2)
+	local camera = Instance.new("Camera")
+	camera.FieldOfView = 30
+	-- three-quarter front view (the front is -Z), slightly from above
+	local turn, tilt, distance = math.rad(28), math.rad(12), half * 4.2
+	local eye = Vector3.new(math.sin(turn) * math.cos(tilt), math.sin(tilt), -math.cos(turn) * math.cos(tilt)) * distance
+	camera.CFrame = CFrame.lookAt(eye, Vector3.zero)
+	camera.Parent = viewport
+	viewport.CurrentCamera = camera
+	return viewport
+end
 
 function UIKit.artifactIcon(parent, artifact, props)
 	props = props or {}
 	ArtifactData = ArtifactData or require(ReplicatedStorage:WaitForChild("ArtifactData"))
-	ArtifactIcons = ArtifactIcons or require(ReplicatedStorage:WaitForChild("ArtifactIcons"))
-	ArtifactImages = ArtifactImages or require(ReplicatedStorage:WaitForChild("ArtifactImages"))
+	ArtifactModels = ArtifactModels or require(ReplicatedStorage:WaitForChild("ArtifactModels"))
 	local rarity = ArtifactData.GetRarity(artifact.Rarity)
 	local color = rarity and rarity.Color or C.Lilac
 	local tile = UIKit.panel(parent, {
@@ -3358,36 +3477,11 @@ function UIKit.artifactIcon(parent, artifact, props)
 		Color = color:Lerp(C.White, 0.45), Radius = props.Radius or 16, Stroke = props.Stroke or 3, ShadeAmount = 0.25,
 	})
 	tile.Name = "ArtifactIcon"
-	local iconId = ArtifactData.IconId(artifact.Id) -- corrupted memes use the original's picture
-	local image = ArtifactImages[iconId]
-	if image then
-		-- the uploaded meme picture fills the tile (the emoji is only a fallback)
-		local picture = Instance.new("ImageLabel")
-		picture.Name = "Picture"
-		picture.BackgroundTransparency = 1
-		picture.Size = UDim2.new(1, -8, 1, -8)
-		picture.Position = UDim2.fromScale(0.5, 0.5)
-		picture.AnchorPoint = Vector2.new(0.5, 0.5)
-		picture.Image = image
-		picture.ScaleType = Enum.ScaleType.Crop
-		picture.Parent = tile
-		UIKit.corner(picture, math.max((props.Radius or 16) - 4, 4))
-	end
-	-- soft glow disc behind the emoji
+	-- soft glow disc behind the model
 	local glow = UIKit.panel(tile, {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
 		Color = C.White, Radius = 999, Stroke = false, Shade = false})
 	glow.BackgroundTransparency = 0.45
-	glow.Visible = image == nil
-	local emoji = Instance.new("TextLabel")
-	emoji.Visible = image == nil
-	emoji.BackgroundTransparency = 1
-	emoji.Size = UDim2.fromScale(0.72, 0.72)
-	emoji.Position = UDim2.fromScale(0.5, 0.52)
-	emoji.AnchorPoint = Vector2.new(0.5, 0.5)
-	emoji.Text = ArtifactIcons[iconId] or "❓"
-	emoji.TextScaled = true
-	emoji.Font = Enum.Font.GothamBold
-	emoji.Parent = tile
+	modelViewport(tile, artifact, props.Radius or 16)
 	-- rarity badge in the corner (the higher the rarity, the more it stands out)
 	if props.Badge ~= false then
 		local badge = UIKit.panel(tile, {Size = UDim2.fromScale(0.36, 0.26), Position = UDim2.new(1, 4, 0, -4), AnchorPoint = Vector2.new(1, 0),
@@ -7790,6 +7884,128 @@ calmWorld()
 task.delay(5, calmWorld)
 
 print("MapStyle: cartoony 2050 skyline, dig site and sky ready")
+]=])
+install(game:GetService("ServerScriptService"), "MemeToolManager", "Script", [=[
+-- MemeToolManager (Script in ServerScriptService)
+-- Holding a meme: click a meme in your backpack (InventoryClient) and its real 3D model
+-- appears in your hand as a Tool. Walk around with it, show it off. Click it again (or
+-- equip your pickaxe) to put it away. Only memes still in your inventory can be held;
+-- placing it in the museum or selling it puts it away.
+-- The Tool isn't kept in the hotbar: unequipping it removes it, so the hotbar stays clean.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local ArtifactModels = require(ReplicatedStorage:WaitForChild("ArtifactModels"))
+local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+local equipRemote = remotes:FindFirstChild("EquipMeme") or Instance.new("RemoteEvent")
+equipRemote.Name = "EquipMeme"
+equipRemote.Parent = remotes
+
+local HELD_HEIGHT = 2.2 -- studs tall in your hand
+
+local held = {} -- [player] = Tool
+
+local function owns(player, artifactId)
+	local data = PlayerData.Get(player)
+	for _, id in pairs(data and data.Inventory or {}) do
+		if id == artifactId then return true end
+	end
+	return false
+end
+
+local function putAway(player)
+	local tool = held[player]
+	held[player] = nil
+	if tool then tool:Destroy() end
+	if player.Parent then player:SetAttribute("HeldMeme", nil) end
+end
+
+local function makeTool(artifact)
+	local tool = Instance.new("Tool")
+	tool.Name = artifact.Name
+	tool.ToolTip = artifact.Name
+	tool.CanBeDropped = false
+	tool.RequiresHandle = true
+	tool:SetAttribute("MemeId", artifact.Id)
+	-- the Handle sits in the palm; the model stands upright on it, front facing forward
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Size = Vector3.new(0.4, 0.4, 0.4)
+	handle.Transparency = 1
+	handle.CanCollide = false
+	handle.CanQuery = false
+	handle.CanTouch = false
+	handle.Massless = true
+	handle.Parent = tool
+	local model = ArtifactModels.buildHeld(artifact, HELD_HEIGHT)
+	local half = model:GetAttribute("HalfHeight") or HELD_HEIGHT / 2
+	-- the hand holds it a little below its middle, slightly in front of the palm
+	model:PivotTo(handle.CFrame * CFrame.new(0, half - 0.45, -0.35))
+	for _, p in ipairs(model:GetDescendants()) do
+		if p:IsA("BasePart") then
+			p.Anchored = false
+			p.CanCollide = false
+			p.CanQuery = false
+			p.CanTouch = false
+			p.Massless = true
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = handle
+			weld.Part1 = p
+			weld.Parent = p
+		end
+	end
+	model.Parent = tool
+	return tool
+end
+
+local function hold(player, artifactId)
+	local artifact = ArtifactData.GetArtifact(artifactId)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not artifact or not humanoid or humanoid.Health <= 0 then return end
+	if not owns(player, artifactId) then return end
+	local tool = makeTool(artifact)
+	held[player] = tool
+	tool.Parent = player:FindFirstChild("Backpack") or character
+	humanoid:EquipTool(tool)
+	player:SetAttribute("HeldMeme", artifactId)
+	-- unequipped (pickaxe picked, hotbar key pressed): it goes away instead of sitting in the hotbar
+	tool.AncestryChanged:Connect(function()
+		if held[player] == tool and tool.Parent and not tool.Parent:IsA("Model") then
+			putAway(player)
+		end
+	end)
+end
+
+equipRemote.OnServerEvent:Connect(function(player, artifactId)
+	if typeof(artifactId) ~= "string" then return end
+	local current = held[player]
+	local currentId = current and current:GetAttribute("MemeId")
+	putAway(player)
+	if currentId ~= artifactId then -- clicking the meme you're holding just puts it away
+		hold(player, artifactId)
+	end
+end)
+
+-- put it away if it left your inventory (placed in the museum, sold) or you respawned
+task.spawn(function()
+	while true do
+		task.wait(1)
+		for player, tool in pairs(held) do
+			local id = tool:GetAttribute("MemeId")
+			if not player.Parent or not tool:IsDescendantOf(game) or not owns(player, id) then
+				putAway(player)
+			end
+		end
+	end
+end)
+Players.PlayerRemoving:Connect(putAway)
+
+print("MemeToolManager ready: click a meme in your backpack to hold it")
 ]=])
 install(game:GetService("ServerScriptService"), "MuseumBuilder", "ModuleScript", [=[
 -- MuseumBuilder (ModuleScript in ServerScriptService)
@@ -14769,8 +14985,9 @@ end)
 ]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "InventoryClient", "LocalScript", [=[
 -- InventoryClient (LocalScript in StarterPlayer > StarterPlayerScripts)
--- The Inventory window: every meme you've picked up, as icon tiles sorted from rarest to
--- most common, with how many you have and how much each one earns on display.
+-- The Inventory window: every meme you've picked up, as cards showing its real 3D model,
+-- sorted from rarest to most common, with how many you have and how much each one earns.
+-- Click a card to hold that meme in your hand (MemeToolManager); click it again to put it away.
 -- Open it with the BAG button on the HUD or the B key.
 
 local Players = game:GetService("Players")
@@ -14783,6 +15000,7 @@ local C = UIKit.Colors
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local getInventory = remotes:WaitForChild("GetInventory")
 local inventoryChangedRemote = remotes:WaitForChild("InventoryChanged")
+local equipRemote = remotes:WaitForChild("EquipMeme")
 
 local player = Players.LocalPlayer
 local gui = UIKit.screen(player, "InventoryGui", 3)
@@ -14792,6 +15010,8 @@ local gui = UIKit.screen(player, "InventoryGui", 3)
 ---------------------------------------------------------------------
 local window, content = UIKit.window(gui, "INVENTORY", UDim2.fromOffset(740, 560), C.Sun, "🎒")
 local countLabel = UIKit.label(content, "", {Size = UDim2.new(1, -260, 0, 26), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 22})
+UIKit.label(content, "Click a meme to hold it", {Size = UDim2.new(1, -260, 0, 14), Position = UDim2.fromOffset(4, 28), Align = "Left", Color = C.Grey, Stroke = 0,
+	Font = UIKit.BodyFont, MaxText = 13})
 -- fills every empty display slot in your museum with your best-earning memes
 local placeAllButton = UIKit.button(content, "🏛️ PLACE ALL IN MUSEUM", {Size = UDim2.fromOffset(250, 38), Position = UDim2.new(1, -4, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Violet, Radius = 19, MaxText = 16})
 placeAllButton.MouseButton1Click:Connect(function()
@@ -14882,6 +15102,24 @@ local function refresh()
 		UIKit.label(card, artifact.Name, {Size = UDim2.new(1, -14, 0, 32), Position = UDim2.new(0.5, 0, 0, 110), AnchorPoint = Vector2.new(0.5, 0), Color = C.Ink, Stroke = 0, MaxText = 16})
 		local rarityTag = UIKit.panel(card, {Size = UDim2.new(1, -28, 0, 20), Position = UDim2.new(0.5, 0, 0, 144), AnchorPoint = Vector2.new(0.5, 0), Color = rarity.Color, Radius = 10, Stroke = 2})
 		UIKit.label(rarityTag, string.upper(artifact.Rarity), {Size = UDim2.fromScale(0.9, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 14})
+		-- click: hold it in your hand (or put it away if you already are)
+		local holding = player:GetAttribute("HeldMeme") == artifact.Id
+		if holding then
+			local tag = UIKit.panel(card, {Size = UDim2.fromOffset(78, 24), Position = UDim2.new(0.5, 0, 0, 84), AnchorPoint = Vector2.new(0.5, 0),
+				Color = C.Mint, Radius = 12, Stroke = 2})
+			UIKit.label(tag, "IN HAND", {Size = UDim2.fromScale(0.85, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2})
+			card:FindFirstChildOfClass("UIStroke").Thickness = 6
+		end
+		local hit = Instance.new("TextButton")
+		hit.Name = "Hold"
+		hit.Text = ""
+		hit.BackgroundTransparency = 1
+		hit.Size = UDim2.fromScale(1, 1)
+		hit.ZIndex = 20
+		hit.Parent = card
+		hit.MouseButton1Click:Connect(function()
+			equipRemote:FireServer(artifact.Id)
+		end)
 		UIKit.label(card, ArtifactData.FormatMoney(ArtifactData.GetIncome(artifact)) .. "/s", {Size = UDim2.new(1, -14, 0, 16), Position = UDim2.new(0.5, 0, 1, -20), AnchorPoint = Vector2.new(0.5, 0), Color = C.Money, Stroke = 0, MaxText = 15})
 	end
 end
@@ -14903,6 +15141,9 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 inventoryChangedRemote.OnClientEvent:Connect(function()
+	if window.Visible then refresh() end
+end)
+player:GetAttributeChangedSignal("HeldMeme"):Connect(function()
 	if window.Visible then refresh() end
 end)
 ]=])
@@ -17627,4 +17868,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-09-30 21:34). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 13:38). Now save the place (Ctrl+S).")

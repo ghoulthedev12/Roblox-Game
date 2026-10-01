@@ -59,6 +59,31 @@ out.append('pcall(function() workspace.FallenPartsDestroyHeight = -3000 end)')
 # Roblox's modern (2022) terrain materials: real PBR textures instead of the old flat ones.
 # It's a Studio-only setting, so the installer turns it on (saved with the place).
 out.append('pcall(function() game:GetService("MaterialService").Use2022Materials = true end)')
+# The Blender meme meshes: after File > Import 3D of assets/models/MemeMeshes.fbx, Studio
+# drops a model of MeshParts into the Workspace. Move it to ReplicatedStorage > MemeMeshes
+# (replacing the old batch) so every script can find the meshes by meme id.
+out.append('''do
+	local imported = workspace:FindFirstChild("MemeMeshes")
+	if not imported then
+		for _, child in ipairs(workspace:GetChildren()) do
+			if child:IsA("Model") and child:FindFirstChild("ChillDude", true) and child:FindFirstChild("LogBatGuy", true) then imported = child break end
+		end
+	end
+	if imported then
+		local RS = game:GetService("ReplicatedStorage")
+		local old = RS:FindFirstChild("MemeMeshes")
+		if old then old:Destroy() end
+		local count = 0
+		for _, d in ipairs(imported:GetDescendants()) do
+			if d:IsA("BasePart") then d.Anchored = true d.CanCollide = false count += (d:IsA("MeshPart") and 1 or 0) end
+		end
+		imported.Name = "MemeMeshes"
+		imported.Parent = RS
+		print("Moved " .. count .. " meme meshes into ReplicatedStorage > MemeMeshes")
+	elseif not game:GetService("ReplicatedStorage"):FindFirstChild("MemeMeshes") then
+		warn("No meme meshes yet: File > Import 3D > assets/models/MemeMeshes.fbx, then run this installer again")
+	end
+end''')
 for parent, name in DELETE:
     out.append(f'do local old = {parent}:FindFirstChild("{name}") if old then old:Destroy() print("Removed {name}") end end')
 for folder, parent in TARGETS:

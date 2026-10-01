@@ -42,8 +42,6 @@ MemeFigures.ById = {
 	SusBean = {Kind = "SusBean"},
 	JawlineChad = {Kind = "JawlineChad"},
 	-- World 4
-	SkibidiMonolith = {Kind = "ToiletHead", Tint = rgb(236, 196, 90), TintAmount = 0.75, Material = Enum.Material.Metal},
-	PurpleBirthdayShake = {Kind = "PurpleShake"},
 	-- World 5
 	PointingSuits = {Kind = "PointingSuits"},
 	ChillDude = {Kind = "ChillDude"},

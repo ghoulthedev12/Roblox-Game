@@ -442,15 +442,43 @@ function UIKit.shovelIcon(parent, def, props)
 end
 
 ---------------------------------------------------------------------
--- MEME ICON: the artifact's emoji on a tile in its rarity color, with a rarity badge
+-- MEME ICON: the meme's actual 3D model in a little viewport, on a tile in its rarity
+-- color, with a rarity badge. (No emoji or pictures: what you see is the real object.)
 ---------------------------------------------------------------------
-local ArtifactData, ArtifactIcons, ArtifactImages -- loaded on first use
+local ArtifactData, ArtifactModels -- loaded on first use
+
+local function modelViewport(tile, artifact, radius)
+	local viewport = Instance.new("ViewportFrame")
+	viewport.Name = "Model3D"
+	viewport.BackgroundTransparency = 1
+	viewport.Size = UDim2.new(1, -6, 1, -6)
+	viewport.Position = UDim2.fromScale(0.5, 0.5)
+	viewport.AnchorPoint = Vector2.new(0.5, 0.5)
+	viewport.Ambient = Color3.fromRGB(170, 170, 185)
+	viewport.LightColor = Color3.fromRGB(255, 250, 240)
+	viewport.LightDirection = Vector3.new(-0.6, -1, -0.8)
+	viewport.Parent = tile
+	UIKit.corner(viewport, math.max(radius - 3, 4))
+	local ok, model = pcall(ArtifactModels.buildHeld, artifact, 4)
+	if not ok or not model then return viewport end
+	model:PivotTo(CFrame.new())
+	model.Parent = viewport
+	local half = math.max(model:GetAttribute("HalfHeight") or 2, (model:GetAttribute("Width") or 4) / 2)
+	local camera = Instance.new("Camera")
+	camera.FieldOfView = 30
+	-- three-quarter front view (the front is -Z), slightly from above
+	local turn, tilt, distance = math.rad(28), math.rad(12), half * 4.2
+	local eye = Vector3.new(math.sin(turn) * math.cos(tilt), math.sin(tilt), -math.cos(turn) * math.cos(tilt)) * distance
+	camera.CFrame = CFrame.lookAt(eye, Vector3.zero)
+	camera.Parent = viewport
+	viewport.CurrentCamera = camera
+	return viewport
+end
 
 function UIKit.artifactIcon(parent, artifact, props)
 	props = props or {}
 	ArtifactData = ArtifactData or require(ReplicatedStorage:WaitForChild("ArtifactData"))
-	ArtifactIcons = ArtifactIcons or require(ReplicatedStorage:WaitForChild("ArtifactIcons"))
-	ArtifactImages = ArtifactImages or require(ReplicatedStorage:WaitForChild("ArtifactImages"))
+	ArtifactModels = ArtifactModels or require(ReplicatedStorage:WaitForChild("ArtifactModels"))
 	local rarity = ArtifactData.GetRarity(artifact.Rarity)
 	local color = rarity and rarity.Color or C.Lilac
 	local tile = UIKit.panel(parent, {
@@ -458,36 +486,11 @@ function UIKit.artifactIcon(parent, artifact, props)
 		Color = color:Lerp(C.White, 0.45), Radius = props.Radius or 16, Stroke = props.Stroke or 3, ShadeAmount = 0.25,
 	})
 	tile.Name = "ArtifactIcon"
-	local iconId = ArtifactData.IconId(artifact.Id) -- corrupted memes use the original's picture
-	local image = ArtifactImages[iconId]
-	if image then
-		-- the uploaded meme picture fills the tile (the emoji is only a fallback)
-		local picture = Instance.new("ImageLabel")
-		picture.Name = "Picture"
-		picture.BackgroundTransparency = 1
-		picture.Size = UDim2.new(1, -8, 1, -8)
-		picture.Position = UDim2.fromScale(0.5, 0.5)
-		picture.AnchorPoint = Vector2.new(0.5, 0.5)
-		picture.Image = image
-		picture.ScaleType = Enum.ScaleType.Crop
-		picture.Parent = tile
-		UIKit.corner(picture, math.max((props.Radius or 16) - 4, 4))
-	end
-	-- soft glow disc behind the emoji
+	-- soft glow disc behind the model
 	local glow = UIKit.panel(tile, {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
 		Color = C.White, Radius = 999, Stroke = false, Shade = false})
 	glow.BackgroundTransparency = 0.45
-	glow.Visible = image == nil
-	local emoji = Instance.new("TextLabel")
-	emoji.Visible = image == nil
-	emoji.BackgroundTransparency = 1
-	emoji.Size = UDim2.fromScale(0.72, 0.72)
-	emoji.Position = UDim2.fromScale(0.5, 0.52)
-	emoji.AnchorPoint = Vector2.new(0.5, 0.5)
-	emoji.Text = ArtifactIcons[iconId] or "❓"
-	emoji.TextScaled = true
-	emoji.Font = Enum.Font.GothamBold
-	emoji.Parent = tile
+	modelViewport(tile, artifact, props.Radius or 16)
 	-- rarity badge in the corner (the higher the rarity, the more it stands out)
 	if props.Badge ~= false then
 		local badge = UIKit.panel(tile, {Size = UDim2.fromScale(0.36, 0.26), Position = UDim2.new(1, 4, 0, -4), AnchorPoint = Vector2.new(1, 0),
