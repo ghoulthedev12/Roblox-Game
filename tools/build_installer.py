@@ -121,8 +121,18 @@ out.append('''local function collectMeshes(folderName, ids, hint)
 		local count = 0
 		for _ in pairs(placed) do count += 1 end
 		print("Moved " .. count .. " meshes into ReplicatedStorage > " .. folderName .. " (" .. #folder:GetChildren() .. " in total)")
-	elseif not folder then
-		warn(hint)
+		-- remember (saved with the place) that this place has them, to spot them going missing
+		RS:SetAttribute(folderName .. "InstalledAt", os.date("%%Y-%%m-%%d %%H:%%M"))
+	elseif folder then
+		print(folderName .. ": " .. #folder:GetChildren() .. " models in ReplicatedStorage, all good")
+	else
+		local when = RS:GetAttribute(folderName .. "InstalledAt")
+		if when then
+			warn(folderName .. " WENT MISSING: they were installed in THIS place on " .. when .. " but are gone now. Something undid it: "
+				.. "Ctrl+Z after installing, closing without saving, or opening an older copy of the place. " .. hint)
+		else
+			warn(hint .. "  (This place has never had them installed. If you did it before, it was in a different copy of the place, or it wasn't saved.)")
+		end
 	end
 end
 collectMeshes("MemeMeshes", {%s}, "No meme meshes yet: File > Import 3D > assets/models/MemeMeshes.fbx, then run this installer again")
