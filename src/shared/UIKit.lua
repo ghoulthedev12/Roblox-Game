@@ -1,8 +1,8 @@
 -- UIKit (ModuleScript in ReplicatedStorage)
--- One cartoony 2050 look for every screen in the game:
---   * rounded panels with a soft top-to-bottom sheen; colored panels get an outline in a
---     darker shade of their own color (no more black outlines everywhere)
---   * glossy "candy" buttons (one smooth gradient, no strips), white bubbly text and a bounce
+-- One chunky simulator-style look for every screen in the game:
+--   * rounded panels with a soft top-to-bottom sheen and thick dark outlines
+--   * punchy gradient buttons with a heavy dark outline, big white text with a black
+--     outline, and a bounce when hovered/pressed
 --   * windows with a full-width colored header bar, an icon, and the close button inside it
 --   * text that scales with its box but never past a sensible size (so nothing looks huge)
 --   * live 3D pickaxe icons (ViewportFrames that render the real pickaxe model)
@@ -27,6 +27,7 @@ UIKit.Colors = {
 	Grey = rgb(128, 122, 162),    -- secondary text
 	White = rgb(255, 255, 255),
 	Money = rgb(46, 196, 90),
+	Outline = rgb(22, 20, 32),    -- the thick dark outline around buttons, windows and text
 }
 local C = UIKit.Colors
 UIKit.Font = Enum.Font.FredokaOne
@@ -46,9 +47,9 @@ end
 -- color itself around colored ones
 local function autoOutline(color)
 	if luminance(color) > 0.86 then
-		return rgb(208, 198, 246)
+		return rgb(150, 140, 190) -- light cards: a soft but visible edge
 	end
-	return UIKit.shadeColor(color, 0.5)
+	return color:Lerp(C.Outline, 0.72) -- colored panels: a heavy dark edge
 end
 UIKit.autoOutline = autoOutline
 
@@ -189,7 +190,7 @@ function UIKit.label(parent, text, props)
 	local strokeSize = props.Stroke == nil and 2 or props.Stroke
 	if strokeSize > 0 then
 		local s = Instance.new("UIStroke")
-		s.Color = props.StrokeColor or C.Ink
+		s.Color = props.StrokeColor or C.Outline
 		s.Thickness = strokeSize
 		s.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
 		s.Parent = l
@@ -212,28 +213,29 @@ function UIKit.button(parent, text, props)
 	b.Parent = parent
 	local radius = props.Radius or 14
 	UIKit.corner(b, radius)
-	local stroke = UIKit.outline(b, 2.5)
+	local stroke = UIKit.outline(b, 3.5)
 	local gloss = Instance.new("UIGradient")
 	gloss.Rotation = 90
 	gloss.Parent = b
 	local label = UIKit.label(b, text, {
 		Size = UDim2.new(1, -16, 1, -14), Position = UDim2.new(0.5, 0, 0.5, -2), AnchorPoint = Vector2.new(0.5, 0.5),
-		Color = props.TextColor or C.White, Stroke = 2.5, MaxText = props.MaxText or 24,
+		Color = props.TextColor or C.White, Stroke = 3, MaxText = props.MaxText or 26,
 	})
 	label.Name = "Label"
 	local labelStroke = label:FindFirstChildOfClass("UIStroke")
 
 	local function paint()
 		local c = b.BackgroundColor3
-		stroke.Color = UIKit.shadeColor(c, 0.5)
-			-- one smooth gradient does the gloss: a bright top fading to a darker bottom edge
-		-- (no separate shine or lip pieces, so there are never any lines across the button)
+		stroke.Color = c:Lerp(C.Outline, 0.78)
+		-- one smooth gradient does the shine: a bright top half, the full color in the middle,
+		-- and a deeper bottom edge (no separate strips, so there are never lines across it)
 		gloss.Color = ColorSequence.new({
 			ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-			ColorSequenceKeypoint.new(0.45, Color3.new(0.95, 0.95, 0.97)),
-			ColorSequenceKeypoint.new(1, Color3.new(0.76, 0.76, 0.82)),
+			ColorSequenceKeypoint.new(0.42, Color3.new(0.97, 0.97, 0.98)),
+			ColorSequenceKeypoint.new(0.62, Color3.new(0.86, 0.86, 0.9)),
+			ColorSequenceKeypoint.new(1, Color3.new(0.68, 0.68, 0.74)),
 		})
-		if labelStroke then labelStroke.Color = UIKit.shadeColor(c, 0.62) end
+		if labelStroke then labelStroke.Color = C.Outline end
 	end
 	paint()
 	b:GetPropertyChangedSignal("BackgroundColor3"):Connect(paint)
@@ -297,7 +299,7 @@ function UIKit.window(gui, title, size, accent, icon)
 	accent = accent or C.Violet
 	local window = UIKit.panel(gui, {
 		Size = size, Position = UDim2.fromScale(0.5, 0.52), AnchorPoint = Vector2.new(0.5, 0.5),
-		Color = C.Panel, Radius = 24, Stroke = 4, StrokeColor = C.Ink, ShadeAmount = 0.05,
+		Color = C.Panel, Radius = 24, Stroke = 5, StrokeColor = C.Outline, ShadeAmount = 0.05,
 	})
 	window.Visible = false
 	local sizeLimit = Instance.new("UISizeConstraint")
@@ -329,8 +331,25 @@ function UIKit.window(gui, title, size, accent, icon)
 		UIKit.badge(header, icon, UIKit.shadeColor(accent, -0.25), {Diameter = 40, Position = UDim2.new(0, 14, 0.5, -2), AnchorPoint = Vector2.new(0, 0.5)})
 		titleX = 64
 	end
-	local titleLabel = UIKit.label(header, title, {Size = UDim2.new(1, -titleX - 70, 0, 34), Position = UDim2.new(0, titleX, 0.5, -2), AnchorPoint = Vector2.new(0, 0.5),
-		Align = "Left", Stroke = 3, StrokeColor = UIKit.shadeColor(accent, 0.6), MaxText = 30})
+	local titleLabel = UIKit.label(header, title, {Size = UDim2.new(1, -titleX - 70, 0, 38), Position = UDim2.new(0, titleX, 0.5, -2), AnchorPoint = Vector2.new(0, 0.5),
+		Align = "Left", Stroke = 3.5, StrokeColor = C.Outline, MaxText = 34})
+	-- the header gets the same shine as the buttons
+	local headerShine = Instance.new("UIGradient")
+	headerShine.Rotation = 90
+	headerShine.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+		ColorSequenceKeypoint.new(0.5, Color3.new(0.95, 0.95, 0.97)),
+		ColorSequenceKeypoint.new(1, Color3.new(0.78, 0.78, 0.84)),
+	})
+	headerShine.Parent = header
+	-- the square filler under the header's bottom corners continues the same gradient
+	-- (it covers the bottom 22 of the header's 58 pixels), so there's no seam
+	local fillShine = Instance.new("UIGradient")
+	fillShine.Rotation = 90
+	local from = (HEADER - 22) / HEADER
+	local at = 0.95 - (from - 0.5) / 0.5 * 0.17
+	fillShine.Color = ColorSequence.new(Color3.new(at, at, at + 0.012), Color3.new(0.78, 0.78, 0.84))
+	fillShine.Parent = headerFill
 	titleLabel.Name = "Title"
 
 	local close = UIKit.button(header, "X", {

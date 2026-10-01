@@ -3022,10 +3022,10 @@ return UIBus
 ]=])
 install(game:GetService("ReplicatedStorage"), "UIKit", "ModuleScript", [=[
 -- UIKit (ModuleScript in ReplicatedStorage)
--- One cartoony 2050 look for every screen in the game:
---   * rounded panels with a soft top-to-bottom sheen; colored panels get an outline in a
---     darker shade of their own color (no more black outlines everywhere)
---   * glossy "candy" buttons (one smooth gradient, no strips), white bubbly text and a bounce
+-- One chunky simulator-style look for every screen in the game:
+--   * rounded panels with a soft top-to-bottom sheen and thick dark outlines
+--   * punchy gradient buttons with a heavy dark outline, big white text with a black
+--     outline, and a bounce when hovered/pressed
 --   * windows with a full-width colored header bar, an icon, and the close button inside it
 --   * text that scales with its box but never past a sensible size (so nothing looks huge)
 --   * live 3D pickaxe icons (ViewportFrames that render the real pickaxe model)
@@ -3050,6 +3050,7 @@ UIKit.Colors = {
 	Grey = rgb(128, 122, 162),    -- secondary text
 	White = rgb(255, 255, 255),
 	Money = rgb(46, 196, 90),
+	Outline = rgb(22, 20, 32),    -- the thick dark outline around buttons, windows and text
 }
 local C = UIKit.Colors
 UIKit.Font = Enum.Font.FredokaOne
@@ -3069,9 +3070,9 @@ end
 -- color itself around colored ones
 local function autoOutline(color)
 	if luminance(color) > 0.86 then
-		return rgb(208, 198, 246)
+		return rgb(150, 140, 190) -- light cards: a soft but visible edge
 	end
-	return UIKit.shadeColor(color, 0.5)
+	return color:Lerp(C.Outline, 0.72) -- colored panels: a heavy dark edge
 end
 UIKit.autoOutline = autoOutline
 
@@ -3212,7 +3213,7 @@ function UIKit.label(parent, text, props)
 	local strokeSize = props.Stroke == nil and 2 or props.Stroke
 	if strokeSize > 0 then
 		local s = Instance.new("UIStroke")
-		s.Color = props.StrokeColor or C.Ink
+		s.Color = props.StrokeColor or C.Outline
 		s.Thickness = strokeSize
 		s.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
 		s.Parent = l
@@ -3235,28 +3236,29 @@ function UIKit.button(parent, text, props)
 	b.Parent = parent
 	local radius = props.Radius or 14
 	UIKit.corner(b, radius)
-	local stroke = UIKit.outline(b, 2.5)
+	local stroke = UIKit.outline(b, 3.5)
 	local gloss = Instance.new("UIGradient")
 	gloss.Rotation = 90
 	gloss.Parent = b
 	local label = UIKit.label(b, text, {
 		Size = UDim2.new(1, -16, 1, -14), Position = UDim2.new(0.5, 0, 0.5, -2), AnchorPoint = Vector2.new(0.5, 0.5),
-		Color = props.TextColor or C.White, Stroke = 2.5, MaxText = props.MaxText or 24,
+		Color = props.TextColor or C.White, Stroke = 3, MaxText = props.MaxText or 26,
 	})
 	label.Name = "Label"
 	local labelStroke = label:FindFirstChildOfClass("UIStroke")
 
 	local function paint()
 		local c = b.BackgroundColor3
-		stroke.Color = UIKit.shadeColor(c, 0.5)
-			-- one smooth gradient does the gloss: a bright top fading to a darker bottom edge
-		-- (no separate shine or lip pieces, so there are never any lines across the button)
+		stroke.Color = c:Lerp(C.Outline, 0.78)
+		-- one smooth gradient does the shine: a bright top half, the full color in the middle,
+		-- and a deeper bottom edge (no separate strips, so there are never lines across it)
 		gloss.Color = ColorSequence.new({
 			ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-			ColorSequenceKeypoint.new(0.45, Color3.new(0.95, 0.95, 0.97)),
-			ColorSequenceKeypoint.new(1, Color3.new(0.76, 0.76, 0.82)),
+			ColorSequenceKeypoint.new(0.42, Color3.new(0.97, 0.97, 0.98)),
+			ColorSequenceKeypoint.new(0.62, Color3.new(0.86, 0.86, 0.9)),
+			ColorSequenceKeypoint.new(1, Color3.new(0.68, 0.68, 0.74)),
 		})
-		if labelStroke then labelStroke.Color = UIKit.shadeColor(c, 0.62) end
+		if labelStroke then labelStroke.Color = C.Outline end
 	end
 	paint()
 	b:GetPropertyChangedSignal("BackgroundColor3"):Connect(paint)
@@ -3320,7 +3322,7 @@ function UIKit.window(gui, title, size, accent, icon)
 	accent = accent or C.Violet
 	local window = UIKit.panel(gui, {
 		Size = size, Position = UDim2.fromScale(0.5, 0.52), AnchorPoint = Vector2.new(0.5, 0.5),
-		Color = C.Panel, Radius = 24, Stroke = 4, StrokeColor = C.Ink, ShadeAmount = 0.05,
+		Color = C.Panel, Radius = 24, Stroke = 5, StrokeColor = C.Outline, ShadeAmount = 0.05,
 	})
 	window.Visible = false
 	local sizeLimit = Instance.new("UISizeConstraint")
@@ -3352,8 +3354,25 @@ function UIKit.window(gui, title, size, accent, icon)
 		UIKit.badge(header, icon, UIKit.shadeColor(accent, -0.25), {Diameter = 40, Position = UDim2.new(0, 14, 0.5, -2), AnchorPoint = Vector2.new(0, 0.5)})
 		titleX = 64
 	end
-	local titleLabel = UIKit.label(header, title, {Size = UDim2.new(1, -titleX - 70, 0, 34), Position = UDim2.new(0, titleX, 0.5, -2), AnchorPoint = Vector2.new(0, 0.5),
-		Align = "Left", Stroke = 3, StrokeColor = UIKit.shadeColor(accent, 0.6), MaxText = 30})
+	local titleLabel = UIKit.label(header, title, {Size = UDim2.new(1, -titleX - 70, 0, 38), Position = UDim2.new(0, titleX, 0.5, -2), AnchorPoint = Vector2.new(0, 0.5),
+		Align = "Left", Stroke = 3.5, StrokeColor = C.Outline, MaxText = 34})
+	-- the header gets the same shine as the buttons
+	local headerShine = Instance.new("UIGradient")
+	headerShine.Rotation = 90
+	headerShine.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+		ColorSequenceKeypoint.new(0.5, Color3.new(0.95, 0.95, 0.97)),
+		ColorSequenceKeypoint.new(1, Color3.new(0.78, 0.78, 0.84)),
+	})
+	headerShine.Parent = header
+	-- the square filler under the header's bottom corners continues the same gradient
+	-- (it covers the bottom 22 of the header's 58 pixels), so there's no seam
+	local fillShine = Instance.new("UIGradient")
+	fillShine.Rotation = 90
+	local from = (HEADER - 22) / HEADER
+	local at = 0.95 - (from - 0.5) / 0.5 * 0.17
+	fillShine.Color = ColorSequence.new(Color3.new(at, at, at + 0.012), Color3.new(0.78, 0.78, 0.84))
+	fillShine.Parent = headerFill
 	titleLabel.Name = "Title"
 
 	local close = UIKit.button(header, "X", {
@@ -14726,9 +14745,10 @@ end)
 ]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "HUD", "LocalScript", [=[
 -- HUD (LocalScript in StarterPlayer > StarterPlayerScripts)
--- The always-on screen: money, gems and income counters at the top center (with the world
--- you're in), a column of menu buttons on the left (Shop, Museum, Worlds, Rebirth, Bag,
--- Settings, Sound), and a custom hotbar that shows your pickaxe as a 3D icon.
+-- The always-on screen: big gem, money and income counters in the bottom left, the world
+-- you're in at the top, a column of big menu icons on the left (Shop, Museum, Worlds,
+-- Rebirth, Bag, Settings, Sound) with red alert badges, and a custom hotbar that shows your
+-- pickaxe as a 3D icon.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -14753,50 +14773,38 @@ task.spawn(function()
 end)
 
 ---------------------------------------------------------------------
--- CURRENCIES (top center): money, gems and museum income, with the world name under them
+-- CURRENCIES (bottom left): big chunky counters, no boxes: gems, money and income, each
+-- with its icon and a thick dark outline. The world you're in sits at the top center.
 ---------------------------------------------------------------------
-local topBar = Instance.new("Frame")
-topBar.BackgroundTransparency = 1
-topBar.Size = UDim2.fromOffset(640, 76)
-topBar.Position = UDim2.new(0.5, 0, 0, 8)
-topBar.AnchorPoint = Vector2.new(0.5, 0)
-topBar.Parent = gui
-local counters = Instance.new("Frame")
-counters.BackgroundTransparency = 1
-counters.Size = UDim2.new(1, 0, 0, 46)
-counters.Parent = topBar
-local counterLayout = Instance.new("UIListLayout")
-counterLayout.FillDirection = Enum.FillDirection.Horizontal
-counterLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-counterLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-counterLayout.Padding = UDim.new(0, 14)
-counterLayout.SortOrder = Enum.SortOrder.LayoutOrder
-counterLayout.Parent = counters
+local wallet = Instance.new("Frame")
+wallet.BackgroundTransparency = 1
+wallet.Size = UDim2.fromOffset(330, 150)
+wallet.Position = UDim2.new(0, 14, 1, -14)
+wallet.AnchorPoint = Vector2.new(0, 1)
+wallet.Parent = gui
 
--- a glossy colored pill with a round icon badge poking out on the left
-local function pill(color, badgeColor, iconText, width, order)
-	local height = 42
-	local holder = Instance.new("Frame")
-	holder.BackgroundTransparency = 1
-	holder.Size = UDim2.fromOffset(width + 12, height)
-	holder.LayoutOrder = order
-	holder.Parent = counters
-	local p = UIKit.panel(holder, {Size = UDim2.new(1, -12, 1, 0), Position = UDim2.fromOffset(12, 0), Color = color, Radius = height / 2, ShadeAmount = 0.16})
-	UIKit.badge(holder, iconText, badgeColor, {Diameter = height + 6, Position = UDim2.new(0, -4, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
-	local text = UIKit.label(p, "", {Size = UDim2.new(1, -height - 6, 1, -12), Position = UDim2.new(0, height - 4, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
-		Align = "Left", Stroke = 2.5, StrokeColor = UIKit.shadeColor(color, 0.6), MaxText = 26})
-	return holder, text
+local function counter(y, height, icon, color, maxText)
+	local row = Instance.new("Frame")
+	row.BackgroundTransparency = 1
+	row.Size = UDim2.new(1, 0, 0, height)
+	row.Position = UDim2.fromOffset(0, y)
+	row.Parent = wallet
+	local iconLabel = UIKit.label(row, icon, {Size = UDim2.fromOffset(height, height), Stroke = 0, MaxText = 80, Font = Enum.Font.GothamBold})
+	iconLabel.Name = "Icon"
+	local text = UIKit.label(row, "", {Size = UDim2.new(1, -height - 6, 1, -4), Position = UDim2.new(0, height + 6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+		Align = "Left", Color = color, Stroke = 3.5, MaxText = maxText})
+	return row, text
 end
+local _, gemText = counter(0, 40, "💎", Color3.fromRGB(230, 110, 255), 34)
+local moneyRow, moneyText = counter(44, 52, "💵", Color3.fromRGB(80, 235, 90), 44)
+local _, incomeText = counter(100, 30, "⚡", C.Sun, 24)
 
-local moneyPill, moneyText = pill(C.Money, C.Sun, "💵", 190, 1)
-local _, gemText = pill(C.Violet, C.Lilac, "💎", 120, 2)
-local _, incomeText = pill(C.Sun, C.White, "⚡", 170, 3)
-local worldText = UIKit.label(topBar, "", {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.new(0.5, 0, 0, 52), AnchorPoint = Vector2.new(0.5, 0),
-	Color = C.White, Stroke = 2, MaxText = 17})
+local worldText = UIKit.label(gui, "", {Size = UDim2.fromOffset(520, 26), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.White, Stroke = 3, MaxText = 22})
 
 local shownMoney = 0
 local moneyScale = Instance.new("UIScale")
-moneyScale.Parent = moneyPill
+moneyScale.Parent = moneyRow
 local function refreshMoney()
 	local money = player:GetAttribute("Money") or 0
 	if money > shownMoney + 0.5 then
@@ -14829,65 +14837,138 @@ refreshGems()
 refreshWorld()
 
 ---------------------------------------------------------------------
--- MENU BUTTONS (left side): compact icon buttons with a label
+-- MENU (left side): big icons with a bold label under them, no boxes, and a red alert
+-- badge when something needs you (a pickaxe you can afford, a rebirth that's ready,
+-- memes waiting in your bag)
 ---------------------------------------------------------------------
 local UIBus = require(ReplicatedStorage:WaitForChild("UIBus"))
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local menu = Instance.new("Frame")
 menu.BackgroundTransparency = 1
-menu.Size = UDim2.fromOffset(76, 520)
-menu.Position = UDim2.new(0, 12, 0.5, 10)
-menu.AnchorPoint = Vector2.new(0, 0.5)
+menu.Size = UDim2.fromOffset(96, 470)
+menu.Position = UDim2.new(0, 8, 0, 58)
+menu.AnchorPoint = Vector2.new(0, 0)
 menu.Parent = gui
 local menuLayout = Instance.new("UIListLayout")
-menuLayout.Padding = UDim.new(0, 8)
-menuLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+menuLayout.Padding = UDim.new(0, 0)
 menuLayout.SortOrder = Enum.SortOrder.LayoutOrder
 menuLayout.Parent = menu
 
 local menuButtons = {}
-local function menuButton(order, icon, label, color, onClick, key)
-	local b = UIKit.button(menu, "", {Size = UDim2.fromOffset(66, 64), Color = color, Radius = 18})
+local function menuButton(order, icon, label, onClick, key)
+	local b = Instance.new("TextButton")
+	b.Name = label
+	b.Text = ""
+	b.BackgroundTransparency = 1
+	b.Size = UDim2.fromOffset(96, 66)
 	b.LayoutOrder = order
-	local emoji = Instance.new("TextLabel")
-	emoji.Name = "Icon"
-	emoji.BackgroundTransparency = 1
-	emoji.Size = UDim2.new(1, 0, 0, 34)
-	emoji.Position = UDim2.fromOffset(0, 6)
-	emoji.Text = icon
-	emoji.TextScaled = true
-	emoji.Font = Enum.Font.GothamBold
-	emoji.Parent = b
-	UIKit.label(b, label .. (key and (" [" .. key .. "]") or ""), {Size = UDim2.new(1, -6, 0, 14), Position = UDim2.new(0.5, 0, 1, -18), AnchorPoint = Vector2.new(0.5, 0),
-		Stroke = 1.5, StrokeColor = UIKit.shadeColor(color, 0.6), MaxText = 12})
-	b.MouseButton1Click:Connect(onClick)
+	b.Parent = menu
+	-- the icon, with a soft dark copy under it as a drop shadow
+	for k, offset in ipairs({3, 0}) do
+		local e = Instance.new("TextLabel")
+		e.Name = k == 1 and "IconShadow" or "Icon"
+		e.BackgroundTransparency = 1
+		e.Size = UDim2.fromOffset(44, 44)
+		e.Position = UDim2.new(0.5, offset, 0, offset)
+		e.AnchorPoint = Vector2.new(0.5, 0)
+		e.Text = icon
+		e.TextScaled = true
+		e.Font = Enum.Font.GothamBold
+		if k == 1 then
+			e.TextColor3 = Color3.new(0, 0, 0)
+			e.TextTransparency = 0.55
+		end
+		e.Parent = b
+	end
+	UIKit.label(b, label .. (key and (" [" .. key .. "]") or ""), {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.new(0.5, 0, 0, 44), AnchorPoint = Vector2.new(0.5, 0),
+		Stroke = 3, MaxText = 19})
+	-- the red alert badge (hidden until something needs you)
+	local alert = UIKit.panel(b, {Size = UDim2.fromOffset(28, 28), Position = UDim2.new(0.5, 26, 0, -4), AnchorPoint = Vector2.new(0.5, 0),
+		Color = C.Coral, Radius = 14, Stroke = 2.5, StrokeColor = C.Outline, ShadeAmount = 0.15})
+	alert.Name = "Alert"
+	alert.Visible = false
+	local alertText = UIKit.label(alert, "!", {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, MaxText = 18})
+	local scale = Instance.new("UIScale")
+	scale.Parent = b
+	local function to(v, t)
+		TweenService:Create(scale, TweenInfo.new(t or 0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = v}):Play()
+	end
+	b.MouseEnter:Connect(function() to(1.1) end)
+	b.MouseLeave:Connect(function() to(1) end)
+	b.MouseButton1Down:Connect(function() to(0.9, 0.06) end)
+	b.MouseButton1Up:Connect(function() to(1.1) end)
+	b.MouseButton1Click:Connect(function()
+		require(ReplicatedStorage:WaitForChild("Audio")).sfx("Click")
+		onClick()
+	end)
 	menuButtons[label] = b
-	return b
+	return b, function(text)
+		alert.Visible = text ~= nil and text ~= ""
+		if text then alertText.Text = text end
+	end
 end
 
-menuButton(1, "🛒", "SHOP", C.Mint, function() UIBus.Fire("Shop") end)
-menuButton(2, "🏛️", "MUSEUM", C.Violet, function()
+local _, shopAlert = menuButton(1, "🛒", "Shop", function() UIBus.Fire("Shop") end)
+menuButton(2, "🏛️", "Museum", function()
 	local goHome = remotes:FindFirstChild("GoHome")
 	if goHome then goHome:FireServer() end
 end)
-menuButton(3, "🌍", "WORLDS", C.Sky, function() UIBus.Fire("Teleport") end)
-menuButton(4, "♻️", "REBIRTH", C.Coral, function() UIBus.Fire("Rebirth") end)
-local bagButton = menuButton(5, "🎒", "BAG", C.Sun, function() UIBus.Fire("Inventory") end, "B")
-menuButton(6, "⚙️", "SETTINGS", C.Grey, function() UIBus.Fire("Settings") end)
-local soundButton = menuButton(7, "🔊", "SOUND", C.Lilac, function() UIBus.Fire("ToggleSound") end)
+menuButton(3, "🌍", "Worlds", function() UIBus.Fire("Teleport") end)
+local _, rebirthAlert = menuButton(4, "♻️", "Rebirth", function() UIBus.Fire("Rebirth") end)
+local bagButton, bagAlert = menuButton(5, "🎒", "Bag", function() UIBus.Fire("Inventory") end, "B")
+menuButton(6, "⚙️", "Settings", function() UIBus.Fire("Settings") end)
+local soundButton = menuButton(7, "🔊", "Sound", function() UIBus.Fire("ToggleSound") end)
 local function refreshSound()
-	local icon = soundButton:FindFirstChild("Icon")
-	if icon then icon.Text = player:GetAttribute("SoundMuted") and "🔇" or "🔊" end
+	local icon = player:GetAttribute("SoundMuted") and "🔇" or "🔊"
+	for _, name in ipairs({"Icon", "IconShadow"}) do
+		local e = soundButton:FindFirstChild(name)
+		if e then e.Text = icon end
+	end
 end
 player:GetAttributeChangedSignal("SoundMuted"):Connect(refreshSound)
 refreshSound()
--- the bag bounces when something new goes in it
+
+-- ALERTS
+local function refreshAlerts()
+	local money = player:GetAttribute("Money") or 0
+	rebirthAlert(money >= GameConfig.RebirthCost(player:GetAttribute("Rebirths") or 0) and "!" or nil)
+	-- a pickaxe in this world you don't own yet but can afford
+	local world = GameConfig.GetWorld(player:GetAttribute("CurrentWorld") or 1)
+	local owned = {}
+	for _, id in ipairs(string.split(player:GetAttribute("OwnedShovels") or "", ",")) do owned[id] = true end
+	local canBuy = false
+	for _, def in ipairs(world and world.Shovels or {}) do
+		if not owned[def.Id] and def.Price > 0 and money >= def.Price then
+			canBuy = true
+			break
+		end
+	end
+	shopAlert(canBuy and "!" or nil)
+end
+for _, attribute in ipairs({"Money", "Rebirths", "OwnedShovels", "CurrentWorld"}) do
+	player:GetAttributeChangedSignal(attribute):Connect(refreshAlerts)
+end
+refreshAlerts()
+
+-- the bag shows how many memes are waiting in it (not on display yet), and bounces when one arrives
 task.spawn(function()
 	local changed = remotes:WaitForChild("InventoryChanged", 30)
-	if changed then
-		changed.OnClientEvent:Connect(function() UIKit.pop(bagButton, 1.3) end)
+	local getInventory = remotes:WaitForChild("GetInventory", 30)
+	local function refreshBag()
+		local ok, list = pcall(function() return getInventory:InvokeServer() end)
+		if not ok or type(list) ~= "table" then return end
+		local count = 0
+		for _, item in ipairs(list) do count += item.Count or 1 end
+		bagAlert(count > 0 and (count > 99 and "99+" or tostring(count)) or nil)
 	end
+	if changed then
+		changed.OnClientEvent:Connect(function()
+			UIKit.pop(bagButton, 1.3)
+			refreshBag()
+		end)
+	end
+	if getInventory then refreshBag() end
 end)
 
 ---------------------------------------------------------------------
@@ -17900,4 +17981,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 14:10). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 14:18). Now save the place (Ctrl+S).")
