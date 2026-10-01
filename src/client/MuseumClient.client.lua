@@ -15,6 +15,7 @@ local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
 local C = UIKit.Colors
+local rgb = Color3.fromRGB
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local getInventory = remotes:WaitForChild("GetInventory")
 local inventoryChangedRemote = remotes:WaitForChild("InventoryChanged")
@@ -342,59 +343,45 @@ inventoryChangedRemote.OnClientEvent:Connect(function()
 end)
 
 ---------------------------------------------------------------------
--- FLOOR ARROWS (only while you're inside a museum)
+-- FLOOR BUTTONS (only while you're inside a museum): big studded buttons at the top center,
+-- a blue UP with a white arrow on its left and a red DOWN with the arrow on its right. Only
+-- the ones you can use show: UP alone on the ground floor, both in between, DOWN alone on top.
 ---------------------------------------------------------------------
--- a bright elevator bar pinned to the top center of the screen:  [▼ DOWN]  FLOOR 2/3  [UP ▲]
--- (flat pills with no shading strips, so there are no stray lines)
-local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(360, 62), Position = UDim2.new(0.5, 0, 0, 112), AnchorPoint = Vector2.new(0.5, 0),
-	Color = C.Panel, Radius = 31, StrokeColor = C.Violet, Stroke = 4, Shade = false})
-floorPanel.Visible = false
+local floorBar = Instance.new("Frame")
+floorBar.Name = "FloorButtons"
+floorBar.BackgroundTransparency = 1
+floorBar.Size = UDim2.fromOffset(500, 110)
+floorBar.Position = UDim2.new(0.5, 0, 0, 108) -- under the HUD's top buttons
+floorBar.AnchorPoint = Vector2.new(0.5, 0)
+floorBar.Visible = false
+floorBar.Parent = gui
+local buttonRow = Instance.new("Frame")
+buttonRow.BackgroundTransparency = 1
+buttonRow.Size = UDim2.new(1, 0, 0, 74)
+buttonRow.Parent = floorBar
+local rowLayout = Instance.new("UIListLayout")
+rowLayout.FillDirection = Enum.FillDirection.Horizontal
+rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+rowLayout.Padding = UDim.new(0, 22)
+rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
+rowLayout.Parent = buttonRow
 
-local function pillButton(text, color, position, anchor)
-	local b = Instance.new("TextButton")
-	b.Size = UDim2.fromOffset(104, 46)
-	b.Position = position
-	b.AnchorPoint = anchor
-	b.BackgroundColor3 = color
-	b.AutoButtonColor = false
-	b.Text = ""
-	b.Parent = floorPanel
-	UIKit.corner(b, 23)
-	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 2
-	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	stroke.Parent = b
-	local label = UIKit.label(b, text, {Size = UDim2.new(1, -18, 0, 20), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
-		Color = C.White, Stroke = 1.5, MaxText = 18})
-	label.Name = "Label"
-	label.Font = Enum.Font.GothamBlack
-	local labelStroke = label:FindFirstChildOfClass("UIStroke")
-	local function paint()
-		stroke.Color = UIKit.shadeColor(b.BackgroundColor3, 0.35)
-		if labelStroke then labelStroke.Color = UIKit.shadeColor(b.BackgroundColor3, 0.55) end
-	end
-	b:GetPropertyChangedSignal("BackgroundColor3"):Connect(paint)
-	paint()
+local function floorButton(text, color, arrow, arrowOnLeft, order)
+	local b, label = UIKit.button(buttonRow, text, {Size = UDim2.fromOffset(220, 70), Color = color, Radius = 12, MaxText = 40})
+	b.Name = text
+	b.LayoutOrder = order
+	UIKit.arrowIcon(b, arrow, {Size = UDim2.fromOffset(62, 62), Position = UDim2.new(arrowOnLeft and 0 or 1, arrowOnLeft and 12 or -12, 0.5, -3),
+		AnchorPoint = Vector2.new(arrowOnLeft and 0 or 1, 0.5), ZIndex = 3})
+	label.Size = UDim2.new(1, -96, 1, -16)
+	label.Position = UDim2.new(0.5, arrowOnLeft and 34 or -34, 0.5, -3)
 	return b
 end
-local downButton = pillButton("▼ DOWN", C.Violet, UDim2.new(0, 8, 0.5, 0), Vector2.new(0, 0.5))
-local upButton = pillButton("UP ▲", C.Sky, UDim2.new(1, -8, 0.5, 0), Vector2.new(1, 0.5))
-local floorLabel = UIKit.label(floorPanel, "FLOOR 1", {Size = UDim2.new(1, -236, 0, 24), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.Ink, Stroke = 0, MaxText = 22})
--- the price of the next floor hangs under the bar when it's still locked
-local pricePill = UIKit.panel(floorPanel, {Size = UDim2.fromOffset(190, 28), Position = UDim2.new(0.5, 0, 1, 6), AnchorPoint = Vector2.new(0.5, 0), Color = C.Coral, Radius = 14, Stroke = 2.5, Shade = false})
-UIKit.icon(pricePill, "Lock", {Size = UDim2.fromOffset(34, 34), Position = UDim2.new(0, -6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
-local upPrice = UIKit.label(pricePill, "", {Size = UDim2.new(1, -40, 0.72, 0), Position = UDim2.new(0.5, 12, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
-pricePill.Visible = false
--- a soft glow pulsing around the bar so it's easy to spot
-local barStroke = floorPanel:FindFirstChildOfClass("UIStroke")
-task.spawn(function()
-	while true do
-		if floorPanel.Visible and barStroke then
-			barStroke.Color = C.Violet:Lerp(C.Sky, 0.5 + 0.5 * math.sin(os.clock() * 3))
-		end
-		task.wait(0.05)
-	end
-end)
+local upButton = floorButton("UP", rgb(48, 160, 245), "Up", true, 1)
+local downButton = floorButton("DOWN", rgb(232, 50, 64), "Down", false, 2)
+
+-- which floor you're on, and the price of the next floor while it's still locked
+local floorLabel = UIKit.label(floorBar, "", {Size = UDim2.new(1, 0, 0, 24), Position = UDim2.new(0.5, 0, 0, 78), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.White, Stroke = 3, MaxText = 22})
 
 local function currentMuseumFloor()
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -406,40 +393,29 @@ local function currentMuseumFloor()
 	return nil
 end
 
--- both buttons always stay in place (so the bar never looks lopsided); one that can't be
--- used right now is greyed out instead of disappearing
-local canGo = {[upButton] = false, [downButton] = false}
-local function setUsable(button, usable, color)
-	canGo[button] = usable
-	button.BackgroundColor3 = usable and color or C.Lilac:Lerp(C.Grey, 0.5)
-	local label = button:FindFirstChild("Label")
-	if label then label.TextTransparency = usable and 0 or 0.45 end
-end
 upButton.MouseButton1Click:Connect(function()
-	if canGo[upButton] then floorRemote:FireServer(1) end
+	if upButton.Visible then floorRemote:FireServer(1) end
 end)
 downButton.MouseButton1Click:Connect(function()
-	if canGo[downButton] then floorRemote:FireServer(-1) end
+	if downButton.Visible then floorRemote:FireServer(-1) end
 end)
 
 task.spawn(function()
 	local topFloor = #GameConfig.FloorPrices
 	while true do
 		local museum, floor = currentMuseumFloor()
-		floorPanel.Visible = museum ~= nil
+		floorBar.Visible = museum ~= nil
 		if museum then
 			local opened = string.split(museum:GetAttribute("UnlockedFloors") or "1", ",")
 			local owned = museum:GetAttribute("OwnerUserId") == player.UserId
 			local nextOpen = table.find(opened, tostring(floor + 1)) ~= nil
-			floorLabel.Text = "FLOOR " .. floor .. "/" .. topFloor
 			local canUp = floor < topFloor and (nextOpen or owned)
 			local buying = canUp and not nextOpen
-			setUsable(upButton, canUp, buying and C.Coral or C.Sky)
-			setUsable(downButton, floor > 1, C.Violet)
-			pricePill.Visible = buying
-			if buying then
-				upPrice.Text = "Unlock " .. ArtifactData.FormatMoney(GameConfig.FloorPrices[floor + 1])
-			end
+			upButton.Visible = canUp
+			downButton.Visible = floor > 1
+			floorLabel.Text = buying and ("Floor " .. floor .. "/" .. topFloor .. "  -  Unlock the next floor: " .. ArtifactData.FormatMoney(GameConfig.FloorPrices[floor + 1]))
+				or ("Floor " .. floor .. "/" .. topFloor)
+			floorLabel.TextColor3 = buying and rgb(255, 214, 80) or C.White
 		end
 		task.wait(0.25)
 	end

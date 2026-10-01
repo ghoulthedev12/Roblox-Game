@@ -401,6 +401,43 @@ function UIKit.icon(parent, name, props)
 	return holder
 end
 
+-- A chunky glossy white 3D arrow (built from parts in a ViewportFrame, lit with a cool blue
+-- so its sides shade light blue). direction: "Up" or "Down". props: Size, Position, AnchorPoint, ZIndex
+function UIKit.arrowIcon(parent, direction, props)
+	props = props or {}
+	local holder = Instance.new("ViewportFrame")
+	holder.Name = "Arrow"
+	holder.BackgroundTransparency = 1
+	holder.Size = props.Size or UDim2.fromOffset(44, 44)
+	holder.Position = props.Position or UDim2.new()
+	holder.AnchorPoint = props.AnchorPoint or Vector2.zero
+	if props.ZIndex then holder.ZIndex = props.ZIndex end
+	holder.Ambient = rgb(120, 190, 255)
+	holder.LightColor = rgb(255, 255, 255)
+	holder.LightDirection = Vector3.new(0.6, -1, -0.8)
+	holder.Parent = parent
+	local turn = direction == "Down" and CFrame.Angles(0, 0, math.pi) or CFrame.new()
+	local function piece(class, size, cf)
+		local p = Instance.new(class)
+		p.Anchored = true
+		p.Size = size
+		p.CFrame = turn * cf
+		p.Color = rgb(246, 250, 255)
+		p.Material = Enum.Material.SmoothPlastic
+		p.Parent = holder
+	end
+	-- the shaft, and the head as two wedges (a triangle seen from the front)
+	piece("Part", Vector3.new(0.95, 1.25, 0.7), CFrame.new(0, -0.5, 0))
+	piece("WedgePart", Vector3.new(0.7, 1.2, 1.05), CFrame.new(0.52, 0.7, 0) * CFrame.Angles(0, math.rad(-90), 0))
+	piece("WedgePart", Vector3.new(0.7, 1.2, 1.05), CFrame.new(-0.52, 0.7, 0) * CFrame.Angles(0, math.rad(90), 0))
+	local camera = Instance.new("Camera")
+	camera.FieldOfView = 20
+	camera.CFrame = CFrame.lookAt(Vector3.new(1.2, 0.8, 7.4), Vector3.new(0, 0.05, 0))
+	camera.Parent = holder
+	holder.CurrentCamera = camera
+	return holder
+end
+
 -- "{Skull} The curse got you!" -> "Skull", "The curse got you!"  (no tag: nil, text)
 function UIKit.splitIcon(text)
 	if typeof(text) ~= "string" then return nil, "" end
