@@ -218,35 +218,43 @@ function UIKit.button(parent, text, props)
 	local gloss = Instance.new("UIGradient")
 	gloss.Rotation = 90
 	gloss.Parent = b
-	-- a faint grid of rounded studs across the face (the classic chunky-button texture)
+	-- a grid of little outlined square studs across the face (the classic chunky-button
+	-- texture), in a lighter shade of the button
 	local size = b.Size
+	local studStrokes = {}
 	if props.Pattern ~= false and (size.Y.Scale > 0 or size.Y.Offset >= 34) then
 		local pattern = Instance.new("Frame")
 		pattern.Name = "Studs"
 		pattern.BackgroundTransparency = 1
-		pattern.Size = UDim2.new(1, -8, 1, -8)
-		pattern.Position = UDim2.fromScale(0.5, 0.5)
-		pattern.AnchorPoint = Vector2.new(0.5, 0.5)
+		pattern.Size = UDim2.new(1, -10, 1, -14)
+		pattern.Position = UDim2.new(0.5, 0, 0, 5)
+		pattern.AnchorPoint = Vector2.new(0.5, 0)
 		pattern.ClipsDescendants = true
 		pattern.Parent = b
 		local grid = Instance.new("UIGridLayout")
-		grid.CellSize = UDim2.fromOffset(11, 11)
-		grid.CellPadding = UDim2.fromOffset(7, 7)
+		grid.CellSize = UDim2.fromOffset(12, 12)
+		grid.CellPadding = UDim2.fromOffset(8, 8)
+		grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		grid.VerticalAlignment = Enum.VerticalAlignment.Center
 		grid.Parent = pattern
 		local w = size.X.Scale > 0 and 420 or size.X.Offset
 		local h = size.Y.Scale > 0 and 90 or size.Y.Offset
-		for _ = 1, math.min(math.ceil(w / 18) * math.ceil(h / 18), 140) do
+		for _ = 1, math.min(math.ceil(w / 20) * math.ceil(h / 20), 140) do
 			local stud = Instance.new("Frame")
 			stud.BorderSizePixel = 0
-			stud.BackgroundColor3 = Color3.new(1, 1, 1)
-			stud.BackgroundTransparency = 0.86
+			stud.BackgroundTransparency = 1
 			stud.Parent = pattern
 			UIKit.corner(stud, 3)
+			local edge = Instance.new("UIStroke")
+			edge.Thickness = 1.6
+			edge.Transparency = 0.35
+			edge.Parent = stud
+			table.insert(studStrokes, edge)
 		end
 	end
 	local label = UIKit.label(b, text, {
 		Size = UDim2.new(1, -16, 1, -14), Position = UDim2.new(0.5, 0, 0.5, -2), AnchorPoint = Vector2.new(0.5, 0.5),
-		Color = props.TextColor or C.White, Stroke = 3, MaxText = props.MaxText or 26,
+		Color = props.TextColor or C.White, Stroke = 3.5, MaxText = props.MaxText or 26,
 	})
 	label.Name = "Label"
 	label.ZIndex = 2
@@ -262,15 +270,17 @@ function UIKit.button(parent, text, props)
 
 	local function paint()
 		local c = b.BackgroundColor3
-		stroke.Color = c:Lerp(C.Outline, 0.78)
-		-- one smooth gradient does the shine: a bright top half, the full color in the middle,
-		-- and a deeper bottom edge (no separate strips, so there are never lines across it)
+		stroke.Color = c:Lerp(C.Outline, 0.9)
+		-- one gradient does the 3D look: the full color across the face, then a sharp step to
+		-- a darker lip along the bottom edge (like a chunky toy key)
 		gloss.Color = ColorSequence.new({
 			ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-			ColorSequenceKeypoint.new(0.42, Color3.new(0.97, 0.97, 0.98)),
-			ColorSequenceKeypoint.new(0.62, Color3.new(0.86, 0.86, 0.9)),
-			ColorSequenceKeypoint.new(1, Color3.new(0.68, 0.68, 0.74)),
+			ColorSequenceKeypoint.new(0.8, Color3.new(0.94, 0.94, 0.95)),
+			ColorSequenceKeypoint.new(0.83, Color3.new(0.7, 0.7, 0.74)),
+			ColorSequenceKeypoint.new(1, Color3.new(0.64, 0.64, 0.7)),
 		})
+		local studColor = UIKit.shadeColor(c, -0.35)
+		for _, edge in ipairs(studStrokes) do edge.Color = studColor end
 		if labelStroke then labelStroke.Color = C.Outline end
 	end
 	paint()

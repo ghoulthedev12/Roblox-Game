@@ -346,7 +346,7 @@ end)
 ---------------------------------------------------------------------
 -- a bright elevator bar pinned to the top center of the screen:  [▼ DOWN]  FLOOR 2/3  [UP ▲]
 -- (flat pills with no shading strips, so there are no stray lines)
-local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(360, 62), Position = UDim2.new(0.5, 0, 0, 90), AnchorPoint = Vector2.new(0.5, 0),
+local floorPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(360, 62), Position = UDim2.new(0.5, 0, 0, 112), AnchorPoint = Vector2.new(0.5, 0),
 	Color = C.Panel, Radius = 31, StrokeColor = C.Violet, Stroke = 4, Shade = false})
 floorPanel.Visible = false
 
