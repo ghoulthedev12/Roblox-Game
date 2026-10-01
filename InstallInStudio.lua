@@ -17207,27 +17207,32 @@ local function easeOutBack(u)
 end
 local function easeInOutCubic(u) return u < 0.5 and 4 * u * u * u or 1 - (-2 * u + 2) ^ 3 / 2 end
 
--- The dig, key by key (a two-beat scoop, like digging with a spade): a quick wind-up, a stab
--- down into the dirt in front, a pry back, then a heave up over the right shoulder that
--- flings the dirt up and behind. Ease = how the motion INTO that key is timed.
+-- The dig, key by key: an overhead power chop, like a miner's pickaxe. The pickaxe is hauled
+-- up high over the head (the body leans back into it), hangs there for a split second, then
+-- whips down in an accelerating arc into the ground in front while the whole body drives
+-- forward and drops into a crouch; on impact it freezes, rings, bounces back up out of the
+-- dirt (which bursts up off the head) and settles into the ready stance.
+-- Ease = how the motion INTO that key is timed.
 local SWING = {
 	{T = 0.00, Pose = IDLE},
-	-- wind-up: the pickaxe comes up beside the right shoulder
-	{T = 0.12, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.6, 0.55, -0.5), Tilt = 150, Turn = 0, Roll = -20, Lean = -4, Twist = -16, Bend = -2, Look = -4, Crouch = 12, Hip = -2}},
-	-- stab: driven down hard into the ground in front of the feet
-	{T = 0.26, Ease = easeInQuad, Pose = {Hand = Vector3.new(0.15, -1.0, -1.7), Tilt = 40, Turn = 4, Roll = 0, Lean = 28, Twist = -6, Bend = 4, Look = 22, Crouch = 38, Hip = 26}},
-	-- pry: leans back on the handle, levering the dirt loose
-	{T = 0.40, Ease = easeOutCubic, Pose = {Hand = Vector3.new(0.3, -0.6, -1.2), Tilt = 62, Turn = 8, Roll = 6, Lean = 22, Twist = -10, Bend = 3, Look = 16, Crouch = 34, Hip = 20}},
-	-- fling: heaved up over the right shoulder, throwing the dirt up and behind
-	{T = 0.62, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.95, 1.4, 0.05), Tilt = 215, Turn = -14, Roll = -32, Lean = -10, Twist = -46, Bend = -6, Look = -12, Crouch = 4, Hip = -6}},
+	-- wind-up: hauled up over the right shoulder, head pointing up and back
+	{T = 0.17, Ease = easeOutCubic, Pose = {Hand = Vector3.new(0.45, 1.5, 0.1), Tilt = 222, Turn = -4, Roll = -12, Lean = -12, Twist = -20, Bend = -4, Look = -14, Crouch = 6, Hip = -8}},
+	-- anticipation: it keeps creeping back while the body coils (the hang before the hit)
+	{T = 0.25, Ease = easeOutSine, Pose = {Hand = Vector3.new(0.4, 1.62, 0.3), Tilt = 236, Turn = -2, Roll = -8, Lean = -16, Twist = -24, Bend = -5, Look = -16, Crouch = 10, Hip = -10}},
+	-- strike: whipped down into the dirt in front of the feet, the body following through
+	{T = 0.36, Ease = easeInQuad, Pose = {Hand = Vector3.new(0.1, -0.85, -1.9), Tilt = 34, Turn = 2, Roll = 2, Lean = 32, Twist = 6, Bend = 3, Look = 26, Crouch = 42, Hip = 30}},
+	-- recoil: the head bounces back up out of the hole
+	{T = 0.50, Ease = easeOutCubic, Pose = {Hand = Vector3.new(0.18, -0.45, -1.55), Tilt = 62, Turn = 6, Roll = 6, Lean = 22, Twist = 0, Bend = 2, Look = 18, Crouch = 30, Hip = 18}},
+	-- lift: pulled up out of the ground
+	{T = 0.70, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.3, 0.05, -1.05), Tilt = 98, Turn = 16, Roll = 10, Lean = 9, Twist = -4, Bend = 1, Look = 8, Crouch = 14, Hip = 6}},
 	-- settle back into the ready stance
-	{T = 1.00, Ease = easeInOutCubic, Pose = IDLE},
+	{T = 1.00, Ease = easeOutBack, Pose = IDLE},
 }
-local STRIKE_TIME = 0.26 -- the blade bites the ground (the dig happens here)
-local FLING_TIME = 0.54 -- the dirt leaves the blade on the way up
-local HIT_STOP = 0.05 -- the pose freezes this long on impact, which makes hits feel heavy
-local TRAILS = {{0.14, 0.28}, {0.44, 0.64}} -- swoosh trail during the stab and the fling
-local WOBBLE = {Degrees = 7, Decay = 9, Speed = 38} -- the handle vibrates after the impact
+local STRIKE_TIME = 0.36 -- the head bites the ground (the dig happens here)
+local FLING_TIME = 0.42 -- the dirt bursts up off the head as it bounces back
+local HIT_STOP = 0.07 -- the pose freezes this long on impact, which makes hits feel heavy
+local TRAILS = {{0.24, 0.38}} -- swoosh trail during the down-swing
+local WOBBLE = {Degrees = 10, Decay = 8, Speed = 40} -- the handle rings after the impact
 
 -- tool axes when upright: grip end (+Z) points up (head down), pick arms (+Y) point forward
 local UPRIGHT = CFrame.fromMatrix(Vector3.zero, Vector3.xAxis, -Vector3.zAxis, Vector3.yAxis)
@@ -19229,4 +19234,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 00:25). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 00:36). Now save the place (Ctrl+S).")
