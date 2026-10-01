@@ -38,6 +38,8 @@ def long_string(text):
 out = [
     "-- Meme Archaeologist installer: paste ALL of this into Studio's Command Bar",
     "-- (View > Command Bar) and press Enter. Then save the place.",
+    # anything the Command Bar changes during Play is thrown away when Play stops
+    'if game:GetService("RunService"):IsRunning() then error("STOP the game first (the red Stop button), then paste this again. Changes made during Play are lost when it stops.", 0) end',
     "local ChangeHistoryService = game:GetService(\"ChangeHistoryService\")",
     "local recording = ChangeHistoryService:TryBeginRecording(\"Install Meme Archaeologist scripts\")",
     "local count = 0",
@@ -85,6 +87,10 @@ out.append('''local function collectMeshes(folderName, ids, hint)
 		end
 	end
 	scan(workspace)
+	-- also pick up copies that ended up somewhere else (dragged into ServerStorage, etc.)
+	for _, place in ipairs({game:GetService("ServerStorage"), game:GetService("Lighting"), game:GetService("StarterPack")}) do
+		scan(place)
+	end
 	local folder = RS:FindFirstChild(folderName)
 	if folder and not folder:IsA("Folder") then folder = nil end
 	if #found > 0 then

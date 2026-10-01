@@ -1,5 +1,6 @@
 -- Meme Archaeologist installer: paste ALL of this into Studio's Command Bar
 -- (View > Command Bar) and press Enter. Then save the place.
+if game:GetService("RunService"):IsRunning() then error("STOP the game first (the red Stop button), then paste this again. Changes made during Play are lost when it stops.", 0) end
 local ChangeHistoryService = game:GetService("ChangeHistoryService")
 local recording = ChangeHistoryService:TryBeginRecording("Install Meme Archaeologist scripts")
 local count = 0
@@ -32,6 +33,10 @@ local function collectMeshes(folderName, ids, hint)
 		end
 	end
 	scan(workspace)
+	-- also pick up copies that ended up somewhere else (dragged into ServerStorage, etc.)
+	for _, place in ipairs({game:GetService("ServerStorage"), game:GetService("Lighting"), game:GetService("StarterPack")}) do
+		scan(place)
+	end
 	local folder = RS:FindFirstChild(folderName)
 	if folder and not folder:IsA("Folder") then folder = nil end
 	if #found > 0 then
@@ -18649,4 +18654,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 15:48). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 16:38). Now save the place (Ctrl+S).")
