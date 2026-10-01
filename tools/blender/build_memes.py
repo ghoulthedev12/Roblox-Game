@@ -10,8 +10,9 @@ import memekit  # noqa: E402
 import memes_batch1  # noqa: E402
 import memes_batch2  # noqa: E402
 import memes_batch3  # noqa: E402
+import memes_batch4  # noqa: E402
 
-BUILDERS = memes_batch1.ALL + memes_batch2.ALL + memes_batch3.ALL
+BUILDERS = memes_batch1.ALL + memes_batch2.ALL + memes_batch3.ALL + memes_batch4.ALL
 PREVIEW = os.path.join(memekit.ROOT, "assets", "models", "previews")
 
 
