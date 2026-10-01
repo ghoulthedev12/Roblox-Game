@@ -190,7 +190,7 @@ function Architecture.calm(root)
 	local list = root:GetDescendants()
 	table.insert(list, root)
 	for _, d in ipairs(list) do
-		if d:IsA("BasePart") and d.Material == Enum.Material.Neon then
+		if d:IsA("BasePart") and d.Material == Enum.Material.Neon and not d:GetAttribute("KeepGlow") then
 			local s = d.Size
 			local dims = {s.X, s.Y, s.Z}
 			table.sort(dims)

@@ -4,6 +4,8 @@
 -- It's a tall glowing oval: a lime rim, a bright jelly-green middle, a pale glowing core and
 -- a swirling force-field skin, with green sparks, dripping goo, a splash ring on the ground
 -- and a green light. It wobbles like jelly while it's open.
+-- Once the Blender pieces are imported (PortalMeshes) it's a lumpy rim of goo with drips
+-- hanging off it, around a deep rippled glassy tunnel with glowing spiral arms spinning into it.
 --
 --   local portal = AlienPortal.open(parent, cframe)  -- cframe on the ground, -Z = the side aliens come out of
 --   AlienPortal.close(portal)                        -- shrinks it away and destroys it
@@ -14,6 +16,8 @@
 local TweenService = game:GetService("TweenService")
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PortalMeshes = require(ReplicatedStorage:WaitForChild("PortalMeshes"))
 
 local rgb = Color3.fromRGB
 local AlienPortal = {}
@@ -29,6 +33,14 @@ local LAYERS = {
 	{"PortalSwirl", 0.86, 0.5, rgb(120, 255, 80), Enum.Material.ForceField, 0},
 	{"PortalCore", 0.34, 0.62, rgb(235, 255, 205), Enum.Material.Neon, 0.1},
 }
+
+-- the Blender pieces: {name, properties}
+local MESH_PIECES = {
+	{"AlienPortalFunnel", {Material = Enum.Material.Glass, Color = rgb(60, 190, 50), Transparency = 0.12, Reflectance = 0.08}},
+	{"AlienPortalRim", {Material = Enum.Material.Neon, Color = rgb(140, 255, 60)}},
+	{"AlienPortalSwirl", {Material = Enum.Material.Neon, Color = rgb(215, 255, 170), Transparency = 0.1}},
+}
+local CLOSED = 0.03 -- how small the pieces start and end
 
 local function part(parent, name, size, cf, color, material, transparency)
 	local p = Instance.new("Part")
@@ -68,15 +80,34 @@ function AlienPortal.open(parent, cf)
 	portal.Name = "AlienPortal"
 	portal:SetAttribute("NoCalm", true)
 	local center = cf * CFrame.new(0, CENTER_Y, 0)
-	local meshes = {}
-	for i, layer in ipairs(LAYERS) do
-		local size = Vector3.new(WIDTH * layer[2], HEIGHT * layer[2], layer[3])
-		-- layers stack front to back a little so they don't flicker into each other
-		local _, mesh = oval(portal, layer[1], size, center * CFrame.new(0, 0, (i - 2.5) * 0.04), layer[4], layer[5], layer[6])
+	local meshes, grow = {}, {} -- sphere meshes that pop open, Blender pieces that grow {Part, Size}
+	local useMeshes = PortalMeshes.has("AlienPortalRim", "AlienPortalFunnel", "AlienPortalSwirl")
+	if useMeshes then
+		for _, piece in ipairs(MESH_PIECES) do
+			local data = PortalMeshes.Data[piece[1]]
+			local p = PortalMeshes.place(portal, piece[1], center, piece[2], CLOSED)
+			p.CFrame = center * CFrame.new(data.Center)
+			table.insert(grow, {Part = p, Size = data.Size})
+		end
+		-- a pale glow deep in the tunnel
+		local _, mesh = oval(portal, "PortalCore", Vector3.new(1.7, 2.4, 0.3), center * CFrame.new(0, 0, 1.05), rgb(235, 255, 205), Enum.Material.Neon, 0.1)
 		table.insert(meshes, mesh)
+		-- the spiral arms spin into the tunnel on every player's screen (ShovelSpinner)
+		local swirl = portal:FindFirstChild("AlienPortalSwirl")
+		swirl:SetAttribute("OrbitPivot", center)
+		swirl:SetAttribute("OrbitOffset", center:ToObjectSpace(swirl.CFrame))
+		swirl:SetAttribute("OrbitSpeed", -2.6)
+		CollectionService:AddTag(swirl, "ShovelOrbit")
+	else
+		for i, layer in ipairs(LAYERS) do
+			local size = Vector3.new(WIDTH * layer[2], HEIGHT * layer[2], layer[3])
+			-- layers stack front to back a little so they don't flicker into each other
+			local _, mesh = oval(portal, layer[1], size, center * CFrame.new(0, 0, (i - 2.5) * 0.04), layer[4], layer[5], layer[6])
+			table.insert(meshes, mesh)
+		end
 	end
 	local core = portal:FindFirstChild("PortalCore")
-	local rim = portal:FindFirstChild("PortalRim")
+	local rim = portal:FindFirstChild("PortalRim") or portal:FindFirstChild("AlienPortalRim")
 
 	-- green light spilling out onto the ground
 	local light = Instance.new("PointLight")
@@ -124,11 +155,23 @@ function AlienPortal.open(parent, cf)
 	for _, mesh in ipairs(meshes) do
 		TweenService:Create(mesh, pop, {Scale = Vector3.new(1, 1, 1)}):Play()
 	end
+	for _, item in ipairs(grow) do
+		TweenService:Create(item.Part, pop, {Size = item.Size}):Play()
+	end
 	TweenService:Create(light, TweenInfo.new(0.3), {Brightness = 3}):Play()
 	TweenService:Create(splash, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {Size = Vector3.new(0.12, 9, 9), Transparency = 0.7}):Play()
 	-- then wobble like jelly while it's open, with a glowing spiral spinning inside
 	task.delay(0.5, function()
 		if not portal.Parent or portal:GetAttribute("Closing") then return end
+		local wobble = TweenInfo.new(0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+		if useMeshes then
+			for i, item in ipairs(grow) do
+				local k = i % 2 == 0 and 1 or -1
+				TweenService:Create(item.Part, wobble, {Size = item.Size * Vector3.new(1 + 0.04 * k, 1 - 0.03 * k, 1)}):Play()
+			end
+			TweenService:Create(core, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = 0.5}):Play()
+			return
+		end
 		local spiral = Instance.new("Model")
 		spiral.Name = "Spiral"
 		for arm = 0, 2 do
@@ -147,7 +190,6 @@ function AlienPortal.open(parent, cf)
 			end
 		end
 		spiral.Parent = portal
-		local wobble = TweenInfo.new(0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
 		for i, mesh in ipairs(meshes) do
 			local k = i % 2 == 0 and 1 or -1
 			TweenService:Create(mesh, wobble, {Scale = Vector3.new(1 + 0.05 * k, 1 - 0.04 * k, 1)}):Play()
@@ -169,6 +211,8 @@ function AlienPortal.close(portal)
 	for _, d in ipairs(portal:GetDescendants()) do
 		if d:IsA("SpecialMesh") then
 			TweenService:Create(d, shut, {Scale = Vector3.new(0.02, 0.02, 1)}):Play()
+		elseif d:IsA("MeshPart") then
+			TweenService:Create(d, shut, {Size = d.Size * CLOSED}):Play()
 		elseif d:IsA("ParticleEmitter") then
 			d.Enabled = false
 		elseif d:IsA("PointLight") then

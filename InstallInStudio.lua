@@ -15,10 +15,10 @@ end
 pcall(function() game:GetService("Lighting").Technology = Enum.Technology.Future end)
 pcall(function() workspace.FallenPartsDestroyHeight = -3000 end)
 pcall(function() game:GetService("MaterialService").Use2022Materials = true end)
-do
+local function collectMeshes(folderName, ids, hint)
 	local RS = game:GetService("ReplicatedStorage")
 	local isMeme = {}
-	for _, id in ipairs({"DaWaeEchidna", "SeaShantyMug", "AisleYodelSet", "ConvinceMeTable", "ShockedRodent", "IsThisABird", "ChonkyBunny", "SpicyLasagna", "SpikedShellCrown", "GrapeSurgery", "BadBoyHatchback", "TempleTap", "SteamedClams", "MegaSealTape", "PurpleTitanBuggy", "OrcaRebellionBoat", "NeverMissDartboard", "CrimeTownBoss", "BoneComedian", "SugarSneakJohnny", "FrostFlask", "BreathtakingCyberGuy", "EnslavedMoisture", "StonksHead", "AhShucks", "UncannyHedgehog", "SpaceInfant", "MeAndTheCrew", "CyberWedgeTruck", "YelledAtCat", "RaidAlien", "AngelWingDancer", "KombuchaDisgust", "DoubleTakeBlink", "TallPinkPiglet", "SpongeLeaving", "CappuccinoBallerina", "FrozenCoffinDance", "HundredMenGorilla", "GothDanceHands", "NatureHealingSwan", "OnceAgainLectern", "LockdownSourdough", "HeadBobCat", "PallbearerCoin", "TumbleJellyBean", "SwoleVsSmol", "PointingLaughChair", "PolkaSpinCow", "SusBean", "PartyCornerGuy", "BeepBopMicKid", "TradeOfferScroll", "BigMittensChair", "ThinkSonThink", "SneakerShark", "JawlineChad", "BingChillingCone", "SigmaGrindset", "EmotionalDamage", "YesNoLabDog", "AssistantSam", "LampOilMerchant", "MaulingTimeVampire", "GentlePillSquad", "WiseMysticalTree", "ItsCornCob", "UncannySuperDad", "GirlDinnerPlate", "PhonkEyebrowSpeaker", "RizzFaceMask", "ClangingPipe", "BetterCallPaul", "KingPrawnCrooner", "OhioFinalBoss", "OhYeahVillain", "LogBatGuy", "ShailushaiCat", "BirthdayShake", "WhistleEdit", "PeachesTurtleKing", "KindergartenMascot", "CursedCartoonTape", "AwkwardSmileGuy", "LaughCryCarSeat", "CanonEventWeb", "PinkbombFeature", "BoulderEyebrow", "PointingSuits", "MewingHush", "EnglishSpanishChair", "AHyuckDog", "NoScopeOlympian", "PommelHorseLegend", "BratGreenSlab", "PedroRaccoon", "CrocBomber", "ChillDude", "BabyHippo", "DubaiChocolate", "LowTaperFade", "ShushUpTablet", "BigGamerChair", "SixSevenHands", "TakeEggCushion", "IbizaBossDancer", "BoutiqueRock", "LittleFrenchFish", "VeryDemureTeacup", "JohnPorkPhone", "BeforeGTA6Hourglass", "StandingOnBusiness", "AuraBoatBow", "PaperclipHelper", "ZombieChickenRider", "JetTooHoliday", "PressureDiverHelmet", "AbyssalAngler", "GlitchWhale", "AtlantisJawlineChad", "SpookySkeleton", "PumpkinDancer", "GhostlySwampFrog", "BonkShiba", "SadViolinHamster", "ConfusedMathCat", "JellyTimeBanana", "RainbowPastryCat", "WowShiba", "ProblemGrinCoin", "MeLikeyTablet", "RageScreamTablet", "ForeverAlone", "BadLuckBryan", "FrowningCat", "PunchMonkey", "PhantomChonkyBunny", "CemeterySpecter", "UndeadSanic", "GraveyardOssuary", "CyberWowShiba", "GlitchSwampFrog", "QuantumShockedRodent", "VoidStonks", "MultiverseSpaceInfant", "BulletDodgeGuy", "NeonSusBean", "HoloJawlineChad", "CosmicShake", "SpacePolkaCow", "InterdimensionalChillDude", "CyberSingingThrone", "UniversalSanic", "ExponentialOgre", "MiraculousGnome", "ApexWowShiba", "GoldenSwampFrog", "ToorngEntity", "HighRollerBrainrot", "ImmeasupremeOverlord", "QuantumDatFrog", "SubatomicSwampFrog", "ParticleWowShiba", "AntimatterEchidna", "StringTheoryBunny", "WarpSpeedStonks", "ParallelJawlineChad", "RealityWarpedSponge", "TimeFoldPanels", "DarkMatterHippo", "RomanEmpireBust", "HypercubeChillDude", "ZeroPointThrone", "TesseractShake", "SingularityGrinCoin", "EventHorizonShiba", "NeverGonnaStair", "QuantumBrainrotGod", "MemeMatrix", "OriginalShiba"}) do isMeme[id] = true end
+	for _, id in ipairs(ids) do isMeme[id] = true end
 	local found, groups = {}, {}
 	local function scan(container)
 		for _, child in ipairs(container:GetChildren()) do
@@ -32,11 +32,11 @@ do
 		end
 	end
 	scan(workspace)
-	local folder = RS:FindFirstChild("MemeMeshes")
+	local folder = RS:FindFirstChild(folderName)
 	if #found > 0 then
 		if not folder then
 			folder = Instance.new("Folder")
-			folder.Name = "MemeMeshes"
+			folder.Name = folderName
 			folder.Parent = RS
 		end
 		local placed = {}
@@ -58,11 +58,13 @@ do
 		end
 		local count = 0
 		for _ in pairs(placed) do count += 1 end
-		print("Moved " .. count .. " meme meshes into ReplicatedStorage > MemeMeshes (" .. #folder:GetChildren() .. " in total)")
+		print("Moved " .. count .. " meshes into ReplicatedStorage > " .. folderName .. " (" .. #folder:GetChildren() .. " in total)")
 	elseif not folder then
-		warn("No meme meshes yet: File > Import 3D > assets/models/MemeMeshes.fbx, then run this installer again")
+		warn(hint)
 	end
 end
+collectMeshes("MemeMeshes", {"DaWaeEchidna", "SeaShantyMug", "AisleYodelSet", "ConvinceMeTable", "ShockedRodent", "IsThisABird", "ChonkyBunny", "SpicyLasagna", "SpikedShellCrown", "GrapeSurgery", "BadBoyHatchback", "TempleTap", "SteamedClams", "MegaSealTape", "PurpleTitanBuggy", "OrcaRebellionBoat", "NeverMissDartboard", "CrimeTownBoss", "BoneComedian", "SugarSneakJohnny", "FrostFlask", "BreathtakingCyberGuy", "EnslavedMoisture", "StonksHead", "AhShucks", "UncannyHedgehog", "SpaceInfant", "MeAndTheCrew", "CyberWedgeTruck", "YelledAtCat", "RaidAlien", "AngelWingDancer", "KombuchaDisgust", "DoubleTakeBlink", "TallPinkPiglet", "SpongeLeaving", "CappuccinoBallerina", "FrozenCoffinDance", "HundredMenGorilla", "GothDanceHands", "NatureHealingSwan", "OnceAgainLectern", "LockdownSourdough", "HeadBobCat", "PallbearerCoin", "TumbleJellyBean", "SwoleVsSmol", "PointingLaughChair", "PolkaSpinCow", "SusBean", "PartyCornerGuy", "BeepBopMicKid", "TradeOfferScroll", "BigMittensChair", "ThinkSonThink", "SneakerShark", "JawlineChad", "BingChillingCone", "SigmaGrindset", "EmotionalDamage", "YesNoLabDog", "AssistantSam", "LampOilMerchant", "MaulingTimeVampire", "GentlePillSquad", "WiseMysticalTree", "ItsCornCob", "UncannySuperDad", "GirlDinnerPlate", "PhonkEyebrowSpeaker", "RizzFaceMask", "ClangingPipe", "BetterCallPaul", "KingPrawnCrooner", "OhioFinalBoss", "OhYeahVillain", "LogBatGuy", "ShailushaiCat", "BirthdayShake", "WhistleEdit", "PeachesTurtleKing", "KindergartenMascot", "CursedCartoonTape", "AwkwardSmileGuy", "LaughCryCarSeat", "CanonEventWeb", "PinkbombFeature", "BoulderEyebrow", "PointingSuits", "MewingHush", "EnglishSpanishChair", "AHyuckDog", "NoScopeOlympian", "PommelHorseLegend", "BratGreenSlab", "PedroRaccoon", "CrocBomber", "ChillDude", "BabyHippo", "DubaiChocolate", "LowTaperFade", "ShushUpTablet", "BigGamerChair", "SixSevenHands", "TakeEggCushion", "IbizaBossDancer", "BoutiqueRock", "LittleFrenchFish", "VeryDemureTeacup", "JohnPorkPhone", "BeforeGTA6Hourglass", "StandingOnBusiness", "AuraBoatBow", "PaperclipHelper", "ZombieChickenRider", "JetTooHoliday", "PressureDiverHelmet", "AbyssalAngler", "GlitchWhale", "AtlantisJawlineChad", "SpookySkeleton", "PumpkinDancer", "GhostlySwampFrog", "BonkShiba", "SadViolinHamster", "ConfusedMathCat", "JellyTimeBanana", "RainbowPastryCat", "WowShiba", "ProblemGrinCoin", "MeLikeyTablet", "RageScreamTablet", "ForeverAlone", "BadLuckBryan", "FrowningCat", "PunchMonkey", "PhantomChonkyBunny", "CemeterySpecter", "UndeadSanic", "GraveyardOssuary", "CyberWowShiba", "GlitchSwampFrog", "QuantumShockedRodent", "VoidStonks", "MultiverseSpaceInfant", "BulletDodgeGuy", "NeonSusBean", "HoloJawlineChad", "CosmicShake", "SpacePolkaCow", "InterdimensionalChillDude", "CyberSingingThrone", "UniversalSanic", "ExponentialOgre", "MiraculousGnome", "ApexWowShiba", "GoldenSwampFrog", "ToorngEntity", "HighRollerBrainrot", "ImmeasupremeOverlord", "QuantumDatFrog", "SubatomicSwampFrog", "ParticleWowShiba", "AntimatterEchidna", "StringTheoryBunny", "WarpSpeedStonks", "ParallelJawlineChad", "RealityWarpedSponge", "TimeFoldPanels", "DarkMatterHippo", "RomanEmpireBust", "HypercubeChillDude", "ZeroPointThrone", "TesseractShake", "SingularityGrinCoin", "EventHorizonShiba", "NeverGonnaStair", "QuantumBrainrotGod", "MemeMatrix", "OriginalShiba"}, "No meme meshes yet: File > Import 3D > assets/models/MemeMeshes.fbx, then run this installer again")
+collectMeshes("PortalMeshes", {"GatePortalFrame", "GatePortalGlow", "GateHorizon", "GateVortexA", "GateVortexB", "AlienPortalRim", "AlienPortalFunnel", "AlienPortalSwirl"}, "No portal meshes yet: File > Import 3D > assets/models/PortalMeshes.fbx, then run this installer again")
 do local old = game:GetService("ServerScriptService"):FindFirstChild("DataManager") if old then old:Destroy() print("Removed DataManager") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
 do local old = game:GetService("ReplicatedStorage"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
@@ -3023,6 +3025,70 @@ return function(def)
 	return tool
 end
 ]=])
+install(game:GetService("ReplicatedStorage"), "PortalMeshes", "ModuleScript", [=[
+-- PortalMeshes (ModuleScript in ReplicatedStorage)
+-- Written by tools/blender/portals.py: the Blender portal pieces (World Gate and alien portal).
+-- Studio's File > Import 3D of assets/models/PortalMeshes.fbx + the installer put them in
+-- ReplicatedStorage > PortalMeshes. Data = each piece's size and where its center sits from
+-- the portal's center (front = -Z). Until they're imported the portals use their old parts.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local PortalMeshes = {}
+
+PortalMeshes.Data = {
+	GatePortalFrame = {Size = Vector3.new(19.134, 19.120, 3.960), Center = Vector3.new(0.000, 0.010, -0.030), Textured = true},
+	GatePortalGlow = {Size = Vector3.new(17.500, 17.500, 3.068), Center = Vector3.new(0.000, 0.000, -0.406), Textured = false},
+	GateHorizon = {Size = Vector3.new(13.900, 13.900, 1.665), Center = Vector3.new(0.000, 0.000, 0.282), Textured = false},
+	GateVortexA = {Size = Vector3.new(12.458, 13.042, 1.561), Center = Vector3.new(0.621, -0.000, 0.096), Textured = false},
+	GateVortexB = {Size = Vector3.new(10.662, 11.365, 1.563), Center = Vector3.new(1.219, 0.000, -0.018), Textured = false},
+	AlienPortalRim = {Size = Vector3.new(7.028, 10.995, 1.262), Center = Vector3.new(0.049, -0.681, -0.003), Textured = false},
+	AlienPortalFunnel = {Size = Vector3.new(5.600, 8.300, 1.830), Center = Vector3.new(0.000, 0.000, 0.565), Textured = false},
+	AlienPortalSwirl = {Size = Vector3.new(5.400, 5.400, 1.531), Center = Vector3.new(0.000, 0.000, 0.293), Textured = false},
+}
+
+local function source(name)
+	local folder = ReplicatedStorage:FindFirstChild("PortalMeshes")
+	local item = folder and folder:FindFirstChild(name)
+	if item and not item:IsA("MeshPart") then item = item:FindFirstChildWhichIsA("MeshPart", true) end
+	return item
+end
+
+-- true when every named piece has been imported
+function PortalMeshes.has(...)
+	for _, name in ipairs({...}) do
+		if not PortalMeshes.Data[name] or not source(name) then return false end
+	end
+	return true
+end
+
+-- a copy of the piece placed around the portal center (a CFrame); props = Color, Material, ...
+-- scale shrinks it (and its offset) for pop-open animations
+function PortalMeshes.place(parent, name, center, props, scale)
+	local data, src = PortalMeshes.Data[name], source(name)
+	if not data or not src then return nil end
+	scale = scale or 1
+	local part = src:Clone()
+	part.Name = name
+	for _, child in ipairs(part:GetChildren()) do
+		if not data.Textured and child:IsA("SurfaceAppearance") then child:Destroy() end
+	end
+	if not data.Textured then pcall(function() part.TextureID = "" end) end
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.CastShadow = data.Textured
+	part.Size = data.Size * scale
+	part.CFrame = center * CFrame.new(data.Center * scale)
+	for key, value in pairs(props or {}) do part[key] = value end
+	if not data.Textured then part:SetAttribute("KeepGlow", true) end -- Architecture.calm leaves it glowing
+	part.Parent = parent
+	return part
+end
+
+return PortalMeshes
+]=])
 install(game:GetService("ReplicatedStorage"), "UIBus", "ModuleScript", [=[
 -- UIBus (ModuleScript in ReplicatedStorage)
 -- Lets one LocalScript ask another to open a window (every LocalScript on a player's screen
@@ -3995,6 +4061,8 @@ install(game:GetService("ServerScriptService"), "AlienPortal", "ModuleScript", [
 -- It's a tall glowing oval: a lime rim, a bright jelly-green middle, a pale glowing core and
 -- a swirling force-field skin, with green sparks, dripping goo, a splash ring on the ground
 -- and a green light. It wobbles like jelly while it's open.
+-- Once the Blender pieces are imported (PortalMeshes) it's a lumpy rim of goo with drips
+-- hanging off it, around a deep rippled glassy tunnel with glowing spiral arms spinning into it.
 --
 --   local portal = AlienPortal.open(parent, cframe)  -- cframe on the ground, -Z = the side aliens come out of
 --   AlienPortal.close(portal)                        -- shrinks it away and destroys it
@@ -4005,6 +4073,8 @@ install(game:GetService("ServerScriptService"), "AlienPortal", "ModuleScript", [
 local TweenService = game:GetService("TweenService")
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PortalMeshes = require(ReplicatedStorage:WaitForChild("PortalMeshes"))
 
 local rgb = Color3.fromRGB
 local AlienPortal = {}
@@ -4020,6 +4090,14 @@ local LAYERS = {
 	{"PortalSwirl", 0.86, 0.5, rgb(120, 255, 80), Enum.Material.ForceField, 0},
 	{"PortalCore", 0.34, 0.62, rgb(235, 255, 205), Enum.Material.Neon, 0.1},
 }
+
+-- the Blender pieces: {name, properties}
+local MESH_PIECES = {
+	{"AlienPortalFunnel", {Material = Enum.Material.Glass, Color = rgb(60, 190, 50), Transparency = 0.12, Reflectance = 0.08}},
+	{"AlienPortalRim", {Material = Enum.Material.Neon, Color = rgb(140, 255, 60)}},
+	{"AlienPortalSwirl", {Material = Enum.Material.Neon, Color = rgb(215, 255, 170), Transparency = 0.1}},
+}
+local CLOSED = 0.03 -- how small the pieces start and end
 
 local function part(parent, name, size, cf, color, material, transparency)
 	local p = Instance.new("Part")
@@ -4059,15 +4137,34 @@ function AlienPortal.open(parent, cf)
 	portal.Name = "AlienPortal"
 	portal:SetAttribute("NoCalm", true)
 	local center = cf * CFrame.new(0, CENTER_Y, 0)
-	local meshes = {}
-	for i, layer in ipairs(LAYERS) do
-		local size = Vector3.new(WIDTH * layer[2], HEIGHT * layer[2], layer[3])
-		-- layers stack front to back a little so they don't flicker into each other
-		local _, mesh = oval(portal, layer[1], size, center * CFrame.new(0, 0, (i - 2.5) * 0.04), layer[4], layer[5], layer[6])
+	local meshes, grow = {}, {} -- sphere meshes that pop open, Blender pieces that grow {Part, Size}
+	local useMeshes = PortalMeshes.has("AlienPortalRim", "AlienPortalFunnel", "AlienPortalSwirl")
+	if useMeshes then
+		for _, piece in ipairs(MESH_PIECES) do
+			local data = PortalMeshes.Data[piece[1]]
+			local p = PortalMeshes.place(portal, piece[1], center, piece[2], CLOSED)
+			p.CFrame = center * CFrame.new(data.Center)
+			table.insert(grow, {Part = p, Size = data.Size})
+		end
+		-- a pale glow deep in the tunnel
+		local _, mesh = oval(portal, "PortalCore", Vector3.new(1.7, 2.4, 0.3), center * CFrame.new(0, 0, 1.05), rgb(235, 255, 205), Enum.Material.Neon, 0.1)
 		table.insert(meshes, mesh)
+		-- the spiral arms spin into the tunnel on every player's screen (ShovelSpinner)
+		local swirl = portal:FindFirstChild("AlienPortalSwirl")
+		swirl:SetAttribute("OrbitPivot", center)
+		swirl:SetAttribute("OrbitOffset", center:ToObjectSpace(swirl.CFrame))
+		swirl:SetAttribute("OrbitSpeed", -2.6)
+		CollectionService:AddTag(swirl, "ShovelOrbit")
+	else
+		for i, layer in ipairs(LAYERS) do
+			local size = Vector3.new(WIDTH * layer[2], HEIGHT * layer[2], layer[3])
+			-- layers stack front to back a little so they don't flicker into each other
+			local _, mesh = oval(portal, layer[1], size, center * CFrame.new(0, 0, (i - 2.5) * 0.04), layer[4], layer[5], layer[6])
+			table.insert(meshes, mesh)
+		end
 	end
 	local core = portal:FindFirstChild("PortalCore")
-	local rim = portal:FindFirstChild("PortalRim")
+	local rim = portal:FindFirstChild("PortalRim") or portal:FindFirstChild("AlienPortalRim")
 
 	-- green light spilling out onto the ground
 	local light = Instance.new("PointLight")
@@ -4115,11 +4212,23 @@ function AlienPortal.open(parent, cf)
 	for _, mesh in ipairs(meshes) do
 		TweenService:Create(mesh, pop, {Scale = Vector3.new(1, 1, 1)}):Play()
 	end
+	for _, item in ipairs(grow) do
+		TweenService:Create(item.Part, pop, {Size = item.Size}):Play()
+	end
 	TweenService:Create(light, TweenInfo.new(0.3), {Brightness = 3}):Play()
 	TweenService:Create(splash, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {Size = Vector3.new(0.12, 9, 9), Transparency = 0.7}):Play()
 	-- then wobble like jelly while it's open, with a glowing spiral spinning inside
 	task.delay(0.5, function()
 		if not portal.Parent or portal:GetAttribute("Closing") then return end
+		local wobble = TweenInfo.new(0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+		if useMeshes then
+			for i, item in ipairs(grow) do
+				local k = i % 2 == 0 and 1 or -1
+				TweenService:Create(item.Part, wobble, {Size = item.Size * Vector3.new(1 + 0.04 * k, 1 - 0.03 * k, 1)}):Play()
+			end
+			TweenService:Create(core, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = 0.5}):Play()
+			return
+		end
 		local spiral = Instance.new("Model")
 		spiral.Name = "Spiral"
 		for arm = 0, 2 do
@@ -4138,7 +4247,6 @@ function AlienPortal.open(parent, cf)
 			end
 		end
 		spiral.Parent = portal
-		local wobble = TweenInfo.new(0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
 		for i, mesh in ipairs(meshes) do
 			local k = i % 2 == 0 and 1 or -1
 			TweenService:Create(mesh, wobble, {Scale = Vector3.new(1 + 0.05 * k, 1 - 0.04 * k, 1)}):Play()
@@ -4160,6 +4268,8 @@ function AlienPortal.close(portal)
 	for _, d in ipairs(portal:GetDescendants()) do
 		if d:IsA("SpecialMesh") then
 			TweenService:Create(d, shut, {Scale = Vector3.new(0.02, 0.02, 1)}):Play()
+		elseif d:IsA("MeshPart") then
+			TweenService:Create(d, shut, {Size = d.Size * CLOSED}):Play()
 		elseif d:IsA("ParticleEmitter") then
 			d.Enabled = false
 		elseif d:IsA("PointLight") then
@@ -4366,7 +4476,7 @@ function Architecture.calm(root)
 	local list = root:GetDescendants()
 	table.insert(list, root)
 	for _, d in ipairs(list) do
-		if d:IsA("BasePart") and d.Material == Enum.Material.Neon then
+		if d:IsA("BasePart") and d.Material == Enum.Material.Neon and not d:GetAttribute("KeepGlow") then
 			local s = d.Size
 			local dims = {s.X, s.Y, s.Z}
 			table.sort(dims)
@@ -13717,9 +13827,56 @@ install(game:GetService("ServerScriptService"), "WorldGate", "ModuleScript", [=[
 -- Builds the portal players use to travel between worlds: a big chunky portal ring
 -- with a swirling energy film, standing on a round tiered base between two capsule
 -- towers, with orbiting planets, a rounded sign and a friendly terminal kiosk.
+-- Once the Blender portal is imported (PortalMeshes), the ring is a heavy machined gunmetal
+-- frame with brass conduits, standing in a cradle, around a glowing event horizon with two
+-- sets of spiral arms spinning opposite ways and light being pulled into it.
 -- Returns the gate model and its ProximityPrompt.
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
+local PortalMeshes = require(ReplicatedStorage:WaitForChild("PortalMeshes"))
+
+local rgb = Color3.fromRGB
+local PIECES = {"GatePortalFrame", "GatePortalGlow", "GateHorizon", "GateVortexA", "GateVortexB"}
+
+-- spun around the portal's axis on every player's screen by ShovelSpinner
+local function spin(part, pivot, speed)
+	part:SetAttribute("OrbitPivot", pivot)
+	part:SetAttribute("OrbitOffset", pivot:ToObjectSpace(part.CFrame))
+	part:SetAttribute("OrbitSpeed", speed)
+	CollectionService:AddTag(part, "ShovelOrbit")
+end
+
+-- the Blender portal: frame, glow, event horizon (a force-field skin over a deep violet dish),
+-- spinning vortex arms, a light and motes of light drifting into the middle
+local function meshPortal(gate, center)
+	PortalMeshes.place(gate, "GatePortalFrame", center, {Material = Enum.Material.Metal, Reflectance = 0.05})
+	PortalMeshes.place(gate, "GatePortalGlow", center, {Material = Enum.Material.Neon, Color = rgb(150, 235, 255)})
+	PortalMeshes.place(gate, "GateHorizon", center * CFrame.new(0, 0, 0.12), {Material = Enum.Material.Neon, Color = rgb(52, 30, 120)})
+	local horizon = PortalMeshes.place(gate, "GateHorizon", center, {Material = Enum.Material.ForceField, Color = rgb(175, 130, 255)})
+	horizon.Name = "PortalSkin"
+	spin(PortalMeshes.place(gate, "GateVortexA", center, {Material = Enum.Material.Neon, Color = rgb(140, 220, 255), Transparency = 0.3}), center, 0.9)
+	spin(PortalMeshes.place(gate, "GateVortexB", center, {Material = Enum.Material.Neon, Color = rgb(200, 150, 255), Transparency = 0.45}), center, -0.55)
+	local light = Instance.new("PointLight")
+	light.Color = rgb(190, 160, 255)
+	light.Range = 20
+	light.Brightness = 1.4
+	light.Parent = horizon
+	local motes = Instance.new("ParticleEmitter")
+	motes.Name = "PortalMotes"
+	motes.Shape = Enum.ParticleEmitterShape.Sphere
+	motes.ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface
+	motes.ShapeInOut = Enum.ParticleEmitterShapeInOut.Inward
+	motes.Color = ColorSequence.new(rgb(220, 245, 255), rgb(170, 120, 255))
+	motes.LightEmission = 1
+	motes.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.05), NumberSequenceKeypoint.new(0.3, 0.3), NumberSequenceKeypoint.new(1, 0)})
+	motes.Transparency = NumberSequence.new(0.1, 0.9)
+	motes.Lifetime = NumberRange.new(1, 1.5)
+	motes.Speed = NumberRange.new(3.5, 5)
+	motes.Rate = 22
+	motes.Parent = horizon
+end
 
 -- parent: where it goes. base: its CFrame (front, local -Z, faces the players).
 return function(parent, base, subtitle)
@@ -13736,28 +13893,33 @@ return function(parent, base, subtitle)
 	})
 	b:roundedBlock("GateStep", Vector3.new(10, 0.5, 3), CFrame.new(0, 0.25, -12.4), 1.4, "Cloud")
 
-	-- the portal: a thick white ring, a lilac inner ring, a glowing edge and the energy film
+	-- the portal: the Blender ring once imported, otherwise a thick white ring, a lilac inner
+	-- ring, a glowing edge and the energy film
 	local center = CFrame.new(0, floorY + 9.5, 0)
-	b:ring("PortalRing", center, 8.2, 2.2, "White", 32)
-	b:ring("PortalInner", center * CFrame.new(0, 0, -0.9), 7, 0.7, "Lilac", 32)
-	b:ring("PortalGlow", center * CFrame.new(0, 0, -1.2), 7.2, 0.3, "GlowPink", 32)
-	local film = b:rod("PortalFilm", 0.3, 13.6, center * CFrame.Angles(0, math.rad(90), 0), "Portal", {CanCollide = false})
-	film.Transparency = 0.25
-	local swirl = b:rod("PortalSwirl", 0.2, 9, center * CFrame.new(0, 0, -0.2) * CFrame.Angles(0, math.rad(90), 0), "GlowCyan", {CanCollide = false})
-	swirl.Transparency = 0.55
-	local glow = Instance.new("PointLight")
-	glow.Color = Color3.fromRGB(200, 170, 255)
-	glow.Range = 18
-	glow.Brightness = 1.2
-	glow.Parent = film
-	-- chunky feet holding the ring
-	for _, side in ipairs({-1, 1}) do
-		b:roundedBlock("RingFoot", Vector3.new(3.2, 2.4, 3.2), CFrame.new(side * 5.4, floorY + 1.2, 0), 1.2, "Violet")
-	end
-	-- sparkle bulbs around the ring
-	for i = 0, 11 do
-		local a = math.rad(i * 30 + 15)
-		b:bulb("RingBulb", 0.7, center * CFrame.new(math.cos(a) * 8.2, math.sin(a) * 8.2, -1.25), i % 2 == 0 and "GlowSun" or "GlowCyan", 5)
+	if PortalMeshes.has(table.unpack(PIECES)) then
+		meshPortal(gate, base * center)
+	else
+		b:ring("PortalRing", center, 8.2, 2.2, "White", 32)
+		b:ring("PortalInner", center * CFrame.new(0, 0, -0.9), 7, 0.7, "Lilac", 32)
+		b:ring("PortalGlow", center * CFrame.new(0, 0, -1.2), 7.2, 0.3, "GlowPink", 32)
+		local film = b:rod("PortalFilm", 0.3, 13.6, center * CFrame.Angles(0, math.rad(90), 0), "Portal", {CanCollide = false})
+		film.Transparency = 0.25
+		local swirl = b:rod("PortalSwirl", 0.2, 9, center * CFrame.new(0, 0, -0.2) * CFrame.Angles(0, math.rad(90), 0), "GlowCyan", {CanCollide = false})
+		swirl.Transparency = 0.55
+		local glow = Instance.new("PointLight")
+		glow.Color = Color3.fromRGB(200, 170, 255)
+		glow.Range = 18
+		glow.Brightness = 1.2
+		glow.Parent = film
+		-- chunky feet holding the ring
+		for _, side in ipairs({-1, 1}) do
+			b:roundedBlock("RingFoot", Vector3.new(3.2, 2.4, 3.2), CFrame.new(side * 5.4, floorY + 1.2, 0), 1.2, "Violet")
+		end
+		-- sparkle bulbs around the ring
+		for i = 0, 11 do
+			local a = math.rad(i * 30 + 15)
+			b:bulb("RingBulb", 0.7, center * CFrame.new(math.cos(a) * 8.2, math.sin(a) * 8.2, -1.25), i % 2 == 0 and "GlowSun" or "GlowCyan", 5)
+		end
 	end
 
 	-- capsule towers either side, topped with little planets
@@ -18311,4 +18473,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 14:44). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-01 14:55). Now save the place (Ctrl+S).")
