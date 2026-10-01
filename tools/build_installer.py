@@ -93,8 +93,20 @@ out.append('''local function collectMeshes(folderName, ids, hint)
 	for _, place in ipairs({game:GetService("ServerStorage"), game:GetService("Lighting"), game:GetService("StarterPack")}) do
 		scan(place)
 	end
-	local folder = RS:FindFirstChild(folderName)
-	if folder and not folder:IsA("Folder") then folder = nil end
+	-- an Import 3D done with ReplicatedStorage selected lands there, as a Model named after the
+	-- .fbx (the same name as the folder), and older installs may have left extra folders with
+	-- that name: keep the first real Folder and empty every other copy into it
+	local folder
+	for _, child in ipairs(RS:GetChildren()) do
+		if child.Name == folderName and child:IsA("Folder") then folder = child break end
+	end
+	for _, child in ipairs(RS:GetChildren()) do
+		if child ~= folder and (child.Name == folderName or child:GetAttribute("RBX_ReimportId")) then
+			local before = #found
+			scan(child)
+			if #found > before or child.Name == folderName then table.insert(groups, child) end
+		end
+	end
 	if #found > 0 then
 		if not folder then
 			folder = Instance.new("Folder")
