@@ -30,6 +30,7 @@ P.TimberDark = {Color = rgb(110, 74, 46), Material = Enum.Material.Wood}
 P.Canvas = {Color = rgb(232, 214, 170), Material = Enum.Material.Fabric}
 P.CanvasStripe = {Color = rgb(236, 120, 90), Material = Enum.Material.Fabric}
 P.PlanterGrass = {Color = rgb(104, 196, 104), Material = Enum.Material.Grass}
+P.Lawn = {Color = rgb(112, 204, 108), Material = Enum.Material.Grass}
 P.Leaf = {Color = rgb(96, 206, 150), Material = Enum.Material.SmoothPlastic}
 P.Blossom = {Color = rgb(255, 176, 214), Material = Enum.Material.SmoothPlastic}
 P.SteelDark = {Color = rgb(70, 72, 86), Material = Enum.Material.Metal}
@@ -54,7 +55,7 @@ local function mosaicRing(b, radius, width, segments, finishes)
 	local length = 2 * math.pi * radius / segments + 0.3
 	for i = 0, segments - 1 do
 		local deg = (i + 0.5) * 360 / segments
-		local pos = at(deg, radius, 0.08)
+		local pos = at(deg, radius, 0.14)
 		local tangent = Vector3.new(-math.sin(math.rad(deg)), 0, math.cos(math.rad(deg)))
 		b:box("PlazaTile", Vector3.new(length, 0.16, width), Architecture.alongX(pos, tangent), finishes[i % #finishes + 1])
 	end
@@ -67,7 +68,7 @@ local function plaza(b)
 	mosaicRing(b, 247, 6, 128, {"PlazaTileB", "PlazaTileA"})
 	-- glowing inlay lines from the dig site out between the museums
 	for _, deg in ipairs(GAP_ANGLES) do
-		local from, to = at(deg, 136, 0.1), at(deg, 243, 0.1)
+		local from, to = at(deg, 136, 0.3), at(deg, 243, 0.3)
 		b:box("InlayLine", Vector3.new(0.7, 0.2, (to - from).Magnitude), CFrame.lookAt((from + to) / 2, to), "GlowCyan")
 		for _, side in ipairs({-1, 1}) do
 			local off = Vector3.new(-math.sin(math.rad(deg)), 0, math.cos(math.rad(deg))) * side * 3
@@ -107,7 +108,39 @@ local function bench(b, cf)
 	end
 end
 
+-- a flat lawn (Parts, so no tall terrain grass blades) filling the strip between two
+-- museums, edged with a white curb. The terrain under it is dug out and the lawn is a thick
+-- slab, so the slightly bumpy ground can't poke through the grass.
+local LAWN_HALF_ANGLE, LAWN_FROM, LAWN_TO = 14, 152, 240
+local LAWN_TOP, LAWN_BOTTOM = 0.25, -2.5
+local function lawn(b, deg)
+	local length = LAWN_TO - LAWN_FROM
+	for d = deg - LAWN_HALF_ANGLE + 0.5, deg + LAWN_HALF_ANGLE - 0.5, 1 do
+		local dir = at(d, 1)
+		local size = Vector3.new(length, LAWN_TOP - LAWN_BOTTOM, 2 * math.pi * LAWN_TO / 360 + 1.2)
+		local cf = Architecture.alongX(dir * ((LAWN_FROM + LAWN_TO) / 2) + Vector3.new(0, (LAWN_TOP + LAWN_BOTTOM) / 2, 0), dir)
+		workspace.Terrain:FillBlock(cf - Vector3.new(0, cf.Y + 2, 0), Vector3.new(size.X, 4, size.Z), Enum.Material.Air)
+		b:box("Lawn", size, cf, "Lawn")
+	end
+	for _, side in ipairs({-1, 1}) do
+		local dir = at(deg + side * LAWN_HALF_ANGLE, 1)
+		b:box("LawnCurb", Vector3.new(length, 0.7, 1.2), Architecture.alongX(dir * ((LAWN_FROM + LAWN_TO) / 2), dir), "White")
+	end
+	local segments = 14
+	for _, r in ipairs({LAWN_FROM, LAWN_TO}) do
+		for i = 0, segments - 1 do
+			local d = deg - LAWN_HALF_ANGLE + (i + 0.5) * 2 * LAWN_HALF_ANGLE / segments
+			local tangent = Vector3.new(-math.sin(math.rad(d)), 0, math.cos(math.rad(d)))
+			b:box("LawnCurb", Vector3.new(2 * math.pi * r * 2 * LAWN_HALF_ANGLE / 360 / segments + 0.4, 0.7, 1.2),
+				Architecture.alongX(at(d, r), tangent), "White")
+		end
+	end
+end
+
 local function gardens(b, rng)
+	for _, deg in ipairs(GAP_ANGLES) do
+		lawn(b, deg)
+	end
 	-- a ring of planters around the plaza, just outside the mosaic ring (skipping the walkways)
 	for deg = 7.5, 360, 15 do
 		local fromPath = math.abs(((deg + 30) % 60) - 30)

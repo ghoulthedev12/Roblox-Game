@@ -17,6 +17,7 @@
 -- MapStyle calls MainIsland.build() once when the server starts.
 
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
+local GameConfig = require(game:GetService("ReplicatedStorage"):WaitForChild("GameConfig"))
 local P = Architecture.Palette
 
 local MainIsland = {}
@@ -104,9 +105,12 @@ local function buildTerrain(rng)
 		local d = rng:NextNumber(R * 0.4, R * 0.85)
 		terrain:FillBall(Vector3.new(math.cos(a) * d, rng:NextNumber(-80, -36), math.sin(a) * d), rng:NextNumber(18, 34), Enum.Material.Slate)
 	end
-	-- short trimmed grass on top (MapStyle shortens the blades; WorldOneDecor adds the mosaic
-	-- rings, inlay lines and garden planters; the Dig Site refills its own square)
+	-- grass between the towers; inside the boulevard (and under it) a stone plaza, because
+	-- Roblox grass grows tall blades that swallow everything low (scripts can't shorten them).
+	-- WorldOneDecor adds the mosaic rings, inlay lines and flat garden lawns; the Dig Site
+	-- refills its own square.
 	terrain:FillCylinder(CFrame.new(0, -2, 0), 4, R, Enum.Material.Grass)
+	terrain:FillCylinder(CFrame.new(0, -2, 0), 4, BOULEVARD.Radius + BOULEVARD.Width / 2 + 12, Enum.Material.Slate)
 end
 
 ---------------------------------------------------------------------
@@ -382,15 +386,20 @@ function MainIsland.build(parent)
 	for _, part in ipairs(ground:GetChildren()) do
 		if PAVED[part.Name] then
 			local pos = part.Position
-			terrain:FillBlock(CFrame.new(pos.X, -2, pos.Z) * part.CFrame.Rotation, Vector3.new(part.Size.X + 2, 4, part.Size.Z + 2), Enum.Material.Slate)
+			-- a wide margin: blades from the grass next to a road lean in over its edge
+			-- (not at the island's rim, where it would stick out past the cliff)
+			local margin = part.Name == "EdgeCurb" and 2 or 10
+			terrain:FillBlock(CFrame.new(pos.X, -2, pos.Z) * part.CFrame.Rotation, Vector3.new(part.Size.X + 2, 4, part.Size.Z + margin), Enum.Material.Slate)
 		elseif part.Name == "Lookout" then
 			terrain:FillCylinder(CFrame.new(part.Position.X, -2, part.Position.Z), 4, part.Size.Y / 2 + 1, Enum.Material.Slate)
 		end
 	end
-	-- sink the roads, sidewalks and walkways so their tops sit flush with the ground: you
+	-- bring the ground surface down to y = 0, where the roads and decorations sit
+	GameConfig.FlattenGround(terrain, Vector3.zero, ISLAND_RADIUS * 2 + 8)
+	-- sink the roads, sidewalks and walkways so their tops sit just above the ground (y = 0): you
 	-- walk straight onto them instead of bumping into a ledge
-	local FLUSH_TOP = {Boulevard = 0.06, SidewalkIn = 0.1, SidewalkOut = 0.1, Avenue = 0.06, MuseumWalk = 0.1, Lookout = 0.1,
-		LaneGlow = 0.12, AvenueGlow = 0.12, LookoutGlow = 0.3}
+	local FLUSH_TOP = {Boulevard = 0.2, SidewalkIn = 0.25, SidewalkOut = 0.25, Avenue = 0.2, MuseumWalk = 0.25, Lookout = 0.25,
+		LaneGlow = 0.26, AvenueGlow = 0.26, LookoutGlow = 0.45}
 	for _, part in ipairs(ground:GetChildren()) do
 		local top = FLUSH_TOP[part.Name]
 		if top and part:IsA("BasePart") then

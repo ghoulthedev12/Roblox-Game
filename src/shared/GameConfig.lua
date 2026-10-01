@@ -443,6 +443,17 @@ function GameConfig.FillDigTerrain(terrain, world)
 	-- bedrock
 	terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, lastZone.Bottom - GameConfig.BedrockThickness / 2, 0)),
 		GameConfig.BedrockThickness, radius, Enum.Material.Basalt)
+	if not world.IslandRadius then
+		local size = math.max(200, world.WorkYard and world.WorkYard.Radius * 2 + 8 or 0)
+		GameConfig.FlattenGround(terrain, origin, size)
+	end
+end
+
+-- Terrain filled up to y = 0 shows its surface at y = 2 (a full top block rounds up), which
+-- buries everything laid flat on the ground. Emptying the top 2 studs of that block (y -2 to
+-- 0) leaves it half full, so the surface sits exactly at y = 0 and keeps its material.
+function GameConfig.FlattenGround(terrain, center, size)
+	terrain:FillBlock(CFrame.new(center + Vector3.new(0, -1, 0)), Vector3.new(size, 2, size), Enum.Material.Air)
 end
 
 return GameConfig
