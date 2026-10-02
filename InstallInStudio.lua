@@ -1417,18 +1417,20 @@ function GameConfig.FillDigTerrain(terrain, world)
 	end
 	if world.WorkYard then
 		-- under the plaza ring around the yard: stone, not grass (grass blades would poke up
-		-- through the plaza tiles and the yard's curb)
-		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -2, 0)), 4, world.WorkYard.Radius + 12, Enum.Material.Slate)
+		-- through the plaza tiles and the yard's curb). Wide enough to cover the corners of the
+		-- 200-stud square of grass above (they reach out to 141 studs on the diagonals).
+		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -2, 0)), 4, world.WorkYard.Radius + 24, Enum.Material.Slate)
 		-- a dirt work yard around the dig site, inside the plaza's mosaic ring
 		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -2, 0)), 4, world.WorkYard.Radius, Enum.Material[world.WorkYard.Material])
 	end
 	if world.HubPaths then
-		-- keep the walkways clear (otherwise the stone pokes through them)
+		-- keep the walkways clear (otherwise the stone pokes through them); only as far as the
+		-- walkway goes (116 studs out): past that, the ramp sits on the ground, see DigSiteStyle
 		for k = 0, 5 do
 			local a = math.rad(k * 60)
 			local dir = Vector3.new(math.cos(a), 0, math.sin(a))
-			local mid = origin + dir * 88
-			terrain:FillBlock(CFrame.lookAt(mid, mid + dir) * CFrame.new(0, 4, 0), Vector3.new(14, 16, 84), Enum.Material.Air)
+			local mid = origin + dir * 81.5
+			terrain:FillBlock(CFrame.lookAt(mid, mid + dir) * CFrame.new(0, 4, 0), Vector3.new(14, 16, 71), Enum.Material.Air)
 		end
 		-- the walkways sit 2.6 studs up: sloped banks of earth along both sides rise to meet
 		-- them, so you can walk from the ground straight onto a walkway (no wall to jump)
@@ -1483,7 +1485,9 @@ function GameConfig.FillDigTerrain(terrain, world)
 	if world.IslandRadius then
 		GameConfig.FlattenGround(terrain, origin, (world.PitRadius + 12) * 2)
 	else
-		GameConfig.FlattenGround(terrain, origin, math.max(200, world.WorkYard and world.WorkYard.Radius * 2 + 8 or 0))
+		-- (all the way out past the stone ring: a full top block left anywhere bulges up as a
+		-- mound over the paths and the yard's curb)
+		GameConfig.FlattenGround(terrain, origin, math.max(200, world.WorkYard and (world.WorkYard.Radius + 24) * 2 + 8 or 0))
 	end
 end
 
@@ -7175,6 +7179,12 @@ return function(digSite, world)
 			else
 				d.CFrame = d.CFrame + Vector3.new(0, 2.8 - d.CFrame.Position.Y, 0)
 			end
+		elseif d:IsA("BasePart") and d.Name == "Ramp" and world.HubPaths then
+			-- a thin plank with a hollow under it: replaced by the solid WalkRamp below
+			d.Transparency = 1
+			d.CanCollide = false
+			d.CanQuery = false
+			d.CastShadow = false
 		end
 	end
 
@@ -7223,6 +7233,21 @@ return function(digSite, world)
 				b:box("WalkShoulder", Vector3.new(6, 2.8, 70), cf * CFrame.new(0, 1.3, 0), "White")
 				b:box("WalkShoulderTrim", Vector3.new(0.6, 0.12, 70), cf * CFrame.new(s * 2.7, 2.72, 0), "Lilac") -- along the outer edge
 			end
+			-- WALK RAMP: a solid slope from the end of the walkway (and its shoulders, 116 studs
+			-- out) down into the ground, so there's no hollow under it and no cliff at the
+			-- shoulders' ends. Its bottom sits below the ground, hiding the terrain's edge.
+			local high, low, length = 2.65, -0.6, 12
+			local center = origin + dir * (116 + length / 2)
+			local ramp = Instance.new("WedgePart") -- slopes down towards where it faces (outwards)
+			ramp.Name = "WalkRamp"
+			ramp.Anchored = true
+			ramp.Size = Vector3.new(25, high - low, length)
+			ramp.CFrame = CFrame.lookAt(center, center + dir) * CFrame.new(0, low + (high - low) / 2, 0)
+			ramp.Color = P.White.Color
+			ramp.Material = P.White.Material
+			ramp.TopSurface = Enum.SurfaceType.Smooth
+			ramp.BottomSurface = Enum.SurfaceType.Smooth
+			ramp.Parent = folder
 		end
 	end
 
@@ -7232,7 +7257,7 @@ return function(digSite, world)
 	if world.WorkYard then
 		local R = world.WorkYard.Radius
 		local CURB = 150
-		local gap = math.deg((7 + 1) / (R - 6)) -- half a walkway plus a little, in degrees (at the curb's inner edge)
+		local gap = math.deg((12.5 + 1) / (R - 6)) -- half a walkway ramp plus a little, in degrees (at the curb's inner edge)
 		for i = 0, CURB - 1 do
 			local deg = (i + 0.5) * 360 / CURB
 			local fromPath = math.abs(((deg + 30) % 60) - 30)
@@ -14881,36 +14906,36 @@ local function alien(rng)
 	-- the blocky Roblox body is hidden and dressed with slim, rounded alien shapes welded to each
 	-- body part (so they still walk with the normal animation): a narrow chest, a wasp waist,
 	-- long thin limbs, skinny three-fingered hands and pointed boots
-	local BODY = {
-		UpperTorso = {0.82, 0.92, 0.85, suit[1]}, LowerTorso = {0.62, 0.9, 0.75, suit[1]},
-		-- (limbs a bit longer than the Roblox part, so the rounded ends overlap at the joints)
-		LeftUpperArm = {0.55, 1.25, 0.55, suit[1]}, RightUpperArm = {0.55, 1.25, 0.55, suit[1]},
-		LeftLowerArm = {0.45, 1.3, 0.45, skin}, RightLowerArm = {0.45, 1.3, 0.45, skin},
-		LeftUpperLeg = {0.55, 1.2, 0.55, suit[1]}, RightUpperLeg = {0.55, 1.2, 0.55, suit[1]},
-		LeftLowerLeg = {0.45, 1.25, 0.45, suit[1]}, RightLowerLeg = {0.45, 1.25, 0.45, suit[1]},
-	}
+	local BODY = {UpperTorso = {0.82, 0.92, 0.85}, LowerTorso = {0.62, 0.9, 0.75}}
 	for name, look in pairs(BODY) do
 		local part = model:FindFirstChild(name)
 		if part then
 			part.Transparency = 1
-			weldTo(ellipsoid("Alien" .. name, part.Size * Vector3.new(look[1], look[2], look[3]), look[4]), part, CFrame.new())
+			weldTo(ellipsoid("Alien" .. name, part.Size * Vector3.new(look[1], look[2], look[3]), suit[1]), part, CFrame.new())
 		end
 	end
-	-- round joints (shoulders, elbows, knees) so the limbs read as one arm or leg, not floating
-	-- pieces; the shoulder ball sits a little in towards the narrow chest to bridge the gap
+	-- each limb piece is a capsule running exactly from one joint to the next (the rig's own
+	-- joint points), so upper and lower arm always meet at the elbow, even mid-swing
+	local LIMBS = { -- {joint at the top, joint at the bottom, thickness, color}
+		UpperArm = {"Shoulder", "Elbow", 0.42, suit[1]}, LowerArm = {"Elbow", "Wrist", 0.34, skin},
+		UpperLeg = {"Hip", "Knee", 0.5, suit[1]}, LowerLeg = {"Knee", "Ankle", 0.42, suit[1]},
+	}
 	for _, side in ipairs({"Left", "Right"}) do
-		local inward = side == "Left" and 1 or -1
-		local upperArm, lowerArm = model:FindFirstChild(side .. "UpperArm"), model:FindFirstChild(side .. "LowerArm")
-		local lowerLeg = model:FindFirstChild(side .. "LowerLeg")
-		if upperArm then
-			weldTo(ellipsoid("Shoulder", Vector3.new(0.75, 0.6, 0.6), suit[1]), upperArm, CFrame.new(inward * 0.2, upperArm.Size.Y / 2 - 0.2, 0))
-		end
-		if lowerArm then
-			weldTo(ellipsoid("Elbow", Vector3.new(0.42, 0.42, 0.42), skin), lowerArm, CFrame.new(0, lowerArm.Size.Y / 2, 0))
-			weldTo(ellipsoid("Wrist", Vector3.new(0.3, 0.3, 0.3), skin), lowerArm, CFrame.new(0, -lowerArm.Size.Y / 2, 0))
-		end
-		if lowerLeg then
-			weldTo(ellipsoid("Knee", Vector3.new(0.46, 0.46, 0.46), suit[1]), lowerLeg, CFrame.new(0, lowerLeg.Size.Y / 2, 0))
+		for limb, look in pairs(LIMBS) do
+			local part = model:FindFirstChild(side .. limb)
+			local top = part and part:FindFirstChild(side .. look[1] .. "RigAttachment")
+			local bottom = part and part:FindFirstChild(side .. look[2] .. "RigAttachment")
+			if top and bottom then
+				part.Transparency = 1
+				local a, c = top.Position, bottom.Position
+				local axis = (c - a).Unit
+				local tube = piece("Alien" .. side .. limb, Vector3.new((c - a).Magnitude, look[3], look[3]), look[4], nil, Enum.PartType.Cylinder)
+				weldTo(tube, part, CFrame.fromMatrix((a + c) / 2, axis, axis:Cross(Vector3.zAxis).Unit))
+				-- round ends; the shoulder is a bit bigger, to fill the gap to the narrow chest
+				local ends = look[1] == "Shoulder" and look[3] * 1.35 or look[3]
+				weldTo(piece("Joint", Vector3.one * ends, look[4], nil, Enum.PartType.Ball), part, CFrame.new(a))
+				weldTo(piece("Joint", Vector3.one * look[3], look[4], nil, Enum.PartType.Ball), part, CFrame.new(c))
+			end
 		end
 	end
 	for _, name in ipairs({"LeftHand", "RightHand"}) do
@@ -15938,8 +15963,11 @@ local function lawn(b, deg)
 	local length = LAWN_TO - LAWN_FROM
 	for d = deg - LAWN_HALF_ANGLE + 0.5, deg + LAWN_HALF_ANGLE - 0.5, 1 do
 		local dir = at(d, 1)
-		local size = Vector3.new(length, LAWN_TOP - LAWN_BOTTOM, 2 * math.pi * LAWN_TO / 360 + 1.2)
-		local cf = Architecture.alongX(dir * ((LAWN_FROM + LAWN_TO) / 2) + Vector3.new(0, (LAWN_TOP + LAWN_BOTTOM) / 2, 0), dir)
+		-- the slices overlap; every other one sits a hair higher, or the grass flickers where
+		-- two tops at the same height fight over which one is drawn
+		local top = LAWN_TOP + (math.floor(d - deg + LAWN_HALF_ANGLE) % 2) * 0.03
+		local size = Vector3.new(length, top - LAWN_BOTTOM, 2 * math.pi * LAWN_TO / 360 + 1.2)
+		local cf = Architecture.alongX(dir * ((LAWN_FROM + LAWN_TO) / 2) + Vector3.new(0, (top + LAWN_BOTTOM) / 2, 0), dir)
 		workspace.Terrain:FillBlock(cf - Vector3.new(0, cf.Y + 2, 0), Vector3.new(size.X, 4, size.Z), Enum.Material.Air)
 		b:box("Lawn", size, cf, "Lawn")
 	end
@@ -21289,4 +21317,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 22:58). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 23:15). Now save the place (Ctrl+S).")

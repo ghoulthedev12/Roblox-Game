@@ -287,6 +287,12 @@ return function(digSite, world)
 			else
 				d.CFrame = d.CFrame + Vector3.new(0, 2.8 - d.CFrame.Position.Y, 0)
 			end
+		elseif d:IsA("BasePart") and d.Name == "Ramp" and world.HubPaths then
+			-- a thin plank with a hollow under it: replaced by the solid WalkRamp below
+			d.Transparency = 1
+			d.CanCollide = false
+			d.CanQuery = false
+			d.CastShadow = false
 		end
 	end
 
@@ -335,6 +341,21 @@ return function(digSite, world)
 				b:box("WalkShoulder", Vector3.new(6, 2.8, 70), cf * CFrame.new(0, 1.3, 0), "White")
 				b:box("WalkShoulderTrim", Vector3.new(0.6, 0.12, 70), cf * CFrame.new(s * 2.7, 2.72, 0), "Lilac") -- along the outer edge
 			end
+			-- WALK RAMP: a solid slope from the end of the walkway (and its shoulders, 116 studs
+			-- out) down into the ground, so there's no hollow under it and no cliff at the
+			-- shoulders' ends. Its bottom sits below the ground, hiding the terrain's edge.
+			local high, low, length = 2.65, -0.6, 12
+			local center = origin + dir * (116 + length / 2)
+			local ramp = Instance.new("WedgePart") -- slopes down towards where it faces (outwards)
+			ramp.Name = "WalkRamp"
+			ramp.Anchored = true
+			ramp.Size = Vector3.new(25, high - low, length)
+			ramp.CFrame = CFrame.lookAt(center, center + dir) * CFrame.new(0, low + (high - low) / 2, 0)
+			ramp.Color = P.White.Color
+			ramp.Material = P.White.Material
+			ramp.TopSurface = Enum.SurfaceType.Smooth
+			ramp.BottomSurface = Enum.SurfaceType.Smooth
+			ramp.Parent = folder
 		end
 	end
 
@@ -344,7 +365,7 @@ return function(digSite, world)
 	if world.WorkYard then
 		local R = world.WorkYard.Radius
 		local CURB = 150
-		local gap = math.deg((7 + 1) / (R - 6)) -- half a walkway plus a little, in degrees (at the curb's inner edge)
+		local gap = math.deg((12.5 + 1) / (R - 6)) -- half a walkway ramp plus a little, in degrees (at the curb's inner edge)
 		for i = 0, CURB - 1 do
 			local deg = (i + 0.5) * 360 / CURB
 			local fromPath = math.abs(((deg + 30) % 60) - 30)

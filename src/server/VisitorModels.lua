@@ -210,36 +210,36 @@ local function alien(rng)
 	-- the blocky Roblox body is hidden and dressed with slim, rounded alien shapes welded to each
 	-- body part (so they still walk with the normal animation): a narrow chest, a wasp waist,
 	-- long thin limbs, skinny three-fingered hands and pointed boots
-	local BODY = {
-		UpperTorso = {0.82, 0.92, 0.85, suit[1]}, LowerTorso = {0.62, 0.9, 0.75, suit[1]},
-		-- (limbs a bit longer than the Roblox part, so the rounded ends overlap at the joints)
-		LeftUpperArm = {0.55, 1.25, 0.55, suit[1]}, RightUpperArm = {0.55, 1.25, 0.55, suit[1]},
-		LeftLowerArm = {0.45, 1.3, 0.45, skin}, RightLowerArm = {0.45, 1.3, 0.45, skin},
-		LeftUpperLeg = {0.55, 1.2, 0.55, suit[1]}, RightUpperLeg = {0.55, 1.2, 0.55, suit[1]},
-		LeftLowerLeg = {0.45, 1.25, 0.45, suit[1]}, RightLowerLeg = {0.45, 1.25, 0.45, suit[1]},
-	}
+	local BODY = {UpperTorso = {0.82, 0.92, 0.85}, LowerTorso = {0.62, 0.9, 0.75}}
 	for name, look in pairs(BODY) do
 		local part = model:FindFirstChild(name)
 		if part then
 			part.Transparency = 1
-			weldTo(ellipsoid("Alien" .. name, part.Size * Vector3.new(look[1], look[2], look[3]), look[4]), part, CFrame.new())
+			weldTo(ellipsoid("Alien" .. name, part.Size * Vector3.new(look[1], look[2], look[3]), suit[1]), part, CFrame.new())
 		end
 	end
-	-- round joints (shoulders, elbows, knees) so the limbs read as one arm or leg, not floating
-	-- pieces; the shoulder ball sits a little in towards the narrow chest to bridge the gap
+	-- each limb piece is a capsule running exactly from one joint to the next (the rig's own
+	-- joint points), so upper and lower arm always meet at the elbow, even mid-swing
+	local LIMBS = { -- {joint at the top, joint at the bottom, thickness, color}
+		UpperArm = {"Shoulder", "Elbow", 0.42, suit[1]}, LowerArm = {"Elbow", "Wrist", 0.34, skin},
+		UpperLeg = {"Hip", "Knee", 0.5, suit[1]}, LowerLeg = {"Knee", "Ankle", 0.42, suit[1]},
+	}
 	for _, side in ipairs({"Left", "Right"}) do
-		local inward = side == "Left" and 1 or -1
-		local upperArm, lowerArm = model:FindFirstChild(side .. "UpperArm"), model:FindFirstChild(side .. "LowerArm")
-		local lowerLeg = model:FindFirstChild(side .. "LowerLeg")
-		if upperArm then
-			weldTo(ellipsoid("Shoulder", Vector3.new(0.75, 0.6, 0.6), suit[1]), upperArm, CFrame.new(inward * 0.2, upperArm.Size.Y / 2 - 0.2, 0))
-		end
-		if lowerArm then
-			weldTo(ellipsoid("Elbow", Vector3.new(0.42, 0.42, 0.42), skin), lowerArm, CFrame.new(0, lowerArm.Size.Y / 2, 0))
-			weldTo(ellipsoid("Wrist", Vector3.new(0.3, 0.3, 0.3), skin), lowerArm, CFrame.new(0, -lowerArm.Size.Y / 2, 0))
-		end
-		if lowerLeg then
-			weldTo(ellipsoid("Knee", Vector3.new(0.46, 0.46, 0.46), suit[1]), lowerLeg, CFrame.new(0, lowerLeg.Size.Y / 2, 0))
+		for limb, look in pairs(LIMBS) do
+			local part = model:FindFirstChild(side .. limb)
+			local top = part and part:FindFirstChild(side .. look[1] .. "RigAttachment")
+			local bottom = part and part:FindFirstChild(side .. look[2] .. "RigAttachment")
+			if top and bottom then
+				part.Transparency = 1
+				local a, c = top.Position, bottom.Position
+				local axis = (c - a).Unit
+				local tube = piece("Alien" .. side .. limb, Vector3.new((c - a).Magnitude, look[3], look[3]), look[4], nil, Enum.PartType.Cylinder)
+				weldTo(tube, part, CFrame.fromMatrix((a + c) / 2, axis, axis:Cross(Vector3.zAxis).Unit))
+				-- round ends; the shoulder is a bit bigger, to fill the gap to the narrow chest
+				local ends = look[1] == "Shoulder" and look[3] * 1.35 or look[3]
+				weldTo(piece("Joint", Vector3.one * ends, look[4], nil, Enum.PartType.Ball), part, CFrame.new(a))
+				weldTo(piece("Joint", Vector3.one * look[3], look[4], nil, Enum.PartType.Ball), part, CFrame.new(c))
+			end
 		end
 	end
 	for _, name in ipairs({"LeftHand", "RightHand"}) do

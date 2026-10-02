@@ -390,18 +390,20 @@ function GameConfig.FillDigTerrain(terrain, world)
 	end
 	if world.WorkYard then
 		-- under the plaza ring around the yard: stone, not grass (grass blades would poke up
-		-- through the plaza tiles and the yard's curb)
-		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -2, 0)), 4, world.WorkYard.Radius + 12, Enum.Material.Slate)
+		-- through the plaza tiles and the yard's curb). Wide enough to cover the corners of the
+		-- 200-stud square of grass above (they reach out to 141 studs on the diagonals).
+		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -2, 0)), 4, world.WorkYard.Radius + 24, Enum.Material.Slate)
 		-- a dirt work yard around the dig site, inside the plaza's mosaic ring
 		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -2, 0)), 4, world.WorkYard.Radius, Enum.Material[world.WorkYard.Material])
 	end
 	if world.HubPaths then
-		-- keep the walkways clear (otherwise the stone pokes through them)
+		-- keep the walkways clear (otherwise the stone pokes through them); only as far as the
+		-- walkway goes (116 studs out): past that, the ramp sits on the ground, see DigSiteStyle
 		for k = 0, 5 do
 			local a = math.rad(k * 60)
 			local dir = Vector3.new(math.cos(a), 0, math.sin(a))
-			local mid = origin + dir * 88
-			terrain:FillBlock(CFrame.lookAt(mid, mid + dir) * CFrame.new(0, 4, 0), Vector3.new(14, 16, 84), Enum.Material.Air)
+			local mid = origin + dir * 81.5
+			terrain:FillBlock(CFrame.lookAt(mid, mid + dir) * CFrame.new(0, 4, 0), Vector3.new(14, 16, 71), Enum.Material.Air)
 		end
 		-- the walkways sit 2.6 studs up: sloped banks of earth along both sides rise to meet
 		-- them, so you can walk from the ground straight onto a walkway (no wall to jump)
@@ -456,7 +458,9 @@ function GameConfig.FillDigTerrain(terrain, world)
 	if world.IslandRadius then
 		GameConfig.FlattenGround(terrain, origin, (world.PitRadius + 12) * 2)
 	else
-		GameConfig.FlattenGround(terrain, origin, math.max(200, world.WorkYard and world.WorkYard.Radius * 2 + 8 or 0))
+		-- (all the way out past the stone ring: a full top block left anywhere bulges up as a
+		-- mound over the paths and the yard's curb)
+		GameConfig.FlattenGround(terrain, origin, math.max(200, world.WorkYard and (world.WorkYard.Radius + 24) * 2 + 8 or 0))
 	end
 end
 

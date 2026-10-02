@@ -117,8 +117,11 @@ local function lawn(b, deg)
 	local length = LAWN_TO - LAWN_FROM
 	for d = deg - LAWN_HALF_ANGLE + 0.5, deg + LAWN_HALF_ANGLE - 0.5, 1 do
 		local dir = at(d, 1)
-		local size = Vector3.new(length, LAWN_TOP - LAWN_BOTTOM, 2 * math.pi * LAWN_TO / 360 + 1.2)
-		local cf = Architecture.alongX(dir * ((LAWN_FROM + LAWN_TO) / 2) + Vector3.new(0, (LAWN_TOP + LAWN_BOTTOM) / 2, 0), dir)
+		-- the slices overlap; every other one sits a hair higher, or the grass flickers where
+		-- two tops at the same height fight over which one is drawn
+		local top = LAWN_TOP + (math.floor(d - deg + LAWN_HALF_ANGLE) % 2) * 0.03
+		local size = Vector3.new(length, top - LAWN_BOTTOM, 2 * math.pi * LAWN_TO / 360 + 1.2)
+		local cf = Architecture.alongX(dir * ((LAWN_FROM + LAWN_TO) / 2) + Vector3.new(0, (top + LAWN_BOTTOM) / 2, 0), dir)
 		workspace.Terrain:FillBlock(cf - Vector3.new(0, cf.Y + 2, 0), Vector3.new(size.X, 4, size.Z), Enum.Material.Air)
 		b:box("Lawn", size, cf, "Lawn")
 	end
