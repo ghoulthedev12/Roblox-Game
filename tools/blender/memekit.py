@@ -19,7 +19,9 @@ from mathutils import Euler, Matrix, Vector
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "assets", "models")
 PALETTE_PNG = os.path.join(OUT, "meme_palette.png")
-CELL, GRID = 32, 16  # 16 x 16 cells of 32 px = a 512 x 512 palette
+# 32 x 32 cells of 32 px = a 1024 x 1024 palette (was 16 x 16 until the full meme remodel:
+# every exported .fbx embeds its own copy of the palette, so meshes imported before keep theirs)
+CELL, GRID = 32, 32
 
 # The palette: name -> (r, g, b) 0-255. New colors are added at the end so old models
 # keep their UVs.
@@ -106,8 +108,10 @@ class Meme:
     def __init__(self, name):
         self.name = name
         self.parts = []
+        self.colors = []  # the palette color of each part (for recolor)
 
     def _add(self, obj, color, smooth=True):
+        self.colors.append(color)
         me = obj.data
         if not me.uv_layers:
             me.uv_layers.new(name="UVMap")
@@ -118,6 +122,32 @@ class Meme:
             poly.use_smooth = smooth
         self.parts.append(obj)
         return obj
+
+    def recolor(self, mapping):
+        """Repaints every part made so far: mapping = {old color: new color}. Used to turn one
+        meme into its themed variants (cyber, void, golden...)."""
+        for i, (obj, color) in enumerate(zip(self.parts, self.colors)):
+            if color in mapping:
+                u, v = cell_uv(mapping[color])
+                for loop in obj.data.uv_layers.active.data:
+                    loop.uv = (u, v)
+                self.colors[i] = mapping[color]
+        return self
+
+    def absorb(self, other):
+        """Takes over every part of another meme (built, recolored and moved first), so one
+        meme can contain others: a crowd, a throne of memes, mini figures on dice."""
+        self.parts += other.parts
+        self.colors += other.colors
+        other.parts, other.colors = [], []
+        return self
+
+    def transform(self, loc=(0, 0, 0), scale=1.0, rot_z=0.0):
+        """Scales, turns (about z, degrees) and then moves every part made so far."""
+        mat = Matrix.Translation(loc) @ Matrix.Rotation(math.radians(rot_z), 4, "Z") @ Matrix.Scale(scale, 4)
+        for obj in self.parts:
+            obj.data.transform(mat)
+        return self
 
     def _place(self, obj, loc, rot, scale):
         obj.location = loc
@@ -207,6 +237,101 @@ class Meme:
         bpy.context.scene.collection.objects.link(o)
         return self._add(o, color)
 
+    def lathe(self, color, profile, loc=(0, 0, 0), rot=(0, 0, 0), seg=32, scale=(1, 1, 1)):
+        """A turned shape (cups, bottles, vases, bells): profile = [(radius, z), ...] bottom to
+        top, spun around the local Z axis. Ends with radius 0 close to a point."""
+        bm = bmesh.new()
+        rings = []
+        for r, z in profile:
+            if r <= 1e-4:
+                rings.append([bm.verts.new((0, 0, z))])
+            else:
+                rings.append([bm.verts.new((math.cos(a) * r, math.sin(a) * r, z))
+                              for a in [2 * math.pi * k / seg for k in range(seg)]])
+        for a, b in zip(rings, rings[1:]):
+            if len(a) == 1 and len(b) == 1:
+                continue
+            if len(a) == 1:
+                for k in range(seg):
+                    bm.faces.new((a[0], b[k], b[(k + 1) % seg]))
+            elif len(b) == 1:
+                for k in range(seg):
+                    bm.faces.new((a[k], a[(k + 1) % seg], b[0]))
+            else:
+                for k in range(seg):
+                    bm.faces.new((a[k], a[(k + 1) % seg], b[(k + 1) % seg], b[k]))
+        if len(rings[0]) > 1:
+            bm.faces.new(list(reversed(rings[0])))
+        if len(rings[-1]) > 1:
+            bm.faces.new(rings[-1])
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        me = bpy.data.meshes.new("lathe")
+        bm.to_mesh(me)
+        bm.free()
+        o = bpy.data.objects.new("lathe", me)
+        bpy.context.scene.collection.objects.link(o)
+        self._place(o, loc, rot, scale)
+        return self._add(o, color)
+
+    def relief(self, color, pts, thick, loc=(0, 0, 0), rot=(0, 0, 0), bevel=0.03, smooth=False):
+        """A flat cut-out drawn in the x-z plane (pts = [(x, z), ...], seen from the front) and
+        given some thickness along y: signs, ears, leaves, flames, lightning bolts, letters."""
+        bm = bmesh.new()
+        front = [bm.verts.new((x, -thick / 2, z)) for x, z in pts]
+        back = [bm.verts.new((x, thick / 2, z)) for x, z in pts]
+        bm.faces.new(front)
+        bm.faces.new(back[::-1])
+        n = len(pts)
+        for i in range(n):
+            j = (i + 1) % n
+            bm.faces.new((front[i], front[j], back[j], back[i]))
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        if bevel > 0:
+            try:
+                bmesh.ops.bevel(bm, geom=bm.edges[:], offset=bevel, segments=2, affect="EDGES", clamp_overlap=True)
+            except Exception:
+                pass
+        me = bpy.data.meshes.new("relief")
+        bm.to_mesh(me)
+        bm.free()
+        o = bpy.data.objects.new("relief", me)
+        bpy.context.scene.collection.objects.link(o)
+        self._place(o, loc, rot, (1, 1, 1))
+        return self._add(o, color, smooth=smooth)
+
+    def text(self, color, body, loc=(0, 0, 0), size=0.5, depth=0.06, rot=(0, 0, 0), bold=True):
+        """3D letters standing up and facing the front (-y), centered on loc."""
+        bpy.ops.object.text_add()
+        o = bpy.context.object
+        o.data.body = body
+        o.data.size = size
+        o.data.extrude = depth / 2
+        o.data.align_x = "CENTER"
+        o.data.align_y = "CENTER"
+        o.data.bevel_depth = 0.008 if bold else 0
+        bpy.ops.object.convert(target="MESH")
+        o = bpy.context.object
+        self._place(o, loc, (90 + rot[0], rot[1], rot[2]), (1, 1, 1))
+        return self._add(o, color, smooth=False)
+
+    def eye(self, loc, size, iris="black", look=(0.0, 0.0), white="white", pupil=None, shine=True, lid=None, lid_drop=0.0):
+        """A cartoon eye on a face that faces -y: a white ball, an iris (and pupil) on its front,
+        a shine dot, and an optional eyelid (lid color) closed by lid_drop (0 = open, 1 = shut).
+        size = (width, depth, height); look shifts the iris (x, z) as a fraction of the eye."""
+        w, d, h = size
+        x, y, z = loc
+        self.blob(white, (w, d, h), loc)
+        ix, iz = x + look[0] * w * 0.3, z + look[1] * h * 0.3
+        self.blob(iris, (w * 0.56, d * 0.4, h * 0.56), (ix, y - d * 0.36, iz))
+        if pupil:
+            self.blob(pupil, (w * 0.28, d * 0.3, h * 0.28), (ix, y - d * 0.45, iz))
+        if shine:
+            self.blob("white", (w * 0.16, d * 0.2, h * 0.16), (ix + w * 0.1, y - d * 0.5, iz + h * 0.12))
+        if lid:
+            drop = max(0.0, min(1.0, lid_drop))
+            self.blob(lid, (w * 1.08, d * 1.06, h * 0.6), (x, y - d * 0.02, z + h * (0.42 - drop * 0.42)))
+        return self
+
     # --- finishing ------------------------------------------------------------------------
     def finish(self, max_tris=9000):
         bpy.ops.object.select_all(action="DESELECT")
@@ -274,6 +399,54 @@ def export(obj, name):
                              axis_forward="-Z", axis_up="Y", mesh_smooth_type="FACE", path_mode="COPY", embed_textures=True,
                              bake_space_transform=True)
     return path
+
+
+def sheet(builders, path, per_row=6, cell=360, angle=25):
+    """Builds memes side by side (rows of per_row) and renders one contact sheet of them, seen
+    from the front three-quarter view, to review a whole batch at once."""
+    reset()
+    objs = []
+    for i, build in enumerate(builders):
+        obj = build().finish()
+        row, col = divmod(i, per_row)
+        obj.location = (col * 7.0, 0, -row * 7.4)
+        objs.append(obj)
+    rows = (len(objs) + per_row - 1) // per_row
+    cols = min(per_row, len(objs))
+    scene = bpy.context.scene
+    cam = bpy.data.objects.new("SheetCam", bpy.data.cameras.new("SheetCam"))
+    scene.collection.objects.link(cam)
+    cam.data.type = "ORTHO"
+    a = math.radians(angle)
+    rot = Euler((math.radians(80), 0, a))
+    cam.rotation_euler = rot
+    # aim at the middle of the grid, far away along the view direction
+    mid = Vector(((cols - 1) * 7.0 / 2, 0, 2.6 - (rows - 1) * 7.4 / 2))
+    view = rot.to_matrix() @ Vector((0, 0, -1))
+    cam.location = mid - view * 60
+    cam.data.ortho_scale = max(cols * 7.0, rows * 7.4) * 1.02
+    for i, (r, energy) in enumerate([((50, 0, 35), 3.5), ((60, 0, -120), 1.2)]):
+        sun = bpy.data.objects.new("Sun%d" % i, bpy.data.lights.new("Sun%d" % i, "SUN"))
+        sun.data.energy = energy
+        sun.rotation_euler = Euler([math.radians(v) for v in r])
+        scene.collection.objects.link(sun)
+    world = bpy.data.worlds.new("W")
+    world.use_nodes = True
+    world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.75, 0.82, 0.92, 1)
+    world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.8
+    scene.world = world
+    scene.camera = cam
+    scene.render.engine = "CYCLES"
+    scene.cycles.device = "CPU"
+    scene.cycles.samples = 16
+    scene.cycles.use_denoising = False
+    w = cols * cell
+    scene.render.resolution_x = w
+    scene.render.resolution_y = int(w * rows * 7.4 / (cols * 7.0))
+    scene.render.filepath = path
+    scene.view_settings.view_transform = "Standard"
+    bpy.ops.render.render(write_still=True)
+    return objs
 
 
 def render(objs, path, size=(512, 512), angle=25):

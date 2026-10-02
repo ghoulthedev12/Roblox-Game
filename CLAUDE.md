@@ -19,8 +19,16 @@ game systems. The owner is a beginner on Windows: explain steps simply, one at a
 
 ## 3D assets (made in Blender with the bpy module)
 - `tools/blender/memekit.py`: shared kit + palette texture (`assets/models/meme_palette.png`,
-  16x16 cells; only ever APPEND new colors, or old models' UVs break).
-- Memes: `tools/blender/memes_batch*.py` + `build_memes.py` -> `assets/models/MemeMeshes.fbx`.
+  32x32 cells since the full meme remodel; only ever APPEND new colors). Each .fbx embeds its
+  own copy of the palette, so meshes imported earlier keep theirs. Kit extras: lathe, relief,
+  text, eye, recolor/transform/absorb (themed variants and memes inside memes), sheet.
+- Memes: all 180 are Blender models: `tools/blender/memes_batch1..13.py` (batches 1-4 = the
+  original 41, remodeled; 5-13 = worlds 1-9) + `memeparts.py` (person builder, faces) ->
+  `build_memes.py` -> `assets/models/MemeMeshes.fbx`. Review a batch with
+  `blender -b --factory-startup --python tools/blender/meme_sheet.py -- memes_batchN`
+  (contact sheet in assets/models/previews). Batch colors are appended in batch order; a later
+  batch may use an earlier batch's colors (the sheet/build scripts load every batch).
+  `person(...)`'s arm/leg points are RELATIVE to the figure (x, y, z args move it).
 - Portals: `tools/blender/portals.py` -> `PortalMeshes.fbx` + `src/shared/PortalMeshes.lua`.
 - UI icons: `tools/blender/ui_icons.py` -> `UIIcons.fbx`, pictures in `assets/ui/icons`,
   `src/shared/UIIconList.lua`. Shown with `UIKit.icon(parent, "Name")`.

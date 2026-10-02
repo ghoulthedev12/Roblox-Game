@@ -1,255 +1,238 @@
-"""Batch 3 of the meme sculptures (conventions: z is up, the model faces -y, about 4-5 studs tall)."""
+"""Batch 3 of the meme sculptures (remodeled in the full meme remodel, same ids).
+Conventions: z is up, the model faces -y, about 4-5 studs tall. Original parody designs."""
 import math
 
 from memekit import Meme
+import memeparts as mp
 
 
 def coffin_dance():
     m = Meme("FrozenCoffinDance")
-    m.squircle("ice", (4.2, 2.0, 0.3), (0, 0, 0.15), power=5)  # frozen base
-
-    def bearer(x, y, step):
-        for s in (-1, 1):  # legs mid dance step
-            lift = 0.25 if (s > 0) == step else 0
-            m.tube("ink", [(x + s * 0.13, y, 1.25), (x + s * 0.15, y - lift * 0.6, 0.75 + lift), (x + s * 0.15, y - lift, 0.4 + lift)], 0.09)
-            m.squircle("black", (0.2, 0.36, 0.14), (x + s * 0.15, y - 0.06 - lift, 0.36 + lift))
-        m.squircle("ink", (0.55, 0.36, 0.75), (x, y, 1.6), power=3)  # suit jacket
-        m.squircle("white", (0.14, 0.05, 0.4), (x, y - 0.18, 1.72))  # shirt
-        m.squircle("black", (0.06, 0.05, 0.3), (x, y - 0.2, 1.7))  # tie
-        m.blob("skin2", (0.36, 0.36, 0.42), (x, y, 2.18))  # head
-        m.squircle("black", (0.36, 0.08, 0.1), (x, y - 0.18, 2.22))  # sunglasses
-        m.tube("ink", [(x + 0.25, y, 1.9), (x + 0.3, y, 2.35), (x + 0.25, y, 2.55)], 0.07)  # arm up holding the coffin
-        m.tube("ink", [(x - 0.25, y, 1.9), (x - 0.4, y - 0.2, 1.55)], 0.07)
-    for i, (x, y) in enumerate([(-1.2, -0.45), (1.2, -0.45), (-1.2, 0.45), (1.2, 0.45)]):
-        bearer(x, y, i % 2 == 0)
-    m.squircle("darkbrown", (3.4, 1.1, 0.5), (0, 0, 2.82), power=6)  # the coffin
-    m.squircle("brown", (3.3, 1.0, 0.18), (0, 0, 3.12), power=6)  # lid
-    for x in (-1.3, 1.3):
-        m.squircle("gold", (0.1, 1.12, 0.12), (x, 0, 2.82))  # gold handles
-    m.squircle("gold", (0.6, 0.06, 0.08), (0, -0.52, 2.9))
+    # four pallbearers in suits and shades carrying a coffin on their shoulders, gliding on ice
+    m.squircle("ice", (4.0, 2.2, 0.15), (0, 0, 0.07), power=3)
+    for k in range(5):
+        m.box("white", (0.8, 0.02, 0.02), (-1.5 + k * 0.75, -0.6 + (k % 2) * 1.0, 0.15), rot=(0, 0, 20), bevel=0)  # skate marks
+    for k, (x, y) in enumerate(((-1.25, -0.45), (1.25, -0.45), (-1.25, 0.45), (1.25, 0.45))):
+        side = 1 if x > 0 else -1
+        mp.person(m, skin="skin4", shirt="suit", pants="suit", shoes="black", hair="hairblack", hair_style="fade",
+                  height=0.7, build=0.68, head=0.62, x=x, y=y, expr="smile", sole=None,
+                  face_kw={"brows": None},
+                  # (arm and leg points are relative to each dancer)
+                  arms={("l" if side > 0 else "r"): ((-side * 0.45, 0.0, 2.5), (-side * 0.35, 0.0, 3.15)),  # inner hand up on the coffin
+                        ("r" if side > 0 else "l"): ((side * 0.5, -0.1, 1.55), (side * 0.55, -0.25, 1.15))},
+                  legs={-1: ((-0.2, -0.15, 0.6), (-0.22, -0.1, 0.12)), 1: ((0.2, 0.1, 0.62), (0.22, 0.12, 0.12))})
+    for k, (x, y) in enumerate(((-1.25, -0.45), (1.25, -0.45))):
+        m.squircle("black", (0.55, 0.1, 0.12), (x, y - 0.33, 2.63), power=4)  # shades on the front two
+    m.squircle("coffin", (3.4, 1.4, 0.55), (0, 0, 3.45), power=5)  # the coffin
+    m.squircle("darkbrown", (3.45, 1.45, 0.12), (0, 0, 3.75), power=5)  # lid
+    for s in (-1, 1):
+        m.box("gold", (0.5, 0.06, 0.1), (s * 1.0, -0.72, 3.45), bevel=0.02)  # handles
+    m.relief("gold", [(-0.06, -0.25), (0.06, -0.25), (0.06, 0.05), (0.2, 0.05), (0.2, 0.15), (0.06, 0.15), (0.06, 0.25), (-0.06, 0.25),
+                      (-0.06, 0.15), (-0.2, 0.15), (-0.2, 0.05), (-0.06, 0.05)], 0.03, (0, 0, 3.82), rot=(90, 0, 0), bevel=0)
     return m
 
 
 def big_mittens_chair():
     m = Meme("BigMittensChair")
-    for x in (-0.6, 0.6):  # folding chair legs, crossed
-        m.tube("darkgray", [(x, -0.55, 0.0), (x, 0.45, 1.3)], 0.05)
-        m.tube("darkgray", [(x, 0.45, 0.0), (x, -0.4, 1.3)], 0.05)
-        m.tube("darkgray", [(x, 0.45, 1.3), (x, 0.5, 2.6)], 0.05)
-    m.squircle("brown", (1.4, 1.1, 0.12), (0, 0, 1.32), power=5)  # seat
-    m.squircle("brown", (1.4, 0.12, 0.7), (0, 0.5, 2.25), power=5)  # backrest
-    # a puffy brown parka hung over the chair back
-    m.squircle("mitten", (1.5, 0.45, 1.1), (0, 0.55, 2.2), power=2.6)
-    m.blob("khaki", (1.2, 0.5, 0.35), (0, 0.5, 2.82))  # fur-trimmed hood edge
-    m.squircle("envelope", (0.75, 0.5, 0.05), (0.25, -0.15, 1.4), rot=(0, 0, 15), power=8)  # manila envelope
-
-    def mitten(x, side):
-        # a big knitted mitten standing up on the seat, leaning back, thumb out to the side
-        m.squircle("mitten", (0.66, 0.3, 0.28), (x, -0.05, 1.5), rot=(-12, 0, 0), power=3)  # cuff
-        m.squircle("cream", (0.62, 0.3, 0.86), (x, 0.0, 2.02), rot=(-12, 0, 0), power=2.3)  # hand
-        m.blob("cream", (0.26, 0.26, 0.42), (x + side * 0.36, -0.05, 1.86), rot=(-12, side * -35, 0))  # thumb
-        for i in range(3):  # knit pattern: little red and brown diamonds on the back
-            for j in range(2):
-                m.blob("red" if (i + j) % 2 == 0 else "mitten", (0.12, 0.06, 0.12),
-                       (x - 0.13 + j * 0.26, -0.17 + i * 0.03, 1.82 + i * 0.2), rot=(-12, 0, 45))
-    mitten(-0.36, -1)
-    mitten(0.36, 1)
+    # a folding chair with a pair of huge cozy knitted mittens resting on it, legs crossed
+    for sx in (-1, 1):  # folding chair frame
+        m.cyl("darkgray", 0.04, 2.0, (sx * 0.55, 0.0, 0.95), rot=(18, 0, 0), seg=8)
+        m.cyl("darkgray", 0.04, 2.6, (sx * 0.55, 0.05, 1.3), rot=(-18, 0, 0), seg=8)
+    m.squircle("wood", (1.25, 1.0, 0.1), (0, 0.0, 1.0), power=6)
+    m.squircle("wood", (1.25, 0.12, 0.6), (0, 0.45, 2.15), rot=(-12, 0, 0), power=6)
+    m.squircle("jeans", (1.2, 0.9, 0.35), (0, -0.05, 1.25), power=3)  # folded coat on the seat
+    for s in (-1, 1):
+        x = s * 0.4
+        m.squircle("mitten", (0.7, 0.55, 0.95), (x, -0.3, 1.85), rot=(0, s * 12, 0), power=2.3)  # mittens
+        m.squircle("mitten", (0.25, 0.3, 0.4), (x + s * 0.38, -0.4, 2.05), rot=(0, s * 35, 0), power=2.3)  # thumbs
+        m.squircle("cream", (0.75, 0.6, 0.3), (x, -0.25, 1.35), power=3)  # cuffs
+        for k in range(3):
+            m.torus("envelope", 0.32, 0.02, (x, -0.3, 1.6 + k * 0.22), rot=(0, s * 12, 0), scale=(1, 0.8, 1))  # knit rows
+        for k in range(4):
+            m.blob("red", (0.08, 0.05, 0.08), (x - 0.15 + k * 0.1, -0.58, 1.95 + (k % 2) * 0.12))  # knit dots
+    for s in (-1, 1):  # crossed legs in winter boots
+        m.tube("jeans", [(s * 0.3, -0.4, 1.15), (s * -0.05 - 0.1, -0.95, 1.0), (s * -0.2, -1.1, 0.4)], 0.17)
+        m.squircle("brown", (0.35, 0.55, 0.3), (s * -0.2, -1.2, 0.2), power=2.5)
     return m
 
 
 def sea_shanty_mug():
     m = Meme("SeaShantyMug")
-    m.cyl("lightwood", 0.8, 1.8, (0, 0, 0.9), seg=36)  # tankard
-    for z in (0.25, 1.55):
-        m.torus("darkgray", 0.8, 0.05, (0, 0, z))  # iron bands
-    for k in range(10):  # wooden staves
-        a = k / 10 * math.tau
-        m.squircle("wood", (0.06, 0.06, 1.75), (math.cos(a) * 0.79, math.sin(a) * 0.79, 0.9))
-    m.torus("wood", 0.45, 0.12, (0.95, 0, 0.95), rot=(90, 0, 0), scale=(1, 1, 1.3))  # handle
-    m.blob("foam", (1.75, 1.75, 0.55), (0, 0, 1.85))  # foam top
-    for k in range(8):
-        a = k / 8 * math.tau
-        m.blob("foam", (0.4, 0.4, 0.35), (math.cos(a) * 0.75, math.sin(a) * 0.75, 1.75))  # foam spilling over
-    # a tiny whaling ship sailing on the foam, and a whale tail splashing
-    m.squircle("brown", (0.9, 0.35, 0.25), (-0.15, -0.1, 2.15), power=3)
-    m.cyl("darkbrown", 0.03, 0.9, (-0.15, -0.1, 2.65))
-    m.squircle("white", (0.55, 0.04, 0.5), (-0.1, -0.1, 2.75), power=6)  # sail
-    m.blob("navy", (0.25, 0.15, 0.25), (0.45, 0.25, 2.2), rot=(0, 30, 0))  # whale tail
-    m.blob("navy", (0.35, 0.12, 0.15), (0.55, 0.25, 2.4), rot=(0, -20, 0))
+    # a foaming wooden tankard with a little whaling ship sailing on its head of foam
+    m.lathe("wood", [(0, 0), (0.95, 0), (1.0, 0.15), (0.95, 2.1), (1.0, 2.25), (0, 2.25)], (0, 0, 0), seg=40)
+    for k in range(12):  # staves
+        a = k / 12 * math.tau
+        m.box("darkbrown", (0.04, 0.04, 2.1), (math.cos(a) * 0.98, math.sin(a) * 0.98, 1.1), rot=(0, 0, math.degrees(a)), bevel=0)
+    for z in (0.35, 1.9):
+        m.torus("darkgray", 1.0, 0.07, (0, 0, z))
+    m.tube("wood", [(0.95, 0, 1.75), (1.55, 0, 1.6), (1.6, 0, 0.75), (0.95, 0, 0.6)], 0.13)  # handle
+    for k in range(9):  # spilling foam
+        a = k / 9 * math.tau
+        m.blob("foam", (0.75, 0.75, 0.55), (math.cos(a) * 0.55, math.sin(a) * 0.55, 2.35))
+    m.blob("foam", (0.4, 0.3, 0.7), (-0.9, -0.4, 1.9))  # drip
+    # the little whaling ship riding the foam
+    m.squircle("darkbrown", (1.1, 0.45, 0.35), (0, 0, 2.85), power=2.5)
+    m.cyl("wood", 0.03, 1.1, (0, 0, 3.45), seg=6)
+    m.relief("white", [(0, 0), (0.55, 0), (0.45, 0.7), (0, 0.8)], 0.03, (0.02, 0, 3.05))
+    m.relief("red", [(0, 0), (0.25, 0.08), (0, 0.16)], 0.02, (0, 0, 3.98))
+    for k in range(3):
+        m.blob("black", (0.18, 0.08, 0.14), (-1.3 + k * 0.4, -0.3, 3.0 + k * 0.25), rot=(0, -20, 0))
+        m.cyl("black", 0.02, 0.4, (-1.22 + k * 0.4, -0.3, 3.2 + k * 0.25), seg=6)
     return m
 
 
 def bing_chilling_cone():
     m = Meme("BingChillingCone")
-    m.cyl("darkgray", 0.55, 0.25, (0, 0, 0.12), seg=32)  # cone stand
-    m.cyl("lightgray", 0.3, 0.6, (0, 0, 0.5), seg=24, radius2=0.45)
-    m.cyl("waffle", 0.08, 2.4, (0, 0, 1.75), seg=32, radius2=0.62, rot=(0, 0, 0))  # waffle cone (point down)
-    for k in range(5):  # waffle grid
-        m.torus("lightwood", 0.15 + k * 0.1, 0.025, (0, 0, 1.0 + k * 0.42))
-    m.torus("lightwood", 0.62, 0.06, (0, 0, 2.95))
-    m.blob("mint", (1.3, 1.3, 1.05), (0, 0, 3.3))  # mint scoop
-    m.blob("chocolate", (1.15, 1.15, 0.95), (0, 0, 4.05))  # chocolate scoop
-    for k in range(7):  # choc chips
-        a = k / 7 * math.tau
-        m.blob("chocolate", (0.12, 0.12, 0.1), (math.cos(a) * 0.6, math.sin(a) * 0.6, 3.3 + (k % 2) * 0.2))
-    m.blob("chocolate", (0.4, 0.4, 0.5), (0, 0, 4.55))  # swirl tip
-    for k in range(6):  # frosty sparkles
-        a = k / 6 * math.tau
-        m.blob("ice", (0.12, 0.12, 0.12), (math.cos(a) * 1.0, math.sin(a) * 1.0, 3.8 + math.sin(a * 2) * 0.4))
+    # a waffle cone with three scoops (mint, vanilla, chocolate), cold mist, on a little stand
+    m.lathe("darkgray", [(0, 0), (0.7, 0), (0.7, 0.12), (0.25, 0.22), (0.2, 0.7), (0.4, 0.8), (0, 0.8)], (0, 0, 0), seg=32)
+    m.lathe("waffle", [(0, 0.7), (0.15, 0.75), (0.85, 3.0), (0.9, 3.05), (0, 3.05)], (0, 0, 0), seg=32)  # cone
+    for k in range(7):  # waffle grid
+        m.tube("tan", [(math.cos(k) * 0.3, math.sin(k) * 0.3, 1.2), (math.cos(k + 1.2) * 0.8, math.sin(k + 1.2) * 0.8, 2.8)], 0.02, seg=4)
+        m.tube("tan", [(math.cos(k) * 0.3, math.sin(k) * 0.3, 1.2), (math.cos(k - 1.2) * 0.8, math.sin(k - 1.2) * 0.8, 2.8)], 0.02, seg=4)
+    for k, (c, z, r) in enumerate((("mint", 3.3, 0.95), ("cream", 3.95, 0.82), ("chocolate", 4.5, 0.7))):
+        m.blob(c, (r * 2, r * 2, r * 1.6), (0, 0, z))
+        for j in range(8):
+            a = j / 8 * math.tau
+            m.blob(c, (0.3, 0.3, 0.25), (math.cos(a) * r * 0.95, math.sin(a) * r * 0.95, z - r * 0.55))  # drippy rim
+    for k in range(10):
+        a = k * 2.4
+        m.blob("chocolate", (0.1, 0.06, 0.06), (math.cos(a) * 0.85, math.sin(a) * 0.85, 3.3 + (k % 3) * 0.12))  # chips
+    for k in range(4):  # cold mist
+        m.blob("ice", (0.3, 0.3, 0.3), (1.0 + (k % 2) * 0.2, -0.2, 4.0 + k * 0.3))
     return m
 
 
 def its_corn_cob():
     m = Meme("ItsCornCob")
-    m.squircle("gold", (1.6, 1.1, 0.35), (0, 0, 0.18), power=5)  # gold stand
-    m.squircle("ink", (1.0, 0.06, 0.25), (0, -0.56, 0.2), power=8)  # plaque
-    # the cob, standing tall, kernel by kernel
-    m.cyl("corn", 0.48, 3.0, (0, 0, 2.0), seg=24)
-    for row in range(12):
-        z = 0.7 + row * 0.23
-        r = 0.5 - abs(row - 5.5) * 0.012
+    # a big juicy corn cob standing up in its husk, kernels in neat rows, glistening with butter
+    m.squircle("darkgray", (1.6, 1.6, 0.25), (0, 0, 0.12), power=4)
+    m.lathe("corn", [(0, 0.3), (0.45, 0.35), (0.62, 1.0), (0.66, 2.5), (0.55, 3.6), (0.3, 4.1), (0, 4.2)], (0, 0, 0), seg=24)
+    for row in range(14):  # kernel rows
+        a = row / 14 * math.tau
         for k in range(14):
-            a = (k + (row % 2) * 0.5) / 14 * math.tau
-            m.blob("corn", (0.2, 0.2, 0.2), (math.cos(a) * r, math.sin(a) * r, z), seg=8)
-    m.blob("corn", (0.85, 0.85, 0.5), (0, 0, 3.5))  # rounded top
-    for k, a in enumerate((0, 120, 240)):  # husk leaves peeled down
-        r = math.radians(a)
-        m.blob("husk", (0.5, 0.18, 1.6), (math.cos(r) * 0.6, math.sin(r) * 0.6, 1.0), rot=(0, 0, a + 90))
-        m.blob("husk", (0.4, 0.14, 1.0), (math.cos(r) * 0.85, math.sin(r) * 0.85, 0.7), rot=(25 * math.cos(r), -25 * math.sin(r), a + 90))
+            z = 0.55 + k * 0.25
+            r = 0.62 if 1.0 < z < 3.0 else 0.55
+            m.blob("yellow", (0.16, 0.14, 0.18), (math.cos(a) * r, math.sin(a) * r, z))
+    for k in range(5):  # husk leaves peeling down
+        a = k / 5 * math.tau + 0.3
+        m.relief("husk", [(-0.25, 0), (0.25, 0), (0.15, 1.6), (0, 2.1), (-0.15, 1.5)], 0.06, (math.cos(a) * 0.65, math.sin(a) * 0.65, 0.3),
+                 rot=(0, 0, math.degrees(a) + 90), bevel=0.02)
+    for k in range(4):  # butter drips
+        m.blob("cheese", (0.15, 0.1, 0.35), (math.cos(k * 1.7) * 0.66, math.sin(k * 1.7) * 0.66, 3.4 - k * 0.3))
+    m.blob("cheese", (0.6, 0.45, 0.15), (0, 0, 4.15))  # butter pat on top
     return m
 
 
 def mauling_time_cape():
     m = Meme("MaulingTimeVampire")
-    m.squircle("ink", (2.6, 1.4, 0.3), (0, 0, 0.15), power=5)  # dark stone base
-    for s in (-1, 1):  # legs
-        m.tube("ink", [(s * 0.2, 0, 1.6), (s * 0.24, 0, 0.35)], 0.12)
-        m.squircle("black", (0.25, 0.5, 0.2), (s * 0.24, -0.1, 0.38))
-    m.squircle("ink", (0.8, 0.5, 1.2), (0, 0, 2.2), power=3)  # body
-    m.squircle("white", (0.3, 0.06, 0.6), (0, -0.25, 2.4))  # shirt
-    m.blob("red", (0.14, 0.06, 0.1), (0, -0.28, 2.65))  # red gem at the collar
-    # the cape held wide like bat wings: arms up and out, the cape stretched between
+    # a pale vampire flinging open a huge bat-wing cape, fangs out: it's mauling time
+    p = mp.person(m, skin="marble", shirt="black", pants="black", shoes="black", hair="hairblack", hair_style="slick",
+                  expr="open", face_kw={"brow_tilt": 0.6, "iris": "red", "teeth": True},
+                  arms={"l": ((-1.0, -0.1, 3.0), (-1.65, -0.2, 3.5)), "r": ((1.0, -0.1, 3.0), (1.65, -0.2, 3.5))})
+    hc, hs = p["head"], p["head_size"]
     for s in (-1, 1):
-        m.tube("ink", [(s * 0.4, 0, 2.7), (s * 1.1, -0.05, 3.15), (s * 1.7, -0.1, 3.4)], 0.09)  # arms
-        m.blob("lightgray", (0.16, 0.16, 0.2), (s * 1.75, -0.1, 3.45))  # pale hands
-        for k in range(5):  # the wing panels, scalloped at the bottom
-            x = s * (0.4 + k * 0.32)
-            top = 3.0 + k * 0.08
-            m.squircle("black", (0.36, 0.08, top - 0.9 + k * 0.1), (x, 0.12, (top + 0.9 + k * 0.1) / 2), power=2.4)
-            m.squircle("darkred", (0.3, 0.05, top - 1.1 + k * 0.1), (x, 0.06, (top + 1.1 + k * 0.1) / 2), power=2.4)
-    m.squircle("black", (1.1, 0.1, 0.8), (0, 0.15, 3.15), power=3)  # tall stand-up collar
-    m.squircle("darkred", (0.95, 0.06, 0.7), (0, 0.09, 3.12), power=3)
-    m.cyl("lightgray", 0.12, 0.25, (0, 0, 2.95))  # neck
-    m.blob("lightgray", (0.5, 0.48, 0.62), (0, 0, 3.35))  # pale head
-    m.blob("black", (0.54, 0.52, 0.3), (0, 0.04, 3.58))  # slicked hair
-    m.blob("black", (0.16, 0.1, 0.18), (0, -0.2, 3.55))  # widow's peak
-    for s in (-1, 1):
-        m.blob("red", (0.08, 0.05, 0.06), (s * 0.11, -0.22, 3.38))  # glowing eyes
-        m.cyl("white", 0.025, 0.08, (s * 0.06, -0.23, 3.17), rot=(180, 0, 0), radius2=0.0)  # fangs
-    m.blob("black", (0.5, 0.25, 0.15), (1.2, -0.7, 4.2))  # a bat flying past
-    for s in (-1, 1):
-        m.blob("black", (0.35, 0.05, 0.16), (1.2 + s * 0.3, -0.7, 4.25), rot=(0, s * 25, 0))
+        m.cyl("teeth", 0.04, 0.16, (hc.x + s * 0.08, hc.y - hs * 0.45, hc.z - 0.35), rot=(180, 0, 0), radius2=0.0, seg=6)  # fangs
+        # the cape: a scalloped bat wing from the shoulders to the raised hands
+        pts = [(0.4, 1.0), (1.65, 3.5), (1.55, 2.6), (1.25, 2.9), (1.05, 2.0), (0.8, 2.3), (0.6, 1.4)]
+        m.relief("darkred", [(s * x, z) for x, z in pts], 0.08, (0, 0.3, 0), bevel=0.02)
+        m.relief("black", [(s * (x + 0.03), z + 0.02) for x, z in pts], 0.06, (0, 0.38, 0), bevel=0.02)
+    m.squircle("darkred", (1.4, 0.3, 0.7), (0, 0.2, p["shoulder_z"] + 0.35), power=3)  # high collar
+    m.blob("red", (0.18, 0.06, 0.18), (0, -0.37, p["shoulder_z"] - 0.1))  # gem brooch
+    for k in range(3):  # bats
+        m.relief("black", [(-0.3, 0), (-0.1, 0.05), (0, -0.05), (0.1, 0.05), (0.3, 0), (0.15, -0.1), (0, -0.15), (-0.15, -0.1)],
+                 0.03, (-1.2 + k * 1.2, -0.3, 5.0 + (k % 2) * 0.3))
     return m
 
 
 def shailushai_cat():
     m = Meme("ShailushaiCat")
-    m.blob("husk", (2.4, 1.8, 0.2), (0, 0.1, 0.08))  # mossy forest floor
-    for x, y in ((-0.8, 0.4), (0.9, -0.2), (0.6, 0.6)):  # tiny mushrooms
-        m.cyl("cream", 0.06, 0.25, (x, y, 0.28))
-        m.blob("red", (0.3, 0.3, 0.16), (x, y, 0.42))
-    for s in (-1, 1):  # walking legs in white pants
-        m.tube("white", [(s * 0.2, 0, 1.1), (s * 0.22, -0.15 * s, 0.5), (s * 0.22, -0.2 * s, 0.25)], 0.15)
-        m.blob("smurf", (0.26, 0.4, 0.18), (s * 0.22, -0.28 * s, 0.18))
-    m.blob("white", (0.75, 0.6, 0.5), (0, 0, 1.15))  # pants
-    m.blob("smurf", (0.8, 0.65, 1.0), (0, 0, 1.65))  # body
+    # a lanky blue cat in a white beanie, walking through the catacombs past a mushroom
+    m.squircle("green", (2.8, 2.0, 0.15), (0, 0, 0.07), power=3)
+    for x, y in ((-1.0, -0.5), (1.1, -0.3)):
+        m.cyl("cream", 0.07, 0.3, (x, y, 0.3), seg=8)
+        m.blob("red", (0.35, 0.35, 0.2), (x, y, 0.48))
+        m.blob("white", (0.07, 0.04, 0.05), (x + 0.08, y - 0.15, 0.53))
+    for s, (knee, foot) in ((-1, ((-0.2, -0.3, 0.9), (-0.25, -0.45, 0.15))), (1, ((0.25, 0.25, 0.85), (0.25, 0.4, 0.2)))):  # walking
+        m.tube("smurf", [(s * 0.2, 0, 1.5), knee, foot], 0.12)
+        m.squircle("white", (0.3, 0.5, 0.2), (foot[0], foot[1] - 0.1, foot[2]), power=2.5)
+    m.squircle("smurf", (0.9, 0.7, 1.3), (0, 0, 2.1), power=2.3)
+    m.squircle("white", (0.92, 0.72, 0.4), (0, 0, 1.55), power=2.5)  # white shorts
     for s in (-1, 1):
-        m.tube("smurf", [(s * 0.38, 0, 1.9), (s * 0.55, -0.1 * s, 1.45)], 0.09)
-    m.tube("smurf", [(0, 0.3, 1.3), (0.2, 0.7, 1.5), (0.1, 0.9, 1.9)], 0.08)  # tail
-    m.blob("smurf", (0.95, 0.85, 0.85), (0, -0.05, 2.5))  # head
-    m.blob("lightgray", (0.5, 0.3, 0.3), (0, -0.4, 2.38))  # muzzle
+        m.tube("smurf", [(s * 0.45, 0, 2.5), (s * 0.6, -0.1 * s, 2.0), (s * 0.55, -0.2 * s, 1.6)], 0.1)
+        m.blob("white", (0.2, 0.2, 0.2), (s * 0.55, -0.2 * s, 1.55))
+    m.squircle("smurf", (1.1, 0.95, 1.0), (0, -0.05, 3.15), power=2.3)
     for s in (-1, 1):
-        m.blob("white", (0.24, 0.08, 0.3), (s * 0.18, -0.42, 2.6))  # big eyes
-        m.blob("black", (0.12, 0.06, 0.16), (s * 0.18, -0.46, 2.58))
-        m.cyl("smurf", 0.14, 0.3, (s * 0.3, 0.05, 2.95), rot=(0, s * 20, 0), radius2=0.02)  # ears
-    m.blob("black", (0.1, 0.06, 0.07), (0, -0.56, 2.42))
-    # the white floppy mushroom hat, flopping forward
-    m.blob("white", (1.0, 0.95, 0.5), (0, 0.0, 3.0))
-    m.blob("white", (0.6, 0.55, 0.6), (0, 0.05, 3.35), rot=(-25, 0, 0))
-    m.blob("white", (0.35, 0.35, 0.35), (0, -0.25, 3.55))
+        mp.ear(m, "smurf", (s * 0.38, 0, 3.55), (s * 0.5, 0, 3.95), width=0.2, inner="pink", thick=0.07)
+        m.eye((s * 0.2, -0.5, 3.25), (0.2, 0.1, 0.24), iris="black", lid="smurf", lid_drop=0.3)
+        for k in range(2):
+            m.box("darkgray", (0.35, 0.02, 0.02), (s * 0.48, -0.47, 3.0 + k * 0.08), rot=(0, s * (k - 0.5) * 20, 0), bevel=0)
+    m.blob("black", (0.1, 0.06, 0.07), (0, -0.55, 3.08))
+    m.tube("black", [(-0.08, -0.52, 2.95), (0, -0.54, 2.92), (0.08, -0.52, 2.95)], 0.015)
+    m.lathe("white", [(0.55, 0), (0.58, 0.15), (0.45, 0.45), (0.0, 0.55)], (0, 0.0, 3.5))  # beanie
+    m.torus("white", 0.55, 0.07, (0, 0, 3.55))
+    m.blob("white", (0.22, 0.22, 0.22), (0, 0.05, 4.05))  # pom-pom
+    m.tube("smurf", [(0, 0.35, 1.7), (0.1, 0.8, 1.9), (0.3, 0.9, 2.4)], lambda t: 0.08 - 0.04 * t)  # tail
     return m
 
 
 def goth_dance():
     m = Meme("GothDanceHands")
-    m.cyl("purple", 0.9, 0.15, (0, 0, 0.08), seg=40)  # dance floor
-    for s in (-1, 1):  # black boots, white socks
-        m.tube("ink", [(s * 0.15, 0, 1.2), (s * 0.2, 0, 0.45)], 0.08)
-        m.cyl("white", 0.09, 0.1, (s * 0.2, 0, 0.45))
-        m.squircle("black", (0.22, 0.42, 0.3), (s * 0.2, -0.08, 0.25))
-    m.cyl("ink", 0.2, 1.1, (0, 0, 1.55), radius2=0.5, rot=(180, 0, 0))  # black dress, flaring out
-    m.squircle("ink", (0.6, 0.35, 0.65), (0, 0, 2.3), power=3)  # bodice
-    m.blob("white", (0.55, 0.32, 0.12), (0, -0.12, 2.6))  # white collar
-    m.blob("skin", (0.48, 0.45, 0.58), (0, 0, 3.0))  # head
-    m.blob("black", (0.52, 0.5, 0.35), (0, 0.04, 3.2))  # dark hair
+    # a goth girl in a black dress doing the jerky dance: arms bent at sharp angles, one knee up
+    p = mp.person(m, skin="marble", shirt="black", pants="black", shoes="black", hair="hairblack", hair_style="long",
+                  expr="flat", face_kw={"lids": 0.45, "brows": "hairblack"},
+                  legs={-1: ((-0.3, -0.05, 0.9), (-0.3, 0.0, 0.16)), 1: ((0.35, -0.5, 1.2), (0.3, -0.15, 0.7))},
+                  arms={"l": ((-0.95, -0.1, 3.1), (-0.85, -0.3, 3.75)), "r": ((0.95, -0.1, 2.45), (1.4, -0.3, 2.85))})
+    hc, hs = p["head"], p["head_size"]
+    m.lathe("black", [(0.5, 1.0), (0.95, 1.05), (0.7, 1.9), (0.55, 2.2), (0, 2.2)], (0, 0, 0), seg=32)  # dress skirt
+    m.squircle("white", (0.75, 0.08, 0.3), (0, -0.36, p["shoulder_z"]), power=3)  # white collar
+    m.squircle("hairblack", (hs * 0.95, hs * 0.2, hs * 0.3), (hc.x, hc.y - hs * 0.38, hc.z + hs * 0.32), power=3)  # blunt fringe
     for s in (-1, 1):
-        m.tube("black", [(s * 0.22, 0.05, 3.05), (s * 0.3, 0.05, 2.6), (s * 0.3, 0.0, 2.3)], 0.06)  # two braids
-        m.blob("black", (0.06, 0.04, 0.05), (s * 0.1, -0.22, 3.0))  # deadpan eyes
-    # the jerky dance pose: one arm bent up at a sharp angle, the other flung out stiff
-    m.tube("ink", [(-0.3, 0, 2.5), (-0.65, -0.1, 2.3), (-0.6, -0.15, 2.9)], 0.07)
-    m.blob("skin", (0.12, 0.12, 0.16), (-0.6, -0.15, 3.0))
-    m.tube("ink", [(0.3, 0, 2.5), (0.85, -0.1, 2.75), (1.2, -0.2, 2.6)], 0.07)
-    m.blob("skin", (0.12, 0.12, 0.16), (1.25, -0.2, 2.58))
+        m.tube("hairblack", [(hc.x + s * hs * 0.4, hc.y + 0.1, hc.z - hs * 0.2), (hc.x + s * hs * 0.45, hc.y + 0.15, hc.z - hs * 0.9)], 0.13)  # braids
+    m.cyl("lilac", 1.0, 0.1, (0, 0, 0.05), seg=40)
     return m
 
 
 def awkward_smile_guy():
     m = Meme("AwkwardSmileGuy")
-    for s in (-1, 1):
-        m.squircle("darkbrown", (0.4, 0.62, 0.25), (s * 0.3, -0.08, 0.12))  # shoes
-        m.squircle("khaki", (0.46, 0.5, 1.3), (s * 0.27, 0, 0.85), power=3)  # trousers
-    m.squircle("navy", (1.35, 0.85, 1.4), (0, 0, 2.15), power=3)  # stocky shirt
-    m.squircle("navy", (1.6, 0.86, 0.5), (0, 0, 2.85), power=3)  # shoulders shrugged up
-    for s in (-1, 1):  # arms down, hands tucked in pockets
-        m.tube("navy", [(s * 0.75, 0, 2.8), (s * 0.78, -0.05, 2.0), (s * 0.55, -0.25, 1.45)], 0.18)
-        m.squircle("khaki", (0.25, 0.06, 0.32), (s * 0.45, -0.32, 1.45))  # pocket
-    for k in range(3):
-        m.blob("white", (0.06, 0.04, 0.06), (0, -0.44, 2.6 - k * 0.3))  # buttons
-    m.cyl("skin", 0.25, 0.25, (0, 0, 3.15))
-    m.squircle("skin", (0.8, 0.78, 0.92), (0, 0, 3.6), power=2.6)  # broad face
-    m.blob("darkbrown", (0.84, 0.82, 0.4), (0, 0.06, 4.0))  # short hair
-    m.blob("skin", (0.16, 0.18, 0.2), (0, -0.4, 3.58))  # nose
-    for s in (-1, 1):
-        m.blob("white", (0.16, 0.05, 0.1), (s * 0.18, -0.37, 3.75))
-        m.blob("darkbrown", (0.08, 0.05, 0.09), (s * 0.18 + 0.05, -0.39, 3.75))  # eyes glancing sideways
-        m.squircle("darkbrown", (0.2, 0.05, 0.05), (s * 0.18, -0.38, 3.88))
-        m.blob("pink", (0.12, 0.04, 0.07), (s * 0.27, -0.36, 3.45))  # flushed cheeks
-    m.tube("darkred", [(-0.18, -0.39, 3.36), (0, -0.41, 3.34), (0.18, -0.39, 3.36)], 0.03)  # tight closed-mouth smile
+    # a guy in a hallway, stiff as a board, flashing the most awkward tight-lipped smile ever
+    p = mp.person(m, skin="skin", shirt="navy", pants="khaki", shoes="brown", hair="hairbrown", hair_style="short",
+                  expr="flat", face_kw={"brow_tilt": -0.6, "look": (0.6, 0), "mouth_w": 0.6, "blush": True},
+                  arms={"l": ((-0.66, 0.05, 2.4), (-0.6, -0.1, 1.85)), "r": ((0.66, 0.05, 2.4), (0.6, -0.1, 1.85))})
+    hc, hs = p["head"], p["head_size"]
+    m.tube("mouth", [(hc.x - 0.3, hc.y - hs * 0.42, hc.z - 0.32), (hc.x, hc.y - hs * 0.44, hc.z - 0.35), (hc.x + 0.3, hc.y - hs * 0.42, hc.z - 0.3)], 0.03)
+    for k in range(5):  # cardigan buttons
+        m.blob("white", (0.08, 0.05, 0.08), (0, -0.33, 1.9 + k * 0.22))
+    m.blob("sky", (0.1, 0.05, 0.2), (hc.x + hs * 0.42, hc.y - hs * 0.3, hc.z + 0.3))  # a bead of nervous sweat
+    m.squircle("tile", (2.0, 1.4, 0.1), (0, 0, 0.05), power=5)
     return m
 
 
 def barbenheimer():
     m = Meme("PinkbombFeature")
-    m.squircle("dreampink", (1.9, 1.8, 0.3), (-0.95, 0, 0.15), power=6)  # pink half of the base
-    m.squircle("ink", (1.9, 1.8, 0.3), (0.95, 0, 0.15), power=6)  # dark half
-    # left: a pink dream house
-    m.squircle("dreampink", (1.4, 1.1, 1.3), (-0.95, 0, 0.95), power=6)
-    m.cyl("hotpink", 0.95, 0.7, (-0.95, 0, 1.95), seg=4, radius2=0.0, rot=(0, 0, 45), scale=(1.05, 0.8, 1))  # roof
-    m.squircle("white", (0.35, 0.05, 0.55), (-0.95, -0.56, 0.6), power=5)  # door
-    for x in (-1.35, -0.55):
-        m.squircle("sky", (0.3, 0.05, 0.3), (x, -0.56, 1.15), power=5)
-    m.blob("hotpink", (0.25, 0.08, 0.22), (-0.95, -0.58, 1.6))  # heart window
-    m.cyl("hotpink", 0.25, 1.4, (-1.75, -0.4, 1.0), seg=16, radius2=0.25)  # pink palm trunk
-    # right: a mushroom cloud
-    m.cyl("smoke", 0.32, 1.6, (0.95, 0, 1.1), seg=24, radius2=0.22)
-    m.blob("fire", (1.6, 1.4, 0.55), (0.95, 0, 0.4))  # fiery base ring
-    m.blob("smoke", (1.8, 1.6, 0.9), (0.95, 0, 2.2))  # the cap
-    for k in range(6):
-        a = k / 6 * math.tau
-        m.blob("smoke", (0.7, 0.7, 0.6), (0.95 + math.cos(a) * 0.7, math.sin(a) * 0.6, 2.25 + (k % 2) * 0.15))
-    m.blob("fire", (1.4, 1.2, 0.4), (0.95, 0, 1.85))  # glowing underside
+    # a double feature: a pink dream house on one side, a mushroom cloud on the other, one ticket stub
+    m.squircle("ink", (4.0, 2.0, 0.15), (0, 0, 0.07), power=4)
+    m.box("dreampink", (0.08, 2.0, 0.16), (0, 0, 0.08), bevel=0)
+    # the dream house
+    m.squircle("dreampink", (1.5, 1.2, 1.3), (-1.0, 0, 0.8), power=5)
+    m.relief("hotpink", [(-0.9, 0), (0.9, 0), (0, 0.8)], 1.3, (-1.0, 0, 1.45), bevel=0.04)
+    m.squircle("white", (0.35, 0.06, 0.6), (-1.0, -0.6, 0.45), power=5)
+    for s in (-1, 1):
+        m.squircle("sky", (0.3, 0.06, 0.3), (-1.0 + s * 0.45, -0.6, 1.0), power=5)
+    m.blob("white", (0.4, 0.3, 0.25), (-0.4, -0.5, 0.3))  # a little hedge? (a cloud of tulle)
+    m.blob("hotpink", (0.15, 0.15, 0.15), (-0.4, -0.65, 0.42))
+    # the mushroom cloud
+    m.lathe("smoke", [(0, 0.15), (0.6, 0.15), (0.25, 0.5), (0.22, 1.8), (0, 1.9)], (1.0, 0, 0), seg=24)
+    m.lathe("fire", [(0.7, 0.15), (0.95, 0.15), (0.6, 0.35), (0, 0.35)], (1.0, 0, 0), seg=24)
+    for k in range(9):
+        a = k / 9 * math.tau
+        m.blob("smoke", (0.7, 0.7, 0.55), (1.0 + math.cos(a) * 0.55, math.sin(a) * 0.45, 2.3 + (k % 2) * 0.15))
+    m.blob("darkgray", (1.0, 0.9, 0.7), (1.0, 0, 2.6))
+    m.blob("orange", (0.4, 0.2, 0.3), (1.0, -0.5, 2.05))
+    # a ticket stub between them
+    m.relief("cream", [(-0.45, 0), (0.45, 0), (0.45, 0.6), (-0.45, 0.6)], 0.03, (0, -0.85, 0.16), rot=(-70, 0, 0))
+    m.text("hotpink", "2 FILMS", (0, -0.86, 0.32), size=0.13, depth=0.02, rot=(-70, 0, 0))
     return m
 
 
-ALL = [coffin_dance, big_mittens_chair, sea_shanty_mug, bing_chilling_cone, its_corn_cob, mauling_time_cape,
-       shailushai_cat, goth_dance, awkward_smile_guy, barbenheimer]
+ALL = [coffin_dance, big_mittens_chair, sea_shanty_mug, bing_chilling_cone, its_corn_cob, mauling_time_cape, shailushai_cat,
+       goth_dance, awkward_smile_guy, barbenheimer]
