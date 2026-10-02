@@ -212,16 +212,34 @@ local function alien(rng)
 	-- long thin limbs, skinny three-fingered hands and pointed boots
 	local BODY = {
 		UpperTorso = {0.82, 0.92, 0.85, suit[1]}, LowerTorso = {0.62, 0.9, 0.75, suit[1]},
-		LeftUpperArm = {0.55, 1.05, 0.55, suit[1]}, RightUpperArm = {0.55, 1.05, 0.55, suit[1]},
-		LeftLowerArm = {0.45, 1.1, 0.45, skin}, RightLowerArm = {0.45, 1.1, 0.45, skin},
-		LeftUpperLeg = {0.55, 1.05, 0.55, suit[1]}, RightUpperLeg = {0.55, 1.05, 0.55, suit[1]},
-		LeftLowerLeg = {0.45, 1.05, 0.45, suit[1]}, RightLowerLeg = {0.45, 1.05, 0.45, suit[1]},
+		-- (limbs a bit longer than the Roblox part, so the rounded ends overlap at the joints)
+		LeftUpperArm = {0.55, 1.25, 0.55, suit[1]}, RightUpperArm = {0.55, 1.25, 0.55, suit[1]},
+		LeftLowerArm = {0.45, 1.3, 0.45, skin}, RightLowerArm = {0.45, 1.3, 0.45, skin},
+		LeftUpperLeg = {0.55, 1.2, 0.55, suit[1]}, RightUpperLeg = {0.55, 1.2, 0.55, suit[1]},
+		LeftLowerLeg = {0.45, 1.25, 0.45, suit[1]}, RightLowerLeg = {0.45, 1.25, 0.45, suit[1]},
 	}
 	for name, look in pairs(BODY) do
 		local part = model:FindFirstChild(name)
 		if part then
 			part.Transparency = 1
 			weldTo(ellipsoid("Alien" .. name, part.Size * Vector3.new(look[1], look[2], look[3]), look[4]), part, CFrame.new())
+		end
+	end
+	-- round joints (shoulders, elbows, knees) so the limbs read as one arm or leg, not floating
+	-- pieces; the shoulder ball sits a little in towards the narrow chest to bridge the gap
+	for _, side in ipairs({"Left", "Right"}) do
+		local inward = side == "Left" and 1 or -1
+		local upperArm, lowerArm = model:FindFirstChild(side .. "UpperArm"), model:FindFirstChild(side .. "LowerArm")
+		local lowerLeg = model:FindFirstChild(side .. "LowerLeg")
+		if upperArm then
+			weldTo(ellipsoid("Shoulder", Vector3.new(0.75, 0.6, 0.6), suit[1]), upperArm, CFrame.new(inward * 0.2, upperArm.Size.Y / 2 - 0.2, 0))
+		end
+		if lowerArm then
+			weldTo(ellipsoid("Elbow", Vector3.new(0.42, 0.42, 0.42), skin), lowerArm, CFrame.new(0, lowerArm.Size.Y / 2, 0))
+			weldTo(ellipsoid("Wrist", Vector3.new(0.3, 0.3, 0.3), skin), lowerArm, CFrame.new(0, -lowerArm.Size.Y / 2, 0))
+		end
+		if lowerLeg then
+			weldTo(ellipsoid("Knee", Vector3.new(0.46, 0.46, 0.46), suit[1]), lowerLeg, CFrame.new(0, lowerLeg.Size.Y / 2, 0))
 		end
 	end
 	for _, name in ipairs({"LeftHand", "RightHand"}) do

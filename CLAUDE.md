@@ -47,6 +47,8 @@ game systems. The owner is a beginner on Windows: explain steps simply, one at a
 - Everything goes through `src/shared/UIKit.lua` (panels, buttons with studs + optional
   `Icon`, windows with a 3D header icon, `UIKit.icon`, `UIKit.splitIcon`).
 - **No emoji anywhere.** Server messages use icon tags: `"{Skull} The curse got you!"`.
+  One exception the owner asked for: museum visitors' reaction bubbles show emoji
+  (`src/client/VisitorReactions.client.lua`).
 
 ## Workflow
 - Develop on branch `claude/stoic-pascal-frhclz`; commit, push; the owner pulls with GitHub

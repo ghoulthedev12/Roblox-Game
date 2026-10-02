@@ -14883,16 +14883,34 @@ local function alien(rng)
 	-- long thin limbs, skinny three-fingered hands and pointed boots
 	local BODY = {
 		UpperTorso = {0.82, 0.92, 0.85, suit[1]}, LowerTorso = {0.62, 0.9, 0.75, suit[1]},
-		LeftUpperArm = {0.55, 1.05, 0.55, suit[1]}, RightUpperArm = {0.55, 1.05, 0.55, suit[1]},
-		LeftLowerArm = {0.45, 1.1, 0.45, skin}, RightLowerArm = {0.45, 1.1, 0.45, skin},
-		LeftUpperLeg = {0.55, 1.05, 0.55, suit[1]}, RightUpperLeg = {0.55, 1.05, 0.55, suit[1]},
-		LeftLowerLeg = {0.45, 1.05, 0.45, suit[1]}, RightLowerLeg = {0.45, 1.05, 0.45, suit[1]},
+		-- (limbs a bit longer than the Roblox part, so the rounded ends overlap at the joints)
+		LeftUpperArm = {0.55, 1.25, 0.55, suit[1]}, RightUpperArm = {0.55, 1.25, 0.55, suit[1]},
+		LeftLowerArm = {0.45, 1.3, 0.45, skin}, RightLowerArm = {0.45, 1.3, 0.45, skin},
+		LeftUpperLeg = {0.55, 1.2, 0.55, suit[1]}, RightUpperLeg = {0.55, 1.2, 0.55, suit[1]},
+		LeftLowerLeg = {0.45, 1.25, 0.45, suit[1]}, RightLowerLeg = {0.45, 1.25, 0.45, suit[1]},
 	}
 	for name, look in pairs(BODY) do
 		local part = model:FindFirstChild(name)
 		if part then
 			part.Transparency = 1
 			weldTo(ellipsoid("Alien" .. name, part.Size * Vector3.new(look[1], look[2], look[3]), look[4]), part, CFrame.new())
+		end
+	end
+	-- round joints (shoulders, elbows, knees) so the limbs read as one arm or leg, not floating
+	-- pieces; the shoulder ball sits a little in towards the narrow chest to bridge the gap
+	for _, side in ipairs({"Left", "Right"}) do
+		local inward = side == "Left" and 1 or -1
+		local upperArm, lowerArm = model:FindFirstChild(side .. "UpperArm"), model:FindFirstChild(side .. "LowerArm")
+		local lowerLeg = model:FindFirstChild(side .. "LowerLeg")
+		if upperArm then
+			weldTo(ellipsoid("Shoulder", Vector3.new(0.75, 0.6, 0.6), suit[1]), upperArm, CFrame.new(inward * 0.2, upperArm.Size.Y / 2 - 0.2, 0))
+		end
+		if lowerArm then
+			weldTo(ellipsoid("Elbow", Vector3.new(0.42, 0.42, 0.42), skin), lowerArm, CFrame.new(0, lowerArm.Size.Y / 2, 0))
+			weldTo(ellipsoid("Wrist", Vector3.new(0.3, 0.3, 0.3), skin), lowerArm, CFrame.new(0, -lowerArm.Size.Y / 2, 0))
+		end
+		if lowerLeg then
+			weldTo(ellipsoid("Knee", Vector3.new(0.46, 0.46, 0.46), suit[1]), lowerLeg, CFrame.new(0, lowerLeg.Size.Y / 2, 0))
 		end
 	end
 	for _, name in ipairs({"LeftHand", "RightHand"}) do
@@ -20429,22 +20447,25 @@ end)
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "VisitorReactions", "LocalScript", [=[
 -- VisitorReactions (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- When a museum visitor looks at a meme, the server (VisitorManager) says which face it
--- makes; this pops a speech bubble with that 3D face over the visitor's head. It's built
--- here, in the PlayerGui, because a 3D face made on the server would sit in the Workspace,
--- where streaming never sends it to the players (the bubble showed up empty).
+-- makes; this pops a speech bubble with that emoji over the visitor's head (emoji here on
+-- purpose: the owner asked for them, the 3D faces were hard to read that small).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
-local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local EMOJI = {
+	FaceMeh = "\u{1F610}", FaceSick = "\u{1F922}", FaceHappy = "\u{1F60A}", FaceWow = "\u{1F62E}",
+	FaceLaugh = "\u{1F602}", FaceCool = "\u{1F60E}", FaceLove = "\u{1F60D}", Heart = "\u{2764}\u{FE0F}",
+	Fire = "\u{1F525}", Crown = "\u{1F451}", Star = "\u{2B50}",
+}
 
 local player = Players.LocalPlayer
 local reactionRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("VisitorReaction")
 
 local bubbles = {} -- [head] = the bubble showing over it
 
-reactionRemote.OnClientEvent:Connect(function(head, iconName, color)
+reactionRemote.OnClientEvent:Connect(function(head, reaction, color)
 	if typeof(head) ~= "Instance" or not head:IsA("BasePart") or not head.Parent then return end
 	local old = bubbles[head]
 	if old then old:Destroy() end
@@ -20472,8 +20493,15 @@ reactionRemote.OnClientEvent:Connect(function(head, iconName, color)
 	stroke.Thickness = 3
 	stroke.Color = typeof(color) == "Color3" and color or Color3.fromRGB(40, 40, 60)
 	stroke.Parent = bubble
-	local face = UIKit.icon(bubble, iconName, {Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5),
-		AnchorPoint = Vector2.new(0.5, 0.5)})
+	local face = Instance.new("TextLabel")
+	face.BackgroundTransparency = 1
+	face.Size = UDim2.fromScale(0.78, 0.78)
+	face.Position = UDim2.fromScale(0.5, 0.5)
+	face.AnchorPoint = Vector2.new(0.5, 0.5)
+	face.Text = EMOJI[reaction] or EMOJI.FaceHappy
+	face.TextScaled = true
+	face.Font = Enum.Font.GothamBold
+	face.Parent = bubble
 
 	-- pop in, hover, fade out
 	TweenService:Create(gui, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromScale(2.6, 2.6)}):Play()
@@ -20483,9 +20511,7 @@ reactionRemote.OnClientEvent:Connect(function(head, iconName, color)
 		local fade = TweenInfo.new(0.4)
 		TweenService:Create(bubble, fade, {BackgroundTransparency = 1}):Play()
 		TweenService:Create(stroke, fade, {Transparency = 1}):Play()
-		TweenService:Create(face, fade, {ImageTransparency = 1}):Play()
-		local picture = face:FindFirstChild("IconImage")
-		if picture then TweenService:Create(picture, fade, {ImageTransparency = 1}):Play() end
+		TweenService:Create(face, fade, {TextTransparency = 1}):Play()
 		task.delay(0.45, function()
 			if bubbles[head] == gui then bubbles[head] = nil end
 			gui:Destroy()
@@ -21263,4 +21289,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 22:53). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 22:58). Now save the place (Ctrl+S).")
