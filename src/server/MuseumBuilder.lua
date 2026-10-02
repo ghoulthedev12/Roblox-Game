@@ -18,6 +18,7 @@
 -- Local layout: the entrance faces -Z, ground level is y = 0, and the pivot sits on the plot.
 -- Returns a function() -> Model (PlotManager clones it for each player).
 
+local NPCPlacer = require(script.Parent:WaitForChild("NPCPlacer"))
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
 local P = Architecture.Palette
 
@@ -349,13 +350,19 @@ local function build()
 	d:ellipsoid("KioskRoof", Vector3.new(15, 2.4, 9), CFrame.new(0, 11.6, 0), "Mint")
 	local kioskSign = d:roundedBlock("KioskSign", Vector3.new(10, 2.6, 0.6), CFrame.new(0, 13.8, 0), 1, "Ink")
 	textLabel(surface(kioskSign), "Label", "ALIEN ART DEALER", UDim2.fromScale(0, 0.1), UDim2.fromScale(1, 0.8), rgb(150, 255, 200))
-	-- the dealer: a friendly alien behind the counter
-	d:ellipsoid("AlienBody", Vector3.new(3, 4, 2.6), CFrame.new(0, 5.2, 0.4), "Violet")
-	d:ellipsoid("AlienHead", Vector3.new(3.8, 3.4, 3.4), CFrame.new(0, 8.4, 0.4), "AlienSkin")
-	for _, x in ipairs({-0.8, 0.8}) do
-		d:ellipsoid("AlienEye", Vector3.new(1, 1.4, 0.6), CFrame.new(x, 8.6, -1.1) * CFrame.Angles(0, 0, x * 0.3), "Ink")
-		d:pill("AlienAntenna", Vector3.new(x * 0.8, 9.8, 0.4), Vector3.new(x * 1.6, 11.2, 0.4), 0.25, "AlienSkin")
-		d:bulb("AntennaTip", 0.6, CFrame.new(x * 1.6, 11.3, 0.4), "GlowSun", 0)
+	-- the dealer: the Blender Alien Art Dealer (tools/blender/npcs.py) once it's imported,
+	-- until then a simple alien behind the counter
+	local dealerNPC = NPCPlacer("ArtDealer", dealerCF * CFrame.new(0, 0.9, 0.7), 0.92, "Sway")
+	if dealerNPC then
+		dealerNPC.Parent = dealer
+	else
+		d:ellipsoid("AlienBody", Vector3.new(3, 4, 2.6), CFrame.new(0, 5.2, 0.4), "Violet")
+		d:ellipsoid("AlienHead", Vector3.new(3.8, 3.4, 3.4), CFrame.new(0, 8.4, 0.4), "AlienSkin")
+		for _, x in ipairs({-0.8, 0.8}) do
+			d:ellipsoid("AlienEye", Vector3.new(1, 1.4, 0.6), CFrame.new(x, 8.6, -1.1) * CFrame.Angles(0, 0, x * 0.3), "Ink")
+			d:pill("AlienAntenna", Vector3.new(x * 0.8, 9.8, 0.4), Vector3.new(x * 1.6, 11.2, 0.4), 0.25, "AlienSkin")
+			d:bulb("AntennaTip", 0.6, CFrame.new(x * 1.6, 11.3, 0.4), "GlowSun", 0)
+		end
 	end
 
 	-- MARKERS for scripts

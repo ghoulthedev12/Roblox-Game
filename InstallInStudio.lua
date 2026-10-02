@@ -95,6 +95,7 @@ collectMeshes("MemeMeshes", {"DaWaeEchidna", "SeaShantyMug", "AisleYodelSet", "C
 collectMeshes("PortalModels", {"GatePortalFrame", "GatePortalGlow", "GateHorizon", "GateVortexA", "GateVortexB", "AlienPortalRim", "AlienPortalFunnel", "AlienPortalSwirl"}, "No portal meshes yet: File > Import 3D > assets/models/PortalMeshes.fbx, then run this installer again")
 collectMeshes("UIIcons", {"Shop", "Bag", "Museum", "Rebirth", "World", "Settings", "Gem", "Cash", "Income", "SoundOn", "SoundOff", "Music", "Bell", "Lock", "Luck", "Pickaxe", "Star", "Sparkle", "Heart", "Pin", "Alien", "Fire", "Skull", "Disk", "Volcano", "Candy", "Ghost", "Bubble", "Ice", "Snowflake", "Coin", "Warning", "Boom", "Party", "Picture", "Hole", "Elevator", "Crown", "FaceHappy", "FaceLaugh", "FaceLove", "FaceWow", "FaceCool", "FaceMeh", "FaceSick"}, "No 3D UI icons yet: File > Import 3D > assets/models/UIIcons.fbx, then run this installer again")
 collectMeshes("PickaxeMeshes", {"BlossomTrowel", "BambooSpade", "KoiScoop", "LanternSpade", "LanternSpadeGlow", "KatanaShovel", "KatanaShovelGlow", "PetalExcavator", "PetalExcavatorGlow", "HanamiHarvester", "HanamiHarvesterGlow", "MeteorScoop", "MeteorScoopGlow", "RocketSpade", "RocketSpadeGlow", "OrbitShovel", "OrbitShovelGlow", "NebulaTrowel", "NebulaTrowelGlow", "CometCrusher", "CometCrusherGlow", "SupernovaSpade", "SupernovaSpadeGlow", "EventHorizon", "EventHorizonGlow", "SnowballScoop", "IcicleSpade", "PenguinPaddle", "FrostbiteShovel", "FrostbiteShovelGlow", "BlizzardBreaker", "BlizzardBreakerGlow", "AuroraAuger", "AuroraAugerGlow", "AbsoluteZeroSpade", "AbsoluteZeroSpadeGlow", "SandyScoop", "CactusSpade", "MirageShovel", "MirageShovelGlow", "PharaohSpade", "SolarSifter", "SolarSifterGlow", "SandstormDrill", "SunKingShovel", "SunKingShovelGlow", "SeashellScoop", "AnchorSpade", "PearlShovel", "PearlShovelGlow", "TridentTrowel", "TridentTrowelGlow", "KrakenClaw", "TidalExcavator", "TidalExcavatorGlow", "AtlantisSpade", "AtlantisSpadeGlow", "LollipopScoop", "CandyCaneSpade", "GummyShovel", "SprinkleSpade", "ChocoCrusher", "JawbreakerAuger", "SugarRushSpade", "SugarRushSpadeGlow", "EmberSpade", "EmberSpadeGlow", "AnvilShovel", "AnvilShovelGlow", "MagmaScoop", "MagmaScoopGlow", "ObsidianBlade", "ObsidianBladeGlow", "DragonboneSpade", "DragonboneSpadeGlow", "InfernoAuger", "InfernoAugerGlow", "CoreBreaker", "CoreBreakerGlow", "PlaceholderSpade", "PixelShovel", "LagSpade", "LagSpadeGlow", "WireframeShovel", "WireframeShovelGlow", "Error404Scoop", "Error404ScoopGlow", "DebugDrill", "DebugDrillGlow", "TheFinalPatch", "TheFinalPatchGlow"}, "No pickaxe meshes yet: File > Import 3D > assets/models/PickaxeMeshes.fbx, then run this installer again")
+collectMeshes("NPCModels", {"ShopRobot", "ShopRobotGlow", "ArtDealer", "ArtDealerGlow"}, "No shopkeeper meshes yet: File > Import 3D > assets/models/NPCMeshes.fbx, then run this installer again")
 do local old = game:GetService("ServerScriptService"):FindFirstChild("DataManager") if old then old:Destroy() print("Removed DataManager") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
 do local old = game:GetService("ReplicatedStorage"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
@@ -2498,6 +2499,17 @@ MemeList.Worlds = {
 }
 
 return MemeList
+]=])
+install(game:GetService("ReplicatedStorage"), "NPCMeshData", "ModuleScript", [=[
+-- NPCMeshData (ModuleScript in ReplicatedStorage)
+-- Written by tools/blender/npcs.py: the shopkeeper characters. File > Import 3D of
+-- assets/models/NPCMeshes.fbx + the installer put the meshes in ReplicatedStorage > NPCModels
+-- (<Name> and <Name>Glow). Size = each mesh's size; Center = where its center sits, in studs,
+-- from the point the character stands on (it faces -Z).
+return {
+	ShopRobot = {Size = Vector3.new(4.629, 8.100, 4.583), Center = Vector3.new(-0.175, 4.250, -0.742), GlowSize = Vector3.new(3.380, 9.090, 2.650), GlowCenter = Vector3.new(-0.000, 3.945, -0.045), GlowColor = Color3.fromRGB(90, 235, 255)},
+	ArtDealer = {Size = Vector3.new(4.135, 9.527, 3.720), Center = Vector3.new(0.103, 4.764, -0.140), GlowSize = Vector3.new(2.040, 4.650, 1.650), GlowCenter = Vector3.new(-0.000, 7.195, -0.505), GlowColor = Color3.fromRGB(255, 210, 90)},
+}
 ]=])
 install(game:GetService("ReplicatedStorage"), "PickaxeMeshData", "ModuleScript", [=[
 -- PickaxeMeshData (ModuleScript in ReplicatedStorage)
@@ -9164,6 +9176,7 @@ install(game:GetService("ServerScriptService"), "MuseumBuilder", "ModuleScript",
 -- Local layout: the entrance faces -Z, ground level is y = 0, and the pivot sits on the plot.
 -- Returns a function() -> Model (PlotManager clones it for each player).
 
+local NPCPlacer = require(script.Parent:WaitForChild("NPCPlacer"))
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
 local P = Architecture.Palette
 
@@ -9495,13 +9508,19 @@ local function build()
 	d:ellipsoid("KioskRoof", Vector3.new(15, 2.4, 9), CFrame.new(0, 11.6, 0), "Mint")
 	local kioskSign = d:roundedBlock("KioskSign", Vector3.new(10, 2.6, 0.6), CFrame.new(0, 13.8, 0), 1, "Ink")
 	textLabel(surface(kioskSign), "Label", "ALIEN ART DEALER", UDim2.fromScale(0, 0.1), UDim2.fromScale(1, 0.8), rgb(150, 255, 200))
-	-- the dealer: a friendly alien behind the counter
-	d:ellipsoid("AlienBody", Vector3.new(3, 4, 2.6), CFrame.new(0, 5.2, 0.4), "Violet")
-	d:ellipsoid("AlienHead", Vector3.new(3.8, 3.4, 3.4), CFrame.new(0, 8.4, 0.4), "AlienSkin")
-	for _, x in ipairs({-0.8, 0.8}) do
-		d:ellipsoid("AlienEye", Vector3.new(1, 1.4, 0.6), CFrame.new(x, 8.6, -1.1) * CFrame.Angles(0, 0, x * 0.3), "Ink")
-		d:pill("AlienAntenna", Vector3.new(x * 0.8, 9.8, 0.4), Vector3.new(x * 1.6, 11.2, 0.4), 0.25, "AlienSkin")
-		d:bulb("AntennaTip", 0.6, CFrame.new(x * 1.6, 11.3, 0.4), "GlowSun", 0)
+	-- the dealer: the Blender Alien Art Dealer (tools/blender/npcs.py) once it's imported,
+	-- until then a simple alien behind the counter
+	local dealerNPC = NPCPlacer("ArtDealer", dealerCF * CFrame.new(0, 0.9, 0.7), 0.92, "Sway")
+	if dealerNPC then
+		dealerNPC.Parent = dealer
+	else
+		d:ellipsoid("AlienBody", Vector3.new(3, 4, 2.6), CFrame.new(0, 5.2, 0.4), "Violet")
+		d:ellipsoid("AlienHead", Vector3.new(3.8, 3.4, 3.4), CFrame.new(0, 8.4, 0.4), "AlienSkin")
+		for _, x in ipairs({-0.8, 0.8}) do
+			d:ellipsoid("AlienEye", Vector3.new(1, 1.4, 0.6), CFrame.new(x, 8.6, -1.1) * CFrame.Angles(0, 0, x * 0.3), "Ink")
+			d:pill("AlienAntenna", Vector3.new(x * 0.8, 9.8, 0.4), Vector3.new(x * 1.6, 11.2, 0.4), 0.25, "AlienSkin")
+			d:bulb("AntennaTip", 0.6, CFrame.new(x * 1.6, 11.3, 0.4), "GlowSun", 0)
+		end
 	end
 
 	-- MARKERS for scripts
@@ -9943,6 +9962,87 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 print("MuseumManager ready: " .. SLOT_COUNT .. " display slots, floor arrows and the art dealer")
+]=])
+install(game:GetService("ServerScriptService"), "NPCPlacer", "ModuleScript", [=[
+-- NPCPlacer (ModuleScript in ServerScriptService)
+-- Puts one of the Blender shopkeeper characters (tools/blender/npcs.py: ShopRobot, ArtDealer)
+-- in the world: NPCPlacer(name, standCFrame, scale, idle) -> Model, or nil when the meshes
+-- haven't been imported yet (File > Import 3D of assets/models/NPCMeshes.fbx + the installer
+-- put them in ReplicatedStorage > NPCModels), so the builder can fall back to its part version.
+-- The character stands on standCFrame and faces its -Z. Its glowing bits are Neon.
+-- idle = "Bob" (hovers up and down) or "Sway" (rocks gently): NPCIdleClient plays it on each
+-- player's screen, moving the pieces around the invisible "Stand" part (so it still works
+-- when the whole building is moved after it's built).
+
+local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local NPCMeshData = require(ReplicatedStorage:WaitForChild("NPCMeshData"))
+
+local function source(name)
+	local folder = ReplicatedStorage:FindFirstChild("NPCModels")
+	local item = folder and folder:FindFirstChild(name)
+	if item and not item:IsA("MeshPart") then item = item:FindFirstChildWhichIsA("MeshPart", true) end
+	return item
+end
+
+return function(name, standCF, scale, idle)
+	local data = NPCMeshData[name]
+	local bodySource = data and source(name)
+	if not bodySource then return nil end
+	scale = scale or 1
+	local model = Instance.new("Model")
+	model.Name = name
+	local stand = Instance.new("Part")
+	stand.Name = "Stand"
+	stand.Size = Vector3.one
+	stand.Transparency = 1
+	stand.Anchored = true
+	stand.CanCollide = false
+	stand.CanQuery = false
+	stand.CanTouch = false
+	stand.CFrame = standCF
+	stand.Parent = model
+	local function place(pieceName, src, size, center, glow)
+		local part = src:Clone()
+		part.Name = pieceName
+		part.Size = size * scale
+		local offset = CFrame.new(center * scale)
+		part.CFrame = standCF * offset
+		part.Anchored = true
+		part.CanCollide = false
+		part.CanQuery = false
+		part.CanTouch = false
+		part:SetAttribute("StandOffset", offset)
+		if glow then
+			for _, child in ipairs(part:GetChildren()) do
+				if child:IsA("SurfaceAppearance") then child:Destroy() end
+			end
+			pcall(function() part.TextureID = "" end)
+			part.Material = Enum.Material.Neon
+			part.Color = data.GlowColor
+			part.CastShadow = false
+		end
+		part.Parent = model
+		return part
+	end
+	local body = place("Body", bodySource, data.Size, data.Center, false)
+	local glowSource = data.GlowSize and source(name .. "Glow")
+	if glowSource then
+		local glow = place("Glow", glowSource, data.GlowSize, data.GlowCenter, true)
+		local light = Instance.new("PointLight")
+		light.Color = data.GlowColor
+		light.Range = 12
+		light.Brightness = 0.8
+		light.Parent = glow
+	end
+	model.PrimaryPart = body
+	if idle then
+		model:SetAttribute("Idle", idle)
+		CollectionService:AddTag(model, "NPCIdle")
+	end
+	return model
+end
 ]=])
 install(game:GetService("ServerScriptService"), "PlayerData", "ModuleScript", [=[
 -- PlayerData (ModuleScript in ServerScriptService)
@@ -13327,6 +13427,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local ShovelModels = require(ReplicatedStorage:WaitForChild("PickaxeModels"))
+local NPCPlacer = require(script.Parent:WaitForChild("NPCPlacer"))
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
 
 -- Places a copy of a pickaxe model at `target` (target's axes = the tool's axes), scaled
@@ -13470,17 +13571,23 @@ return function(parent, world, base)
 	-----------------------------------------------------------------
 	-- ROBOT SHOPKEEPER floating behind the counter
 	-----------------------------------------------------------------
-	local bot = Vector3.new(0, 7.4, -1.2)
-	b:ball("RobotHead", 3, CFrame.new(bot), "White")
-	b:ellipsoid("RobotVisor", Vector3.new(2.4, 1.2, 1), CFrame.new(bot + Vector3.new(0, 0.1, -1.15)), "Ink")
-	b:ball("RobotEyeL", 0.45, CFrame.new(bot + Vector3.new(-0.5, 0.15, -1.62)), "GlowCyan")
-	b:ball("RobotEyeR", 0.45, CFrame.new(bot + Vector3.new(0.5, 0.15, -1.62)), "GlowCyan")
-	b:ellipsoid("RobotBlushL", Vector3.new(0.5, 0.25, 0.1), CFrame.new(bot + Vector3.new(-1, -0.45, -1.3)), "Coral")
-	b:ellipsoid("RobotBlushR", Vector3.new(0.5, 0.25, 0.1), CFrame.new(bot + Vector3.new(1, -0.45, -1.3)), "Coral")
-	b:rod("RobotAntenna", 1.1, 0.16, CFrame.new(bot + Vector3.new(0, 1.9, 0)) * CFrame.Angles(0, 0, math.rad(90)), "Chrome")
-	b:bulb("RobotAntennaTip", 0.55, CFrame.new(bot + Vector3.new(0, 2.5, 0)), "GlowPink", 6)
-	b:ellipsoid("RobotBody", Vector3.new(2.2, 2.2, 1.8), CFrame.new(bot + Vector3.new(0, -2.2, 0)), "Lilac")
-	b:ring("RobotHoverRing", CFrame.new(bot + Vector3.new(0, -3.5, 0)) * CFrame.Angles(math.rad(90), 0, 0), 1.2, 0.25, "GlowCyan", 14)
+	-- the Blender robot (tools/blender/npcs.py) once it's imported; until then a simple one
+	local robot = NPCPlacer("ShopRobot", base * CFrame.new(0, 1.5, -1.2), 1, "Bob")
+	if robot then
+		robot.Parent = shop
+	else
+		local bot = Vector3.new(0, 7.4, -1.2)
+		b:ball("RobotHead", 3, CFrame.new(bot), "White")
+		b:ellipsoid("RobotVisor", Vector3.new(2.4, 1.2, 1), CFrame.new(bot + Vector3.new(0, 0.1, -1.15)), "Ink")
+		b:ball("RobotEyeL", 0.45, CFrame.new(bot + Vector3.new(-0.5, 0.15, -1.62)), "GlowCyan")
+		b:ball("RobotEyeR", 0.45, CFrame.new(bot + Vector3.new(0.5, 0.15, -1.62)), "GlowCyan")
+		b:ellipsoid("RobotBlushL", Vector3.new(0.5, 0.25, 0.1), CFrame.new(bot + Vector3.new(-1, -0.45, -1.3)), "Coral")
+		b:ellipsoid("RobotBlushR", Vector3.new(0.5, 0.25, 0.1), CFrame.new(bot + Vector3.new(1, -0.45, -1.3)), "Coral")
+		b:rod("RobotAntenna", 1.1, 0.16, CFrame.new(bot + Vector3.new(0, 1.9, 0)) * CFrame.Angles(0, 0, math.rad(90)), "Chrome")
+		b:bulb("RobotAntennaTip", 0.55, CFrame.new(bot + Vector3.new(0, 2.5, 0)), "GlowPink", 6)
+		b:ellipsoid("RobotBody", Vector3.new(2.2, 2.2, 1.8), CFrame.new(bot + Vector3.new(0, -2.2, 0)), "Lilac")
+		b:ring("RobotHoverRing", CFrame.new(bot + Vector3.new(0, -3.5, 0)) * CFrame.Angles(math.rad(90), 0, 0), 1.2, 0.25, "GlowCyan", 14)
+	end
 
 	-----------------------------------------------------------------
 	-- GLASS DISPLAY CAPSULES on stepped pedestals (one per depth zone)
@@ -17645,6 +17752,53 @@ task.spawn(function()
 	end
 end)
 ]=])
+install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "NPCIdleClient", "LocalScript", [=[
+-- NPCIdleClient (LocalScript in StarterPlayer > StarterPlayerScripts)
+-- Brings the Blender shopkeepers to life on your screen (see NPCPlacer): the shop robot bobs
+-- on its hover thruster, the Alien Art Dealer sways gently. Each piece is moved around the
+-- character's invisible Stand part, so it follows the building wherever it is.
+
+local CollectionService = game:GetService("CollectionService")
+local RunService = game:GetService("RunService")
+
+local npcs = {} -- [model] = {Stand, Pieces = {{Part, Offset}}, Idle, Phase}
+
+local function add(model)
+	local stand = model:WaitForChild("Stand", 10)
+	if not stand then return end
+	local pieces = {}
+	for _, part in ipairs(model:GetChildren()) do
+		local offset = part:IsA("BasePart") and part:GetAttribute("StandOffset")
+		if typeof(offset) == "CFrame" then table.insert(pieces, {Part = part, Offset = offset}) end
+	end
+	npcs[model] = {Stand = stand, Pieces = pieces, Idle = model:GetAttribute("Idle"), Phase = math.random() * 10}
+end
+
+CollectionService:GetInstanceAddedSignal("NPCIdle"):Connect(add)
+CollectionService:GetInstanceRemovedSignal("NPCIdle"):Connect(function(model) npcs[model] = nil end)
+for _, model in ipairs(CollectionService:GetTagged("NPCIdle")) do task.spawn(add, model) end
+
+RunService.RenderStepped:Connect(function()
+	local t = os.clock()
+	for model, npc in pairs(npcs) do
+		if not model.Parent then
+			npcs[model] = nil
+		else
+			local u = t + npc.Phase
+			local motion
+			if npc.Idle == "Bob" then
+				motion = CFrame.new(0, math.sin(u * 2.2) * 0.25, 0) * CFrame.Angles(0, math.sin(u * 0.9) * 0.08, math.sin(u * 1.7) * 0.025)
+			else
+				motion = CFrame.Angles(0, math.sin(u * 0.7) * 0.09, math.sin(u * 1.3) * 0.03)
+			end
+			local base = npc.Stand.CFrame * motion
+			for _, piece in ipairs(npc.Pieces) do
+				piece.Part.CFrame = base * piece.Offset
+			end
+		end
+	end
+end)
+]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "QuestClient", "LocalScript", [=[
 -- QuestClient (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- The goals of worlds 2-9 on screen (see ReplicatedStorage.QuestData and the Quests server
@@ -20792,4 +20946,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 19:25). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 22:13). Now save the place (Ctrl+S).")
