@@ -1265,21 +1265,92 @@ end
 ---------------------------------------------------------------------
 -- SHOVEL SHOP WINDOW
 ---------------------------------------------------------------------
-local window, content = UIKit.window(gui, "PICKAXE SHOP", UDim2.fromOffset(780, 580), C.Violet, "Pickaxe")
+-- Layout like the big simulators' shops: a grid of chunky pickaxe tiles on the left (tinted by
+-- the deepest zone each one reaches, price or OWNED / EQUIPPED on a chip), and a detail panel
+-- on the right for the selected pickaxe: a big 3D view, its depth, description, stat bars
+-- (with how much better or worse it is than the one you hold) and one big BUY / EQUIP button.
+local rgb = Color3.fromRGB
+local window, content = UIKit.window(gui, "PICKAXE SHOP", UDim2.fromOffset(900, 580), C.Violet, "Pickaxe")
 
-local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(180, 38), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 19})
-local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -24, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, StrokeColor = UIKit.shadeColor(C.Money, 0.6), MaxText = 24})
-local worldLabel = UIKit.label(content, "", {Size = UDim2.new(1, -210, 0, 28), Position = UDim2.fromOffset(4, 5), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 24})
+local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(200, 40), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 12, Stroke = 3, StrokeColor = C.Outline})
+UIKit.icon(moneyTag, "Cash", {Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0, -10, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -46, 0.74, 0), Position = UDim2.new(0.5, 16, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3, MaxText = 24})
+local worldChip = UIKit.panel(content, {Size = UDim2.fromOffset(300, 40), Position = UDim2.fromOffset(0, 0), Color = C.Ink, Radius = 12, Stroke = 3, StrokeColor = C.Outline})
+UIKit.icon(worldChip, "World", {Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0, -8, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+local worldLabel = UIKit.label(worldChip, "", {Size = UDim2.new(1, -52, 0.7, 0), Position = UDim2.new(0, 44, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Align = "Left", Color = C.Sun, Stroke = 3, MaxText = 22})
 
-local listHolder = Instance.new("Frame")
-listHolder.BackgroundTransparency = 1
-listHolder.Size = UDim2.new(1, 0, 1, -48)
-listHolder.Position = UDim2.fromOffset(0, 46)
-listHolder.Parent = content
-local list = UIKit.list(listHolder, 10)
+-- LEFT: the tile grid
+local gridHolder = Instance.new("Frame")
+gridHolder.BackgroundTransparency = 1
+gridHolder.Size = UDim2.new(0.58, 0, 1, -52)
+gridHolder.Position = UDim2.fromOffset(0, 52)
+gridHolder.Parent = content
+local grid = Instance.new("ScrollingFrame")
+grid.BackgroundTransparency = 1
+grid.BorderSizePixel = 0
+grid.ScrollBarThickness = 8
+grid.ScrollBarImageColor3 = C.Lilac
+grid.AutomaticCanvasSize = Enum.AutomaticSize.Y
+grid.CanvasSize = UDim2.new()
+grid.Size = UDim2.fromScale(1, 1)
+grid.Parent = gridHolder
+local gridLayout = Instance.new("UIGridLayout")
+gridLayout.CellSize = UDim2.new(1 / 3, -12, 0, 172) -- three across, whatever the window size
+gridLayout.CellPadding = UDim2.fromOffset(10, 12)
+gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
+gridLayout.Parent = grid
+local tileShape = Instance.new("UIAspectRatioConstraint")
+tileShape.AspectRatio = 150 / 172
+tileShape.Parent = gridLayout
+local gridPad = Instance.new("UIPadding")
+gridPad.PaddingTop = UDim.new(0, 8)
+gridPad.PaddingLeft = UDim.new(0, 6)
+gridPad.PaddingBottom = UDim.new(0, 8)
+gridPad.Parent = grid
+
+-- RIGHT: the detail panel
+local detail = UIKit.panel(content, {Size = UDim2.new(0.42, -14, 1, -52), Position = UDim2.new(1, 0, 0, 52), AnchorPoint = Vector2.new(1, 0),
+	Color = rgb(44, 36, 86), Radius = 20, Stroke = 4, StrokeColor = C.Outline, ShadeAmount = 0.15})
+local detailGlow = UIKit.panel(detail, {Size = UDim2.new(1, -24, 0.4, 0), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Violet, Radius = 16, Stroke = 3, StrokeColor = C.Outline, ShadeAmount = 0.3})
+local detailRays = Instance.new("UIGradient") -- a soft spotlight behind the pickaxe
+detailRays.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(150, 150, 170))
+detailRays.Rotation = 90
+detailRays.Parent = detailGlow
+local detailIconHolder = Instance.new("Frame")
+detailIconHolder.BackgroundTransparency = 1
+detailIconHolder.Size = UDim2.fromScale(1, 1)
+detailIconHolder.Parent = detailGlow
+local detailName = UIKit.label(detail, "", {Size = UDim2.new(1, -24, 0.075, 0), Position = UDim2.new(0.5, 0, 0.415, 0), AnchorPoint = Vector2.new(0.5, 0),
+	Stroke = 3.5, MaxText = 30})
+local detailDepth = UIKit.panel(detail, {Size = UDim2.new(1, -60, 0.06, 0), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Sky, Radius = 14, Stroke = 2.5, StrokeColor = C.Outline})
+local detailDepthLabel = UIKit.label(detailDepth, "", {Size = UDim2.new(1, -16, 0.76, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+	Stroke = 2.5, MaxText = 16})
+local detailDesc = UIKit.label(detail, "", {Size = UDim2.new(1, -28, 0.085, 0), Position = UDim2.new(0.5, 0, 0.57, 0), AnchorPoint = Vector2.new(0.5, 0),
+	Color = rgb(215, 208, 245), Stroke = 0, Font = Enum.Font.GothamBold, MaxText = 15})
+detailDesc.TextWrapped = true
+local statRows = {}
+local STAT_COLORS = {Power = C.Coral, Find = C.Mint, Luck = C.Sun, Speed = C.Sky}
+for i, name in ipairs({"Power", "Find", "Luck", "Speed"}) do
+	local row = Instance.new("Frame")
+	row.BackgroundTransparency = 1
+	row.Size = UDim2.new(1, -28, 0.05, 0)
+	row.Position = UDim2.new(0.5, 0, 0.665 + (i - 1) * 0.056, 0)
+	row.AnchorPoint = Vector2.new(0.5, 0)
+	row.Parent = detail
+	UIKit.label(row, string.upper(name), {Size = UDim2.new(0.24, 0, 1, 0), Align = "Left", Color = STAT_COLORS[name], Stroke = 2.5, MaxText = 16})
+	local track = UIKit.panel(row, {Size = UDim2.new(0.44, 0, 0.7, 0), Position = UDim2.new(0.25, 0, 0.15, 0), Color = rgb(28, 22, 58), Radius = 8, Stroke = 2, StrokeColor = C.Outline, Shade = false})
+	local fill = UIKit.panel(track, {Size = UDim2.fromScale(0.5, 1), Color = STAT_COLORS[name], Radius = 8, Stroke = false, ShadeAmount = 0.3})
+	local value = UIKit.label(row, "", {Size = UDim2.new(0.3, 0, 1, 0), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Align = "Right", Stroke = 2.5, MaxText = 16, RichText = true})
+	statRows[name] = {Fill = fill, Value = value}
+end
+local detailButton = UIKit.button(detail, "", {Size = UDim2.new(1, -28, 0.11, 0), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), MaxText = 28, Icon = "Cash"})
 
 local shopWorld = GameConfig.Worlds[1] -- which world's shop is open
-local cards = {} -- [shovelId] = button
+local cards = {} -- [shovelId] = {Tile, Chip, ChipLabel, Check}
+local selectedDef = nil
+local statMax = {}
 
 -- the best value of each stat in this world, so the bars fill relative to the top shovel
 local function maxStat(world, key)
@@ -1288,76 +1359,146 @@ local function maxStat(world, key)
 	return m
 end
 
-local BUTTON_W = 116 -- the buy / equip button on each shop card
+local function speedOf(def)
+	return shopWorld.Shovels[1].Cooldown / def.Cooldown
+end
+
+local function ownedList()
+	return string.split(player:GetAttribute("OwnedShovels") or "", ",")
+end
+
+-- "+50%" in green / "-20%" in red, comparing a stat with the pickaxe you hold
+local function compare(value, held)
+	if not held or held == 0 or math.abs(value - held) < 1e-6 then return "" end
+	local change = (value / held - 1) * 100
+	local color = change > 0 and "#7CFF8A" or "#FF7A8C"
+	return string.format('  <font color="%s">%s%d%%</font>', color, change > 0 and "+" or "", math.floor(change + 0.5))
+end
+
+local function showDetails(def)
+	selectedDef = def
+	local zone = shopWorld.Zones[def.MaxZone]
+	for id, card in pairs(cards) do
+		card.Selected.Visible = id == def.Id
+	end
+	for _, child in ipairs(detailIconHolder:GetChildren()) do child:Destroy() end
+	UIKit.shovelIcon(detailIconHolder, def, {Size = UDim2.fromScale(1, 1)})
+	detailGlow.BackgroundColor3 = zone.Color
+	detailName.Text = def.Name
+	detailDepth.BackgroundColor3 = zone.Color:Lerp(C.Outline, 0.15)
+	detailDepthLabel.Text = "DIGS TO " .. -zone.Bottom .. "m  ·  " .. string.upper(zone.Name)
+	detailDesc.Text = def.Description or ""
+	local heldId = player:GetAttribute("EquippedShovel")
+	local held = GameConfig.GetShovel(heldId)
+	if held and held.World ~= shopWorld.Id then held = nil end
+	local stats = {
+		Power = {def.Power / statMax.Power, tostring(def.Power), def.Power, held and held.Power},
+		Find = {def.FindChance / statMax.Find, math.floor(def.FindChance * 1000 + 0.5) / 10 .. "%", def.FindChance, held and held.FindChance},
+		Luck = {def.Luck / statMax.Luck, "x" .. def.Luck, def.Luck, held and held.Luck},
+		Speed = {speedOf(def) / statMax.Speed, string.format("%.1fx", speedOf(def)), speedOf(def), held and speedOf(held)},
+	}
+	for name, s in pairs(stats) do
+		local row = statRows[name]
+		TweenService:Create(row.Fill, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {Size = UDim2.fromScale(math.clamp(s[1], 0.06, 1), 1)}):Play()
+		row.Value.Text = s[2] .. (held and held.Id ~= def.Id and compare(s[3], s[4]) or "")
+	end
+	local money = player:GetAttribute("Money") or 0
+	if def.Id == heldId then
+		UIKit.setButton(detailButton, "EQUIPPED", C.Lilac, "Star")
+	elseif table.find(ownedList(), def.Id) then
+		UIKit.setButton(detailButton, "EQUIP", C.Sky, "Pickaxe")
+	else
+		UIKit.setButton(detailButton, def.Price <= 0 and "FREE" or ("BUY  " .. ArtifactData.FormatMoney(def.Price)), money >= def.Price and C.Mint or C.Coral,
+			money >= def.Price and "Cash" or "Lock")
+	end
+end
+
+detailButton.MouseButton1Click:Connect(function()
+	local def = selectedDef
+	if not def then return end
+	if table.find(ownedList(), def.Id) then
+		equipShovelRemote:FireServer(def.Id)
+	else
+		buyShovelRemote:FireServer(def.Id)
+	end
+end)
 
 local function buildCards(world)
-	for _, child in ipairs(list:GetChildren()) do
+	for _, child in ipairs(grid:GetChildren()) do
 		if child:IsA("GuiObject") then child:Destroy() end
 	end
 	cards = {}
 	worldLabel.Text = world.Name
-	local maxFind, maxLuck, maxPower = maxStat(world, "FindChance"), maxStat(world, "Luck"), maxStat(world, "Power")
 	local minCooldown = math.huge
 	for _, def in ipairs(world.Shovels) do minCooldown = math.min(minCooldown, def.Cooldown) end
-	local starterCooldown = world.Shovels[1].Cooldown
-	local maxSpeed = starterCooldown / minCooldown
+	statMax = {Power = maxStat(world, "Power"), Find = maxStat(world, "FindChance"), Luck = maxStat(world, "Luck"),
+		Speed = world.Shovels[1].Cooldown / minCooldown}
 
 	for i, def in ipairs(world.Shovels) do
 		local zone = world.Zones[def.MaxZone]
-		local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 132), Color = C.White, Radius = 20, ShadeAmount = 0.06})
-		card.LayoutOrder = i
-		-- icon on a colored plate (plate color = the deepest zone it reaches)
-		local plate = UIKit.panel(card, {Size = UDim2.fromOffset(108, 108), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = zone.Color, Radius = 18, ShadeAmount = 0.2})
-		UIKit.shovelIcon(plate, def, {Size = UDim2.fromScale(1, 1)})
-		-- middle column: name, depth badge, description (sized to the column so nothing overlaps)
-		UIKit.label(card, def.Name, {Size = UDim2.new(0.5, -140, 0, 26), Position = UDim2.fromOffset(134, 10), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
-		local zoneTag = UIKit.panel(card, {Size = UDim2.new(0.5, -140, 0, 24), Position = UDim2.fromOffset(134, 40), Color = zone.Color, Radius = 12})
-		UIKit.label(zoneTag, "▼ " .. -zone.Bottom .. "m  •  " .. string.upper(zone.Name), {Size = UDim2.new(1, -14, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 15})
-		UIKit.label(card, def.Description, {Size = UDim2.new(0.5, -140, 0, 52), Position = UDim2.fromOffset(134, 70), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
-
-		-- right column: stat bars. Speed is shown as a multiplier of the starter pickaxe (1.5x = 50% faster swings)
-		local statsBox = Instance.new("Frame")
-		statsBox.BackgroundTransparency = 1
-		-- fills the space between the middle column and the button, with a gap before the button
-		statsBox.Size = UDim2.new(0.5, -(BUTTON_W + 44), 0, 90)
-		statsBox.Position = UDim2.new(0.5, 0, 0.5, -45)
-		statsBox.Parent = card
-		local speed = starterCooldown / def.Cooldown
-		UIKit.statBar(statsBox, "Power", def.Power / maxPower, tostring(def.Power), C.Coral, {Size = UDim2.new(1, 0, 0, 19), Position = UDim2.fromOffset(0, 0)})
-		UIKit.statBar(statsBox, "Find", def.FindChance / maxFind, math.floor(def.FindChance * 1000 + 0.5) / 10 .. "%", C.Mint, {Size = UDim2.new(1, 0, 0, 19), Position = UDim2.fromOffset(0, 23)})
-		UIKit.statBar(statsBox, "Luck", def.Luck / maxLuck, "x" .. def.Luck, C.Sun, {Size = UDim2.new(1, 0, 0, 19), Position = UDim2.fromOffset(0, 46)})
-		UIKit.statBar(statsBox, "Speed", speed / maxSpeed, string.format("%.1fx", speed), C.Sky, {Size = UDim2.new(1, 0, 0, 19), Position = UDim2.fromOffset(0, 69)})
-
-		local b = UIKit.button(card, "", {Size = UDim2.fromOffset(BUTTON_W, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5)})
-		cards[def.Id] = b
-		b.MouseButton1Click:Connect(function()
-			local owned = string.split(player:GetAttribute("OwnedShovels") or "", ",")
-			if table.find(owned, def.Id) then
-				equipShovelRemote:FireServer(def.Id)
-			else
-				buyShovelRemote:FireServer(def.Id)
-			end
-		end)
+		local tile = UIKit.button(grid, "", {Color = zone.Color, Radius = 18, Pattern = false})
+		tile.LayoutOrder = i
+		tile.Name = def.Id
+		-- a light wash from the top so the pickaxe pops
+		local wash = UIKit.panel(tile, {Size = UDim2.new(1, -12, 0.63, 0), Position = UDim2.new(0.5, 0, 0, 6), AnchorPoint = Vector2.new(0.5, 0),
+			Color = zone.Color:Lerp(Color3.new(1, 1, 1), 0.45), Radius = 14, Stroke = false, ShadeAmount = 0.35})
+		UIKit.shovelIcon(wash, def, {Size = UDim2.fromScale(1, 1)})
+		local number = UIKit.panel(tile, {Size = UDim2.fromOffset(30, 30), Position = UDim2.fromOffset(4, 4), Color = C.Ink, Radius = 15, Stroke = 2.5, StrokeColor = C.Outline})
+		number.ZIndex = 3
+		UIKit.label(number, tostring(i), {Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, MaxText = 18}).ZIndex = 4
+		local name = UIKit.label(tile, def.Name, {Size = UDim2.new(1, -10, 0.13, 0), Position = UDim2.new(0.5, 0, 0.66, 0), AnchorPoint = Vector2.new(0.5, 0), Stroke = 3, MaxText = 18})
+		name.ZIndex = 3
+		local chip = UIKit.panel(tile, {Size = UDim2.new(1, -16, 0.15, 0), Position = UDim2.new(0.5, 0, 1, -7), AnchorPoint = Vector2.new(0.5, 1),
+			Color = C.Mint, Radius = 10, Stroke = 2.5, StrokeColor = C.Outline})
+		chip.ZIndex = 3
+		local chipLabel = UIKit.label(chip, "", {Size = UDim2.new(1, -10, 0.76, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, MaxText = 16})
+		chipLabel.ZIndex = 4
+		-- thick gold ring around the selected tile
+		local selected = Instance.new("Frame")
+		selected.BackgroundTransparency = 1
+		selected.Size = UDim2.new(1, 8, 1, 8)
+		selected.Position = UDim2.fromScale(0.5, 0.5)
+		selected.AnchorPoint = Vector2.new(0.5, 0.5)
+		selected.Visible = false
+		selected.ZIndex = 5
+		selected.Parent = tile
+		UIKit.corner(selected, 22)
+		UIKit.outline(selected, 5, C.Sun)
+		cards[def.Id] = {Tile = tile, Chip = chip, ChipLabel = chipLabel, Selected = selected}
+		tile.MouseButton1Click:Connect(function() showDetails(def) end)
 	end
 end
 
 local function refreshShop()
 	local money = player:GetAttribute("Money") or 0
-	local owned = string.split(player:GetAttribute("OwnedShovels") or "", ",")
+	local owned = ownedList()
 	local equipped = player:GetAttribute("EquippedShovel")
 	moneyLabel.Text = ArtifactData.FormatMoney(money)
 	for _, def in ipairs(shopWorld.Shovels) do
-		local b = cards[def.Id]
-		if b then
+		local card = cards[def.Id]
+		if card then
 			if def.Id == equipped then
-				UIKit.setButton(b, "EQUIPPED", C.Lilac)
+				card.Chip.BackgroundColor3 = C.Lilac
+				card.ChipLabel.Text = "EQUIPPED"
 			elseif table.find(owned, def.Id) then
-				UIKit.setButton(b, "EQUIP", C.Sky)
+				card.Chip.BackgroundColor3 = C.Sky
+				card.ChipLabel.Text = "OWNED"
 			else
-				UIKit.setButton(b, def.Price <= 0 and "FREE" or ArtifactData.FormatMoney(def.Price), money >= def.Price and C.Mint or C.Coral)
+				card.Chip.BackgroundColor3 = money >= def.Price and C.Mint or C.Coral
+				card.ChipLabel.Text = def.Price <= 0 and "FREE" or ArtifactData.FormatMoney(def.Price)
 			end
 		end
 	end
+	-- keep the detail panel on what you picked; start on the next pickaxe to buy
+	local pick = selectedDef and cards[selectedDef.Id] and selectedDef
+	if not pick then
+		for _, def in ipairs(shopWorld.Shovels) do
+			if not table.find(owned, def.Id) then pick = def break end
+		end
+		pick = pick or GameConfig.GetShovel(equipped) or shopWorld.Shovels[1]
+		if pick.World ~= shopWorld.Id then pick = shopWorld.Shovels[1] end
+	end
+	showDetails(pick)
 end
 
 for _, attribute in ipairs({"Money", "OwnedShovels", "EquippedShovel"}) do
@@ -1370,6 +1511,7 @@ local function openShop(worldId)
 	local world = GameConfig.GetWorld(worldId) or GameConfig.Worlds[1]
 	if world ~= shopWorld or next(cards) == nil then
 		shopWorld = world
+		selectedDef = nil
 		buildCards(world)
 	end
 	refreshShop()

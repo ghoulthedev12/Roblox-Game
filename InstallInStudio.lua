@@ -3734,11 +3734,21 @@ function UIKit.button(parent, text, props)
 	label.ZIndex = 2
 	-- optional 3D icon on the left (props.Icon)
 	if props.Icon then
-		local h = size.Y.Offset > 0 and size.Y.Offset or 44
-		UIKit.icon(b, props.Icon, {Name = "ButtonIcon", Size = UDim2.fromOffset(h + 6, h + 6), Position = UDim2.new(0, 2, 0.5, -1),
-			AnchorPoint = Vector2.new(0, 0.5), ZIndex = 3})
-		label.Size = UDim2.new(1, -h - 16, 1, -14)
-		label.Position = UDim2.new(0.5, (h - 2) / 2, 0.5, -2)
+		if size.Y.Scale > 0 then
+			-- a button that scales with its parent: the icon scales with it (kept square)
+			local icon = UIKit.icon(b, props.Icon, {Name = "ButtonIcon", Size = UDim2.fromScale(1.12, 1.12), Position = UDim2.new(0, 2, 0.5, -1),
+				AnchorPoint = Vector2.new(0, 0.5), ZIndex = 3})
+			local square = Instance.new("UIAspectRatioConstraint")
+			square.Parent = icon
+			label.Size = UDim2.new(0.74, -10, 1, -14)
+			label.Position = UDim2.new(0.6, 0, 0.5, -2)
+		else
+			local h = size.Y.Offset > 0 and size.Y.Offset or 44
+			UIKit.icon(b, props.Icon, {Name = "ButtonIcon", Size = UDim2.fromOffset(h + 6, h + 6), Position = UDim2.new(0, 2, 0.5, -1),
+				AnchorPoint = Vector2.new(0, 0.5), ZIndex = 3})
+			label.Size = UDim2.new(1, -h - 16, 1, -14)
+			label.Position = UDim2.new(0.5, (h - 2) / 2, 0.5, -2)
+		end
 	end
 	local labelStroke = label:FindFirstChildOfClass("UIStroke")
 
@@ -17619,7 +17629,7 @@ tracker.AutoButtonColor = false
 tracker.BackgroundColor3 = rgb(40, 32, 70)
 tracker.BackgroundTransparency = 0.15
 tracker.Size = UDim2.fromOffset(300, 92)
-tracker.Position = UDim2.new(1, -128, 0, 164) -- under the world intro + event timers, left of the depth meter
+tracker.Position = UDim2.new(1, -128, 0, 202) -- under the world intro + event timers, left of the depth meter
 tracker.AnchorPoint = Vector2.new(1, 0)
 tracker.Visible = false
 tracker.Parent = gui
@@ -19269,21 +19279,92 @@ end
 ---------------------------------------------------------------------
 -- SHOVEL SHOP WINDOW
 ---------------------------------------------------------------------
-local window, content = UIKit.window(gui, "PICKAXE SHOP", UDim2.fromOffset(780, 580), C.Violet, "Pickaxe")
+-- Layout like the big simulators' shops: a grid of chunky pickaxe tiles on the left (tinted by
+-- the deepest zone each one reaches, price or OWNED / EQUIPPED on a chip), and a detail panel
+-- on the right for the selected pickaxe: a big 3D view, its depth, description, stat bars
+-- (with how much better or worse it is than the one you hold) and one big BUY / EQUIP button.
+local rgb = Color3.fromRGB
+local window, content = UIKit.window(gui, "PICKAXE SHOP", UDim2.fromOffset(900, 580), C.Violet, "Pickaxe")
 
-local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(180, 38), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 19})
-local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -24, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, StrokeColor = UIKit.shadeColor(C.Money, 0.6), MaxText = 24})
-local worldLabel = UIKit.label(content, "", {Size = UDim2.new(1, -210, 0, 28), Position = UDim2.fromOffset(4, 5), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 24})
+local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(200, 40), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 12, Stroke = 3, StrokeColor = C.Outline})
+UIKit.icon(moneyTag, "Cash", {Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0, -10, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -46, 0.74, 0), Position = UDim2.new(0.5, 16, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3, MaxText = 24})
+local worldChip = UIKit.panel(content, {Size = UDim2.fromOffset(300, 40), Position = UDim2.fromOffset(0, 0), Color = C.Ink, Radius = 12, Stroke = 3, StrokeColor = C.Outline})
+UIKit.icon(worldChip, "World", {Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0, -8, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+local worldLabel = UIKit.label(worldChip, "", {Size = UDim2.new(1, -52, 0.7, 0), Position = UDim2.new(0, 44, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Align = "Left", Color = C.Sun, Stroke = 3, MaxText = 22})
 
-local listHolder = Instance.new("Frame")
-listHolder.BackgroundTransparency = 1
-listHolder.Size = UDim2.new(1, 0, 1, -48)
-listHolder.Position = UDim2.fromOffset(0, 46)
-listHolder.Parent = content
-local list = UIKit.list(listHolder, 10)
+-- LEFT: the tile grid
+local gridHolder = Instance.new("Frame")
+gridHolder.BackgroundTransparency = 1
+gridHolder.Size = UDim2.new(0.58, 0, 1, -52)
+gridHolder.Position = UDim2.fromOffset(0, 52)
+gridHolder.Parent = content
+local grid = Instance.new("ScrollingFrame")
+grid.BackgroundTransparency = 1
+grid.BorderSizePixel = 0
+grid.ScrollBarThickness = 8
+grid.ScrollBarImageColor3 = C.Lilac
+grid.AutomaticCanvasSize = Enum.AutomaticSize.Y
+grid.CanvasSize = UDim2.new()
+grid.Size = UDim2.fromScale(1, 1)
+grid.Parent = gridHolder
+local gridLayout = Instance.new("UIGridLayout")
+gridLayout.CellSize = UDim2.new(1 / 3, -12, 0, 172) -- three across, whatever the window size
+gridLayout.CellPadding = UDim2.fromOffset(10, 12)
+gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
+gridLayout.Parent = grid
+local tileShape = Instance.new("UIAspectRatioConstraint")
+tileShape.AspectRatio = 150 / 172
+tileShape.Parent = gridLayout
+local gridPad = Instance.new("UIPadding")
+gridPad.PaddingTop = UDim.new(0, 8)
+gridPad.PaddingLeft = UDim.new(0, 6)
+gridPad.PaddingBottom = UDim.new(0, 8)
+gridPad.Parent = grid
+
+-- RIGHT: the detail panel
+local detail = UIKit.panel(content, {Size = UDim2.new(0.42, -14, 1, -52), Position = UDim2.new(1, 0, 0, 52), AnchorPoint = Vector2.new(1, 0),
+	Color = rgb(44, 36, 86), Radius = 20, Stroke = 4, StrokeColor = C.Outline, ShadeAmount = 0.15})
+local detailGlow = UIKit.panel(detail, {Size = UDim2.new(1, -24, 0.4, 0), Position = UDim2.new(0.5, 0, 0, 10), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Violet, Radius = 16, Stroke = 3, StrokeColor = C.Outline, ShadeAmount = 0.3})
+local detailRays = Instance.new("UIGradient") -- a soft spotlight behind the pickaxe
+detailRays.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(150, 150, 170))
+detailRays.Rotation = 90
+detailRays.Parent = detailGlow
+local detailIconHolder = Instance.new("Frame")
+detailIconHolder.BackgroundTransparency = 1
+detailIconHolder.Size = UDim2.fromScale(1, 1)
+detailIconHolder.Parent = detailGlow
+local detailName = UIKit.label(detail, "", {Size = UDim2.new(1, -24, 0.075, 0), Position = UDim2.new(0.5, 0, 0.415, 0), AnchorPoint = Vector2.new(0.5, 0),
+	Stroke = 3.5, MaxText = 30})
+local detailDepth = UIKit.panel(detail, {Size = UDim2.new(1, -60, 0.06, 0), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Sky, Radius = 14, Stroke = 2.5, StrokeColor = C.Outline})
+local detailDepthLabel = UIKit.label(detailDepth, "", {Size = UDim2.new(1, -16, 0.76, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+	Stroke = 2.5, MaxText = 16})
+local detailDesc = UIKit.label(detail, "", {Size = UDim2.new(1, -28, 0.085, 0), Position = UDim2.new(0.5, 0, 0.57, 0), AnchorPoint = Vector2.new(0.5, 0),
+	Color = rgb(215, 208, 245), Stroke = 0, Font = Enum.Font.GothamBold, MaxText = 15})
+detailDesc.TextWrapped = true
+local statRows = {}
+local STAT_COLORS = {Power = C.Coral, Find = C.Mint, Luck = C.Sun, Speed = C.Sky}
+for i, name in ipairs({"Power", "Find", "Luck", "Speed"}) do
+	local row = Instance.new("Frame")
+	row.BackgroundTransparency = 1
+	row.Size = UDim2.new(1, -28, 0.05, 0)
+	row.Position = UDim2.new(0.5, 0, 0.665 + (i - 1) * 0.056, 0)
+	row.AnchorPoint = Vector2.new(0.5, 0)
+	row.Parent = detail
+	UIKit.label(row, string.upper(name), {Size = UDim2.new(0.24, 0, 1, 0), Align = "Left", Color = STAT_COLORS[name], Stroke = 2.5, MaxText = 16})
+	local track = UIKit.panel(row, {Size = UDim2.new(0.44, 0, 0.7, 0), Position = UDim2.new(0.25, 0, 0.15, 0), Color = rgb(28, 22, 58), Radius = 8, Stroke = 2, StrokeColor = C.Outline, Shade = false})
+	local fill = UIKit.panel(track, {Size = UDim2.fromScale(0.5, 1), Color = STAT_COLORS[name], Radius = 8, Stroke = false, ShadeAmount = 0.3})
+	local value = UIKit.label(row, "", {Size = UDim2.new(0.3, 0, 1, 0), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Align = "Right", Stroke = 2.5, MaxText = 16, RichText = true})
+	statRows[name] = {Fill = fill, Value = value}
+end
+local detailButton = UIKit.button(detail, "", {Size = UDim2.new(1, -28, 0.11, 0), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), MaxText = 28, Icon = "Cash"})
 
 local shopWorld = GameConfig.Worlds[1] -- which world's shop is open
-local cards = {} -- [shovelId] = button
+local cards = {} -- [shovelId] = {Tile, Chip, ChipLabel, Check}
+local selectedDef = nil
+local statMax = {}
 
 -- the best value of each stat in this world, so the bars fill relative to the top shovel
 local function maxStat(world, key)
@@ -19292,76 +19373,146 @@ local function maxStat(world, key)
 	return m
 end
 
-local BUTTON_W = 116 -- the buy / equip button on each shop card
+local function speedOf(def)
+	return shopWorld.Shovels[1].Cooldown / def.Cooldown
+end
+
+local function ownedList()
+	return string.split(player:GetAttribute("OwnedShovels") or "", ",")
+end
+
+-- "+50%" in green / "-20%" in red, comparing a stat with the pickaxe you hold
+local function compare(value, held)
+	if not held or held == 0 or math.abs(value - held) < 1e-6 then return "" end
+	local change = (value / held - 1) * 100
+	local color = change > 0 and "#7CFF8A" or "#FF7A8C"
+	return string.format('  <font color="%s">%s%d%%</font>', color, change > 0 and "+" or "", math.floor(change + 0.5))
+end
+
+local function showDetails(def)
+	selectedDef = def
+	local zone = shopWorld.Zones[def.MaxZone]
+	for id, card in pairs(cards) do
+		card.Selected.Visible = id == def.Id
+	end
+	for _, child in ipairs(detailIconHolder:GetChildren()) do child:Destroy() end
+	UIKit.shovelIcon(detailIconHolder, def, {Size = UDim2.fromScale(1, 1)})
+	detailGlow.BackgroundColor3 = zone.Color
+	detailName.Text = def.Name
+	detailDepth.BackgroundColor3 = zone.Color:Lerp(C.Outline, 0.15)
+	detailDepthLabel.Text = "DIGS TO " .. -zone.Bottom .. "m  ·  " .. string.upper(zone.Name)
+	detailDesc.Text = def.Description or ""
+	local heldId = player:GetAttribute("EquippedShovel")
+	local held = GameConfig.GetShovel(heldId)
+	if held and held.World ~= shopWorld.Id then held = nil end
+	local stats = {
+		Power = {def.Power / statMax.Power, tostring(def.Power), def.Power, held and held.Power},
+		Find = {def.FindChance / statMax.Find, math.floor(def.FindChance * 1000 + 0.5) / 10 .. "%", def.FindChance, held and held.FindChance},
+		Luck = {def.Luck / statMax.Luck, "x" .. def.Luck, def.Luck, held and held.Luck},
+		Speed = {speedOf(def) / statMax.Speed, string.format("%.1fx", speedOf(def)), speedOf(def), held and speedOf(held)},
+	}
+	for name, s in pairs(stats) do
+		local row = statRows[name]
+		TweenService:Create(row.Fill, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {Size = UDim2.fromScale(math.clamp(s[1], 0.06, 1), 1)}):Play()
+		row.Value.Text = s[2] .. (held and held.Id ~= def.Id and compare(s[3], s[4]) or "")
+	end
+	local money = player:GetAttribute("Money") or 0
+	if def.Id == heldId then
+		UIKit.setButton(detailButton, "EQUIPPED", C.Lilac, "Star")
+	elseif table.find(ownedList(), def.Id) then
+		UIKit.setButton(detailButton, "EQUIP", C.Sky, "Pickaxe")
+	else
+		UIKit.setButton(detailButton, def.Price <= 0 and "FREE" or ("BUY  " .. ArtifactData.FormatMoney(def.Price)), money >= def.Price and C.Mint or C.Coral,
+			money >= def.Price and "Cash" or "Lock")
+	end
+end
+
+detailButton.MouseButton1Click:Connect(function()
+	local def = selectedDef
+	if not def then return end
+	if table.find(ownedList(), def.Id) then
+		equipShovelRemote:FireServer(def.Id)
+	else
+		buyShovelRemote:FireServer(def.Id)
+	end
+end)
 
 local function buildCards(world)
-	for _, child in ipairs(list:GetChildren()) do
+	for _, child in ipairs(grid:GetChildren()) do
 		if child:IsA("GuiObject") then child:Destroy() end
 	end
 	cards = {}
 	worldLabel.Text = world.Name
-	local maxFind, maxLuck, maxPower = maxStat(world, "FindChance"), maxStat(world, "Luck"), maxStat(world, "Power")
 	local minCooldown = math.huge
 	for _, def in ipairs(world.Shovels) do minCooldown = math.min(minCooldown, def.Cooldown) end
-	local starterCooldown = world.Shovels[1].Cooldown
-	local maxSpeed = starterCooldown / minCooldown
+	statMax = {Power = maxStat(world, "Power"), Find = maxStat(world, "FindChance"), Luck = maxStat(world, "Luck"),
+		Speed = world.Shovels[1].Cooldown / minCooldown}
 
 	for i, def in ipairs(world.Shovels) do
 		local zone = world.Zones[def.MaxZone]
-		local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 132), Color = C.White, Radius = 20, ShadeAmount = 0.06})
-		card.LayoutOrder = i
-		-- icon on a colored plate (plate color = the deepest zone it reaches)
-		local plate = UIKit.panel(card, {Size = UDim2.fromOffset(108, 108), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = zone.Color, Radius = 18, ShadeAmount = 0.2})
-		UIKit.shovelIcon(plate, def, {Size = UDim2.fromScale(1, 1)})
-		-- middle column: name, depth badge, description (sized to the column so nothing overlaps)
-		UIKit.label(card, def.Name, {Size = UDim2.new(0.5, -140, 0, 26), Position = UDim2.fromOffset(134, 10), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
-		local zoneTag = UIKit.panel(card, {Size = UDim2.new(0.5, -140, 0, 24), Position = UDim2.fromOffset(134, 40), Color = zone.Color, Radius = 12})
-		UIKit.label(zoneTag, "▼ " .. -zone.Bottom .. "m  •  " .. string.upper(zone.Name), {Size = UDim2.new(1, -14, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, StrokeColor = C.Ink, MaxText = 15})
-		UIKit.label(card, def.Description, {Size = UDim2.new(0.5, -140, 0, 52), Position = UDim2.fromOffset(134, 70), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
-
-		-- right column: stat bars. Speed is shown as a multiplier of the starter pickaxe (1.5x = 50% faster swings)
-		local statsBox = Instance.new("Frame")
-		statsBox.BackgroundTransparency = 1
-		-- fills the space between the middle column and the button, with a gap before the button
-		statsBox.Size = UDim2.new(0.5, -(BUTTON_W + 44), 0, 90)
-		statsBox.Position = UDim2.new(0.5, 0, 0.5, -45)
-		statsBox.Parent = card
-		local speed = starterCooldown / def.Cooldown
-		UIKit.statBar(statsBox, "Power", def.Power / maxPower, tostring(def.Power), C.Coral, {Size = UDim2.new(1, 0, 0, 19), Position = UDim2.fromOffset(0, 0)})
-		UIKit.statBar(statsBox, "Find", def.FindChance / maxFind, math.floor(def.FindChance * 1000 + 0.5) / 10 .. "%", C.Mint, {Size = UDim2.new(1, 0, 0, 19), Position = UDim2.fromOffset(0, 23)})
-		UIKit.statBar(statsBox, "Luck", def.Luck / maxLuck, "x" .. def.Luck, C.Sun, {Size = UDim2.new(1, 0, 0, 19), Position = UDim2.fromOffset(0, 46)})
-		UIKit.statBar(statsBox, "Speed", speed / maxSpeed, string.format("%.1fx", speed), C.Sky, {Size = UDim2.new(1, 0, 0, 19), Position = UDim2.fromOffset(0, 69)})
-
-		local b = UIKit.button(card, "", {Size = UDim2.fromOffset(BUTTON_W, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5)})
-		cards[def.Id] = b
-		b.MouseButton1Click:Connect(function()
-			local owned = string.split(player:GetAttribute("OwnedShovels") or "", ",")
-			if table.find(owned, def.Id) then
-				equipShovelRemote:FireServer(def.Id)
-			else
-				buyShovelRemote:FireServer(def.Id)
-			end
-		end)
+		local tile = UIKit.button(grid, "", {Color = zone.Color, Radius = 18, Pattern = false})
+		tile.LayoutOrder = i
+		tile.Name = def.Id
+		-- a light wash from the top so the pickaxe pops
+		local wash = UIKit.panel(tile, {Size = UDim2.new(1, -12, 0.63, 0), Position = UDim2.new(0.5, 0, 0, 6), AnchorPoint = Vector2.new(0.5, 0),
+			Color = zone.Color:Lerp(Color3.new(1, 1, 1), 0.45), Radius = 14, Stroke = false, ShadeAmount = 0.35})
+		UIKit.shovelIcon(wash, def, {Size = UDim2.fromScale(1, 1)})
+		local number = UIKit.panel(tile, {Size = UDim2.fromOffset(30, 30), Position = UDim2.fromOffset(4, 4), Color = C.Ink, Radius = 15, Stroke = 2.5, StrokeColor = C.Outline})
+		number.ZIndex = 3
+		UIKit.label(number, tostring(i), {Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, MaxText = 18}).ZIndex = 4
+		local name = UIKit.label(tile, def.Name, {Size = UDim2.new(1, -10, 0.13, 0), Position = UDim2.new(0.5, 0, 0.66, 0), AnchorPoint = Vector2.new(0.5, 0), Stroke = 3, MaxText = 18})
+		name.ZIndex = 3
+		local chip = UIKit.panel(tile, {Size = UDim2.new(1, -16, 0.15, 0), Position = UDim2.new(0.5, 0, 1, -7), AnchorPoint = Vector2.new(0.5, 1),
+			Color = C.Mint, Radius = 10, Stroke = 2.5, StrokeColor = C.Outline})
+		chip.ZIndex = 3
+		local chipLabel = UIKit.label(chip, "", {Size = UDim2.new(1, -10, 0.76, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, MaxText = 16})
+		chipLabel.ZIndex = 4
+		-- thick gold ring around the selected tile
+		local selected = Instance.new("Frame")
+		selected.BackgroundTransparency = 1
+		selected.Size = UDim2.new(1, 8, 1, 8)
+		selected.Position = UDim2.fromScale(0.5, 0.5)
+		selected.AnchorPoint = Vector2.new(0.5, 0.5)
+		selected.Visible = false
+		selected.ZIndex = 5
+		selected.Parent = tile
+		UIKit.corner(selected, 22)
+		UIKit.outline(selected, 5, C.Sun)
+		cards[def.Id] = {Tile = tile, Chip = chip, ChipLabel = chipLabel, Selected = selected}
+		tile.MouseButton1Click:Connect(function() showDetails(def) end)
 	end
 end
 
 local function refreshShop()
 	local money = player:GetAttribute("Money") or 0
-	local owned = string.split(player:GetAttribute("OwnedShovels") or "", ",")
+	local owned = ownedList()
 	local equipped = player:GetAttribute("EquippedShovel")
 	moneyLabel.Text = ArtifactData.FormatMoney(money)
 	for _, def in ipairs(shopWorld.Shovels) do
-		local b = cards[def.Id]
-		if b then
+		local card = cards[def.Id]
+		if card then
 			if def.Id == equipped then
-				UIKit.setButton(b, "EQUIPPED", C.Lilac)
+				card.Chip.BackgroundColor3 = C.Lilac
+				card.ChipLabel.Text = "EQUIPPED"
 			elseif table.find(owned, def.Id) then
-				UIKit.setButton(b, "EQUIP", C.Sky)
+				card.Chip.BackgroundColor3 = C.Sky
+				card.ChipLabel.Text = "OWNED"
 			else
-				UIKit.setButton(b, def.Price <= 0 and "FREE" or ArtifactData.FormatMoney(def.Price), money >= def.Price and C.Mint or C.Coral)
+				card.Chip.BackgroundColor3 = money >= def.Price and C.Mint or C.Coral
+				card.ChipLabel.Text = def.Price <= 0 and "FREE" or ArtifactData.FormatMoney(def.Price)
 			end
 		end
 	end
+	-- keep the detail panel on what you picked; start on the next pickaxe to buy
+	local pick = selectedDef and cards[selectedDef.Id] and selectedDef
+	if not pick then
+		for _, def in ipairs(shopWorld.Shovels) do
+			if not table.find(owned, def.Id) then pick = def break end
+		end
+		pick = pick or GameConfig.GetShovel(equipped) or shopWorld.Shovels[1]
+		if pick.World ~= shopWorld.Id then pick = shopWorld.Shovels[1] end
+	end
+	showDetails(pick)
 end
 
 for _, attribute in ipairs({"Money", "OwnedShovels", "EquippedShovel"}) do
@@ -19374,6 +19525,7 @@ local function openShop(worldId)
 	local world = GameConfig.GetWorld(worldId) or GameConfig.Worlds[1]
 	if world ~= shopWorld or next(cards) == nil then
 		shopWorld = world
+		selectedDef = nil
 		buildCards(world)
 	end
 	refreshShop()
@@ -19790,48 +19942,101 @@ local travelRemote = remotes:WaitForChild("TravelToWorld")
 local player = Players.LocalPlayer
 local gui = UIKit.screen(player, "WorldMapGui", 3)
 
-local window, content = UIKit.window(gui, "WORLD MAP", UDim2.fromOffset(680, 560), C.Sky, "World")
+local rgb = Color3.fromRGB
+-- A grid of big world tiles (like the zone pickers in the top simulators): each tile is
+-- painted in its world's color with a planet badge and number, the name in big outlined text,
+-- the world's twist on a chip, and one big button (TRAVEL / price / YOU ARE HERE). Locked worlds
+-- are dimmed with a padlock.
+local window, content = UIKit.window(gui, "WORLD MAP", UDim2.fromOffset(820, 600), C.Sky, "World")
 
-local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(180, 38), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 19})
-local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -24, 0.72, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2.5, StrokeColor = UIKit.shadeColor(C.Money, 0.6), MaxText = 24})
-UIKit.label(content, "Unlock new dig sites with cash!", {Size = UDim2.new(1, -210, 0, 28), Position = UDim2.fromOffset(4, 5), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 22})
+local moneyTag = UIKit.panel(content, {Size = UDim2.fromOffset(200, 40), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Money, Radius = 12, Stroke = 3, StrokeColor = C.Outline})
+UIKit.icon(moneyTag, "Cash", {Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0, -10, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+local moneyLabel = UIKit.label(moneyTag, "", {Size = UDim2.new(1, -46, 0.74, 0), Position = UDim2.new(0.5, 16, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3, MaxText = 24})
+local hintChip = UIKit.panel(content, {Size = UDim2.new(1, -224, 0, 40), Color = C.Ink, Radius = 12, Stroke = 3, StrokeColor = C.Outline})
+UIKit.icon(hintChip, "Lock", {Size = UDim2.fromOffset(44, 44), Position = UDim2.new(0, -8, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+UIKit.label(hintChip, "Unlock new dig sites with cash!", {Size = UDim2.new(1, -52, 0.68, 0), Position = UDim2.new(0, 44, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+	Align = "Left", Color = C.Sun, Stroke = 3, MaxText = 22})
 
-local listHolder = Instance.new("Frame")
-listHolder.BackgroundTransparency = 1
-listHolder.Size = UDim2.new(1, 0, 1, -48)
-listHolder.Position = UDim2.fromOffset(0, 46)
-listHolder.Parent = content
-local list = UIKit.list(listHolder, 10)
+local gridHolder = Instance.new("Frame")
+gridHolder.BackgroundTransparency = 1
+gridHolder.Size = UDim2.new(1, 0, 1, -52)
+gridHolder.Position = UDim2.fromOffset(0, 52)
+gridHolder.Parent = content
+local list = Instance.new("ScrollingFrame")
+list.BackgroundTransparency = 1
+list.BorderSizePixel = 0
+list.ScrollBarThickness = 8
+list.ScrollBarImageColor3 = C.Lilac
+list.AutomaticCanvasSize = Enum.AutomaticSize.Y
+list.CanvasSize = UDim2.new()
+list.Size = UDim2.fromScale(1, 1)
+list.Parent = gridHolder
+local gridLayout = Instance.new("UIGridLayout")
+gridLayout.CellSize = UDim2.new(1 / 3, -14, 0, 262) -- three across, whatever the window size
+gridLayout.CellPadding = UDim2.fromOffset(12, 14)
+local tileShape = Instance.new("UIAspectRatioConstraint")
+tileShape.AspectRatio = 240 / 262
+tileShape.Parent = gridLayout
+gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
+gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+gridLayout.Parent = list
+local gridPad = Instance.new("UIPadding")
+gridPad.PaddingTop = UDim.new(0, 8)
+gridPad.PaddingBottom = UDim.new(0, 8)
+gridPad.Parent = list
 
 local PLANET_COLORS = {C.Mint, C.Sun, C.Coral, C.Sky, C.Lilac, C.Violet, C.Money, C.Coral, C.Sky}
 local buttons = {} -- [worldId] = button
+local tiles = {}   -- [worldId] = {Tile, Shade, Lock, Here}
 
 for _, world in ipairs(GameConfig.Worlds) do
-	local planetColor = world.Look and world.Look.Main or PLANET_COLORS[world.Id] or C.Lilac
-	local card = UIKit.panel(list, {Size = UDim2.new(1, -6, 0, 108), Color = world.Enabled and C.White or C.PanelTint, Radius = 20, Stroke = 3, StrokeColor = planetColor, ShadeAmount = 0.06})
-	-- a soft wash of the world's color across the card (a little preview of its look)
-	local wash = Instance.new("UIGradient")
-	wash.Color = ColorSequence.new(planetColor:Lerp(Color3.new(1, 1, 1), 0.55), Color3.new(1, 1, 1))
-	wash.Transparency = NumberSequence.new(0, 0)
-	wash.Parent = card
-	card.LayoutOrder = world.Id
-	-- little planet badge with the world number
-	local planet = UIKit.panel(card, {Size = UDim2.fromOffset(62, 62), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Color = planetColor, Radius = 31, ShadeAmount = 0.25})
-	UIKit.label(planet, tostring(world.Id), {Size = UDim2.fromScale(0.56, 0.56), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3, StrokeColor = UIKit.shadeColor(planetColor, 0.6), MaxText = 30})
-	UIKit.label(card, world.Name, {Size = UDim2.new(0.62, -90, 0, 28), Position = UDim2.fromOffset(88, 10), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 24})
-	-- the world's unique mechanic, as a tag
+	local color = world.Look and world.Look.Main or PLANET_COLORS[world.Id] or C.Lilac
+	local tile = UIKit.panel(list, {Color = color, Radius = 22, Stroke = 4, StrokeColor = C.Outline, ShadeAmount = 0.3})
+	tile.LayoutOrder = world.Id
+	-- a lighter band behind the planet
+	local band = UIKit.panel(tile, {Size = UDim2.new(1, -16, 0.43, 0), Position = UDim2.new(0.5, 0, 0, 8), AnchorPoint = Vector2.new(0.5, 0),
+		Color = color:Lerp(Color3.new(1, 1, 1), 0.5), Radius = 16, Stroke = false, ShadeAmount = 0.4})
+	-- the planet: a glossy ball with a ring and the world's number
+	local planet = UIKit.panel(band, {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+		Color = color, Radius = 44, Stroke = 4, StrokeColor = C.Outline, ShadeAmount = 0.45})
+	local ring = Instance.new("Frame")
+	ring.BackgroundTransparency = 1
+	ring.Size = UDim2.new(1.5, 0, 0.28, 0)
+	ring.Position = UDim2.fromScale(0.5, 0.56)
+	ring.AnchorPoint = Vector2.new(0.5, 0.5)
+	ring.Rotation = -14
+	ring.Parent = planet
+	UIKit.corner(ring, 999)
+	UIKit.outline(ring, 4, color:Lerp(Color3.new(1, 1, 1), 0.65))
+	local number = UIKit.label(planet, tostring(world.Id), {Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+		Stroke = 4, MaxText = 52})
+	number.ZIndex = 3
+	local planetShape = Instance.new("UIAspectRatioConstraint")
+	planetShape.Parent = planet
+	UIKit.label(tile, world.Name, {Size = UDim2.new(1, -20, 0.13, 0), Position = UDim2.new(0.5, 0, 0.47, 0), AnchorPoint = Vector2.new(0.5, 0), Stroke = 3.5, MaxText = 26})
+	-- the world's twist on a dark chip
 	local info = WorldGimmicks[world.Id]
 	if info then
-		local tag = UIKit.panel(card, {Size = UDim2.fromOffset(170, 24), Position = UDim2.fromOffset(88, 40), Color = C.Ink, Radius = 12, Stroke = 2, StrokeColor = planetColor, Shade = false})
-		UIKit.icon(tag, info.Icon, {Size = UDim2.fromOffset(34, 34), Position = UDim2.new(0, -8, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
-		UIKit.label(tag, string.upper(info.Tag), {Size = UDim2.new(1, -40, 0.72, 0), Position = UDim2.new(0.5, 12, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 0, MaxText = 14})
+		local tag = UIKit.panel(tile, {Size = UDim2.new(1, -40, 0.115, 0), Position = UDim2.new(0.5, 10, 0.62, 0), AnchorPoint = Vector2.new(0.5, 0),
+			Color = C.Ink, Radius = 15, Stroke = 2.5, StrokeColor = C.Outline})
+		UIKit.icon(tag, info.Icon, {Size = UDim2.fromOffset(40, 40), Position = UDim2.new(0, -22, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
+		UIKit.label(tag, string.upper(info.Tag), {Size = UDim2.new(1, -36, 0.72, 0), Position = UDim2.new(0.5, 8, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5),
+			Color = C.Sun, Stroke = 2.5, MaxText = 16})
 	end
-	local sub = world.Enabled and (world.Tagline or (#world.Shovels .. " pickaxes  •  digs down to " .. -world.Zones[#world.Zones].Bottom .. "m  •  your museum is here"))
-		or "Still being excavated... coming soon!"
-	UIKit.label(card, sub, {Size = UDim2.new(0.62, -90, 0, 34), Position = UDim2.fromOffset(88, 70), Align = "Left", VAlign = "Top", Color = C.Grey, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
-
-	local b = UIKit.button(card, "", {Icon = "World", Size = UDim2.new(0.3, 0, 0, 54), Position = UDim2.new(1, -14, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), MaxText = 20})
+	local b = UIKit.button(tile, "", {Icon = "World", Size = UDim2.new(1, -20, 0.2, 0), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), MaxText = 22})
 	buttons[world.Id] = b
+	-- locked: the planet is covered by a dark veil with a padlock
+	local veil = UIKit.panel(band, {Size = UDim2.fromScale(1, 1), Color = C.Outline, Radius = 16, Stroke = false, Shade = false})
+	veil.BackgroundTransparency = 0.45
+	veil.ZIndex = 4
+	local lock = UIKit.icon(veil, "Lock", {Size = UDim2.fromScale(0.6, 0.6), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 5})
+	local lockShape = Instance.new("UIAspectRatioConstraint")
+	lockShape.Parent = lock
+	-- you are here: a pin on the planet
+	local here = UIKit.icon(band, "Pin", {Size = UDim2.fromScale(0.45, 0.45), Position = UDim2.new(1, -6, 0, 4), AnchorPoint = Vector2.new(1, 0), ZIndex = 5})
+	local hereShape = Instance.new("UIAspectRatioConstraint")
+	hereShape.Parent = here
+	tiles[world.Id] = {Tile = tile, Veil = veil, Here = here, Lock = lock}
 	b.MouseButton1Click:Connect(function()
 		local unlocked = table.find(string.split(player:GetAttribute("UnlockedWorlds") or "1", ","), tostring(world.Id))
 		if not world.Enabled then
@@ -19854,14 +20059,18 @@ local function refresh()
 	moneyLabel.Text = ArtifactData.FormatMoney(money)
 	for _, world in ipairs(GameConfig.Worlds) do
 		local b = buttons[world.Id]
+		local t = tiles[world.Id]
+		local isUnlocked = table.find(unlocked, tostring(world.Id)) ~= nil
+		t.Veil.Visible = not isUnlocked
+		t.Here.Visible = world.Id == current
 		if not world.Enabled then
-			UIKit.setButton(b, "SOON • " .. ArtifactData.FormatMoney(world.Price), C.Grey, "Lock")
+			UIKit.setButton(b, "SOON", C.Grey, "Lock")
 		elseif world.Id == current then
 			UIKit.setButton(b, "YOU ARE HERE", C.Lilac, "Pin")
-		elseif table.find(unlocked, tostring(world.Id)) then
+		elseif isUnlocked then
 			UIKit.setButton(b, "TRAVEL", C.Sky, "World")
 		else
-			UIKit.setButton(b, ArtifactData.FormatMoney(world.Price), money >= world.Price and C.Mint or C.Coral, "Lock")
+			UIKit.setButton(b, ArtifactData.FormatMoney(world.Price), money >= world.Price and C.Mint or C.Coral, money >= world.Price and "Cash" or "Lock")
 		end
 	end
 end
@@ -20025,25 +20234,31 @@ local VENT_RANGE = 14    -- how close to a vent refills your air
 
 local gui = UIKit.screen(player, "WorldGimmickGui", 4)
 
--- intro line (top right)
-local intro = UIKit.panel(gui, {Size = UDim2.fromOffset(330, 64), Position = UDim2.new(1, -14, 0, 12), AnchorPoint = Vector2.new(1, 0), Color = C.Ink, Radius = 18, Stroke = 2.5, StrokeColor = C.Lilac, ShadeAmount = 0.2})
-intro.BackgroundTransparency = 0.1
+-- intro card (top right): the world's twist on a colored badge, a big outlined title, the
+-- explanation in bold readable text, and a bar along the bottom that runs down while it shows
+local INTRO_SECONDS = 9
+local intro = UIKit.panel(gui, {Size = UDim2.fromOffset(400, 100), Position = UDim2.new(1, -14, 0, 12), AnchorPoint = Vector2.new(1, 0),
+	Color = C.Ink, Radius = 18, Stroke = 4, StrokeColor = C.Outline, ShadeAmount = 0.25})
 intro.Visible = false
-local introIcon = UIKit.icon(intro, nil, {Size = UDim2.fromOffset(56, 56), Position = UDim2.new(0, -18, 0, -14), ZIndex = 2})
-local introTitle = UIKit.label(intro, "", {Size = UDim2.new(1, -50, 0, 22), Position = UDim2.fromOffset(42, 6), Align = "Left", Color = C.Sun, Stroke = 0, MaxText = 18})
-local introText = UIKit.label(intro, "", {Size = UDim2.new(1, -20, 0, 32), Position = UDim2.fromOffset(12, 28), Align = "Left", VAlign = "Top",
-	Color = C.White, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
+local introBadge = UIKit.panel(intro, {Size = UDim2.fromOffset(78, 78), Position = UDim2.new(0, 10, 0.5, -3), AnchorPoint = Vector2.new(0, 0.5),
+	Color = C.Violet, Radius = 16, Stroke = 3, StrokeColor = C.Outline, ShadeAmount = 0.35})
+local introIcon = UIKit.icon(introBadge, nil, {Size = UDim2.fromScale(1.05, 1.05), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
+local introTitle = UIKit.label(intro, "", {Size = UDim2.new(1, -110, 0, 30), Position = UDim2.fromOffset(100, 8), Align = "Left", Color = C.Sun, Stroke = 3, MaxText = 24})
+local introText = UIKit.label(intro, "", {Size = UDim2.new(1, -112, 0, 46), Position = UDim2.fromOffset(100, 40), Align = "Left", VAlign = "Top",
+	Color = C.White, Stroke = 0, Font = Enum.Font.GothamBold, TextSize = 14})
+local introTimer = UIKit.panel(intro, {Size = UDim2.new(1, -24, 0, 6), Position = UDim2.new(0.5, 0, 1, -8), AnchorPoint = Vector2.new(0.5, 1),
+	Color = C.Sun, Radius = 3, Stroke = false, Shade = false})
 
 -- event + boost timers (top right, small pills under the intro)
 local function pill(y, color, icon)
-	local p = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 32), Position = UDim2.new(1, -14, 0, y), AnchorPoint = Vector2.new(1, 0), Color = color, Radius = 16, Stroke = 2})
+	local p = UIKit.panel(gui, {Size = UDim2.fromOffset(260, 34), Position = UDim2.new(1, -14, 0, y), AnchorPoint = Vector2.new(1, 0), Color = color, Radius = 12, Stroke = 3, StrokeColor = C.Outline})
 	p.Visible = false
 	UIKit.icon(p, icon, {Size = UDim2.fromOffset(40, 40), Position = UDim2.new(0, -10, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
-	local l = UIKit.label(p, "", {Size = UDim2.new(1, -44, 1, -10), Position = UDim2.new(0.5, 14, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
+	local l = UIKit.label(p, "", {Size = UDim2.new(1, -44, 1, -10), Position = UDim2.new(0.5, 14, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2.5, MaxText = 17})
 	return p, l
 end
-local eventPill, eventLabel = pill(84, C.Violet, "Star")
-local boostPill, boostLabel = pill(122, C.Coral, "Candy")
+local eventPill, eventLabel = pill(120, C.Violet, "Star")
+local boostPill, boostLabel = pill(160, C.Coral, "Candy")
 
 -- air meter (bottom right, above the flare button's spot)
 local airPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 40), Position = UDim2.new(1, -16, 1, -196), AnchorPoint = Vector2.new(1, 1), Color = C.Ink, Radius = 20, Stroke = 2.5, StrokeColor = C.Sky})
@@ -20100,9 +20315,13 @@ local function showIntro(worldId)
 	introTitle.Text = info.Title
 	UIKit.setIcon(introIcon, info.Icon)
 	introText.Text = info.Text
+	local world = GameConfig.GetWorld(worldId)
+	introBadge.BackgroundColor3 = world and world.Look and world.Look.Main or C.Violet
 	intro.Visible = true
 	UIKit.pop(intro, 0.7)
-	task.delay(9, function()
+	introTimer.Size = UDim2.new(1, -24, 0, 6)
+	game:GetService("TweenService"):Create(introTimer, TweenInfo.new(INTRO_SECONDS, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 6)}):Play()
+	task.delay(INTRO_SECONDS, function()
 		if introToken == myToken then intro.Visible = false end
 	end)
 end
@@ -20469,4 +20688,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 19:15). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 19:21). Now save the place (Ctrl+S).")

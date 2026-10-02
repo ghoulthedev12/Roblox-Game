@@ -26,25 +26,31 @@ local VENT_RANGE = 14    -- how close to a vent refills your air
 
 local gui = UIKit.screen(player, "WorldGimmickGui", 4)
 
--- intro line (top right)
-local intro = UIKit.panel(gui, {Size = UDim2.fromOffset(330, 64), Position = UDim2.new(1, -14, 0, 12), AnchorPoint = Vector2.new(1, 0), Color = C.Ink, Radius = 18, Stroke = 2.5, StrokeColor = C.Lilac, ShadeAmount = 0.2})
-intro.BackgroundTransparency = 0.1
+-- intro card (top right): the world's twist on a colored badge, a big outlined title, the
+-- explanation in bold readable text, and a bar along the bottom that runs down while it shows
+local INTRO_SECONDS = 9
+local intro = UIKit.panel(gui, {Size = UDim2.fromOffset(400, 100), Position = UDim2.new(1, -14, 0, 12), AnchorPoint = Vector2.new(1, 0),
+	Color = C.Ink, Radius = 18, Stroke = 4, StrokeColor = C.Outline, ShadeAmount = 0.25})
 intro.Visible = false
-local introIcon = UIKit.icon(intro, nil, {Size = UDim2.fromOffset(56, 56), Position = UDim2.new(0, -18, 0, -14), ZIndex = 2})
-local introTitle = UIKit.label(intro, "", {Size = UDim2.new(1, -50, 0, 22), Position = UDim2.fromOffset(42, 6), Align = "Left", Color = C.Sun, Stroke = 0, MaxText = 18})
-local introText = UIKit.label(intro, "", {Size = UDim2.new(1, -20, 0, 32), Position = UDim2.fromOffset(12, 28), Align = "Left", VAlign = "Top",
-	Color = C.White, Stroke = 0, Font = UIKit.BodyFont, TextSize = 13})
+local introBadge = UIKit.panel(intro, {Size = UDim2.fromOffset(78, 78), Position = UDim2.new(0, 10, 0.5, -3), AnchorPoint = Vector2.new(0, 0.5),
+	Color = C.Violet, Radius = 16, Stroke = 3, StrokeColor = C.Outline, ShadeAmount = 0.35})
+local introIcon = UIKit.icon(introBadge, nil, {Size = UDim2.fromScale(1.05, 1.05), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
+local introTitle = UIKit.label(intro, "", {Size = UDim2.new(1, -110, 0, 30), Position = UDim2.fromOffset(100, 8), Align = "Left", Color = C.Sun, Stroke = 3, MaxText = 24})
+local introText = UIKit.label(intro, "", {Size = UDim2.new(1, -112, 0, 46), Position = UDim2.fromOffset(100, 40), Align = "Left", VAlign = "Top",
+	Color = C.White, Stroke = 0, Font = Enum.Font.GothamBold, TextSize = 14})
+local introTimer = UIKit.panel(intro, {Size = UDim2.new(1, -24, 0, 6), Position = UDim2.new(0.5, 0, 1, -8), AnchorPoint = Vector2.new(0.5, 1),
+	Color = C.Sun, Radius = 3, Stroke = false, Shade = false})
 
 -- event + boost timers (top right, small pills under the intro)
 local function pill(y, color, icon)
-	local p = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 32), Position = UDim2.new(1, -14, 0, y), AnchorPoint = Vector2.new(1, 0), Color = color, Radius = 16, Stroke = 2})
+	local p = UIKit.panel(gui, {Size = UDim2.fromOffset(260, 34), Position = UDim2.new(1, -14, 0, y), AnchorPoint = Vector2.new(1, 0), Color = color, Radius = 12, Stroke = 3, StrokeColor = C.Outline})
 	p.Visible = false
 	UIKit.icon(p, icon, {Size = UDim2.fromOffset(40, 40), Position = UDim2.new(0, -10, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 2})
-	local l = UIKit.label(p, "", {Size = UDim2.new(1, -44, 1, -10), Position = UDim2.new(0.5, 14, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2, MaxText = 15})
+	local l = UIKit.label(p, "", {Size = UDim2.new(1, -44, 1, -10), Position = UDim2.new(0.5, 14, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Color = C.White, Stroke = 2.5, MaxText = 17})
 	return p, l
 end
-local eventPill, eventLabel = pill(84, C.Violet, "Star")
-local boostPill, boostLabel = pill(122, C.Coral, "Candy")
+local eventPill, eventLabel = pill(120, C.Violet, "Star")
+local boostPill, boostLabel = pill(160, C.Coral, "Candy")
 
 -- air meter (bottom right, above the flare button's spot)
 local airPanel = UIKit.panel(gui, {Size = UDim2.fromOffset(250, 40), Position = UDim2.new(1, -16, 1, -196), AnchorPoint = Vector2.new(1, 1), Color = C.Ink, Radius = 20, Stroke = 2.5, StrokeColor = C.Sky})
@@ -101,9 +107,13 @@ local function showIntro(worldId)
 	introTitle.Text = info.Title
 	UIKit.setIcon(introIcon, info.Icon)
 	introText.Text = info.Text
+	local world = GameConfig.GetWorld(worldId)
+	introBadge.BackgroundColor3 = world and world.Look and world.Look.Main or C.Violet
 	intro.Visible = true
 	UIKit.pop(intro, 0.7)
-	task.delay(9, function()
+	introTimer.Size = UDim2.new(1, -24, 0, 6)
+	game:GetService("TweenService"):Create(introTimer, TweenInfo.new(INTRO_SECONDS, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 6)}):Play()
+	task.delay(INTRO_SECONDS, function()
 		if introToken == myToken then intro.Visible = false end
 	end)
 end

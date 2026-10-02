@@ -260,11 +260,21 @@ function UIKit.button(parent, text, props)
 	label.ZIndex = 2
 	-- optional 3D icon on the left (props.Icon)
 	if props.Icon then
-		local h = size.Y.Offset > 0 and size.Y.Offset or 44
-		UIKit.icon(b, props.Icon, {Name = "ButtonIcon", Size = UDim2.fromOffset(h + 6, h + 6), Position = UDim2.new(0, 2, 0.5, -1),
-			AnchorPoint = Vector2.new(0, 0.5), ZIndex = 3})
-		label.Size = UDim2.new(1, -h - 16, 1, -14)
-		label.Position = UDim2.new(0.5, (h - 2) / 2, 0.5, -2)
+		if size.Y.Scale > 0 then
+			-- a button that scales with its parent: the icon scales with it (kept square)
+			local icon = UIKit.icon(b, props.Icon, {Name = "ButtonIcon", Size = UDim2.fromScale(1.12, 1.12), Position = UDim2.new(0, 2, 0.5, -1),
+				AnchorPoint = Vector2.new(0, 0.5), ZIndex = 3})
+			local square = Instance.new("UIAspectRatioConstraint")
+			square.Parent = icon
+			label.Size = UDim2.new(0.74, -10, 1, -14)
+			label.Position = UDim2.new(0.6, 0, 0.5, -2)
+		else
+			local h = size.Y.Offset > 0 and size.Y.Offset or 44
+			UIKit.icon(b, props.Icon, {Name = "ButtonIcon", Size = UDim2.fromOffset(h + 6, h + 6), Position = UDim2.new(0, 2, 0.5, -1),
+				AnchorPoint = Vector2.new(0, 0.5), ZIndex = 3})
+			label.Size = UDim2.new(1, -h - 16, 1, -14)
+			label.Position = UDim2.new(0.5, (h - 2) / 2, 0.5, -2)
+		end
 	end
 	local labelStroke = label:FindFirstChildOfClass("UIStroke")
 
