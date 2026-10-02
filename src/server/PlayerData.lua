@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local QuestData = require(ReplicatedStorage:WaitForChild("QuestData"))
+local PetData = require(ReplicatedStorage:WaitForChild("PetData"))
 
 local ProfileService = require(script.Parent:WaitForChild("ProfileService"))
 
@@ -65,6 +66,10 @@ local function defaultData()
 		Quests = {},       -- [worldId] = {Step = n, Progress = n}
 		Discovered = {},   -- [memeId] = true: every meme ever found
 		IndexClaimed = {}, -- [worldId] = true: that world's index is complete (+income on its memes)
+		-- pets (PetManager, PetData)
+		Pets = {},         -- [uid] = petId
+		EquippedPets = {}, -- [uid] = true: the pets following you (and boosting you)
+		NextPetUid = 1,
 	}
 end
 
@@ -110,8 +115,8 @@ local function computeIncome(data)
 			total += income
 		end
 	end
-	-- every rebirth adds a permanent income bonus
-	return total * (1 + GameConfig.RebirthIncomeBonus * (data.Rebirths or 0))
+	-- every rebirth adds a permanent income bonus; equipped pets add their money boost
+	return total * (1 + GameConfig.RebirthIncomeBonus * (data.Rebirths or 0)) * (1 + PetData.Bonuses(data).Money)
 end
 
 local function refresh(player)

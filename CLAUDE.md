@@ -29,6 +29,10 @@ game systems. The owner is a beginner on Windows: explain steps simply, one at a
   (contact sheet in assets/models/previews). Batch colors are appended in batch order; a later
   batch may use an earlier batch's colors (the sheet/build scripts load every batch).
   `person(...)`'s arm/leg points are RELATIVE to the figure (x, y, z args move it).
+- Pets: `tools/blender/pets.py` -> `PetMeshes.fbx` (9 eggs + 45 pets, one egg and five pets
+  per world) + `src/shared/PetMeshData.lua`; the installer moves them to ReplicatedStorage >
+  PetModels. Stats and eggs: `src/shared/PetData.lua`; models: `PetVisuals` (round stand-ins
+  until imported; `MESH_TURN` there if they face backwards); server `PetManager`, client `PetClient`.
 - Portals: `tools/blender/portals.py` -> `PortalMeshes.fbx` + `src/shared/PortalMeshes.lua`.
 - UI icons: `tools/blender/ui_icons.py` -> `UIIcons.fbx`, pictures in `assets/ui/icons`,
   `src/shared/UIIconList.lua`. Shown with `UIKit.icon(parent, "Name")`.

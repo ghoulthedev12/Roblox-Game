@@ -1,11 +1,13 @@
 -- DigBoosts (ModuleScript in ServerScriptService)
--- Temporary digging bonuses from the world gimmicks: world-wide events (Gold Rush, Blizzard
--- luck, Glitch Surge) and personal boosts (the Candy merchant's Sugar Rush).
+-- Digging bonuses: the world gimmicks' temporary ones (world-wide events like Gold Rush,
+-- Blizzard luck, Glitch Surge, and personal boosts like the Candy merchant's Sugar Rush),
+-- and the equipped pets' Dig Luck and Dig Speed.
 -- DigManager asks DigBoosts.Get(player, world) on every swing. Each player's attributes
 -- "DigSpeedMult" (swing cooldown multiplier), "WorldEvent" and "WorldEventEnds" and
 -- "PersonalBoost"/"PersonalBoostEnds" are kept up to date so the client can show them.
 
 local Players = game:GetService("Players")
+local PetData = require(game:GetService("ReplicatedStorage"):WaitForChild("PetData"))
 
 local DigBoosts = {}
 
@@ -56,6 +58,11 @@ function DigBoosts.Get(player, world)
 		luck *= p.LuckMult or 1
 		cooldown *= p.CooldownMult or 1
 	end
+	-- equipped pets (PetManager keeps these attributes up to date)
+	local petLuck = player:GetAttribute("PetLuck") or 0
+	find *= 1 + math.min(petLuck, PetData.FindCap)
+	luck *= 1 + petLuck * 0.5
+	cooldown /= 1 + (player:GetAttribute("PetSpeed") or 0)
 	return {Find = find, Luck = luck, Cooldown = cooldown}
 end
 
@@ -67,7 +74,7 @@ task.spawn(function()
 			local e = DigBoosts.GetWorldEvent(worldId)
 			local p = DigBoosts.GetPersonal(player)
 			local now = os.clock()
-			local cooldown = (e and e.CooldownMult or 1) * (p and p.CooldownMult or 1)
+			local cooldown = (e and e.CooldownMult or 1) * (p and p.CooldownMult or 1) / (1 + (player:GetAttribute("PetSpeed") or 0))
 			player:SetAttribute("DigSpeedMult", cooldown)
 			player:SetAttribute("WorldEvent", e and e.Name or "")
 			player:SetAttribute("WorldEventLeft", e and math.ceil(e.EndsAt - now) or 0)

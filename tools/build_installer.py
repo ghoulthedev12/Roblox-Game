@@ -80,6 +80,8 @@ for _id, _rest in _re.findall(r'^\t(\w+) = \{(Size = .*)$', open("src/shared/Pic
 _npc_ids = []
 for _id, _rest in _re.findall(r'^\t(\w+) = \{(Size = .*)$', open("src/shared/NPCMeshData.lua", encoding="utf-8").read(), _re.M):
     _npc_ids += [_id, _id + "Glow"] if "GlowSize" in _rest else [_id]
+# the Blender pets and eggs (assets/models/PetMeshes.fbx)
+_pet_ids = _re.findall(r'^\t(\w+) = \{Size = ', open("src/shared/PetMeshData.lua", encoding="utf-8").read(), _re.M)
 out.append('''local function collectMeshes(folderName, ids, hint)
 	local RS = game:GetService("ReplicatedStorage")
 	local isMeme = {}
@@ -159,9 +161,10 @@ collectMeshes("MemeMeshes", {%s}, "No meme meshes yet: File > Import 3D > assets
 collectMeshes("PortalModels", {%s}, "No portal meshes yet: File > Import 3D > assets/models/PortalMeshes.fbx, then run this installer again")
 collectMeshes("UIIcons", {%s}, "No 3D UI icons yet: File > Import 3D > assets/models/UIIcons.fbx, then run this installer again")
 collectMeshes("PickaxeMeshes", {%s}, "No pickaxe meshes yet: File > Import 3D > assets/models/PickaxeMeshes.fbx, then run this installer again")
-collectMeshes("NPCModels", {%s}, "No shopkeeper meshes yet: File > Import 3D > assets/models/NPCMeshes.fbx, then run this installer again")''' % (
+collectMeshes("NPCModels", {%s}, "No shopkeeper meshes yet: File > Import 3D > assets/models/NPCMeshes.fbx, then run this installer again")
+collectMeshes("PetModels", {%s}, "No pet meshes yet: File > Import 3D > assets/models/PetMeshes.fbx, then run this installer again")''' % (
     ", ".join('"%s"' % i for i in _meme_ids), ", ".join('"%s"' % i for i in _portal_ids), ", ".join('"%s"' % i for i in _icon_ids),
-    ", ".join('"%s"' % i for i in _pickaxe_ids), ", ".join('"%s"' % i for i in _npc_ids)))
+    ", ".join('"%s"' % i for i in _pickaxe_ids), ", ".join('"%s"' % i for i in _npc_ids), ", ".join('"%s"' % i for i in _pet_ids)))
 for parent, name in DELETE:
     out.append(f'do local old = {parent}:FindFirstChild("{name}") if old then old:Destroy() print("Removed {name}") end end')
 for folder, parent in TARGETS:

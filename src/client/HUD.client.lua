@@ -16,6 +16,7 @@ local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
 local UIBus = require(ReplicatedStorage:WaitForChild("UIBus"))
+local PetVisuals = require(ReplicatedStorage:WaitForChild("PetVisuals"))
 local C = UIKit.Colors
 local rgb = Color3.fromRGB
 
@@ -99,11 +100,11 @@ end
 
 local menu = Instance.new("Frame")
 menu.BackgroundTransparency = 1
-menu.Size = UDim2.fromOffset(116, 350)
+menu.Size = UDim2.fromOffset(224, 350)
 menu.Position = UDim2.new(0, 12, 0, 74)
 menu.Parent = gui
 
-local bagButton = UIKit.button(menu, "", {Size = UDim2.fromOffset(98, 98), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0),
+local bagButton = UIKit.button(menu, "", {Size = UDim2.fromOffset(98, 98), Position = UDim2.new(0, 58, 0, 0), AnchorPoint = Vector2.new(0.5, 0),
 	Color = rgb(56, 150, 226), Radius = 12, Pattern = false})
 bagButton.Name = "Bag"
 UIKit.icon(bagButton, "Bag", {Size = UDim2.fromScale(0.92, 0.92), Position = UDim2.fromScale(0.5, 0.44), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
@@ -121,7 +122,7 @@ rebirthButton.Name = "Rebirth"
 rebirthButton.Text = ""
 rebirthButton.BackgroundTransparency = 1
 rebirthButton.Size = UDim2.fromOffset(116, 120)
-rebirthButton.Position = UDim2.new(0.5, 0, 0, 112)
+rebirthButton.Position = UDim2.new(0, 58, 0, 112)
 rebirthButton.AnchorPoint = Vector2.new(0.5, 0)
 rebirthButton.Parent = menu
 UIKit.icon(rebirthButton, "Rebirth", {Size = UDim2.fromOffset(104, 104), Position = UDim2.new(0.5, 0, 0, -8), AnchorPoint = Vector2.new(0.5, 0)})
@@ -135,7 +136,7 @@ rebirthButton.MouseButton1Click:Connect(function()
 end)
 
 -- Quests: the same square tile as the Bag, in gold (world quests + Meme Index, QuestClient)
-local questButton = UIKit.button(menu, "", {Size = UDim2.fromOffset(98, 98), Position = UDim2.new(0.5, 0, 0, 244), AnchorPoint = Vector2.new(0.5, 0),
+local questButton = UIKit.button(menu, "", {Size = UDim2.fromOffset(98, 98), Position = UDim2.new(0, 58, 0, 244), AnchorPoint = Vector2.new(0.5, 0),
 	Color = rgb(255, 170, 40), Radius = 12, Pattern = false})
 questButton.Name = "Quests"
 UIKit.icon(questButton, "Star", {Size = UDim2.fromScale(0.86, 0.86), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
@@ -146,6 +147,19 @@ local questKey = UIKit.panel(questButton, {Size = UDim2.fromOffset(24, 24), Posi
 questKey.ZIndex = 4
 UIKit.label(questKey, "J", {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, MaxText = 16}).ZIndex = 5
 questButton.MouseButton1Click:Connect(function() UIBus.Fire("Quests") end)
+
+-- Pets: a pink tile with the World 1 egg on it, beside Quests (the Pets window, PetClient)
+local petButton = UIKit.button(menu, "", {Size = UDim2.fromOffset(98, 98), Position = UDim2.new(0, 166, 0, 244), AnchorPoint = Vector2.new(0.5, 0),
+	Color = rgb(255, 120, 170), Radius = 12, Pattern = false})
+petButton.Name = "Pets"
+PetVisuals.viewport(petButton, "ByteEgg", {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.4), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
+UIKit.label(petButton, "Pets", {Size = UDim2.new(1, -6, 0, 30), Position = UDim2.new(0.5, 0, 0.5, 8), AnchorPoint = Vector2.new(0.5, 0.5),
+	Color = rgb(255, 230, 240), Stroke = 3.5, MaxText = 26}).ZIndex = 4
+local petKey = UIKit.panel(petButton, {Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0, 6, 1, -6), AnchorPoint = Vector2.new(0, 1),
+	Color = rgb(170, 50, 100), Radius = 5, Stroke = 2, StrokeColor = C.White, Shade = false})
+petKey.ZIndex = 4
+UIKit.label(petKey, "P", {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, MaxText = 16}).ZIndex = 5
+petButton.MouseButton1Click:Connect(function() UIBus.Fire("Pets") end)
 
 ---------------------------------------------------------------------
 -- TOP RIGHT CORNER: a small dark round Settings button up in Roblox's top bar row

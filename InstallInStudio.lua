@@ -96,6 +96,7 @@ collectMeshes("PortalModels", {"GatePortalFrame", "GatePortalGlow", "GateHorizon
 collectMeshes("UIIcons", {"Shop", "Bag", "Museum", "Rebirth", "World", "Settings", "Gem", "Cash", "Income", "SoundOn", "SoundOff", "Music", "Bell", "Lock", "Luck", "Pickaxe", "Star", "Sparkle", "Heart", "Pin", "Alien", "Fire", "Skull", "Disk", "Volcano", "Candy", "Ghost", "Bubble", "Ice", "Snowflake", "Coin", "Warning", "Boom", "Party", "Picture", "Hole", "Elevator", "Crown", "FaceHappy", "FaceLaugh", "FaceLove", "FaceWow", "FaceCool", "FaceMeh", "FaceSick"}, "No 3D UI icons yet: File > Import 3D > assets/models/UIIcons.fbx, then run this installer again")
 collectMeshes("PickaxeMeshes", {"BlossomTrowel", "BambooSpade", "KoiScoop", "LanternSpade", "LanternSpadeGlow", "KatanaShovel", "KatanaShovelGlow", "PetalExcavator", "PetalExcavatorGlow", "HanamiHarvester", "HanamiHarvesterGlow", "MeteorScoop", "MeteorScoopGlow", "RocketSpade", "RocketSpadeGlow", "OrbitShovel", "OrbitShovelGlow", "NebulaTrowel", "NebulaTrowelGlow", "CometCrusher", "CometCrusherGlow", "SupernovaSpade", "SupernovaSpadeGlow", "EventHorizon", "EventHorizonGlow", "SnowballScoop", "IcicleSpade", "PenguinPaddle", "FrostbiteShovel", "FrostbiteShovelGlow", "BlizzardBreaker", "BlizzardBreakerGlow", "AuroraAuger", "AuroraAugerGlow", "AbsoluteZeroSpade", "AbsoluteZeroSpadeGlow", "SandyScoop", "CactusSpade", "MirageShovel", "MirageShovelGlow", "PharaohSpade", "SolarSifter", "SolarSifterGlow", "SandstormDrill", "SunKingShovel", "SunKingShovelGlow", "SeashellScoop", "AnchorSpade", "PearlShovel", "PearlShovelGlow", "TridentTrowel", "TridentTrowelGlow", "KrakenClaw", "TidalExcavator", "TidalExcavatorGlow", "AtlantisSpade", "AtlantisSpadeGlow", "LollipopScoop", "CandyCaneSpade", "GummyShovel", "SprinkleSpade", "ChocoCrusher", "JawbreakerAuger", "SugarRushSpade", "SugarRushSpadeGlow", "EmberSpade", "EmberSpadeGlow", "AnvilShovel", "AnvilShovelGlow", "MagmaScoop", "MagmaScoopGlow", "ObsidianBlade", "ObsidianBladeGlow", "DragonboneSpade", "DragonboneSpadeGlow", "InfernoAuger", "InfernoAugerGlow", "CoreBreaker", "CoreBreakerGlow", "PlaceholderSpade", "PixelShovel", "LagSpade", "LagSpadeGlow", "WireframeShovel", "WireframeShovelGlow", "Error404Scoop", "Error404ScoopGlow", "DebugDrill", "DebugDrillGlow", "TheFinalPatch", "TheFinalPatchGlow"}, "No pickaxe meshes yet: File > Import 3D > assets/models/PickaxeMeshes.fbx, then run this installer again")
 collectMeshes("NPCModels", {"ShopRobot", "ShopRobotGlow", "ArtDealer", "ArtDealerGlow"}, "No shopkeeper meshes yet: File > Import 3D > assets/models/NPCMeshes.fbx, then run this installer again")
+collectMeshes("PetModels", {"ByteEgg", "PixelPup", "BufferSnail", "FloppyFrog", "WifiOwl", "ServerDragon", "BlossomEgg", "PetalBunny", "LanternMoth", "KoiBot", "BambooPanda", "BlossomKitsune", "CosmicEgg", "StarBlob", "CometPup", "PlanetTurtle", "AstroAxolotl", "NebulaWhale", "FrostEgg", "SnowSeal", "PenguinBot", "IceFox", "YetiCub", "CrystalMammoth", "ChromeEgg", "SandBeetle", "CactusCat", "DroneCamel", "ChromeScorpion", "SunSphinx", "CoralEgg", "BubbleFish", "CrabBot", "JellyLamp", "OctoHacker", "TideSeahorse", "CandyEgg", "GummyCub", "DonutPup", "LollipopSheep", "CupcakeCat", "SugarDragon", "MagmaEgg", "EmberSlime", "MagmaGecko", "AnvilTurtle", "LavaGolem", "Phoenix", "GlitchEgg", "ErrorCube", "PixelGhost", "GlitchCat", "CodeBug", "NullUnicorn"}, "No pet meshes yet: File > Import 3D > assets/models/PetMeshes.fbx, then run this installer again")
 do local old = game:GetService("ServerScriptService"):FindFirstChild("DataManager") if old then old:Destroy() print("Removed DataManager") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
 do local old = game:GetService("ReplicatedStorage"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
@@ -2571,6 +2572,442 @@ return {
 	ShopRobot = {Size = Vector3.new(4.629, 8.100, 4.583), Center = Vector3.new(-0.175, 4.250, -0.742), GlowSize = Vector3.new(3.380, 9.090, 2.650), GlowCenter = Vector3.new(-0.000, 3.945, -0.045), GlowColor = Color3.fromRGB(90, 235, 255)},
 	ArtDealer = {Size = Vector3.new(4.135, 9.527, 3.720), Center = Vector3.new(0.103, 4.764, -0.140), GlowSize = Vector3.new(2.040, 4.650, 1.650), GlowCenter = Vector3.new(-0.000, 7.195, -0.505), GlowColor = Color3.fromRGB(255, 210, 90)},
 }
+]=])
+install(game:GetService("ReplicatedStorage"), "PetData", "ModuleScript", [=[
+-- PetData (ModuleScript in ReplicatedStorage)
+-- The pets: every world has an egg stand (PetManager builds them) with one egg, and every egg
+-- holds five pets, one of each rarity. Hatching costs cash; the pet you get is rolled by
+-- rarity chance. Equipped pets follow you around and boost you:
+--   Money      +% income from the memes in your museum
+--   Luck       "dig boost": you find memes more often, and rarer ones
+--   Speed      you swing your pickaxe faster
+-- Rarer pets and pets from later worlds give bigger boosts. The meshes are made in Blender
+-- (tools/blender/pets.py, ReplicatedStorage > PetModels); PetVisuals shows them.
+
+local GameConfig = require(script.Parent:WaitForChild("GameConfig"))
+
+local rgb = Color3.fromRGB
+
+local PetData = {}
+
+PetData.MaxEquipped = 3  -- pets following you (and boosting you) at once
+PetData.MaxOwned = 50    -- pets you can keep; delete some to hatch more
+PetData.SpeedCap = 1.5   -- all your pets together make you swing at most 150% faster
+PetData.FindCap = 2      -- ...and find memes at most 200% more often (luck itself has no cap)
+
+-- Chance is out of 100. Power = the boost a pet of this rarity gives in World 1 (0.05 = +5%);
+-- Height = how tall the pet is, in studs.
+PetData.Rarities = {
+	{Name = "Common", Chance = 60, Color = rgb(196, 202, 214), Power = 0.05, Height = 2.3},
+	{Name = "Uncommon", Chance = 25, Color = rgb(90, 220, 110), Power = 0.10, Height = 2.5},
+	{Name = "Rare", Chance = 10, Color = rgb(70, 160, 255), Power = 0.20, Height = 2.7},
+	{Name = "Epic", Chance = 4, Color = rgb(185, 95, 255), Power = 0.40, Height = 3.0},
+	{Name = "Legendary", Chance = 1, Color = rgb(255, 190, 40), Power = 0.80, Height = 3.4},
+}
+
+-- pets from later worlds are stronger: World 9's are 5.8x World 1's
+function PetData.WorldFactor(worldId)
+	return 1 + 0.6 * (worldId - 1)
+end
+
+PetData.Stats = {
+	Money = {Name = "Money", Icon = "Cash", Color = rgb(110, 230, 90), Text = "income"},
+	Luck = {Name = "Dig Luck", Icon = "Luck", Color = rgb(255, 205, 60), Text = "dig luck"},
+	Speed = {Name = "Dig Speed", Icon = "Pickaxe", Color = rgb(90, 200, 255), Text = "dig speed"},
+}
+
+-- {egg id, egg name, the five pets from Common to Legendary: {id, name, description}}
+local EGGS = {
+	{"ByteEgg", "Byte Egg", {
+		{"PixelPup", "Pixel Pup", "A good boy rendered in 8 bits."},
+		{"BufferSnail", "Buffer Snail", "Its shell never stops loading."},
+		{"FloppyFrog", "Floppy Frog", "Carries 1.44 MB on its back."},
+		{"WifiOwl", "Wi-Fi Owl", "Full bars, wherever it flies."},
+		{"ServerDragon", "Server Dragon", "Guards the old internet's last server."},
+	}},
+	{"BlossomEgg", "Blossom Egg", {
+		{"PetalBunny", "Petal Bunny", "Hops around with a blossom on its head."},
+		{"LanternMoth", "Lantern Moth", "Its wings are paper lanterns."},
+		{"KoiBot", "Koi Bot", "A robot koi that swims through the air."},
+		{"BambooPanda", "Bamboo Panda", "Never lets go of its bamboo."},
+		{"BlossomKitsune", "Blossom Kitsune", "Three tails, each tipped in blossom."},
+	}},
+	{"CosmicEgg", "Cosmic Egg", {
+		{"StarBlob", "Star Blob", "A little star that fell off the sky."},
+		{"CometPup", "Comet Pup", "Leaves a trail of stardust."},
+		{"PlanetTurtle", "Planet Turtle", "Carries a whole planet on its back."},
+		{"AstroAxolotl", "Astro Axolotl", "Always ready for a spacewalk."},
+		{"NebulaWhale", "Nebula Whale", "Swims between galaxies."},
+	}},
+	{"FrostEgg", "Frost Egg", {
+		{"SnowSeal", "Snow Seal", "Soft, round and a little cold."},
+		{"PenguinBot", "Penguin Bot", "Waddles at 60 frames per second."},
+		{"IceFox", "Ice Fox", "Its tail is made of ice crystals."},
+		{"YetiCub", "Yeti Cub", "Fluffy. Very fluffy."},
+		{"CrystalMammoth", "Crystal Mammoth", "Crystals grow from its back."},
+	}},
+	{"ChromeEgg", "Chrome Egg", {
+		{"SandBeetle", "Sand Beetle", "Polished to a mirror shine."},
+		{"CactusCat", "Cactus Cat", "Please don't pet it."},
+		{"DroneCamel", "Drone Camel", "Its humps have propellers."},
+		{"ChromeScorpion", "Chrome Scorpion", "Golden claws, chrome tail."},
+		{"SunSphinx", "Sun Sphinx", "Asks riddles. Knows every answer."},
+	}},
+	{"CoralEgg", "Coral Egg", {
+		{"BubbleFish", "Bubble Fish", "Puffs up when it's happy."},
+		{"CrabBot", "Crab Bot", "Upgraded its claws."},
+		{"JellyLamp", "Jelly Lamp", "Glows softly in the deep."},
+		{"OctoHacker", "Octo Hacker", "Types with eight arms at once."},
+		{"TideSeahorse", "Tide Seahorse", "Wears a crown of golden fins."},
+	}},
+	{"CandyEgg", "Candy Egg", {
+		{"GummyCub", "Gummy Cub", "Squishy, sweet and a bit sticky."},
+		{"DonutPup", "Donut Pup", "Never goes swimming without its donut."},
+		{"LollipopSheep", "Lollipop Sheep", "Its wool is cotton candy."},
+		{"CupcakeCat", "Cupcake Cat", "Lives in a cupcake. Wears the frosting."},
+		{"SugarDragon", "Sugar Dragon", "Candy-cane horns, sprinkles everywhere."},
+	}},
+	{"MagmaEgg", "Magma Egg", {
+		{"EmberSlime", "Ember Slime", "Warm to the touch. Very warm."},
+		{"MagmaGecko", "Magma Gecko", "Lava runs down its back."},
+		{"AnvilTurtle", "Anvil Turtle", "Its shell is an anvil."},
+		{"LavaGolem", "Lava Golem", "A heart of molten rock."},
+		{"Phoenix", "Phoenix", "Born again from every flame."},
+	}},
+	{"GlitchEgg", "Glitch Egg", {
+		{"ErrorCube", "Error Cube", "Something went wrong. It's fine."},
+		{"PixelGhost", "Pixel Ghost", "Haunts old video games."},
+		{"GlitchCat", "Glitch Cat", "Partly loaded. Mostly cat."},
+		{"CodeBug", "Code Bug", "The bug that every coder fears."},
+		{"NullUnicorn", "Null Unicorn", "A unicorn from outside the code."},
+	}},
+}
+
+-- which boosts each rarity gives; the stats take turns from world to world
+local STAT_ORDER = {"Money", "Luck", "Speed"}
+local function boostsFor(worldId, rarity)
+	local function stat(k) return STAT_ORDER[(worldId + k - 2) % 3 + 1] end
+	if rarity <= 3 then return {stat(rarity)} end
+	if rarity == 4 then return {stat(1), stat(2)} end
+	return {"Money", "Luck", "Speed"}
+end
+
+local EGG_PRICE_WORLD_1 = 5000
+local EGG_PRICE_SHARE = 0.004 -- later worlds: an egg costs 0.4% of the world's price
+
+PetData.Eggs = {}  -- [worldId] = egg
+PetData.EggsById = {}
+PetData.Pets = {}  -- [petId] = pet
+PetData.Order = {} -- every pet id, by world then rarity
+for worldId, entry in ipairs(EGGS) do
+	local world = GameConfig.GetWorld(worldId)
+	local price = worldId == 1 and EGG_PRICE_WORLD_1 or math.floor((world and world.Price or 1e6) * EGG_PRICE_SHARE)
+	local egg = {Id = entry[1], Name = entry[2], World = worldId, Price = price, Pets = {}}
+	for rarity, info in ipairs(entry[3]) do
+		local pet = {Id = info[1], Name = info[2], Description = info[3], World = worldId, Egg = egg.Id, Rarity = rarity,
+			Boosts = {}}
+		local power = PetData.Rarities[rarity].Power * PetData.WorldFactor(worldId)
+		for _, statName in ipairs(boostsFor(worldId, rarity)) do
+			-- speed is worth more per percent, so it gets half
+			pet.Boosts[statName] = statName == "Speed" and power * 0.5 or power
+		end
+		PetData.Pets[pet.Id] = pet
+		table.insert(egg.Pets, pet.Id)
+		table.insert(PetData.Order, pet.Id)
+	end
+	PetData.Eggs[worldId] = egg
+	PetData.EggsById[egg.Id] = egg
+end
+
+-- pets that fly (they hover beside you instead of hopping along the ground)
+for _, id in ipairs({"WifiOwl", "ServerDragon", "LanternMoth", "KoiBot", "StarBlob", "NebulaWhale", "BubbleFish", "JellyLamp",
+	"SugarDragon", "Phoenix", "PixelGhost", "ErrorCube"}) do
+	PetData.Pets[id].Fly = true
+end
+
+function PetData.GetPet(id)
+	return PetData.Pets[id]
+end
+
+function PetData.Rarity(pet)
+	return PetData.Rarities[pet.Rarity]
+end
+
+-- picks a pet from an egg (rng: a Random)
+function PetData.Roll(egg, rng)
+	local roll = rng:NextNumber() * 100
+	for i = #PetData.Rarities, 1, -1 do
+		local chance = PetData.Rarities[i].Chance
+		if roll < chance then return egg.Pets[i] end
+		roll -= chance
+	end
+	return egg.Pets[1]
+end
+
+-- one number to compare pets by (for Equip Best and sorting): all its boosts added up
+function PetData.Score(pet)
+	local total = 0
+	for statName, value in pairs(pet.Boosts) do
+		total += statName == "Speed" and value * 2 or value
+	end
+	return total
+end
+
+-- The boosts from a list of pet ids: {Money = 0.25, Luck = 0.1, Speed = 0.05} (fractions)
+function PetData.Total(petIds)
+	local total = {Money = 0, Luck = 0, Speed = 0}
+	for _, id in ipairs(petIds) do
+		local pet = PetData.Pets[id]
+		if pet then
+			for statName, value in pairs(pet.Boosts) do
+				total[statName] += value
+			end
+		end
+	end
+	total.Speed = math.min(total.Speed, PetData.SpeedCap)
+	return total
+end
+
+-- The boosts of a save's equipped pets (data.Pets = {[uid] = petId}, data.EquippedPets = {[uid] = true})
+function PetData.Bonuses(data)
+	local ids = {}
+	for uid in pairs(data.EquippedPets or {}) do
+		local id = data.Pets and data.Pets[uid]
+		if id then table.insert(ids, id) end
+	end
+	return PetData.Total(ids)
+end
+
+-- "+25%" for a fraction
+function PetData.Percent(value)
+	local p = value * 100
+	if p >= 100 then return "+" .. math.floor(p + 0.5) .. "%" end
+	return "+" .. (math.floor(p * 10 + 0.5) / 10) .. "%"
+end
+
+return PetData
+]=])
+install(game:GetService("ReplicatedStorage"), "PetMeshData", "ModuleScript", [=[
+-- PetMeshData (ModuleScript in ReplicatedStorage)
+-- Written by tools/blender/pets.py: the size (studs, as modeled) of every pet and egg mesh.
+-- File > Import 3D of assets/models/PetMeshes.fbx + the installer put the meshes in
+-- ReplicatedStorage > PetModels. The game scales each one to the size it wants.
+return {
+	ByteEgg = {Size = Vector3.new(2.438, 3.250, 2.438)},
+	PixelPup = {Size = Vector3.new(2.354, 2.900, 3.860)},
+	BufferSnail = {Size = Vector3.new(1.380, 2.583, 3.030)},
+	FloppyFrog = {Size = Vector3.new(2.301, 2.423, 2.414)},
+	WifiOwl = {Size = Vector3.new(3.183, 3.400, 2.037)},
+	ServerDragon = {Size = Vector3.new(4.272, 3.468, 4.730)},
+	BlossomEgg = {Size = Vector3.new(2.357, 3.255, 2.357)},
+	PetalBunny = {Size = Vector3.new(1.600, 3.585, 2.500)},
+	LanternMoth = {Size = Vector3.new(2.859, 2.670, 1.500)},
+	KoiBot = {Size = Vector3.new(2.583, 2.366, 2.896)},
+	BambooPanda = {Size = Vector3.new(2.215, 3.025, 2.270)},
+	BlossomKitsune = {Size = Vector3.new(2.169, 3.242, 3.831)},
+	CosmicEgg = {Size = Vector3.new(3.500, 3.180, 3.331)},
+	StarBlob = {Size = Vector3.new(2.225, 2.529, 0.793)},
+	CometPup = {Size = Vector3.new(1.935, 2.592, 4.805)},
+	PlanetTurtle = {Size = Vector3.new(3.500, 2.155, 3.623)},
+	AstroAxolotl = {Size = Vector3.new(2.734, 2.725, 3.705)},
+	NebulaWhale = {Size = Vector3.new(3.484, 2.640, 3.235)},
+	FrostEgg = {Size = Vector3.new(2.263, 3.230, 2.249)},
+	SnowSeal = {Size = Vector3.new(2.002, 2.109, 2.938)},
+	PenguinBot = {Size = Vector3.new(2.040, 3.270, 1.619)},
+	IceFox = {Size = Vector3.new(1.450, 3.108, 4.113)},
+	YetiCub = {Size = Vector3.new(2.589, 3.103, 1.878)},
+	CrystalMammoth = {Size = Vector3.new(2.034, 3.243, 3.576)},
+	ChromeEgg = {Size = Vector3.new(2.310, 3.230, 2.339)},
+	SandBeetle = {Size = Vector3.new(2.514, 1.837, 2.990)},
+	CactusCat = {Size = Vector3.new(2.558, 3.196, 1.840)},
+	DroneCamel = {Size = Vector3.new(1.400, 3.174, 3.050)},
+	ChromeScorpion = {Size = Vector3.new(2.410, 2.747, 4.694)},
+	SunSphinx = {Size = Vector3.new(2.200, 3.922, 3.146)},
+	CoralEgg = {Size = Vector3.new(2.238, 3.180, 2.238)},
+	BubbleFish = {Size = Vector3.new(2.796, 3.136, 1.979)},
+	CrabBot = {Size = Vector3.new(3.348, 2.158, 2.275)},
+	JellyLamp = {Size = Vector3.new(2.100, 2.664, 2.100)},
+	OctoHacker = {Size = Vector3.new(2.977, 2.964, 2.977)},
+	TideSeahorse = {Size = Vector3.new(1.200, 3.702, 2.128)},
+	CandyEgg = {Size = Vector3.new(2.420, 3.747, 2.394)},
+	GummyCub = {Size = Vector3.new(2.127, 3.000, 1.400)},
+	DonutPup = {Size = Vector3.new(2.100, 2.567, 3.030)},
+	LollipopSheep = {Size = Vector3.new(2.000, 2.974, 2.350)},
+	CupcakeCat = {Size = Vector3.new(2.300, 3.559, 2.300)},
+	SugarDragon = {Size = Vector3.new(3.593, 3.460, 3.950)},
+	MagmaEgg = {Size = Vector3.new(2.396, 3.220, 2.396)},
+	EmberSlime = {Size = Vector3.new(2.300, 2.410, 2.300)},
+	MagmaGecko = {Size = Vector3.new(2.300, 1.375, 4.148)},
+	AnvilTurtle = {Size = Vector3.new(1.650, 2.100, 3.050)},
+	LavaGolem = {Size = Vector3.new(3.099, 2.950, 1.510)},
+	Phoenix = {Size = Vector3.new(4.425, 3.431, 3.170)},
+	GlitchEgg = {Size = Vector3.new(2.420, 3.180, 2.443)},
+	ErrorCube = {Size = Vector3.new(2.250, 3.037, 1.950)},
+	PixelGhost = {Size = Vector3.new(2.600, 2.460, 1.520)},
+	GlitchCat = {Size = Vector3.new(2.120, 3.198, 2.747)},
+	CodeBug = {Size = Vector3.new(2.533, 2.080, 2.910)},
+	NullUnicorn = {Size = Vector3.new(1.700, 3.882, 4.199)},
+}
+]=])
+install(game:GetService("ReplicatedStorage"), "PetVisuals", "ModuleScript", [=[
+-- PetVisuals (ModuleScript in ReplicatedStorage)
+-- Builds the 3D model of a pet or an egg from its Blender mesh (ReplicatedStorage >
+-- PetModels, see tools/blender/pets.py and PetMeshData). Until the meshes are imported, a
+-- simple round stand-in in the pet's rarity color is used, so everything still works.
+--   PetVisuals.model(id, height)          a Model, pivot at the bottom center, facing -Z
+--   PetVisuals.viewport(parent, id, props) a ViewportFrame showing it (UI cards, the hatch)
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local PetData = require(script.Parent:WaitForChild("PetData"))
+local PetMeshData = require(script.Parent:WaitForChild("PetMeshData"))
+
+-- if the imported meshes ever face the wrong way, turn them here (front should face -Z)
+local MESH_TURN = CFrame.Angles(0, 0, 0)
+
+local PetVisuals = {}
+
+local function source(id)
+	local folder = ReplicatedStorage:FindFirstChild("PetModels")
+	local found = folder and folder:FindFirstChild(id)
+	if found and not found:IsA("MeshPart") then found = found:FindFirstChildWhichIsA("MeshPart", true) end
+	return found
+end
+
+local function colorOf(id)
+	local pet = PetData.GetPet(id)
+	if pet then return PetData.Rarity(pet).Color end
+	return Color3.fromRGB(240, 236, 250)
+end
+
+-- a round stand-in: a body ball with two eyes (or an egg shape for eggs)
+local function standIn(model, id, height)
+	local isEgg = PetData.EggsById[id] ~= nil
+	local body = Instance.new("Part")
+	body.Name = "Body"
+	body.Shape = Enum.PartType.Ball
+	body.Size = Vector3.new(height, height, height) * (isEgg and 0.8 or 0.85)
+	body.Color = colorOf(id)
+	body.Material = Enum.Material.SmoothPlastic
+	body.CFrame = CFrame.new(0, body.Size.Y / 2, 0)
+	body.Parent = model
+	if isEgg then
+		local mesh = Instance.new("SpecialMesh")
+		mesh.MeshType = Enum.MeshType.Sphere
+		mesh.Scale = Vector3.new(0.85, 1.15, 0.85)
+		mesh.Parent = body
+		body.CFrame = CFrame.new(0, body.Size.Y * 0.57, 0)
+	else
+		for _, x in ipairs({-0.22, 0.22}) do
+			local eye = Instance.new("Part")
+			eye.Name = "Eye"
+			eye.Shape = Enum.PartType.Ball
+			eye.Size = Vector3.one * height * 0.2
+			eye.Color = Color3.fromRGB(24, 20, 34)
+			eye.CFrame = body.CFrame * CFrame.new(x * height, height * 0.08, -height * 0.36)
+			eye.Parent = model
+		end
+	end
+	return body
+end
+
+function PetVisuals.model(id, height)
+	local model = Instance.new("Model")
+	model.Name = id
+	local mesh = source(id)
+	local meshSize = PetMeshData[id] and PetMeshData[id].Size
+	local body
+	if mesh and meshSize then
+		body = mesh:Clone()
+		body.Name = "Body"
+		body.Size = meshSize * (height / meshSize.Y)
+		body.CFrame = CFrame.new(0, body.Size.Y / 2, 0) * MESH_TURN
+		body.Parent = model
+	else
+		body = standIn(model, id, height)
+	end
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Anchored = true
+			part.CanCollide = false
+			part.CanQuery = false
+			part.CanTouch = false
+			part.Massless = true
+		end
+	end
+	model.PrimaryPart = body
+	model.WorldPivot = CFrame.new()
+	return model
+end
+
+-- sparkles for the rarest pets (in the world, not in the UI)
+function PetVisuals.addFlair(model, rarity)
+	local body = model.PrimaryPart
+	if not body or rarity < 4 then return end
+	local color = PetData.Rarities[rarity].Color
+	local sparkles = Instance.new("ParticleEmitter")
+	sparkles.Name = "Flair"
+	sparkles.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	sparkles.Color = ColorSequence.new(color, Color3.new(1, 1, 1))
+	sparkles.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0)})
+	sparkles.Transparency = NumberSequence.new(0.2)
+	sparkles.Lifetime = NumberRange.new(0.6, 1.1)
+	sparkles.Rate = rarity == 5 and 10 or 4
+	sparkles.Speed = NumberRange.new(0.5, 1.5)
+	sparkles.SpreadAngle = Vector2.new(180, 180)
+	sparkles.LightEmission = 0.8
+	sparkles.Parent = body
+	if rarity == 5 then
+		local light = Instance.new("PointLight")
+		light.Color = color
+		light.Brightness = 1.2
+		light.Range = 8
+		light.Parent = body
+	end
+end
+
+-- A ViewportFrame showing a pet or egg, seen from the front a little from the side.
+-- props: Size, Position, AnchorPoint, ZIndex, Spin (turns slowly), Name
+function PetVisuals.viewport(parent, id, props)
+	props = props or {}
+	local frame = Instance.new("ViewportFrame")
+	frame.Name = props.Name or "PetView"
+	frame.BackgroundTransparency = 1
+	frame.Size = props.Size or UDim2.fromScale(1, 1)
+	frame.Position = props.Position or UDim2.new()
+	frame.AnchorPoint = props.AnchorPoint or Vector2.zero
+	if props.ZIndex then frame.ZIndex = props.ZIndex end
+	frame.Ambient = Color3.fromRGB(200, 200, 212)
+	frame.LightColor = Color3.fromRGB(255, 250, 240)
+	frame.LightDirection = Vector3.new(0.4, -1, 0.7)
+	local model = PetVisuals.model(id, 3)
+	model.Parent = frame
+	local camera = Instance.new("Camera")
+	camera.FieldOfView = 26
+	local size = model:GetExtentsSize()
+	local center = Vector3.new(0, size.Y / 2, 0)
+	local distance = math.max(size.X, size.Y, size.Z) * 0.62 / math.tan(math.rad(13)) + size.Z / 2
+	camera.CFrame = CFrame.lookAt(center + Vector3.new(distance * 0.38, distance * 0.22, -distance * 0.92), center)
+	camera.Parent = frame
+	frame.CurrentCamera = camera
+	frame.Parent = parent
+	if props.Spin and RunService:IsClient() then
+		local angle = 0
+		local conn
+		conn = RunService.RenderStepped:Connect(function(dt)
+			if not frame.Parent then
+				conn:Disconnect()
+				return
+			end
+			angle += dt * 0.8
+			model:PivotTo(CFrame.Angles(0, angle, 0))
+		end)
+	end
+	return frame, model
+end
+
+return PetVisuals
 ]=])
 install(game:GetService("ReplicatedStorage"), "PickaxeMeshData", "ModuleScript", [=[
 -- PickaxeMeshData (ModuleScript in ReplicatedStorage)
@@ -5904,13 +6341,15 @@ return CityBuilder
 ]=])
 install(game:GetService("ServerScriptService"), "DigBoosts", "ModuleScript", [=[
 -- DigBoosts (ModuleScript in ServerScriptService)
--- Temporary digging bonuses from the world gimmicks: world-wide events (Gold Rush, Blizzard
--- luck, Glitch Surge) and personal boosts (the Candy merchant's Sugar Rush).
+-- Digging bonuses: the world gimmicks' temporary ones (world-wide events like Gold Rush,
+-- Blizzard luck, Glitch Surge, and personal boosts like the Candy merchant's Sugar Rush),
+-- and the equipped pets' Dig Luck and Dig Speed.
 -- DigManager asks DigBoosts.Get(player, world) on every swing. Each player's attributes
 -- "DigSpeedMult" (swing cooldown multiplier), "WorldEvent" and "WorldEventEnds" and
 -- "PersonalBoost"/"PersonalBoostEnds" are kept up to date so the client can show them.
 
 local Players = game:GetService("Players")
+local PetData = require(game:GetService("ReplicatedStorage"):WaitForChild("PetData"))
 
 local DigBoosts = {}
 
@@ -5961,6 +6400,11 @@ function DigBoosts.Get(player, world)
 		luck *= p.LuckMult or 1
 		cooldown *= p.CooldownMult or 1
 	end
+	-- equipped pets (PetManager keeps these attributes up to date)
+	local petLuck = player:GetAttribute("PetLuck") or 0
+	find *= 1 + math.min(petLuck, PetData.FindCap)
+	luck *= 1 + petLuck * 0.5
+	cooldown /= 1 + (player:GetAttribute("PetSpeed") or 0)
 	return {Find = find, Luck = luck, Cooldown = cooldown}
 end
 
@@ -5972,7 +6416,7 @@ task.spawn(function()
 			local e = DigBoosts.GetWorldEvent(worldId)
 			local p = DigBoosts.GetPersonal(player)
 			local now = os.clock()
-			local cooldown = (e and e.CooldownMult or 1) * (p and p.CooldownMult or 1)
+			local cooldown = (e and e.CooldownMult or 1) * (p and p.CooldownMult or 1) / (1 + (player:GetAttribute("PetSpeed") or 0))
 			player:SetAttribute("DigSpeedMult", cooldown)
 			player:SetAttribute("WorldEvent", e and e.Name or "")
 			player:SetAttribute("WorldEventLeft", e and math.ceil(e.EndsAt - now) or 0)
@@ -10175,6 +10619,365 @@ return function(name, standCF, scale, idle)
 	return model
 end
 ]=])
+install(game:GetService("ServerScriptService"), "PetManager", "Script", [=[
+-- PetManager (Script in ServerScriptService)
+-- The pets (see ReplicatedStorage.PetData):
+--   * EGG STANDS: every world has one, on the ring around its pit (opposite the World Gate):
+--     a pedestal with the world's egg turning on top, a sign with its price and the chance of
+--     each pet inside, and two prompts: Hatch 1 (E) and Hatch 3 (R).
+--   * HATCHING takes the cash, rolls the pets, saves them and tells the player's screen to
+--     play the hatch (PetClient). New pets are equipped right away while there's room.
+--   * EQUIPPED PETS follow their owner (the models live in workspace.PlayerPets; every
+--     player's PetClient moves them) and boost them: income (PlayerData), Dig Luck and Dig
+--     Speed (DigBoosts reads the PetLuck / PetSpeed attributes set here).
+--   * The Pets window asks for the list and equips, unequips and deletes through PetAction.
+
+local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local PetData = require(ReplicatedStorage:WaitForChild("PetData"))
+local PetVisuals = require(ReplicatedStorage:WaitForChild("PetVisuals"))
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+
+local STAND_SPOT = {Angle = 150, Distance = 80} -- the shop is at 30 degrees, the gate at -30
+local STAND_SPOT_WORLD_1 = {Angle = 165, Distance = 89} -- (World 1's Research Lab is at 150)
+local HATCH_COOLDOWN = 1.2 -- seconds between hatches (the hatch takes a moment on screen)
+
+local rng = Random.new()
+
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+local function remote(className, name)
+	local r = remotes:FindFirstChild(name) or Instance.new(className)
+	r.Name = name
+	r.Parent = remotes
+	return r
+end
+local actionRemote = remote("RemoteFunction", "PetAction")  -- the Pets window: list, equip, unequip, delete
+local stateRemote = remote("RemoteEvent", "PetState")       -- server -> client: the pet list changed
+local hatchedRemote = remote("RemoteEvent", "PetHatched")   -- server -> client: play the hatch
+local messageRemote = remotes:WaitForChild("ShopMessage", 30) -- the little message toast
+
+local petsFolder = workspace:FindFirstChild("PlayerPets") or Instance.new("Folder")
+petsFolder.Name = "PlayerPets"
+petsFolder.Parent = workspace
+
+local function say(player, text, good)
+	if messageRemote then messageRemote:FireClient(player, text, good) end
+end
+
+---------------------------------------------------------------------
+-- STATE
+---------------------------------------------------------------------
+local function count(data)
+	local n = 0
+	for _ in pairs(data.Pets) do n += 1 end
+	return n
+end
+
+local function equippedCount(data)
+	local n = 0
+	for uid in pairs(data.EquippedPets) do
+		if data.Pets[uid] then n += 1 else data.EquippedPets[uid] = nil end
+	end
+	return n
+end
+
+local function stateOf(data)
+	return {Pets = data.Pets, Equipped = data.EquippedPets, MaxEquipped = PetData.MaxEquipped, MaxOwned = PetData.MaxOwned}
+end
+
+-- the pet models following the player: one per equipped pet
+local function spawnPets(player, data)
+	local folder = petsFolder:FindFirstChild(player.Name)
+	if folder then folder:Destroy() end
+	folder = Instance.new("Folder")
+	folder.Name = player.Name
+	folder:SetAttribute("OwnerId", player.UserId)
+	local uids = {}
+	for uid in pairs(data.EquippedPets) do
+		if data.Pets[uid] then table.insert(uids, uid) end
+	end
+	table.sort(uids, function(a, b) return tonumber(a) < tonumber(b) end)
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	for slot, uid in ipairs(uids) do
+		local pet = PetData.GetPet(data.Pets[uid])
+		if pet then
+			local model = PetVisuals.model(pet.Id, PetData.Rarity(pet).Height)
+			model.Name = "Pet_" .. uid
+			model:SetAttribute("PetId", pet.Id)
+			model:SetAttribute("Slot", slot)
+			model:SetAttribute("Rarity", pet.Rarity)
+			model.ModelStreamingMode = Enum.ModelStreamingMode.Persistent -- every player sees everyone's pets
+			PetVisuals.addFlair(model, pet.Rarity)
+			if root then model:PivotTo(CFrame.new(root.Position + Vector3.new(slot * 2, -2.5, 3))) end
+			model.Parent = folder
+		end
+	end
+	folder.Parent = petsFolder
+end
+
+-- boosts, income and the models, after any change
+local function changed(player)
+	local data = PlayerData.Get(player)
+	if not data then return end
+	local bonus = PetData.Bonuses(data)
+	player:SetAttribute("PetMoney", bonus.Money)
+	player:SetAttribute("PetLuck", bonus.Luck)
+	player:SetAttribute("PetSpeed", bonus.Speed)
+	PlayerData.Refresh(player) -- income includes the money boost
+	spawnPets(player, data)
+	stateRemote:FireClient(player, stateOf(data))
+end
+
+---------------------------------------------------------------------
+-- HATCHING
+---------------------------------------------------------------------
+local lastHatch = {}
+
+local function hatch(player, egg, amount)
+	local data = PlayerData.Get(player)
+	if not data then return end
+	if os.clock() - (lastHatch[player] or 0) < HATCH_COOLDOWN then return end
+	local room = PetData.MaxOwned - count(data)
+	if room <= 0 then
+		say(player, "Your pets are full (" .. PetData.MaxOwned .. ")! Delete some in the Pets window.", false)
+		return
+	end
+	amount = math.min(amount, room)
+	local cost = egg.Price * amount
+	if not PlayerData.SpendMoney(player, cost) then
+		say(player, "You need " .. ArtifactData.FormatMoney(cost) .. " to hatch " .. (amount > 1 and amount .. " eggs" or "this egg") .. ".", false)
+		return
+	end
+	lastHatch[player] = os.clock()
+	local got = {}
+	for _ = 1, amount do
+		local petId = PetData.Roll(egg, rng)
+		local uid = tostring(data.NextPetUid)
+		data.NextPetUid += 1
+		data.Pets[uid] = petId
+		-- new pets go straight to work while there's a free spot
+		if equippedCount(data) < PetData.MaxEquipped then data.EquippedPets[uid] = true end
+		table.insert(got, petId)
+		local pet = PetData.GetPet(petId)
+		if pet.Rarity == #PetData.Rarities then
+			remotes.Announcement:FireAllClients(player.DisplayName .. " hatched a LEGENDARY " .. pet.Name .. "!", PetData.Rarities[pet.Rarity].Color)
+		end
+	end
+	hatchedRemote:FireClient(player, egg.Id, got)
+	changed(player)
+end
+
+---------------------------------------------------------------------
+-- THE PETS WINDOW
+---------------------------------------------------------------------
+actionRemote.OnServerInvoke = function(player, action, uid)
+	local data = PlayerData.Get(player)
+	if not data then return nil end
+	if type(uid) ~= "string" and uid ~= nil then return stateOf(data) end
+	if action == "Equip" and data.Pets[uid] then
+		if not data.EquippedPets[uid] then
+			if equippedCount(data) >= PetData.MaxEquipped then
+				say(player, "You can have " .. PetData.MaxEquipped .. " pets out at once. Unequip one first.", false)
+				return stateOf(data)
+			end
+			data.EquippedPets[uid] = true
+			changed(player)
+		end
+	elseif action == "Unequip" and data.EquippedPets[uid] then
+		data.EquippedPets[uid] = nil
+		changed(player)
+	elseif action == "Delete" and data.Pets[uid] then
+		data.Pets[uid] = nil
+		data.EquippedPets[uid] = nil
+		changed(player)
+	elseif action == "EquipBest" then
+		local uids = {}
+		for id in pairs(data.Pets) do table.insert(uids, id) end
+		table.sort(uids, function(a, b)
+			local pa, pb = PetData.GetPet(data.Pets[a]), PetData.GetPet(data.Pets[b])
+			return (pa and PetData.Score(pa) or 0) > (pb and PetData.Score(pb) or 0)
+		end)
+		table.clear(data.EquippedPets)
+		for i = 1, math.min(PetData.MaxEquipped, #uids) do data.EquippedPets[uids[i]] = true end
+		changed(player)
+	end
+	return stateOf(data)
+end
+
+---------------------------------------------------------------------
+-- PLAYERS
+---------------------------------------------------------------------
+local function onPlayer(player)
+	local data = PlayerData.WaitForData(player)
+	if not data or not player.Parent then return end
+	-- pets from an older version of the game that no longer exist disappear from the save
+	for uid, petId in pairs(data.Pets) do
+		if not PetData.GetPet(petId) then
+			data.Pets[uid] = nil
+			data.EquippedPets[uid] = nil
+		end
+	end
+	changed(player)
+	player.CharacterAdded:Connect(function()
+		task.wait(0.5)
+		local fresh = PlayerData.Get(player)
+		if fresh then spawnPets(player, fresh) end
+	end)
+end
+Players.PlayerAdded:Connect(onPlayer)
+for _, player in ipairs(Players:GetPlayers()) do task.spawn(onPlayer, player) end
+Players.PlayerRemoving:Connect(function(player)
+	lastHatch[player] = nil
+	local folder = petsFolder:FindFirstChild(player.Name)
+	if folder then folder:Destroy() end
+end)
+
+---------------------------------------------------------------------
+-- EGG STANDS
+---------------------------------------------------------------------
+local function part(parent, name, size, cf, color, material, shape)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Anchored = true
+	p.Size = size
+	p.CFrame = cf
+	p.Color = color
+	p.Material = material or Enum.Material.SmoothPlastic
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	if shape then p.Shape = shape end
+	p.Parent = parent
+	return p
+end
+
+local UP = CFrame.Angles(0, 0, math.rad(90)) -- a cylinder standing upright
+
+local function sign(anchor, egg)
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "EggSign"
+	gui.Size = UDim2.fromScale(11, 9.5)
+	gui.StudsOffset = Vector3.new(0, 0, 0)
+	gui.MaxDistance = 110
+	gui.LightInfluence = 0
+	gui.Parent = anchor
+	local panel = UIKit.panel(gui, {Size = UDim2.fromScale(1, 1), Color = Color3.fromRGB(40, 34, 70), Radius = 18, Stroke = 4})
+	UIKit.label(panel, string.upper(egg.Name), {Size = UDim2.new(1, -16, 0.15, 0), Position = UDim2.fromScale(0.5, 0.03), AnchorPoint = Vector2.new(0.5, 0),
+		Stroke = 3, MaxText = 60})
+	UIKit.label(panel, ArtifactData.FormatMoney(egg.Price), {Size = UDim2.new(1, -16, 0.12, 0), Position = UDim2.fromScale(0.5, 0.18), AnchorPoint = Vector2.new(0.5, 0),
+		Color = Color3.fromRGB(120, 240, 100), Stroke = 3, MaxText = 50})
+	for i, petId in ipairs(egg.Pets) do
+		local pet = PetData.GetPet(petId)
+		local rarity = PetData.Rarities[i]
+		local row = UIKit.panel(panel, {Size = UDim2.new(0.92, 0, 0.115, 0), Position = UDim2.new(0.5, 0, 0.33 + (i - 1) * 0.128, 0), AnchorPoint = Vector2.new(0.5, 0),
+			Color = rarity.Color, Radius = 10, Stroke = 2.5})
+		UIKit.label(row, pet.Name, {Size = UDim2.new(0.68, 0, 0.8, 0), Position = UDim2.new(0.04, 0, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+			Align = "Left", Stroke = 2.5, MaxText = 40})
+		UIKit.label(row, rarity.Chance .. "%", {Size = UDim2.new(0.26, 0, 0.8, 0), Position = UDim2.new(0.96, 0, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+			Align = "Right", Stroke = 2.5, MaxText = 40})
+	end
+end
+
+local function buildStand(world, egg, parent)
+	local spot = world.Id == 1 and STAND_SPOT_WORLD_1 or STAND_SPOT
+	local a = math.rad(spot.Angle)
+	local origin = world.Origin
+	local pos = origin + Vector3.new(math.cos(a) * spot.Distance, 0, math.sin(a) * spot.Distance)
+	local base = CFrame.lookAt(pos, Vector3.new(origin.X, pos.Y, origin.Z))
+	local look = world.Look or {}
+	local main = look.Main or Color3.fromRGB(190, 160, 240)
+	local glow = look.Glow or Color3.fromRGB(60, 220, 240)
+	local light = Color3.fromRGB(246, 246, 252)
+
+	GameConfig.LevelGround(workspace.Terrain, base, 16, 16)
+	local stand = Instance.new("Model")
+	stand.Name = "EggStand"
+	-- a round platform with a glowing rim, a pedestal and the egg on top
+	part(stand, "Platform", Vector3.new(1.6, 13, 13), base * CFrame.new(0, 0.4, 0) * UP, light, nil, Enum.PartType.Cylinder)
+	part(stand, "PlatformGlow", Vector3.new(0.5, 13.6, 13.6), base * CFrame.new(0, 0.35, 0) * UP, glow, Enum.Material.Neon, Enum.PartType.Cylinder)
+	part(stand, "PlatformTop", Vector3.new(0.3, 10.5, 10.5), base * CFrame.new(0, 1.25, 0) * UP, main, nil, Enum.PartType.Cylinder)
+	part(stand, "Pedestal", Vector3.new(2.4, 5, 5), base * CFrame.new(0, 2.4, 0) * UP, light, nil, Enum.PartType.Cylinder)
+	part(stand, "PedestalRing", Vector3.new(0.4, 5.6, 5.6), base * CFrame.new(0, 3.5, 0) * UP, glow, Enum.Material.Neon, Enum.PartType.Cylinder)
+	for k = 0, 3 do -- little posts with lights around the platform
+		local pa = math.rad(45 + k * 90)
+		local post = base * CFrame.new(math.cos(pa) * 5.4, 0, math.sin(pa) * 5.4)
+		part(stand, "Post", Vector3.new(0.6, 3.2, 0.6), post * CFrame.new(0, 2.6, 0), main)
+		part(stand, "PostLight", Vector3.new(1, 1, 1), post * CFrame.new(0, 4.5, 0), glow, Enum.Material.Neon, Enum.PartType.Ball)
+	end
+	for _, p in ipairs(stand:GetChildren()) do
+		if p:IsA("BasePart") and p.Material == Enum.Material.Neon then p.CastShadow = false end
+	end
+
+	local display = PetVisuals.model(egg.Id, 5.5)
+	display.Name = "EggDisplay"
+	display:PivotTo(base * CFrame.new(0, 3.75, 0))
+	display:SetAttribute("Home", display:GetPivot())
+	CollectionService:AddTag(display, "EggDisplay") -- PetClient turns it slowly
+	display.Parent = stand
+
+	local light2 = Instance.new("PointLight")
+	light2.Color = glow
+	light2.Range = 14
+	light2.Brightness = 1.5
+	light2.Parent = stand.PedestalRing
+
+	local anchor = part(stand, "SignAnchor", Vector3.new(1, 1, 1), base * CFrame.new(0, 15.5, 0), light)
+	anchor.Transparency = 1
+	anchor.CanCollide = false
+	anchor.CanQuery = false
+	sign(anchor, egg)
+
+	local promptPart = part(stand, "HatchPrompt", Vector3.new(2, 2, 2), base * CFrame.new(0, 5, 0), light)
+	promptPart.Transparency = 1
+	promptPart.CanCollide = false
+	promptPart.CanQuery = false
+	for _, option in ipairs({{1, Enum.KeyCode.E}, {3, Enum.KeyCode.R}}) do
+		local amount, key = option[1], option[2]
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.Name = "Hatch" .. amount
+		prompt.ObjectText = egg.Name .. "  ·  " .. ArtifactData.FormatMoney(egg.Price * amount)
+		prompt.ActionText = "Hatch " .. amount
+		prompt.KeyboardKeyCode = key
+		prompt.GamepadKeyCode = amount == 1 and Enum.KeyCode.ButtonX or Enum.KeyCode.ButtonY
+		prompt.HoldDuration = 0
+		prompt.MaxActivationDistance = 13
+		prompt.RequiresLineOfSight = false
+		prompt.UIOffset = Vector2.new(0, amount == 1 and 0 or 72)
+		prompt.Parent = promptPart
+		prompt.Triggered:Connect(function(player)
+			hatch(player, egg, amount)
+		end)
+	end
+	stand.Parent = parent
+	return stand
+end
+
+-- wait for the worlds to exist (DigManager and MapStyle build them), then add the stands
+task.spawn(function()
+	local waited = 0
+	while not workspace:GetAttribute("MainIslandReady") and waited < 40 do
+		waited += task.wait(0.5)
+	end
+	task.wait(2)
+	local folder = workspace:FindFirstChild("EggStands")
+	if folder then folder:Destroy() end
+	folder = Instance.new("Folder")
+	folder.Name = "EggStands"
+	folder.Parent = workspace
+	for worldId, egg in pairs(PetData.Eggs) do
+		local world = GameConfig.GetWorld(worldId)
+		if world and world.Enabled ~= false then
+			local ok, err = pcall(buildStand, world, egg, folder)
+			if not ok then warn("Egg stand for world " .. worldId .. ": " .. tostring(err)) end
+		end
+	end
+	print("PetManager ready: " .. #PetData.Order .. " pets in " .. #PetData.Eggs .. " eggs")
+end)
+]=])
 install(game:GetService("ServerScriptService"), "PitRelics", "ModuleScript", [=[
 -- PitRelics (ModuleScript in ServerScriptService)
 -- Fills the dig site's dirt work yard (World 1) with the story of the game: giant relics of the
@@ -10398,6 +11201,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local QuestData = require(ReplicatedStorage:WaitForChild("QuestData"))
+local PetData = require(ReplicatedStorage:WaitForChild("PetData"))
 
 local ProfileService = require(script.Parent:WaitForChild("ProfileService"))
 
@@ -10451,6 +11255,10 @@ local function defaultData()
 		Quests = {},       -- [worldId] = {Step = n, Progress = n}
 		Discovered = {},   -- [memeId] = true: every meme ever found
 		IndexClaimed = {}, -- [worldId] = true: that world's index is complete (+income on its memes)
+		-- pets (PetManager, PetData)
+		Pets = {},         -- [uid] = petId
+		EquippedPets = {}, -- [uid] = true: the pets following you (and boosting you)
+		NextPetUid = 1,
 	}
 end
 
@@ -10496,8 +11304,8 @@ local function computeIncome(data)
 			total += income
 		end
 	end
-	-- every rebirth adds a permanent income bonus
-	return total * (1 + GameConfig.RebirthIncomeBonus * (data.Rebirths or 0))
+	-- every rebirth adds a permanent income bonus; equipped pets add their money boost
+	return total * (1 + GameConfig.RebirthIncomeBonus * (data.Rebirths or 0)) * (1 + PetData.Bonuses(data).Money)
 end
 
 local function refresh(player)
@@ -17313,6 +18121,7 @@ local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
 local UIBus = require(ReplicatedStorage:WaitForChild("UIBus"))
+local PetVisuals = require(ReplicatedStorage:WaitForChild("PetVisuals"))
 local C = UIKit.Colors
 local rgb = Color3.fromRGB
 
@@ -17396,11 +18205,11 @@ end
 
 local menu = Instance.new("Frame")
 menu.BackgroundTransparency = 1
-menu.Size = UDim2.fromOffset(116, 350)
+menu.Size = UDim2.fromOffset(224, 350)
 menu.Position = UDim2.new(0, 12, 0, 74)
 menu.Parent = gui
 
-local bagButton = UIKit.button(menu, "", {Size = UDim2.fromOffset(98, 98), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0),
+local bagButton = UIKit.button(menu, "", {Size = UDim2.fromOffset(98, 98), Position = UDim2.new(0, 58, 0, 0), AnchorPoint = Vector2.new(0.5, 0),
 	Color = rgb(56, 150, 226), Radius = 12, Pattern = false})
 bagButton.Name = "Bag"
 UIKit.icon(bagButton, "Bag", {Size = UDim2.fromScale(0.92, 0.92), Position = UDim2.fromScale(0.5, 0.44), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
@@ -17418,7 +18227,7 @@ rebirthButton.Name = "Rebirth"
 rebirthButton.Text = ""
 rebirthButton.BackgroundTransparency = 1
 rebirthButton.Size = UDim2.fromOffset(116, 120)
-rebirthButton.Position = UDim2.new(0.5, 0, 0, 112)
+rebirthButton.Position = UDim2.new(0, 58, 0, 112)
 rebirthButton.AnchorPoint = Vector2.new(0.5, 0)
 rebirthButton.Parent = menu
 UIKit.icon(rebirthButton, "Rebirth", {Size = UDim2.fromOffset(104, 104), Position = UDim2.new(0.5, 0, 0, -8), AnchorPoint = Vector2.new(0.5, 0)})
@@ -17432,7 +18241,7 @@ rebirthButton.MouseButton1Click:Connect(function()
 end)
 
 -- Quests: the same square tile as the Bag, in gold (world quests + Meme Index, QuestClient)
-local questButton = UIKit.button(menu, "", {Size = UDim2.fromOffset(98, 98), Position = UDim2.new(0.5, 0, 0, 244), AnchorPoint = Vector2.new(0.5, 0),
+local questButton = UIKit.button(menu, "", {Size = UDim2.fromOffset(98, 98), Position = UDim2.new(0, 58, 0, 244), AnchorPoint = Vector2.new(0.5, 0),
 	Color = rgb(255, 170, 40), Radius = 12, Pattern = false})
 questButton.Name = "Quests"
 UIKit.icon(questButton, "Star", {Size = UDim2.fromScale(0.86, 0.86), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
@@ -17443,6 +18252,19 @@ local questKey = UIKit.panel(questButton, {Size = UDim2.fromOffset(24, 24), Posi
 questKey.ZIndex = 4
 UIKit.label(questKey, "J", {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, MaxText = 16}).ZIndex = 5
 questButton.MouseButton1Click:Connect(function() UIBus.Fire("Quests") end)
+
+-- Pets: a pink tile with the World 1 egg on it, beside Quests (the Pets window, PetClient)
+local petButton = UIKit.button(menu, "", {Size = UDim2.fromOffset(98, 98), Position = UDim2.new(0, 166, 0, 244), AnchorPoint = Vector2.new(0.5, 0),
+	Color = rgb(255, 120, 170), Radius = 12, Pattern = false})
+petButton.Name = "Pets"
+PetVisuals.viewport(petButton, "ByteEgg", {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.4), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
+UIKit.label(petButton, "Pets", {Size = UDim2.new(1, -6, 0, 30), Position = UDim2.new(0.5, 0, 0.5, 8), AnchorPoint = Vector2.new(0.5, 0.5),
+	Color = rgb(255, 230, 240), Stroke = 3.5, MaxText = 26}).ZIndex = 4
+local petKey = UIKit.panel(petButton, {Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0, 6, 1, -6), AnchorPoint = Vector2.new(0, 1),
+	Color = rgb(170, 50, 100), Radius = 5, Stroke = 2, StrokeColor = C.White, Shade = false})
+petKey.ZIndex = 4
+UIKit.label(petKey, "P", {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, MaxText = 16}).ZIndex = 5
+petButton.MouseButton1Click:Connect(function() UIBus.Fire("Pets") end)
 
 ---------------------------------------------------------------------
 -- TOP RIGHT CORNER: a small dark round Settings button up in Roblox's top bar row
@@ -18344,6 +19166,462 @@ RunService.RenderStepped:Connect(function()
 				piece.Part.CFrame = base * piece.Offset
 			end
 		end
+	end
+end)
+]=])
+install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "PetClient", "LocalScript", [=[
+-- PetClient (LocalScript in StarterPlayer > StarterPlayerScripts)
+-- Pets on your screen (see ReplicatedStorage.PetData and the PetManager server script):
+--   * FOLLOWING: every player's equipped pets (workspace.PlayerPets) trot along behind
+--     them, hopping as they go; flying pets hover and bob beside them.
+--   * EGG STANDS: the eggs on the stands turn slowly and bob.
+--   * PETS WINDOW (the Pets button on the left, P, or UIBus "Pets"): your pets as a grid,
+--     your total boosts, Equip Best, and for the pet you pick: its boosts, Equip/Unequip and
+--     Delete.
+--   * HATCHING: the egg wobbles, cracks in a flash of light and the pet pops out, with its
+--     rarity and boosts.
+
+local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local Audio = require(ReplicatedStorage:WaitForChild("Audio"))
+local PetData = require(ReplicatedStorage:WaitForChild("PetData"))
+local PetVisuals = require(ReplicatedStorage:WaitForChild("PetVisuals"))
+local UIBus = require(ReplicatedStorage:WaitForChild("UIBus"))
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local C = UIKit.Colors
+local rgb = Color3.fromRGB
+
+local player = Players.LocalPlayer
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+local actionRemote = remotes:WaitForChild("PetAction")
+local stateRemote = remotes:WaitForChild("PetState")
+local hatchedRemote = remotes:WaitForChild("PetHatched")
+local petsFolder = workspace:WaitForChild("PlayerPets")
+
+---------------------------------------------------------------------
+-- FOLLOWING
+---------------------------------------------------------------------
+-- where each slot walks, behind the owner (x to the right, z backwards)
+local SLOTS = {Vector3.new(-3.4, 0, 3.2), Vector3.new(3.4, 0, 3.2), Vector3.new(0, 0, 5.6)}
+
+local motion = {} -- [model] = {Pos = Vector3, Yaw = number, Phase = number}
+local rayParams = RaycastParams.new()
+rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+local function groundBelow(position, ignore)
+	rayParams.FilterDescendantsInstances = ignore
+	local hit = workspace:Raycast(position + Vector3.new(0, 4, 0), Vector3.new(0, -14, 0), rayParams)
+	return hit and hit.Position.Y
+end
+
+RunService.RenderStepped:Connect(function(dt)
+	local now = os.clock()
+	local ignore = {petsFolder}
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p.Character then table.insert(ignore, p.Character) end
+	end
+	local visitors = workspace:FindFirstChild("MuseumVisitors")
+	if visitors then table.insert(ignore, visitors) end
+	for _, folder in ipairs(petsFolder:GetChildren()) do
+		local owner = Players:GetPlayerByUserId(folder:GetAttribute("OwnerId") or 0)
+		local root = owner and owner.Character and owner.Character:FindFirstChild("HumanoidRootPart")
+		if root then
+			local speed = Vector3.new(root.AssemblyLinearVelocity.X, 0, root.AssemblyLinearVelocity.Z).Magnitude
+			for _, model in ipairs(folder:GetChildren()) do
+				if model:IsA("Model") then
+					local slot = model:GetAttribute("Slot") or 1
+					local pet = PetData.GetPet(model:GetAttribute("PetId") or "")
+					local m = motion[model]
+					local target = root.CFrame * (SLOTS[slot] or SLOTS[1])
+					if not m then
+						m = {Pos = target, Yaw = 0, Phase = slot * 1.7}
+						motion[model] = m
+					end
+					-- catch up smoothly; teleport if the owner jumped far away (traveling between worlds)
+					local flat = Vector3.new(target.X, m.Pos.Y, target.Z)
+					if (flat - m.Pos).Magnitude > 60 then m.Pos = flat end
+					local before = m.Pos
+					m.Pos = m.Pos:Lerp(flat, 1 - math.exp(-dt * 7))
+					local step = Vector3.new(m.Pos.X - before.X, 0, m.Pos.Z - before.Z)
+					-- face where it's going, or the way the owner looks when standing still
+					local dir = step.Magnitude > 0.02 and step.Unit or root.CFrame.LookVector * Vector3.new(1, 0, 1)
+					if dir.Magnitude > 0.01 then
+						local want = math.atan2(-dir.X, -dir.Z)
+						local diff = (want - m.Yaw + math.pi) % (2 * math.pi) - math.pi
+						m.Yaw += diff * (1 - math.exp(-dt * 10))
+					end
+					local ground = groundBelow(Vector3.new(m.Pos.X, root.Position.Y, m.Pos.Z), ignore) or (root.Position.Y - 3)
+					local y
+					if pet and pet.Fly then
+						y = math.max(ground, root.Position.Y - 3) + 2.2 + math.sin(now * 2.4 + m.Phase) * 0.35
+					else
+						local moving = speed > 1.5
+						y = ground + (moving and math.abs(math.sin(now * 11 + m.Phase)) * 0.75 or 0)
+					end
+					m.Pos = Vector3.new(m.Pos.X, y, m.Pos.Z)
+					local tilt = (pet and pet.Fly) and math.sin(now * 2 + m.Phase) * 0.06 or 0
+					model:PivotTo(CFrame.new(m.Pos) * CFrame.Angles(0, m.Yaw, tilt))
+				end
+			end
+		end
+	end
+	-- the eggs on the stands turn and bob
+	for _, egg in ipairs(CollectionService:GetTagged("EggDisplay")) do
+		local home = egg:GetAttribute("Home")
+		if typeof(home) == "CFrame" then
+			egg:PivotTo(home * CFrame.new(0, 0.35 + math.sin(now * 1.6) * 0.35, 0) * CFrame.Angles(0, now * 0.7, 0))
+		end
+	end
+end)
+petsFolder.DescendantRemoving:Connect(function(d)
+	motion[d] = nil
+end)
+
+---------------------------------------------------------------------
+-- PETS WINDOW
+---------------------------------------------------------------------
+local state = {Pets = {}, Equipped = {}, MaxEquipped = PetData.MaxEquipped, MaxOwned = PetData.MaxOwned}
+local selected = nil
+local deleteArmed = nil
+
+local gui = UIKit.screen(player, "PetsUI", 6)
+local window, content = UIKit.window(gui, "Pets", UDim2.fromOffset(840, 560), rgb(255, 120, 170), "Heart")
+window.Name = "PetsWindow"
+
+-- top: your total boosts and Equip Best
+local top = Instance.new("Frame")
+top.BackgroundTransparency = 1
+top.Size = UDim2.new(1, 0, 0, 50)
+top.Parent = content
+local statChips = {}
+for i, statName in ipairs({"Money", "Luck", "Speed"}) do
+	local stat = PetData.Stats[statName]
+	local chip = UIKit.panel(top, {Size = UDim2.new(0.22, -6, 1, -4), Position = UDim2.new((i - 1) * 0.22, 0, 0, 2), Color = rgb(52, 44, 88), Radius = 12, Stroke = 2.5})
+	UIKit.icon(chip, stat.Icon, {Size = UDim2.fromOffset(40, 40), Position = UDim2.new(0, 4, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+	statChips[statName] = UIKit.label(chip, "+0%", {Size = UDim2.new(1, -52, 0.8, 0), Position = UDim2.new(0, 48, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+		Align = "Left", Color = stat.Color, Stroke = 2.5, MaxText = 22})
+end
+local equipBest = UIKit.button(top, "EQUIP BEST", {Size = UDim2.new(0.3, 0, 1, -2), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0),
+	Color = C.Mint, MaxText = 22})
+
+local countLabel = UIKit.label(content, "", {Size = UDim2.new(0.6, 0, 0, 24), Position = UDim2.fromOffset(2, 56), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 20})
+
+-- left: the grid of pets
+local grid = Instance.new("ScrollingFrame")
+grid.BackgroundTransparency = 1
+grid.BorderSizePixel = 0
+grid.Size = UDim2.new(0.6, 0, 1, -86)
+grid.Position = UDim2.fromOffset(0, 84)
+grid.ScrollBarThickness = 8
+grid.ScrollBarImageColor3 = C.Lilac
+grid.AutomaticCanvasSize = Enum.AutomaticSize.Y
+grid.CanvasSize = UDim2.new()
+grid.Parent = content
+local gridLayout = Instance.new("UIGridLayout")
+gridLayout.CellSize = UDim2.new(0.25, -8, 0, 120)
+gridLayout.CellPadding = UDim2.fromOffset(8, 8)
+gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
+gridLayout.Parent = grid
+local gridPad = Instance.new("UIPadding")
+gridPad.PaddingTop = UDim.new(0, 4)
+gridPad.PaddingLeft = UDim.new(0, 4)
+gridPad.PaddingRight = UDim.new(0, 12)
+gridPad.Parent = grid
+local emptyNote = UIKit.label(grid, "No pets yet! Hatch an egg at the egg stand by the dig site.", {Size = UDim2.new(1, -20, 0, 60),
+	Color = C.Ink, Stroke = 0, MaxText = 20})
+
+-- right: the pet you picked
+local detail = UIKit.panel(content, {Size = UDim2.new(0.38, 0, 1, -58), Position = UDim2.new(1, 0, 0, 58), AnchorPoint = Vector2.new(1, 0),
+	Color = rgb(244, 240, 255), Radius = 16, Stroke = 3})
+local detailView = Instance.new("Frame")
+detailView.BackgroundTransparency = 1
+detailView.Size = UDim2.new(1, -20, 0.36, 0)
+detailView.Position = UDim2.new(0.5, 0, 0, 8)
+detailView.AnchorPoint = Vector2.new(0.5, 0)
+detailView.Parent = detail
+-- (laid out in fractions of the panel's height, so it fits on small screens too)
+local detailName = UIKit.label(detail, "", {Size = UDim2.new(1, -20, 0.08, 0), Position = UDim2.new(0.5, 0, 0.38, 0), AnchorPoint = Vector2.new(0.5, 0), Stroke = 3, MaxText = 30})
+local detailRarity = UIKit.label(detail, "", {Size = UDim2.new(1, -20, 0.055, 0), Position = UDim2.new(0.5, 0, 0.465, 0), AnchorPoint = Vector2.new(0.5, 0), Stroke = 2.5, MaxText = 22})
+local detailDesc = UIKit.label(detail, "", {Size = UDim2.new(1, -24, 0.07, 0), Position = UDim2.new(0.5, 0, 0.53, 0), AnchorPoint = Vector2.new(0.5, 0),
+	Color = C.Ink, Stroke = 0, MaxText = 16, Font = UIKit.BodyFont})
+local boostRows = Instance.new("Frame")
+boostRows.BackgroundTransparency = 1
+boostRows.Size = UDim2.new(1, -24, 0.2, 0)
+boostRows.Position = UDim2.new(0.5, 0, 0.61, 0)
+boostRows.AnchorPoint = Vector2.new(0.5, 0)
+boostRows.Parent = detail
+local equipButton = UIKit.button(detail, "EQUIP", {Size = UDim2.new(0.56, -6, 0.13, 0), Position = UDim2.new(0, 10, 1, -8), AnchorPoint = Vector2.new(0, 1), Color = C.Mint, MaxText = 22})
+local deleteButton = UIKit.button(detail, "DELETE", {Size = UDim2.new(0.44, -14, 0.13, 0), Position = UDim2.new(1, -10, 1, -8), AnchorPoint = Vector2.new(1, 1), Color = C.Coral, MaxText = 20})
+
+local function ownedUids()
+	local list = {}
+	for uid, petId in pairs(state.Pets) do
+		if PetData.GetPet(petId) then table.insert(list, uid) end
+	end
+	table.sort(list, function(a, b)
+		local ea, eb = state.Equipped[a] and 1 or 0, state.Equipped[b] and 1 or 0
+		if ea ~= eb then return ea > eb end
+		local sa, sb = PetData.Score(PetData.GetPet(state.Pets[a])), PetData.Score(PetData.GetPet(state.Pets[b]))
+		if sa ~= sb then return sa > sb end
+		return tonumber(a) > tonumber(b)
+	end)
+	return list
+end
+
+local function equippedTotal()
+	local n = 0
+	for uid in pairs(state.Equipped) do
+		if state.Pets[uid] then n += 1 end
+	end
+	return n
+end
+
+local function boostLines(parent, pet)
+	for _, child in ipairs(parent:GetChildren()) do child:Destroy() end
+	local i = 0
+	for _, statName in ipairs({"Money", "Luck", "Speed"}) do
+		local value = pet.Boosts[statName]
+		if value then
+			local stat = PetData.Stats[statName]
+			local row = UIKit.panel(parent, {Size = UDim2.new(1, 0, 0.3, 0), Position = UDim2.fromScale(0, i * 0.34), Color = rgb(52, 44, 88), Radius = 8, Stroke = 2})
+			UIKit.icon(row, stat.Icon, {Size = UDim2.fromScale(0.13, 1), Position = UDim2.new(0, 4, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+			UIKit.label(row, PetData.Percent(value) .. " " .. stat.Text, {Size = UDim2.new(0.8, 0, 0.85, 0), Position = UDim2.new(0.17, 0, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+				Align = "Left", Color = stat.Color, Stroke = 2, MaxText = 18})
+			i += 1
+		end
+	end
+end
+
+local function drawDetail()
+	for _, child in ipairs(detailView:GetChildren()) do child:Destroy() end
+	local petId = selected and state.Pets[selected]
+	local pet = petId and PetData.GetPet(petId)
+	detail.Visible = pet ~= nil
+	if not pet then return end
+	local rarity = PetData.Rarity(pet)
+	PetVisuals.viewport(detailView, pet.Id, {Spin = true})
+	detailName.Text = pet.Name
+	detailRarity.Text = string.upper(rarity.Name)
+	detailRarity.TextColor3 = rarity.Color
+	detailDesc.Text = pet.Description
+	boostLines(boostRows, pet)
+	local on = state.Equipped[selected]
+	UIKit.setButton(equipButton, on and "UNEQUIP" or "EQUIP", on and C.Sky or C.Mint)
+	UIKit.setButton(deleteButton, deleteArmed == selected and "SURE?" or "DELETE", C.Coral)
+end
+
+local function redraw()
+	local bonus = PetData.Total((function()
+		local ids = {}
+		for uid in pairs(state.Equipped) do
+			if state.Pets[uid] then table.insert(ids, state.Pets[uid]) end
+		end
+		return ids
+	end)())
+	for statName, label in pairs(statChips) do
+		label.Text = PetData.Percent(bonus[statName]) .. " " .. PetData.Stats[statName].Text
+	end
+	for _, child in ipairs(grid:GetChildren()) do
+		if child:IsA("GuiObject") and child ~= emptyNote then child:Destroy() end
+	end
+	local list = ownedUids()
+	emptyNote.Visible = #list == 0
+	countLabel.Text = #list .. " / " .. state.MaxOwned .. " pets   ·   " .. equippedTotal() .. " / " .. state.MaxEquipped .. " equipped"
+	if selected and not state.Pets[selected] then selected = nil end
+	if not selected then selected = list[1] end
+	for i, uid in ipairs(list) do
+		local pet = PetData.GetPet(state.Pets[uid])
+		local rarity = PetData.Rarity(pet)
+		local tile = UIKit.button(grid, "", {Size = UDim2.fromOffset(100, 120), Color = rarity.Color, Radius = 14, Pattern = false})
+		tile.LayoutOrder = i
+		PetVisuals.viewport(tile, pet.Id, {Size = UDim2.new(1, -8, 1, -30), Position = UDim2.fromOffset(4, 4), ZIndex = 2})
+		UIKit.label(tile, pet.Name, {Size = UDim2.new(1, -8, 0, 22), Position = UDim2.new(0.5, 0, 1, -6), AnchorPoint = Vector2.new(0.5, 1), Stroke = 2.5, MaxText = 16}).ZIndex = 3
+		if state.Equipped[uid] then
+			local badge = UIKit.panel(tile, {Size = UDim2.fromOffset(26, 26), Position = UDim2.fromOffset(5, 5), Color = C.Mint, Radius = 999, Stroke = 2})
+			badge.ZIndex = 4
+			UIKit.label(badge, "E", {Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, MaxText = 16}).ZIndex = 5
+		end
+		if uid == selected then
+			local ring = Instance.new("UIStroke")
+			ring.Thickness = 5
+			ring.Color = rgb(255, 255, 255)
+			ring.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+			ring.Parent = tile
+		end
+		tile.MouseButton1Click:Connect(function()
+			Audio.sfx("Click")
+			selected = uid
+			deleteArmed = nil
+			redraw()
+		end)
+	end
+	drawDetail()
+end
+
+local function apply(newState)
+	if type(newState) == "table" then
+		state = newState
+		if window.Visible then redraw() end
+	end
+end
+
+local busy = false
+local function act(action, uid)
+	if busy then return end
+	busy = true
+	local ok, result = pcall(function() return actionRemote:InvokeServer(action, uid) end)
+	busy = false
+	if ok then apply(result) end
+end
+
+equipButton.MouseButton1Click:Connect(function()
+	if not selected then return end
+	Audio.sfx("Click")
+	act(state.Equipped[selected] and "Unequip" or "Equip", selected)
+end)
+deleteButton.MouseButton1Click:Connect(function()
+	if not selected then return end
+	Audio.sfx("Click")
+	if deleteArmed ~= selected then
+		deleteArmed = selected -- a second click deletes
+		drawDetail()
+		return
+	end
+	deleteArmed = nil
+	act("Delete", selected)
+end)
+equipBest.MouseButton1Click:Connect(function()
+	Audio.sfx("Click")
+	act("EquipBest")
+end)
+
+local function toggle()
+	if window.Visible then
+		window.Visible = false
+		return
+	end
+	deleteArmed = nil
+	redraw()
+	UIKit.open(window)
+	task.spawn(function()
+		local ok, result = pcall(function() return actionRemote:InvokeServer("GetState") end)
+		if ok then apply(result) end
+	end)
+end
+UIBus.On("Pets", toggle)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if not gameProcessed and input.KeyCode == Enum.KeyCode.P then toggle() end
+end)
+stateRemote.OnClientEvent:Connect(apply)
+
+---------------------------------------------------------------------
+-- HATCHING
+---------------------------------------------------------------------
+local hatchGui = UIKit.screen(player, "PetHatch", 40)
+hatchGui.IgnoreGuiInset = true
+
+local function playHatch(eggId, petIds)
+	for _, child in ipairs(hatchGui:GetChildren()) do
+		if child:IsA("GuiObject") then child:Destroy() end
+	end
+	local dim = Instance.new("TextButton")
+	dim.Text = ""
+	dim.AutoButtonColor = false
+	dim.BackgroundColor3 = rgb(10, 6, 24)
+	dim.BackgroundTransparency = 1
+	dim.Size = UDim2.fromScale(1, 1)
+	dim.Parent = hatchGui
+	local uiScale = Instance.new("UIScale") -- (the screen's own scaling would shrink the dim too)
+	uiScale.Parent = dim
+	TweenService:Create(dim, TweenInfo.new(0.25), {BackgroundTransparency = 0.35}):Play()
+
+	local n = #petIds
+	local slots = {}
+	for i = 1, n do
+		local x = 0.5 + (i - (n + 1) / 2) * 0.24
+		local holder = Instance.new("Frame")
+		holder.BackgroundTransparency = 1
+		holder.Size = UDim2.fromScale(0.22, 0.36)
+		holder.Position = UDim2.fromScale(x, 0.45)
+		holder.AnchorPoint = Vector2.new(0.5, 0.5)
+		holder.Parent = dim
+		local aspect = Instance.new("UIAspectRatioConstraint")
+		aspect.AspectRatio = 0.85
+		aspect.Parent = holder
+		local eggView = PetVisuals.viewport(holder, eggId, {Size = UDim2.fromScale(0.2, 0.2), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5)})
+		TweenService:Create(eggView, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromScale(1, 1)}):Play()
+		slots[i] = {Holder = holder, Egg = eggView}
+	end
+	-- the eggs wobble harder and harder...
+	local start = os.clock()
+	while os.clock() - start < 1.6 do
+		local t = os.clock() - start
+		for _, s in ipairs(slots) do
+			s.Egg.Rotation = math.sin(t * (14 + t * 10)) * (4 + t * 12)
+		end
+		if math.floor(t * 4) ~= math.floor((t - 0.03) * 4) then Audio.sfx("Click", 0.8 + t * 0.3) end
+		task.wait()
+	end
+	-- ...flash, and out pops the pet
+	local flash = Instance.new("Frame")
+	flash.BackgroundColor3 = rgb(255, 255, 255)
+	flash.Size = UDim2.fromScale(1, 1)
+	flash.Parent = dim
+	TweenService:Create(flash, TweenInfo.new(0.6), {BackgroundTransparency = 1}):Play()
+	Audio.sfx("Find")
+	for i, s in ipairs(slots) do
+		s.Egg:Destroy()
+		local pet = PetData.GetPet(petIds[i])
+		local rarity = PetData.Rarity(pet)
+		local glow = Instance.new("ImageLabel")
+		glow.BackgroundTransparency = 1
+		glow.Image = "rbxasset://textures/particles/sparkles_main.dds"
+		glow.ImageColor3 = rarity.Color
+		glow.Size = UDim2.fromScale(1.5, 1.5)
+		glow.Position = UDim2.fromScale(0.5, 0.42)
+		glow.AnchorPoint = Vector2.new(0.5, 0.5)
+		glow.Parent = s.Holder
+		local view = PetVisuals.viewport(s.Holder, pet.Id, {Size = UDim2.fromScale(0.3, 0.3), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), Spin = true, ZIndex = 2})
+		TweenService:Create(view, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromScale(0.95, 0.8)}):Play()
+		UIKit.label(s.Holder, pet.Name, {Size = UDim2.new(1.2, 0, 0.12, 0), Position = UDim2.fromScale(0.5, 0.86), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 3, MaxText = 34})
+		UIKit.label(s.Holder, string.upper(rarity.Name), {Size = UDim2.new(1, 0, 0.09, 0), Position = UDim2.fromScale(0.5, 0.96), AnchorPoint = Vector2.new(0.5, 0.5),
+			Color = rarity.Color, Stroke = 3, MaxText = 26})
+		local parts = {}
+		for _, statName in ipairs({"Money", "Luck", "Speed"}) do
+			if pet.Boosts[statName] then table.insert(parts, PetData.Percent(pet.Boosts[statName]) .. " " .. PetData.Stats[statName].Text) end
+		end
+		UIKit.label(s.Holder, table.concat(parts, "   "), {Size = UDim2.new(1.3, 0, 0.07, 0), Position = UDim2.fromScale(0.5, 1.05), AnchorPoint = Vector2.new(0.5, 0.5),
+			Color = rgb(255, 245, 200), Stroke = 2.5, MaxText = 20})
+		task.spawn(function()
+			while glow.Parent do
+				glow.Rotation += 1.2
+				task.wait()
+			end
+		end)
+	end
+	-- click (or wait) to close
+	local closed = false
+	local function close()
+		if closed then return end
+		closed = true
+		TweenService:Create(dim, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+		for _, d in ipairs(dim:GetDescendants()) do
+			if d:IsA("GuiObject") then d.Visible = false end
+		end
+		task.delay(0.3, function() dim:Destroy() end)
+	end
+	dim.MouseButton1Click:Connect(close)
+	task.delay(3.5, close)
+end
+
+hatchedRemote.OnClientEvent:Connect(function(eggId, petIds)
+	if type(petIds) == "table" and #petIds > 0 then
+		task.spawn(playHatch, eggId, petIds)
 	end
 end)
 ]=])
@@ -21583,4 +22861,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 23:53). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-03 00:19). Now save the place (Ctrl+S).")
