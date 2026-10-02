@@ -485,6 +485,7 @@ function MainIsland.build(parent)
 			local pos = part.Position
 			terrain:FillBlock(CFrame.new(pos.X, -2, pos.Z) * part.CFrame.Rotation, Vector3.new(part.Size.X, 4, part.Size.Z), Enum.Material.Air)
 			part.Size = Vector3.new(part.Size.X, 2.6, part.Size.Z)
+			game:GetService("CollectionService"):AddTag(part, "TerrainBed") -- the dig site's refill re-digs it
 		end
 	end
 	-- sink the roads, sidewalks and walkways so their tops sit just above the ground (y = 0): you

@@ -67,7 +67,8 @@ return function(parent, world, base)
 	b:disc("FloorStar", 9, 0.06, CFrame.new(0, 1.52, -2.5), "Lilac")
 	b:disc("FloorStarCore", 5, 0.08, CFrame.new(0, 1.54, -2.5), "White")
 	-- chunky front steps
-	b:roundedBlock("StepLow", Vector3.new(10, 0.5, 3), CFrame.new(0, 0.25, -14.6), 1.4, "Cloud")
+	-- (deep, so its top stays clear of the bumpy ground it stands in)
+	b:roundedBlock("StepLow", Vector3.new(10, 1.8, 3), CFrame.new(0, -0.1, -14.6), 1.4, "Cloud")
 
 	-----------------------------------------------------------------
 	-- CURVED BACK WALL: rounded panels with porthole windows
@@ -214,6 +215,10 @@ return function(parent, world, base)
 	local topY = 1 + #world.Zones * segment
 	b:ellipsoid("MeterTop", Vector3.new(2.7, 1.8, 2.7), CFrame.new(meter + Vector3.new(0, topY, 0)), "Lilac")
 	b:bulb("MeterBulb", 0.8, CFrame.new(meter + Vector3.new(0, topY + 1.1, 0)), "GlowSun", 8)
+
+	-- no terrain bumps poking up through the floor and the front steps (the worlds' ground
+	-- has little hills)
+	GameConfig.LevelGround(workspace.Terrain, base * CFrame.new(0, 0, -1), 34, 34)
 
 	shop.Parent = parent
 	return shop, prompt

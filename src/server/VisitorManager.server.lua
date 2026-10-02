@@ -216,7 +216,7 @@ end
 
 local function teleport(npc, position)
 	local root = npc:FindFirstChild("HumanoidRootPart")
-	if root then
+	if root and position then -- (no position: that floor's lift spot isn't there)
 		npc:PivotTo(CFrame.new(position + Vector3.new(0, 3, 0)) * root.CFrame.Rotation)
 	end
 end

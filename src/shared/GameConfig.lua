@@ -363,9 +363,6 @@ function GameConfig.IsInPit(world, character)
 	return Vector3.new(offset.X, 0, offset.Z).Magnitude <= world.PitRadius + 1
 end
 
--- the island's paved slabs (MainIsland), set into beds dug out of the terrain
-local SLABS = {Boulevard = true, SidewalkIn = true, SidewalkOut = true, Avenue = true, MuseumWalk = true}
-
 -- Fills a world's dig site with terrain: ground around, the 4 zones in the pit, bedrock below.
 -- Used on server start and every pit reset.
 function GameConfig.FillDigTerrain(terrain, world)
@@ -420,8 +417,10 @@ function GameConfig.FillDigTerrain(terrain, world)
 			local side = Vector3.new(-dir.Z, 0, dir.X)
 			for _, s in ipairs({-1, 1}) do
 				local toWalk = -side * s -- the bank's high side faces the walkway
-				local pos = origin + dir * 81 + side * s * (12.5 + 4.5) + Vector3.new(0, 0.8, 0)
-				terrain:FillWedge(CFrame.fromMatrix(pos, Vector3.yAxis:Cross(toWalk), Vector3.yAxis), Vector3.new(66, 1.6, 9), bank)
+				-- (they stop 10 studs before the walkway's end: further out they'd poke up through
+				-- the yard's curb)
+				local pos = origin + dir * 77 + side * s * (12.5 + 4.5) + Vector3.new(0, 0.8, 0)
+				terrain:FillWedge(CFrame.fromMatrix(pos, Vector3.yAxis:Cross(toWalk), Vector3.yAxis), Vector3.new(58, 1.6, 9), bank)
 			end
 			-- the terrain stays well under the walkway and its shoulders (their tops are at 2.6; a
 			-- bumpy terrain surface right at that height pokes through in places)
@@ -466,17 +465,47 @@ function GameConfig.FillDigTerrain(terrain, world)
 		GameConfig.FlattenGround(terrain, origin, math.max(200, world.WorkYard and (world.WorkYard.Radius + 24) * 2 + 8 or 0))
 	end
 	if world.WorkYard then
-		-- the stone ring refilled the beds the island's paved slabs sit in (MainIsland digs them
-		-- out): dig them out again, or the bumpy ground at the slabs' own height flickers
-		-- through their tops
-		local ground = workspace:FindFirstChild("MainIsland") and workspace.MainIsland:FindFirstChild("Ground")
-		local reach = world.WorkYard.Radius + 24 + 30
-		for _, part in ipairs(ground and ground:GetChildren() or {}) do
-			if SLABS[part.Name] and part:IsA("BasePart") then
-				local pos = part.Position
-				if Vector3.new(pos.X - origin.X, 0, pos.Z - origin.Z).Magnitude < reach then
-					terrain:FillBlock(CFrame.new(pos.X, origin.Y - 2, pos.Z) * part.CFrame.Rotation, Vector3.new(part.Size.X, 4, part.Size.Z), Enum.Material.Air)
+		-- the stone ring refilled the beds that flat pieces on the ground sit in
+		GameConfig.DigBeds(terrain, origin, world.WorkYard.Radius + 24)
+	end
+end
+
+-- Levels the ground in a box around `cf` (size: X and Z in studs): every terrain block above
+-- the ground (y = cf.Y) is emptied and the top block is left half full, so the surface sits
+-- at about y = cf.Y with nothing poking up (hills, mounds) inside the box.
+function GameConfig.LevelGround(terrain, cf, sizeX, sizeZ)
+	local half = (math.abs(cf.RightVector.X) * sizeX + math.abs(cf.LookVector.X) * sizeZ) / 2
+	local halfZ = (math.abs(cf.RightVector.Z) * sizeX + math.abs(cf.LookVector.Z) * sizeZ) / 2
+	local y = cf.Y
+	local region = Region3.new(Vector3.new(cf.X - half, y - 4, cf.Z - halfZ), Vector3.new(cf.X + half, y + 24, cf.Z + halfZ)):ExpandToGrid(4)
+	local materials, occupancies = terrain:ReadVoxels(region, 4)
+	local size = materials.Size
+	for x = 1, size.X do
+		for z = 1, size.Z do
+			for layer = 1, size.Y do
+				if layer == 1 then
+					occupancies[x][layer][z] = math.min(occupancies[x][layer][z], 0.5)
+				else
+					materials[x][layer][z] = Enum.Material.Air
+					occupancies[x][layer][z] = 0
 				end
+			end
+		end
+	end
+	terrain:WriteVoxels(region, 4, materials, occupancies)
+end
+
+-- Flat pieces on the ground (paved slabs, plaza tiles, lawns: tagged TerrainBed) are thick
+-- slabs set into a bed dug out of the terrain; refilling terrain near them fills the bed
+-- back in, and then the bumpy ground at the pieces' own height flickers through their tops.
+-- This digs out the beds of every such piece within `reach` studs of `center` again.
+function GameConfig.DigBeds(terrain, center, reach)
+	for _, part in ipairs(game:GetService("CollectionService"):GetTagged("TerrainBed")) do
+		if part:IsA("BasePart") and part:IsDescendantOf(workspace) then
+			local pos = part.Position
+			local flat = Vector3.new(pos.X - center.X, 0, pos.Z - center.Z).Magnitude
+			if flat - math.max(part.Size.X, part.Size.Z) / 2 < reach + 4 then
+				terrain:FillBlock(CFrame.new(pos.X, center.Y - 2, pos.Z) * part.CFrame.Rotation, Vector3.new(part.Size.X, 4, part.Size.Z), Enum.Material.Air)
 			end
 		end
 	end

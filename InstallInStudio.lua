@@ -1390,9 +1390,6 @@ function GameConfig.IsInPit(world, character)
 	return Vector3.new(offset.X, 0, offset.Z).Magnitude <= world.PitRadius + 1
 end
 
--- the island's paved slabs (MainIsland), set into beds dug out of the terrain
-local SLABS = {Boulevard = true, SidewalkIn = true, SidewalkOut = true, Avenue = true, MuseumWalk = true}
-
 -- Fills a world's dig site with terrain: ground around, the 4 zones in the pit, bedrock below.
 -- Used on server start and every pit reset.
 function GameConfig.FillDigTerrain(terrain, world)
@@ -1447,8 +1444,10 @@ function GameConfig.FillDigTerrain(terrain, world)
 			local side = Vector3.new(-dir.Z, 0, dir.X)
 			for _, s in ipairs({-1, 1}) do
 				local toWalk = -side * s -- the bank's high side faces the walkway
-				local pos = origin + dir * 81 + side * s * (12.5 + 4.5) + Vector3.new(0, 0.8, 0)
-				terrain:FillWedge(CFrame.fromMatrix(pos, Vector3.yAxis:Cross(toWalk), Vector3.yAxis), Vector3.new(66, 1.6, 9), bank)
+				-- (they stop 10 studs before the walkway's end: further out they'd poke up through
+				-- the yard's curb)
+				local pos = origin + dir * 77 + side * s * (12.5 + 4.5) + Vector3.new(0, 0.8, 0)
+				terrain:FillWedge(CFrame.fromMatrix(pos, Vector3.yAxis:Cross(toWalk), Vector3.yAxis), Vector3.new(58, 1.6, 9), bank)
 			end
 			-- the terrain stays well under the walkway and its shoulders (their tops are at 2.6; a
 			-- bumpy terrain surface right at that height pokes through in places)
@@ -1493,17 +1492,47 @@ function GameConfig.FillDigTerrain(terrain, world)
 		GameConfig.FlattenGround(terrain, origin, math.max(200, world.WorkYard and (world.WorkYard.Radius + 24) * 2 + 8 or 0))
 	end
 	if world.WorkYard then
-		-- the stone ring refilled the beds the island's paved slabs sit in (MainIsland digs them
-		-- out): dig them out again, or the bumpy ground at the slabs' own height flickers
-		-- through their tops
-		local ground = workspace:FindFirstChild("MainIsland") and workspace.MainIsland:FindFirstChild("Ground")
-		local reach = world.WorkYard.Radius + 24 + 30
-		for _, part in ipairs(ground and ground:GetChildren() or {}) do
-			if SLABS[part.Name] and part:IsA("BasePart") then
-				local pos = part.Position
-				if Vector3.new(pos.X - origin.X, 0, pos.Z - origin.Z).Magnitude < reach then
-					terrain:FillBlock(CFrame.new(pos.X, origin.Y - 2, pos.Z) * part.CFrame.Rotation, Vector3.new(part.Size.X, 4, part.Size.Z), Enum.Material.Air)
+		-- the stone ring refilled the beds that flat pieces on the ground sit in
+		GameConfig.DigBeds(terrain, origin, world.WorkYard.Radius + 24)
+	end
+end
+
+-- Levels the ground in a box around `cf` (size: X and Z in studs): every terrain block above
+-- the ground (y = cf.Y) is emptied and the top block is left half full, so the surface sits
+-- at about y = cf.Y with nothing poking up (hills, mounds) inside the box.
+function GameConfig.LevelGround(terrain, cf, sizeX, sizeZ)
+	local half = (math.abs(cf.RightVector.X) * sizeX + math.abs(cf.LookVector.X) * sizeZ) / 2
+	local halfZ = (math.abs(cf.RightVector.Z) * sizeX + math.abs(cf.LookVector.Z) * sizeZ) / 2
+	local y = cf.Y
+	local region = Region3.new(Vector3.new(cf.X - half, y - 4, cf.Z - halfZ), Vector3.new(cf.X + half, y + 24, cf.Z + halfZ)):ExpandToGrid(4)
+	local materials, occupancies = terrain:ReadVoxels(region, 4)
+	local size = materials.Size
+	for x = 1, size.X do
+		for z = 1, size.Z do
+			for layer = 1, size.Y do
+				if layer == 1 then
+					occupancies[x][layer][z] = math.min(occupancies[x][layer][z], 0.5)
+				else
+					materials[x][layer][z] = Enum.Material.Air
+					occupancies[x][layer][z] = 0
 				end
+			end
+		end
+	end
+	terrain:WriteVoxels(region, 4, materials, occupancies)
+end
+
+-- Flat pieces on the ground (paved slabs, plaza tiles, lawns: tagged TerrainBed) are thick
+-- slabs set into a bed dug out of the terrain; refilling terrain near them fills the bed
+-- back in, and then the bumpy ground at the pieces' own height flickers through their tops.
+-- This digs out the beds of every such piece within `reach` studs of `center` again.
+function GameConfig.DigBeds(terrain, center, reach)
+	for _, part in ipairs(game:GetService("CollectionService"):GetTagged("TerrainBed")) do
+		if part:IsA("BasePart") and part:IsDescendantOf(workspace) then
+			local pos = part.Position
+			local flat = Vector3.new(pos.X - center.X, 0, pos.Z - center.Z).Magnitude
+			if flat - math.max(part.Size.X, part.Size.Z) / 2 < reach + 4 then
+				terrain:FillBlock(CFrame.new(pos.X, center.Y - 2, pos.Z) * part.CFrame.Rotation, Vector3.new(part.Size.X, 4, part.Size.Z), Enum.Material.Air)
 			end
 		end
 	end
@@ -7288,9 +7317,10 @@ return function(digSite, world)
 				local face = CFrame.fromMatrix(Vector3.zero, tangent, Vector3.yAxis, -out)
 				local at = function(r, y) return CFrame.new(out * r + Vector3.new(0, y, 0)) * face end
 				-- wide enough to cover the band where the terrain blends the dirt into the plaza
-				b:box("YardCurb", Vector3.new(length, 1.3, 9), at(R - 1.8, 0.25), "White")
-				b:box("YardCurbTrim", Vector3.new(length, 0.25, 1.2), at(R - 5.7, 0.95), "Lilac")
-				b:box("YardCurbGlow", Vector3.new(length, 0.12, 0.35), at(R + 2.4, 0.95), "GlowCyan")
+				-- (top at 1.15: the dirt banks beside the walkways rise to about 1 near the curb)
+				b:box("YardCurb", Vector3.new(length, 1.8, 9), at(R - 1.8, 0.25), "White")
+				b:box("YardCurbTrim", Vector3.new(length, 0.25, 1.2), at(R - 5.7, 1.2), "Lilac")
+				b:box("YardCurbGlow", Vector3.new(length, 0.12, 0.35), at(R + 2.4, 1.2), "GlowCyan")
 			end
 		end
 	end
@@ -8944,6 +8974,7 @@ function MainIsland.build(parent)
 			local pos = part.Position
 			terrain:FillBlock(CFrame.new(pos.X, -2, pos.Z) * part.CFrame.Rotation, Vector3.new(part.Size.X, 4, part.Size.Z), Enum.Material.Air)
 			part.Size = Vector3.new(part.Size.X, 2.6, part.Size.Z)
+			game:GetService("CollectionService"):AddTag(part, "TerrainBed") -- the dig site's refill re-digs it
 		end
 	end
 	-- sink the roads, sidewalks and walkways so their tops sit just above the ground (y = 0): you
@@ -10759,6 +10790,7 @@ install(game:GetService("ServerScriptService"), "PlotManager", "Script", [=[
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local GameConfig = require(game:GetService("ReplicatedStorage"):WaitForChild("GameConfig"))
 
 -- The museum is built from code (compact 2050 gallery, see MuseumBuilder); every player's
 -- museum is a copy of it. (The old ServerStorage.MuseumTemplate is no longer used.)
@@ -10899,6 +10931,8 @@ local function onPlayerAdded(player)
 	-- up through the floors (filled to 2 studs below the plot: the surface then sits level
 	-- with it, see GameConfig.FlattenGround)
 	workspace.Terrain:FillBlock(plot.CFrame * CFrame.new(0, -3, -14), Vector3.new(84, 2, 104), Enum.Material.Slate)
+	-- that fill also refilled the beds of the plaza tiles and walks around it
+	GameConfig.DigBeds(workspace.Terrain, Vector3.new(plot.Position.X, 0, plot.Position.Z), 80)
 	local pad = plotPads[plot]
 	if pad then pad.Parent = nil end
 	setOwnerSign(museum, player)
@@ -13793,7 +13827,8 @@ return function(parent, world, base)
 	b:disc("FloorStar", 9, 0.06, CFrame.new(0, 1.52, -2.5), "Lilac")
 	b:disc("FloorStarCore", 5, 0.08, CFrame.new(0, 1.54, -2.5), "White")
 	-- chunky front steps
-	b:roundedBlock("StepLow", Vector3.new(10, 0.5, 3), CFrame.new(0, 0.25, -14.6), 1.4, "Cloud")
+	-- (deep, so its top stays clear of the bumpy ground it stands in)
+	b:roundedBlock("StepLow", Vector3.new(10, 1.8, 3), CFrame.new(0, -0.1, -14.6), 1.4, "Cloud")
 
 	-----------------------------------------------------------------
 	-- CURVED BACK WALL: rounded panels with porthole windows
@@ -13940,6 +13975,10 @@ return function(parent, world, base)
 	local topY = 1 + #world.Zones * segment
 	b:ellipsoid("MeterTop", Vector3.new(2.7, 1.8, 2.7), CFrame.new(meter + Vector3.new(0, topY, 0)), "Lilac")
 	b:bulb("MeterBulb", 0.8, CFrame.new(meter + Vector3.new(0, topY + 1.1, 0)), "GlowSun", 8)
+
+	-- no terrain bumps poking up through the floor and the front steps (the worlds' ground
+	-- has little hills)
+	GameConfig.LevelGround(workspace.Terrain, base * CFrame.new(0, 0, -1), 34, 34)
 
 	shop.Parent = parent
 	return shop, prompt
@@ -14239,7 +14278,7 @@ end
 
 local function teleport(npc, position)
 	local root = npc:FindFirstChild("HumanoidRootPart")
-	if root then
+	if root and position then -- (no position: that floor's lift spot isn't there)
 		npc:PivotTo(CFrame.new(position + Vector3.new(0, 3, 0)) * root.CFrame.Rotation)
 	end
 end
@@ -15877,6 +15916,7 @@ install(game:GetService("ServerScriptService"), "WorldOneDecor", "ModuleScript",
 --     the edge uncovers the dig's timber shoring
 -- MapStyle calls WorldOneDecor.build() once on server start (after MainIsland).
 
+local CollectionService = game:GetService("CollectionService")
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
 local P = Architecture.Palette
 
@@ -15916,29 +15956,48 @@ end
 ---------------------------------------------------------------------
 -- PLAZA: mosaic rings and inlay lines on the stone ground
 ---------------------------------------------------------------------
-local function mosaicRing(b, radius, width, segments, finishes)
+-- Flat pieces on the ground are thick slabs set into a bed dug out of the terrain (tagged
+-- TerrainBed, so the dig site's refill digs the bed out again, see GameConfig.FillDigTerrain):
+-- a thin piece lying on the slightly bumpy terrain flickers wherever the two are level.
+local BED_BOTTOM = -2.4
+local function bedded(part)
+	local cf, size = part.CFrame, part.Size
+	workspace.Terrain:FillBlock(CFrame.new(cf.X, -2, cf.Z) * cf.Rotation, Vector3.new(size.X, 4, size.Z), Enum.Material.Air)
+	CollectionService:AddTag(part, "TerrainBed")
+	return part
+end
+local function slab(b, name, size, cf, top, finish)
+	local height = top - BED_BOTTOM
+	return bedded(b:box(name, Vector3.new(size.X, height, size.Z), cf - Vector3.new(0, cf.Y, 0) + Vector3.new(0, BED_BOTTOM + height / 2, 0), finish))
+end
+
+local function mosaicRing(b, radius, width, segments, finishes, top)
 	local length = 2 * math.pi * radius / segments + 0.3
 	for i = 0, segments - 1 do
 		local deg = (i + 0.5) * 360 / segments
-		local pos = at(deg, radius, 0.14)
+		local pos = at(deg, radius, 0)
 		local tangent = Vector3.new(-math.sin(math.rad(deg)), 0, math.cos(math.rad(deg)))
-		b:box("PlazaTile", Vector3.new(length, 0.16, width), Architecture.alongX(pos, tangent), finishes[i % #finishes + 1])
+		-- neighbors overlap a little: every other tile sits a hair higher, so they don't flicker
+		slab(b, "PlazaTile", Vector3.new(length, 0, width), Architecture.alongX(pos, tangent), (top or 0.22) + (i % 2) * 0.02,
+			finishes[i % #finishes + 1])
 	end
 end
 
 local function plaza(b)
 	-- around the dig site (just outside its ramps) and inside the boulevard
 	mosaicRing(b, 128, 7, 96, {"PlazaTileA", "PlazaTileB", "PlazaTileA", "PlazaTileC"})
-	mosaicRing(b, 133, 1.2, 96, {"GlowCyan"})
+	-- the glow line sits in a band of tiles (a strip this thin can't get a clean bed in the
+	-- terrain, which works in 4-stud blocks)
+	mosaicRing(b, 133.5, 4, 96, {"PlazaTileA"}, 0.22)
+	mosaicRing(b, 133, 1.2, 96, {"GlowCyan"}, 0.27)
 	mosaicRing(b, 247, 6, 128, {"PlazaTileB", "PlazaTileA"})
 	-- glowing inlay lines from the dig site out between the museums
 	for _, deg in ipairs(GAP_ANGLES) do
 		local from, to = at(deg, 136, 0.3), at(deg, 243, 0.3)
-		b:box("InlayLine", Vector3.new(0.7, 0.2, (to - from).Magnitude), CFrame.lookAt((from + to) / 2, to), "GlowCyan")
-		for _, side in ipairs({-1, 1}) do
-			local off = Vector3.new(-math.sin(math.rad(deg)), 0, math.cos(math.rad(deg))) * side * 3
-			b:box("InlayEdge", Vector3.new(1.4, 0.18, (to - from).Magnitude), CFrame.lookAt((from + to) / 2 + off, to + off), "PlazaTileB")
-		end
+		-- one lilac band with the glow line down its middle (thin separate strips can't get a
+		-- clean bed in the terrain, which works in 4-stud blocks)
+		slab(b, "InlayEdge", Vector3.new(7.4, 0, (to - from).Magnitude), CFrame.lookAt((from + to) / 2, to), 0.36, "PlazaTileB")
+		slab(b, "InlayLine", Vector3.new(0.7, 0, (to - from).Magnitude), CFrame.lookAt((from + to) / 2, to), 0.4, "GlowCyan")
 	end
 end
 
@@ -15982,13 +16041,13 @@ local function lawn(b, deg)
 	local length = LAWN_TO - LAWN_FROM
 	for d = deg - LAWN_HALF_ANGLE + 0.5, deg + LAWN_HALF_ANGLE - 0.5, 1 do
 		local dir = at(d, 1)
-		-- the slices overlap; every other one sits a hair higher, or the grass flickers where
-		-- two tops at the same height fight over which one is drawn
-		local top = LAWN_TOP + (math.floor(d - deg + LAWN_HALF_ANGLE) % 2) * 0.03
+		-- the slices overlap (near the inner edge each one reaches two slices over); they take
+		-- turns at three heights a hair apart, or the grass flickers where two tops at the same
+		-- height fight over which one is drawn
+		local top = LAWN_TOP + (math.floor(d - deg + LAWN_HALF_ANGLE) % 3) * 0.03
 		local size = Vector3.new(length, top - LAWN_BOTTOM, 2 * math.pi * LAWN_TO / 360 + 1.2)
 		local cf = Architecture.alongX(dir * ((LAWN_FROM + LAWN_TO) / 2) + Vector3.new(0, (top + LAWN_BOTTOM) / 2, 0), dir)
-		workspace.Terrain:FillBlock(cf - Vector3.new(0, cf.Y + 2, 0), Vector3.new(size.X, 4, size.Z), Enum.Material.Air)
-		b:box("Lawn", size, cf, "Lawn")
+		bedded(b:box("Lawn", size, cf, "Lawn"))
 	end
 	for _, side in ipairs({-1, 1}) do
 		local dir = at(deg + side * LAWN_HALF_ANGLE, 1)
@@ -16161,6 +16220,193 @@ function WorldOneDecor.build(parent)
 end
 
 return WorldOneDecor
+]=])
+install(game:GetService("ServerScriptService"), "ZFightFixer", "Script", [=[
+-- ZFightFixer (Script in ServerScriptService)
+-- Two parts with a face in exactly the same place (a glow strip lying flush in a road, two
+-- tiles overlapping at the same height, a trim flush with a wall) flicker: the renderer can't
+-- tell which one is in front, and it changes its mind every frame as the camera moves.
+-- This scans the whole map once it's built (and again when a museum or a free plot is
+-- added), finds every such pair of block parts and makes the smaller one a few hundredths
+-- of a stud bigger on that side, so it always wins. Far too little to see, and it fixes the
+-- flicker anywhere, including on things built later.
+
+local GROW = 0.02       -- how far the smaller part's face is pushed out (0.02 to 0.052)
+local SAME_PLANE = 0.006 -- faces closer than this flicker
+local CELL = 16         -- spatial grid cell size, studs
+
+-- flat colors without a texture don't visibly flicker when they match exactly
+local PLAIN = {[Enum.Material.SmoothPlastic] = true, [Enum.Material.Neon] = true, [Enum.Material.Glass] = true}
+
+local SKIP_FOLDERS = {MuseumVisitors = true, AlienPortals = true}
+
+local function usable(part)
+	if part.ClassName ~= "Part" or part.Shape ~= Enum.PartType.Block or part.Transparency >= 0.95 then return false end
+	if part:FindFirstChildWhichIsA("DataModelMesh") then return false end -- a mesh changes its shape
+	local a = part.Parent
+	while a and a ~= workspace do
+		if SKIP_FOLDERS[a.Name] or a:FindFirstChildOfClass("Humanoid") then return false end
+		a = a.Parent
+	end
+	return true
+end
+
+-- the six faces of a block: outward normal, center, and the two in-plane axes with half sizes
+local function faces(part)
+	local cf, s = part.CFrame, part.Size / 2
+	local axes = {
+		{cf.RightVector, s.X, "X", cf.UpVector, s.Y, cf.LookVector, s.Z},
+		{cf.UpVector, s.Y, "Y", cf.RightVector, s.X, cf.LookVector, s.Z},
+		{cf.LookVector, s.Z, "Z", cf.RightVector, s.X, cf.UpVector, s.Y},
+	}
+	local list = {}
+	for _, a in ipairs(axes) do
+		for _, sign in ipairs({1, -1}) do
+			table.insert(list, {N = a[1] * sign, Sign = sign, Axis = a[3], C = cf.Position + a[1] * sign * a[2], U = a[4], HU = a[5], V = a[6], HV = a[7]})
+		end
+	end
+	return list
+end
+
+-- do two parallel faces in the same plane cover some of the same area?
+local function overlap(f, g)
+	local d = g.C - f.C
+	local gu = math.abs(g.U:Dot(f.U)) * g.HU + math.abs(g.V:Dot(f.U)) * g.HV
+	local gv = math.abs(g.U:Dot(f.V)) * g.HU + math.abs(g.V:Dot(f.V)) * g.HV
+	local cu, cv = d:Dot(f.U), d:Dot(f.V)
+	local ou = math.min(f.HU, cu + gu) - math.max(-f.HU, cu - gu)
+	local ov = math.min(f.HV, cv + gv) - math.max(-f.HV, cv - gv)
+	return ou > 0.05 and ov > 0.05
+end
+
+-- pushes one face of a part out by about GROW (resizing it and moving it half that way);
+-- the amount varies a little from push to push, so a row of identical parts that all get
+-- pushed doesn't end up lined up again
+local pushes = 0
+local function pushFace(part, face)
+	pushes += 1
+	local amount = GROW + (pushes % 5) * 0.008
+	local grow = Vector3.new(face.Axis == "X" and amount or 0, face.Axis == "Y" and amount or 0, face.Axis == "Z" and amount or 0)
+	part.Size += grow
+	part.CFrame = part.CFrame + face.N * (amount / 2)
+end
+
+local function bounds(part)
+	local cf, s = part.CFrame, part.Size / 2
+	local r, u, l = cf.RightVector, cf.UpVector, cf.LookVector
+	local ext = Vector3.new(math.abs(r.X) * s.X + math.abs(u.X) * s.Y + math.abs(l.X) * s.Z,
+		math.abs(r.Y) * s.X + math.abs(u.Y) * s.Y + math.abs(l.Y) * s.Z,
+		math.abs(r.Z) * s.X + math.abs(u.Z) * s.Y + math.abs(l.Z) * s.Z)
+	return cf.Position - ext, cf.Position + ext
+end
+
+local function touching(a, b)
+	return a[1].X <= b[2].X + 0.01 and b[1].X <= a[2].X + 0.01 and a[1].Y <= b[2].Y + 0.01 and b[1].Y <= a[2].Y + 0.01
+		and a[1].Z <= b[2].Z + 0.01 and b[1].Z <= a[2].Z + 0.01
+end
+
+local function fixAll()
+	local parts, boxes, grid = {}, {}, {}
+	local n = 0
+	for _, d in ipairs(workspace:GetDescendants()) do
+		if d:IsA("BasePart") and usable(d) then
+			local lo, hi = bounds(d)
+			if (hi - lo).Magnitude < 600 then -- skip huge parts (they'd fill thousands of cells)
+				table.insert(parts, d)
+				boxes[#parts] = {lo, hi}
+				for x = math.floor(lo.X / CELL), math.floor(hi.X / CELL) do
+					for z = math.floor(lo.Z / CELL), math.floor(hi.Z / CELL) do
+						local key = x * 100003 + z
+						local cell = grid[key]
+						if not cell then
+							cell = {}
+							grid[key] = cell
+						end
+						table.insert(cell, #parts)
+					end
+				end
+			end
+		end
+		n += 1
+		if n % 4000 == 0 then task.wait() end
+	end
+	local checked, fixed = {}, 0
+	local cells = 0
+	for _, cell in pairs(grid) do
+		for a = 1, #cell do
+			for b = a + 1, #cell do
+				local i, j = cell[a], cell[b]
+				local key = i < j and i * 1000003 + j or j * 1000003 + i
+				if not checked[key] and touching(boxes[i], boxes[j]) then
+					checked[key] = true
+					local p, q = parts[i], parts[j]
+					if not (p.Color == q.Color and p.Material == q.Material and PLAIN[p.Material]) then
+						-- the smaller part gets pushed out, so details (trims, glows, inlays) win
+						local small, big = p, q
+						if p.Size.X * p.Size.Y * p.Size.Z > q.Size.X * q.Size.Y * q.Size.Z then small, big = q, p end
+						local bigFaces = faces(big)
+						for _, f in ipairs(faces(small)) do
+							for _, g in ipairs(bigFaces) do
+								if f.N:Dot(g.N) > 0.9995 and math.abs((g.C - f.C):Dot(f.N)) < SAME_PLANE and overlap(f, g) then
+									pushFace(small, f)
+									fixed += 1
+									break
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+		cells += 1
+		if cells % 400 == 0 then task.wait() end
+	end
+	return fixed
+end
+
+-- wait for the map: World 1's island (MapStyle) and the other worlds and dig sites
+local waited = 0
+while not workspace:GetAttribute("MainIslandReady") and waited < 40 do
+	waited += task.wait(0.5)
+end
+task.wait(4)
+
+local running, again = false, false
+local function run()
+	if running then
+		again = true
+		return
+	end
+	running = true
+	repeat
+		again = false
+		-- a few rounds: growing one of two equal parts can line it up with a third one
+		local total = 0
+		for _ = 1, 5 do
+			local ok, result = pcall(fixAll)
+			if not ok then
+				warn("ZFightFixer: " .. tostring(result))
+				break
+			end
+			total += result
+			if result == 0 then break end
+		end
+		if total > 0 then print("ZFightFixer: fixed " .. total .. " flickering faces") end
+	until not again
+	running = false
+end
+run()
+
+-- museums appear when players join; free-plot pads come and go
+for _, name in ipairs({"Museums", "FreePlots"}) do
+	local folder = workspace:FindFirstChild(name)
+	if folder then
+		folder.ChildAdded:Connect(function()
+			task.wait(2)
+			run()
+		end)
+	end
+end
 ]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "AudioClient", "LocalScript", [=[
 -- AudioClient (LocalScript in StarterPlayer > StarterPlayerScripts)
@@ -21336,4 +21582,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 23:23). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 23:42). Now save the place (Ctrl+S).")

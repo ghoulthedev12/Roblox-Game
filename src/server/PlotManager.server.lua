@@ -4,6 +4,7 @@
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local GameConfig = require(game:GetService("ReplicatedStorage"):WaitForChild("GameConfig"))
 
 -- The museum is built from code (compact 2050 gallery, see MuseumBuilder); every player's
 -- museum is a copy of it. (The old ServerStorage.MuseumTemplate is no longer used.)
@@ -144,6 +145,8 @@ local function onPlayerAdded(player)
 	-- up through the floors (filled to 2 studs below the plot: the surface then sits level
 	-- with it, see GameConfig.FlattenGround)
 	workspace.Terrain:FillBlock(plot.CFrame * CFrame.new(0, -3, -14), Vector3.new(84, 2, 104), Enum.Material.Slate)
+	-- that fill also refilled the beds of the plaza tiles and walks around it
+	GameConfig.DigBeds(workspace.Terrain, Vector3.new(plot.Position.X, 0, plot.Position.Z), 80)
 	local pad = plotPads[plot]
 	if pad then pad.Parent = nil end
 	setOwnerSign(museum, player)

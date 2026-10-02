@@ -12,6 +12,7 @@
 --     the edge uncovers the dig's timber shoring
 -- MapStyle calls WorldOneDecor.build() once on server start (after MainIsland).
 
+local CollectionService = game:GetService("CollectionService")
 local Architecture = require(script.Parent:WaitForChild("Architecture"))
 local P = Architecture.Palette
 
@@ -51,29 +52,48 @@ end
 ---------------------------------------------------------------------
 -- PLAZA: mosaic rings and inlay lines on the stone ground
 ---------------------------------------------------------------------
-local function mosaicRing(b, radius, width, segments, finishes)
+-- Flat pieces on the ground are thick slabs set into a bed dug out of the terrain (tagged
+-- TerrainBed, so the dig site's refill digs the bed out again, see GameConfig.FillDigTerrain):
+-- a thin piece lying on the slightly bumpy terrain flickers wherever the two are level.
+local BED_BOTTOM = -2.4
+local function bedded(part)
+	local cf, size = part.CFrame, part.Size
+	workspace.Terrain:FillBlock(CFrame.new(cf.X, -2, cf.Z) * cf.Rotation, Vector3.new(size.X, 4, size.Z), Enum.Material.Air)
+	CollectionService:AddTag(part, "TerrainBed")
+	return part
+end
+local function slab(b, name, size, cf, top, finish)
+	local height = top - BED_BOTTOM
+	return bedded(b:box(name, Vector3.new(size.X, height, size.Z), cf - Vector3.new(0, cf.Y, 0) + Vector3.new(0, BED_BOTTOM + height / 2, 0), finish))
+end
+
+local function mosaicRing(b, radius, width, segments, finishes, top)
 	local length = 2 * math.pi * radius / segments + 0.3
 	for i = 0, segments - 1 do
 		local deg = (i + 0.5) * 360 / segments
-		local pos = at(deg, radius, 0.14)
+		local pos = at(deg, radius, 0)
 		local tangent = Vector3.new(-math.sin(math.rad(deg)), 0, math.cos(math.rad(deg)))
-		b:box("PlazaTile", Vector3.new(length, 0.16, width), Architecture.alongX(pos, tangent), finishes[i % #finishes + 1])
+		-- neighbors overlap a little: every other tile sits a hair higher, so they don't flicker
+		slab(b, "PlazaTile", Vector3.new(length, 0, width), Architecture.alongX(pos, tangent), (top or 0.22) + (i % 2) * 0.02,
+			finishes[i % #finishes + 1])
 	end
 end
 
 local function plaza(b)
 	-- around the dig site (just outside its ramps) and inside the boulevard
 	mosaicRing(b, 128, 7, 96, {"PlazaTileA", "PlazaTileB", "PlazaTileA", "PlazaTileC"})
-	mosaicRing(b, 133, 1.2, 96, {"GlowCyan"})
+	-- the glow line sits in a band of tiles (a strip this thin can't get a clean bed in the
+	-- terrain, which works in 4-stud blocks)
+	mosaicRing(b, 133.5, 4, 96, {"PlazaTileA"}, 0.22)
+	mosaicRing(b, 133, 1.2, 96, {"GlowCyan"}, 0.27)
 	mosaicRing(b, 247, 6, 128, {"PlazaTileB", "PlazaTileA"})
 	-- glowing inlay lines from the dig site out between the museums
 	for _, deg in ipairs(GAP_ANGLES) do
 		local from, to = at(deg, 136, 0.3), at(deg, 243, 0.3)
-		b:box("InlayLine", Vector3.new(0.7, 0.2, (to - from).Magnitude), CFrame.lookAt((from + to) / 2, to), "GlowCyan")
-		for _, side in ipairs({-1, 1}) do
-			local off = Vector3.new(-math.sin(math.rad(deg)), 0, math.cos(math.rad(deg))) * side * 3
-			b:box("InlayEdge", Vector3.new(1.4, 0.18, (to - from).Magnitude), CFrame.lookAt((from + to) / 2 + off, to + off), "PlazaTileB")
-		end
+		-- one lilac band with the glow line down its middle (thin separate strips can't get a
+		-- clean bed in the terrain, which works in 4-stud blocks)
+		slab(b, "InlayEdge", Vector3.new(7.4, 0, (to - from).Magnitude), CFrame.lookAt((from + to) / 2, to), 0.36, "PlazaTileB")
+		slab(b, "InlayLine", Vector3.new(0.7, 0, (to - from).Magnitude), CFrame.lookAt((from + to) / 2, to), 0.4, "GlowCyan")
 	end
 end
 
@@ -117,13 +137,13 @@ local function lawn(b, deg)
 	local length = LAWN_TO - LAWN_FROM
 	for d = deg - LAWN_HALF_ANGLE + 0.5, deg + LAWN_HALF_ANGLE - 0.5, 1 do
 		local dir = at(d, 1)
-		-- the slices overlap; every other one sits a hair higher, or the grass flickers where
-		-- two tops at the same height fight over which one is drawn
-		local top = LAWN_TOP + (math.floor(d - deg + LAWN_HALF_ANGLE) % 2) * 0.03
+		-- the slices overlap (near the inner edge each one reaches two slices over); they take
+		-- turns at three heights a hair apart, or the grass flickers where two tops at the same
+		-- height fight over which one is drawn
+		local top = LAWN_TOP + (math.floor(d - deg + LAWN_HALF_ANGLE) % 3) * 0.03
 		local size = Vector3.new(length, top - LAWN_BOTTOM, 2 * math.pi * LAWN_TO / 360 + 1.2)
 		local cf = Architecture.alongX(dir * ((LAWN_FROM + LAWN_TO) / 2) + Vector3.new(0, (top + LAWN_BOTTOM) / 2, 0), dir)
-		workspace.Terrain:FillBlock(cf - Vector3.new(0, cf.Y + 2, 0), Vector3.new(size.X, 4, size.Z), Enum.Material.Air)
-		b:box("Lawn", size, cf, "Lawn")
+		bedded(b:box("Lawn", size, cf, "Lawn"))
 	end
 	for _, side in ipairs({-1, 1}) do
 		local dir = at(deg + side * LAWN_HALF_ANGLE, 1)

@@ -378,9 +378,10 @@ return function(digSite, world)
 				local face = CFrame.fromMatrix(Vector3.zero, tangent, Vector3.yAxis, -out)
 				local at = function(r, y) return CFrame.new(out * r + Vector3.new(0, y, 0)) * face end
 				-- wide enough to cover the band where the terrain blends the dirt into the plaza
-				b:box("YardCurb", Vector3.new(length, 1.3, 9), at(R - 1.8, 0.25), "White")
-				b:box("YardCurbTrim", Vector3.new(length, 0.25, 1.2), at(R - 5.7, 0.95), "Lilac")
-				b:box("YardCurbGlow", Vector3.new(length, 0.12, 0.35), at(R + 2.4, 0.95), "GlowCyan")
+				-- (top at 1.15: the dirt banks beside the walkways rise to about 1 near the curb)
+				b:box("YardCurb", Vector3.new(length, 1.8, 9), at(R - 1.8, 0.25), "White")
+				b:box("YardCurbTrim", Vector3.new(length, 0.25, 1.2), at(R - 5.7, 1.2), "Lilac")
+				b:box("YardCurbGlow", Vector3.new(length, 0.12, 0.35), at(R + 2.4, 1.2), "GlowCyan")
 			end
 		end
 	end
