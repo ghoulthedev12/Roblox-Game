@@ -30,6 +30,9 @@ game systems. The owner is a beginner on Windows: explain steps simply, one at a
   `src/shared/UIIconImages.lua`; `UIKit.icon` prefers the picture. UI style reference: the
   Roblox game Mini War (big studded buttons, thick dark outlines).
 - FBX axes: Blender -Y (front) ends up as Roblox +Z. portals.py writes Roblox-space coords.
+  BUT measured on the imported pickaxes (raycasting the mesh): the mesh geometry came in with
+  Blender +Y at Roblox +Z (and +X at -X), a half turn about Y from pickaxes.py's `to_roblox`;
+  PickaxeModels applies that turn (`IMPORT_TURN`). Check new imports the same way.
 - Memes must be ORIGINAL parody designs (no copied characters/logos); flag IP risks.
 
 ## UI rules

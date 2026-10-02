@@ -219,11 +219,15 @@ local function meshSource(name)
 	return item
 end
 
+-- Studio's Import 3D brings Blender +Y in as Roblox +Z (and +X as -X): a half turn about Y
+-- from the tool space pickaxes.py writes its data in (measured: the heads came in at +Z)
+local IMPORT_TURN = CFrame.Angles(0, math.pi, 0)
+
 local function meshPiece(tool, name, src, size, center)
 	local part = src:Clone()
 	part.Name = name
 	part.Size = size
-	part.CFrame = CFrame.new(center)
+	part.CFrame = CFrame.new(center) * IMPORT_TURN
 	part.Anchored = false
 	part.CanCollide = false
 	part.CanQuery = false

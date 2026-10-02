@@ -2787,11 +2787,15 @@ local function meshSource(name)
 	return item
 end
 
+-- Studio's Import 3D brings Blender +Y in as Roblox +Z (and +X as -X): a half turn about Y
+-- from the tool space pickaxes.py writes its data in (measured: the heads came in at +Z)
+local IMPORT_TURN = CFrame.Angles(0, math.pi, 0)
+
 local function meshPiece(tool, name, src, size, center)
 	local part = src:Clone()
 	part.Name = name
 	part.Size = size
-	part.CFrame = CFrame.new(center)
+	part.CFrame = CFrame.new(center) * IMPORT_TURN
 	part.Anchored = false
 	part.CanCollide = false
 	part.CanQuery = false
@@ -19449,4 +19453,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 17:34). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 17:55). Now save the place (Ctrl+S).")
