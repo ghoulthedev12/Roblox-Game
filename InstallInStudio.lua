@@ -1390,6 +1390,9 @@ function GameConfig.IsInPit(world, character)
 	return Vector3.new(offset.X, 0, offset.Z).Magnitude <= world.PitRadius + 1
 end
 
+-- the island's paved slabs (MainIsland), set into beds dug out of the terrain
+local SLABS = {Boulevard = true, SidewalkIn = true, SidewalkOut = true, Avenue = true, MuseumWalk = true}
+
 -- Fills a world's dig site with terrain: ground around, the 4 zones in the pit, bedrock below.
 -- Used on server start and every pit reset.
 function GameConfig.FillDigTerrain(terrain, world)
@@ -1488,6 +1491,21 @@ function GameConfig.FillDigTerrain(terrain, world)
 		-- (all the way out past the stone ring: a full top block left anywhere bulges up as a
 		-- mound over the paths and the yard's curb)
 		GameConfig.FlattenGround(terrain, origin, math.max(200, world.WorkYard and (world.WorkYard.Radius + 24) * 2 + 8 or 0))
+	end
+	if world.WorkYard then
+		-- the stone ring refilled the beds the island's paved slabs sit in (MainIsland digs them
+		-- out): dig them out again, or the bumpy ground at the slabs' own height flickers
+		-- through their tops
+		local ground = workspace:FindFirstChild("MainIsland") and workspace.MainIsland:FindFirstChild("Ground")
+		local reach = world.WorkYard.Radius + 24 + 30
+		for _, part in ipairs(ground and ground:GetChildren() or {}) do
+			if SLABS[part.Name] and part:IsA("BasePart") then
+				local pos = part.Position
+				if Vector3.new(pos.X - origin.X, 0, pos.Z - origin.Z).Magnitude < reach then
+					terrain:FillBlock(CFrame.new(pos.X, origin.Y - 2, pos.Z) * part.CFrame.Rotation, Vector3.new(part.Size.X, 4, part.Size.Z), Enum.Material.Air)
+				end
+			end
+		end
 	end
 end
 
@@ -7235,8 +7253,9 @@ return function(digSite, world)
 			end
 			-- WALK RAMP: a solid slope from the end of the walkway (and its shoulders, 116 studs
 			-- out) down into the ground, so there's no hollow under it and no cliff at the
-			-- shoulders' ends. Its bottom sits below the ground, hiding the terrain's edge.
-			local high, low, length = 2.65, -0.6, 12
+			-- shoulders' ends. Its slope meets the museum walk's top (0.25) right where that walk
+			-- starts (126 studs out) and runs on under it.
+			local high, low, length = 2.65, -0.23, 12
 			local center = origin + dir * (116 + length / 2)
 			local ramp = Instance.new("WedgePart") -- slopes down towards where it faces (outwards)
 			ramp.Name = "WalkRamp"
@@ -21317,4 +21336,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 23:15). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 23:23). Now save the place (Ctrl+S).")

@@ -343,8 +343,9 @@ return function(digSite, world)
 			end
 			-- WALK RAMP: a solid slope from the end of the walkway (and its shoulders, 116 studs
 			-- out) down into the ground, so there's no hollow under it and no cliff at the
-			-- shoulders' ends. Its bottom sits below the ground, hiding the terrain's edge.
-			local high, low, length = 2.65, -0.6, 12
+			-- shoulders' ends. Its slope meets the museum walk's top (0.25) right where that walk
+			-- starts (126 studs out) and runs on under it.
+			local high, low, length = 2.65, -0.23, 12
 			local center = origin + dir * (116 + length / 2)
 			local ramp = Instance.new("WedgePart") -- slopes down towards where it faces (outwards)
 			ramp.Name = "WalkRamp"
