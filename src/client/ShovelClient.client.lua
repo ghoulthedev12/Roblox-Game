@@ -1203,6 +1203,16 @@ end)
 ---------------------------------------------------------------------
 local lastSwing = 0
 local holding = false
+local UserInputService = game:GetService("UserInputService")
+-- Letting go of the button ends hold-to-dig, wherever it happens. (The tool only hears the
+-- release when it's over the world: let go over a pop-up, like a curse trap or a data node
+-- hack, and it never did, so the pickaxe kept digging on its own until the next click.)
+local RELEASES = {[Enum.UserInputType.MouseButton1] = true, [Enum.UserInputType.Touch] = true}
+UserInputService.InputEnded:Connect(function(input)
+	if RELEASES[input.UserInputType] or input.KeyCode == Enum.KeyCode.ButtonR2 then
+		holding = false
+	end
+end)
 
 local function trySwing(def)
 	local now = os.clock()
@@ -1235,6 +1245,10 @@ local function onToolEquipped(tool)
 	end)
 	-- while the button is held, dig again as soon as the shovel is ready
 	local holdConn = RunService.Heartbeat:Connect(function()
+		local usingMouse = string.find(UserInputService:GetLastInputType().Name, "Mouse") ~= nil
+		if holding and usingMouse and not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+			holding = false -- the button isn't down any more (a release we never heard about)
+		end
 		if holding and tool.Parent == player.Character then
 			trySwing(def)
 		end

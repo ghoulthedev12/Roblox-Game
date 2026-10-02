@@ -322,6 +322,22 @@ return function(digSite, world)
 		end
 	end
 
+	-- WALKWAY SHOULDERS: a solid stone strip along both sides of each walkway, at walkway
+	-- height, covering the sawtooth edge of the terrain banks (see GameConfig.FillDigTerrain)
+	if world.HubPaths then
+		for k = 0, 5 do
+			local a = math.rad(k * 60)
+			local dir = Vector3.new(math.cos(a), 0, math.sin(a))
+			local side = Vector3.new(-dir.Z, 0, dir.X)
+			for _, s in ipairs({-1, 1}) do
+				local mid = dir * 81 + side * s * 9.5
+				local cf = CFrame.lookAt(mid, mid + dir)
+				b:box("WalkShoulder", Vector3.new(6, 2.8, 70), cf * CFrame.new(0, 1.3, 0), "White")
+				b:box("WalkShoulderTrim", Vector3.new(0.6, 0.12, 70), cf * CFrame.new(s * 2.7, 2.72, 0), "Lilac") -- along the outer edge
+			end
+		end
+	end
+
 	-- YARD CURB: terrain can't make a clean edge against the plaza tiles (the dirt smears over
 	-- them), so a raised stone curb runs round the edge of the dirt work yard and covers it,
 	-- with a lilac top trim and a soft glowing line; open where the walkways cross

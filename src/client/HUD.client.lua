@@ -3,7 +3,7 @@
 --   * TOP: three wide studded buttons (Shop, Museum, Worlds) with the world you're in under them
 --   * LEFT: the Bag as a square item tile and Rebirth as a big icon (red badge when a rebirth is ready)
 --   * TOP RIGHT CORNER: a small round Settings button (music and sound live in Settings)
---   * BOTTOM LEFT: big gem and money numbers (money in full: 15,760,347,332$), income under them
+--   * BOTTOM LEFT: big gem and money numbers (money short: $15.7B), income under them
 --   * BOTTOM CENTER: a hotbar of square slots (name on top, key number in the corner, 3D icon)
 
 local Players = game:GetService("Players")
@@ -172,8 +172,8 @@ settingsButton.MouseButton1Click:Connect(function()
 end)
 
 ---------------------------------------------------------------------
--- BOTTOM LEFT: gems and money as big outlined numbers next to their 3D icons (money in
--- full with commas, like 15,760,347,332$), income under them
+-- BOTTOM LEFT: gems and money as big outlined numbers next to their 3D icons (money short,
+-- like $15.7B), income under them
 ---------------------------------------------------------------------
 local wallet = Instance.new("Frame")
 wallet.BackgroundTransparency = 1
@@ -219,7 +219,7 @@ local function refreshMoney()
 	end
 	shownMoney = money
 	-- in full up to the trillions; past that the short form (the number would be too long)
-	moneyText.Text = money < 1e15 and (commas(money) .. "$") or ArtifactData.FormatMoney(money)
+	moneyText.Text = ArtifactData.FormatMoney(money) -- short: $12K, $3.4M, $250.5B, $1.2T
 end
 local function refreshIncome()
 	incomeText.Text = "Income: +" .. ArtifactData.FormatMoney(player:GetAttribute("Income") or 0) .. "/s"

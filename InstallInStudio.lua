@@ -1432,6 +1432,9 @@ function GameConfig.FillDigTerrain(terrain, world)
 		end
 		-- the walkways sit 2.6 studs up: sloped banks of earth along both sides rise to meet
 		-- them, so you can walk from the ground straight onto a walkway (no wall to jump)
+		-- (the banks start past the stone shoulders beside each walkway, see DigSiteStyle, and stay
+		-- a little lower: terrain on a slant is a sawtooth of 4-stud cubes that would bite into
+		-- the walkway's edge; the shoulders hide where it meets them)
 		local bank = Enum.Material[world.WorkYard and world.WorkYard.Material or world.TopMaterial or "Grass"]
 		for k = 0, 5 do
 			local a = math.rad(k * 60)
@@ -1439,9 +1442,13 @@ function GameConfig.FillDigTerrain(terrain, world)
 			local side = Vector3.new(-dir.Z, 0, dir.X)
 			for _, s in ipairs({-1, 1}) do
 				local toWalk = -side * s -- the bank's high side faces the walkway
-				local pos = origin + dir * 81 + side * s * (7 + 4.5) + Vector3.new(0, 1.35, 0)
-				terrain:FillWedge(CFrame.fromMatrix(pos, Vector3.yAxis:Cross(toWalk), Vector3.yAxis), Vector3.new(66, 2.7, 9), bank)
+				local pos = origin + dir * 81 + side * s * (12.5 + 4.5) + Vector3.new(0, 0.8, 0)
+				terrain:FillWedge(CFrame.fromMatrix(pos, Vector3.yAxis:Cross(toWalk), Vector3.yAxis), Vector3.new(66, 1.6, 9), bank)
 			end
+			-- the terrain stays well under the walkway and its shoulders (their tops are at 2.6; a
+			-- bumpy terrain surface right at that height pokes through in places)
+			local mid = origin + dir * 81
+			terrain:FillBlock(CFrame.lookAt(mid, mid + dir) * CFrame.new(0, 1.7 + 8, 0), Vector3.new(25, 16, 72), Enum.Material.Air)
 		end
 	end
 	-- the 4 depth zones
@@ -7199,6 +7206,22 @@ return function(digSite, world)
 			end
 			if i % 6 == 0 then
 				b:bulb("RimBulb", 0.8, CFrame.new(pos + Vector3.new(0, 2.3, 0)), "GlowSun", 8)
+			end
+		end
+	end
+
+	-- WALKWAY SHOULDERS: a solid stone strip along both sides of each walkway, at walkway
+	-- height, covering the sawtooth edge of the terrain banks (see GameConfig.FillDigTerrain)
+	if world.HubPaths then
+		for k = 0, 5 do
+			local a = math.rad(k * 60)
+			local dir = Vector3.new(math.cos(a), 0, math.sin(a))
+			local side = Vector3.new(-dir.Z, 0, dir.X)
+			for _, s in ipairs({-1, 1}) do
+				local mid = dir * 81 + side * s * 9.5
+				local cf = CFrame.lookAt(mid, mid + dir)
+				b:box("WalkShoulder", Vector3.new(6, 2.8, 70), cf * CFrame.new(0, 1.3, 0), "White")
+				b:box("WalkShoulderTrim", Vector3.new(0.6, 0.12, 70), cf * CFrame.new(s * 2.7, 2.72, 0), "Lilac") -- along the outer edge
 			end
 		end
 	end
@@ -16993,7 +17016,7 @@ install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "
 --   * TOP: three wide studded buttons (Shop, Museum, Worlds) with the world you're in under them
 --   * LEFT: the Bag as a square item tile and Rebirth as a big icon (red badge when a rebirth is ready)
 --   * TOP RIGHT CORNER: a small round Settings button (music and sound live in Settings)
---   * BOTTOM LEFT: big gem and money numbers (money in full: 15,760,347,332$), income under them
+--   * BOTTOM LEFT: big gem and money numbers (money short: $15.7B), income under them
 --   * BOTTOM CENTER: a hotbar of square slots (name on top, key number in the corner, 3D icon)
 
 local Players = game:GetService("Players")
@@ -17162,8 +17185,8 @@ settingsButton.MouseButton1Click:Connect(function()
 end)
 
 ---------------------------------------------------------------------
--- BOTTOM LEFT: gems and money as big outlined numbers next to their 3D icons (money in
--- full with commas, like 15,760,347,332$), income under them
+-- BOTTOM LEFT: gems and money as big outlined numbers next to their 3D icons (money short,
+-- like $15.7B), income under them
 ---------------------------------------------------------------------
 local wallet = Instance.new("Frame")
 wallet.BackgroundTransparency = 1
@@ -17209,7 +17232,7 @@ local function refreshMoney()
 	end
 	shownMoney = money
 	-- in full up to the trillions; past that the short form (the number would be too long)
-	moneyText.Text = money < 1e15 and (commas(money) .. "$") or ArtifactData.FormatMoney(money)
+	moneyText.Text = ArtifactData.FormatMoney(money) -- short: $12K, $3.4M, $250.5B, $1.2T
 end
 local function refreshIncome()
 	incomeText.Text = "Income: +" .. ArtifactData.FormatMoney(player:GetAttribute("Income") or 0) .. "/s"
@@ -19716,6 +19739,16 @@ end)
 ---------------------------------------------------------------------
 local lastSwing = 0
 local holding = false
+local UserInputService = game:GetService("UserInputService")
+-- Letting go of the button ends hold-to-dig, wherever it happens. (The tool only hears the
+-- release when it's over the world: let go over a pop-up, like a curse trap or a data node
+-- hack, and it never did, so the pickaxe kept digging on its own until the next click.)
+local RELEASES = {[Enum.UserInputType.MouseButton1] = true, [Enum.UserInputType.Touch] = true}
+UserInputService.InputEnded:Connect(function(input)
+	if RELEASES[input.UserInputType] or input.KeyCode == Enum.KeyCode.ButtonR2 then
+		holding = false
+	end
+end)
 
 local function trySwing(def)
 	local now = os.clock()
@@ -19748,6 +19781,10 @@ local function onToolEquipped(tool)
 	end)
 	-- while the button is held, dig again as soon as the shovel is ready
 	local holdConn = RunService.Heartbeat:Connect(function()
+		local usingMouse = string.find(UserInputService:GetLastInputType().Name, "Mouse") ~= nil
+		if holding and usingMouse and not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+			holding = false -- the button isn't down any more (a release we never heard about)
+		end
 		if holding and tool.Parent == player.Character then
 			trySwing(def)
 		end
@@ -21187,4 +21224,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 22:28). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 22:43). Now save the place (Ctrl+S).")

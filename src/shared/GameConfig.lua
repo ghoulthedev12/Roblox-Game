@@ -405,6 +405,9 @@ function GameConfig.FillDigTerrain(terrain, world)
 		end
 		-- the walkways sit 2.6 studs up: sloped banks of earth along both sides rise to meet
 		-- them, so you can walk from the ground straight onto a walkway (no wall to jump)
+		-- (the banks start past the stone shoulders beside each walkway, see DigSiteStyle, and stay
+		-- a little lower: terrain on a slant is a sawtooth of 4-stud cubes that would bite into
+		-- the walkway's edge; the shoulders hide where it meets them)
 		local bank = Enum.Material[world.WorkYard and world.WorkYard.Material or world.TopMaterial or "Grass"]
 		for k = 0, 5 do
 			local a = math.rad(k * 60)
@@ -412,9 +415,13 @@ function GameConfig.FillDigTerrain(terrain, world)
 			local side = Vector3.new(-dir.Z, 0, dir.X)
 			for _, s in ipairs({-1, 1}) do
 				local toWalk = -side * s -- the bank's high side faces the walkway
-				local pos = origin + dir * 81 + side * s * (7 + 4.5) + Vector3.new(0, 1.35, 0)
-				terrain:FillWedge(CFrame.fromMatrix(pos, Vector3.yAxis:Cross(toWalk), Vector3.yAxis), Vector3.new(66, 2.7, 9), bank)
+				local pos = origin + dir * 81 + side * s * (12.5 + 4.5) + Vector3.new(0, 0.8, 0)
+				terrain:FillWedge(CFrame.fromMatrix(pos, Vector3.yAxis:Cross(toWalk), Vector3.yAxis), Vector3.new(66, 1.6, 9), bank)
 			end
+			-- the terrain stays well under the walkway and its shoulders (their tops are at 2.6; a
+			-- bumpy terrain surface right at that height pokes through in places)
+			local mid = origin + dir * 81
+			terrain:FillBlock(CFrame.lookAt(mid, mid + dir) * CFrame.new(0, 1.7 + 8, 0), Vector3.new(25, 16, 72), Enum.Material.Air)
 		end
 	end
 	-- the 4 depth zones
