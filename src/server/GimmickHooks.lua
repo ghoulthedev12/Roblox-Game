@@ -4,7 +4,7 @@
 --   BeforeDig(player, dig)        return "block" to stop this swing (e.g. frozen permafrost)
 --   AfterDig(player, dig)         return true if it took over this swing's find roll
 --                                 (e.g. a curse trap or a data node went off instead)
---   OnPull(player, artifact, pos) return true if it takes over giving the artifact
+--   OnPull(player, artifact, pos, zoneIndex)  return true if it takes over giving the artifact
 --                                 (e.g. a meme ghost has to be captured first)
 --   LuckMult(player, dig)         return a luck multiplier for this swing
 -- dig = {Zone = zone, ZoneIndex = n, Position = where it hit, Def = the pickaxe}

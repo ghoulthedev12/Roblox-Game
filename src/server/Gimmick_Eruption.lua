@@ -9,6 +9,7 @@ local Debris = game:GetService("Debris")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+local Quests = require(script.Parent:WaitForChild("Quests"))
 
 local Gimmick = {}
 local BOMBS = 10
@@ -87,6 +88,7 @@ function Gimmick.Start(ctx)
 			rock:SetAttribute("Taken", true)
 			PlayerData.AddMoney(player, reward)
 			ReplicatedStorage.Remotes.DigProgress:FireClient(player, "{Volcano} Forge Nugget! +" .. ArtifactData.FormatMoney(reward), Color3.fromRGB(255, 170, 70))
+			Quests.Progress(player, "Nugget")
 			burst(ctx.Folder, rock.Position, Color3.fromRGB(255, 150, 40), 20)
 			rock:Destroy()
 		end)

@@ -3266,12 +3266,126 @@ end
 
 return PortalMeshes
 ]=])
+install(game:GetService("ReplicatedStorage"), "QuestData", "ModuleScript", [=[
+-- QuestData (ModuleScript in ReplicatedStorage)
+-- Goals for worlds 2-9 so there's always something to chase:
+--   * QUESTS: each world has a chain of quests built around its own twist (capture ghosts,
+--     break curses, hack data nodes...). One quest at a time, in order. Each pays cash (a
+--     share of the world's unlock price) and gems. Finishing the whole chain MASTERS the
+--     world: +25% luck there forever.
+--   * MEME INDEX: find every meme of a world once (any rarity) to complete its page:
+--     +15% income from that world's memes on display, forever, and a gem reward.
+--   * BURIED VAULTS (BuriedVault on the server): every few minutes a golden vault is buried
+--     somewhere in the pit; the first player to dig it out gets a rare meme and gems.
+--
+-- Quest kinds (counted by the server, see Quests.lua):
+--   Find        dig up memes in this world            FindZone   ...at least this deep (Zone 1-4)
+--   FindRarity  dig up a meme of Rarity or better     EventFind  ...during a world event
+--   Combo       reach a x10 dig combo                 Vault      open a Buried Vault
+--   Ghost (W2)  capture meme ghosts                   Flare (W4) light Torch Flares
+--   Curse (W5)  break curse traps                     Sugar (W7) buy a Sugar Rush
+--   Nugget (W8) grab Forge Nuggets                    Hack (W9)  hack Data Nodes
+-- Cash = Cash x the world's unlock price.
+
+local QuestData = {}
+
+QuestData.MasteryLuck = 1.25      -- luck multiplier in a world once its quests are all done
+QuestData.IndexIncomeBonus = 0.15 -- +15% income from a world's memes once its index is complete
+QuestData.IndexGems = 40          -- gems for completing a world's index
+
+QuestData.Worlds = {
+	[2] = { -- Neon Sakura Grove: meme ghosts
+		{Kind = "Find", Goal = 10, Text = "Dig up 10 memes", Cash = 0.01, Gems = 3},
+		{Kind = "Ghost", Goal = 3, Text = "Capture 3 meme ghosts", Cash = 0.015, Gems = 4},
+		{Kind = "Combo", Goal = 1, Text = "Build a x10 dig combo", Cash = 0.02, Gems = 4},
+		{Kind = "FindZone", Zone = 3, Goal = 5, Text = "Dig up 5 memes in the Deep Zone", Cash = 0.03, Gems = 6},
+		{Kind = "Ghost", Goal = 15, Text = "Capture 15 meme ghosts", Cash = 0.05, Gems = 8},
+		{Kind = "Vault", Goal = 1, Text = "Open a Buried Vault", Cash = 0.06, Gems = 10},
+		{Kind = "FindRarity", Rarity = "Legendary", Goal = 1, Text = "Find a Legendary meme (or rarer)", Cash = 0.1, Gems = 15},
+	},
+	[3] = { -- Galaxy Drift: low gravity, gravity shifts
+		{Kind = "Find", Goal = 15, Text = "Dig up 15 memes", Cash = 0.01, Gems = 3},
+		{Kind = "FindZone", Zone = 3, Goal = 3, Text = "Brave the gravity shifts: 3 memes in the Deep Zone", Cash = 0.015, Gems = 4},
+		{Kind = "Combo", Goal = 3, Text = "Build a x10 dig combo 3 times", Cash = 0.02, Gems = 5},
+		{Kind = "FindRarity", Rarity = "Epic", Goal = 3, Text = "Find 3 Epic memes (or rarer)", Cash = 0.03, Gems = 6},
+		{Kind = "FindZone", Zone = 4, Goal = 3, Text = "Dig up 3 memes in The Abyss", Cash = 0.05, Gems = 8},
+		{Kind = "Vault", Goal = 2, Text = "Open 2 Buried Vaults", Cash = 0.07, Gems = 12},
+		{Kind = "FindRarity", Rarity = "Legendary", Goal = 2, Text = "Find 2 Legendary memes (or rarer)", Cash = 0.12, Gems = 18},
+	},
+	[4] = { -- Frostbyte Tundra: permafrost, blizzards
+		{Kind = "Find", Goal = 15, Text = "Dig up 15 memes", Cash = 0.01, Gems = 3},
+		{Kind = "Flare", Goal = 3, Text = "Light 3 Torch Flares [F]", Cash = 0.015, Gems = 4},
+		{Kind = "EventFind", Goal = 3, Text = "Dig up 3 memes during a Blizzard", Cash = 0.02, Gems = 5},
+		{Kind = "FindZone", Zone = 3, Goal = 6, Text = "Dig up 6 memes in the Deep Zone", Cash = 0.03, Gems = 6},
+		{Kind = "Flare", Goal = 12, Text = "Light 12 Torch Flares", Cash = 0.05, Gems = 8},
+		{Kind = "Vault", Goal = 2, Text = "Open 2 Buried Vaults", Cash = 0.07, Gems = 12},
+		{Kind = "FindRarity", Rarity = "Legendary", Goal = 2, Text = "Find 2 Legendary memes (or rarer)", Cash = 0.12, Gems = 18},
+	},
+	[5] = { -- Chrome Dunes: curse traps, gold rush
+		{Kind = "Find", Goal = 15, Text = "Dig up 15 memes", Cash = 0.01, Gems = 3},
+		{Kind = "Curse", Goal = 2, Text = "Break 2 curse traps", Cash = 0.015, Gems = 4},
+		{Kind = "EventFind", Goal = 5, Text = "Dig up 5 memes during a Gold Rush", Cash = 0.02, Gems = 5},
+		{Kind = "Curse", Goal = 8, Text = "Break 8 curse traps", Cash = 0.03, Gems = 6},
+		{Kind = "FindZone", Zone = 4, Goal = 4, Text = "Dig up 4 memes in The Abyss", Cash = 0.05, Gems = 8},
+		{Kind = "Vault", Goal = 2, Text = "Open 2 Buried Vaults", Cash = 0.07, Gems = 12},
+		{Kind = "FindRarity", Rarity = "Legendary", Goal = 3, Text = "Find 3 Legendary memes (or rarer)", Cash = 0.12, Gems = 18},
+	},
+	[6] = { -- Coral Circuit: low oxygen
+		{Kind = "Find", Goal = 15, Text = "Dig up 15 memes", Cash = 0.01, Gems = 3},
+		{Kind = "FindZone", Zone = 2, Goal = 5, Text = "Hold your breath: 5 memes in the toxic Mid Zone", Cash = 0.015, Gems = 4},
+		{Kind = "Combo", Goal = 3, Text = "Build a x10 dig combo 3 times", Cash = 0.02, Gems = 5},
+		{Kind = "FindZone", Zone = 3, Goal = 8, Text = "Dig up 8 memes in the Deep Zone", Cash = 0.03, Gems = 6},
+		{Kind = "FindZone", Zone = 4, Goal = 5, Text = "Dig up 5 memes in The Abyss", Cash = 0.05, Gems = 8},
+		{Kind = "Vault", Goal = 3, Text = "Open 3 Buried Vaults", Cash = 0.07, Gems = 12},
+		{Kind = "FindRarity", Rarity = "Legendary", Goal = 3, Text = "Find 3 Legendary memes (or rarer)", Cash = 0.12, Gems = 18},
+	},
+	[7] = { -- Candy Mainframe: the alien merchant
+		{Kind = "Find", Goal = 20, Text = "Dig up 20 memes", Cash = 0.01, Gems = 3},
+		{Kind = "Sugar", Goal = 1, Text = "Buy a Sugar Rush from the Alien Merchant", Cash = 0.015, Gems = 4},
+		{Kind = "Combo", Goal = 5, Text = "Build a x10 dig combo 5 times", Cash = 0.02, Gems = 5},
+		{Kind = "FindRarity", Rarity = "Legendary", Goal = 3, Text = "Find 3 Legendary memes (or rarer)", Cash = 0.03, Gems = 6},
+		{Kind = "Sugar", Goal = 5, Text = "Buy 5 Sugar Rushes", Cash = 0.05, Gems = 8},
+		{Kind = "Vault", Goal = 3, Text = "Open 3 Buried Vaults", Cash = 0.07, Gems = 12},
+		{Kind = "FindZone", Zone = 4, Goal = 10, Text = "Dig up 10 memes in The Abyss", Cash = 0.12, Gems = 18},
+	},
+	[8] = { -- Volcano Forge: lava surges, eruptions
+		{Kind = "Find", Goal = 20, Text = "Dig up 20 memes", Cash = 0.01, Gems = 3},
+		{Kind = "Nugget", Goal = 3, Text = "Grab 3 Forge Nuggets after an eruption", Cash = 0.015, Gems = 4},
+		{Kind = "FindZone", Zone = 3, Goal = 8, Text = "Dodge the lava: 8 memes in the Deep Zone", Cash = 0.02, Gems = 5},
+		{Kind = "Nugget", Goal = 12, Text = "Grab 12 Forge Nuggets", Cash = 0.03, Gems = 6},
+		{Kind = "FindZone", Zone = 4, Goal = 6, Text = "Dig up 6 memes in The Abyss", Cash = 0.05, Gems = 8},
+		{Kind = "Vault", Goal = 3, Text = "Open 3 Buried Vaults", Cash = 0.07, Gems = 12},
+		{Kind = "FindRarity", Rarity = "Legendary", Goal = 4, Text = "Find 4 Legendary memes (or rarer)", Cash = 0.12, Gems = 18},
+	},
+	[9] = { -- Glitch Nexus: data hacking, glitch surges
+		{Kind = "Find", Goal = 20, Text = "Dig up 20 memes", Cash = 0.01, Gems = 3},
+		{Kind = "Hack", Goal = 2, Text = "Hack 2 Data Nodes", Cash = 0.015, Gems = 4},
+		{Kind = "EventFind", Goal = 5, Text = "Dig up 5 memes during a Glitch Surge", Cash = 0.02, Gems = 5},
+		{Kind = "Hack", Goal = 10, Text = "Hack 10 Data Nodes", Cash = 0.03, Gems = 6},
+		{Kind = "FindZone", Zone = 4, Goal = 8, Text = "Dig up 8 memes in The Abyss", Cash = 0.05, Gems = 8},
+		{Kind = "Vault", Goal = 4, Text = "Open 4 Buried Vaults", Cash = 0.07, Gems = 12},
+		{Kind = "FindRarity", Rarity = "Legendary", Goal = 4, Text = "Find 4 Legendary memes (or rarer)", Cash = 0.12, Gems = 18},
+	},
+}
+
+function QuestData.Get(worldId, step)
+	local list = QuestData.Worlds[worldId]
+	return list and list[step]
+end
+
+function QuestData.Count(worldId)
+	local list = QuestData.Worlds[worldId]
+	return list and #list or 0
+end
+
+return QuestData
+]=])
 install(game:GetService("ReplicatedStorage"), "UIBus", "ModuleScript", [=[
 -- UIBus (ModuleScript in ReplicatedStorage)
 -- Lets one LocalScript ask another to open a window (every LocalScript on a player's screen
 -- gets the same copy of this module). For example, the HUD's buttons do UIBus.Fire("Shop")
 -- and the pickaxe shop listens with UIBus.On("Shop", function() ... end).
--- Names used: Shop, Museum, Teleport, Rebirth, Settings, Inventory, ToggleSound
+-- Names used: Shop, Museum, Teleport, Rebirth, Settings, Inventory, ToggleSound, Quests
 
 local UIBus = {}
 local events = {}
@@ -5097,6 +5211,227 @@ return function(artifact, rarityColor, placement, rng)
 	return model
 end
 ]=])
+install(game:GetService("ServerScriptService"), "BuriedVault", "Script", [=[
+-- BuriedVault (Script in ServerScriptService)
+-- A race in worlds 2-9: every few minutes (while someone is in the world) a golden vault is
+-- buried somewhere in the pit. A golden beam shoots up from it with its depth on top, and
+-- everyone in the world is told. The first player to dig into it (a swing within a few studs)
+-- cracks it open: a guaranteed Rare-or-better meme from the deep layers waiting in the dirt,
+-- plus gems and cash. Nobody gets there in time? It sinks away.
+-- Counts toward the "Open a Buried Vault" world quests (Quests.Progress "Vault").
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
+
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+local Quests = require(script.Parent:WaitForChild("Quests"))
+
+local EVERY = {200, 320}       -- seconds between vaults in a world
+local LIFETIME = 180           -- seconds before an unclaimed vault sinks away
+local CLAIM_RADIUS = 9         -- a dig this close to the vault cracks it open
+local ZONE_WEIGHTS = {0.45, 0.4, 0.15} -- how often it's buried in the Shallow / Mid / Deep zone
+local REWARD_LUCK = 30         -- luck of the meme inside (rolled in the world's Deep Zone)
+local REWARD_GEMS = 8
+local REWARD_CASH = 0.03       -- x the world's unlock price
+local GOLD = Color3.fromRGB(255, 205, 70)
+
+local announceRemote = GimmickHooks.Remote("Announcement")
+local rng = Random.new()
+local active = {} -- [worldId] = {Model, Position, Zone, Spawned}
+
+local function playersIn(worldId)
+	local list = {}
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player:GetAttribute("CurrentWorld") == worldId then table.insert(list, player) end
+	end
+	return list
+end
+
+local function announce(worldId, text, color)
+	for _, player in ipairs(playersIn(worldId)) do
+		announceRemote:FireClient(player, text, color)
+	end
+end
+
+local function part(parent, name, size, cf, color, material, shape)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Size = size
+	p.CFrame = cf
+	p.Color = color
+	p.Material = material or Enum.Material.SmoothPlastic
+	if shape then p.Shape = shape end
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false -- clicks go through to the dirt around it
+	p.CanTouch = false
+	p.Parent = parent
+	return p
+end
+
+-- the vault: a chunky gold chest with dark bands and a glowing lock, plus the beam above it
+local function buildVault(world, position, depth)
+	local model = Instance.new("Model")
+	model.Name = "BuriedVault"
+	local base = CFrame.new(position) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0)
+	local body = part(model, "Body", Vector3.new(5, 3, 3.4), base, GOLD, Enum.Material.Foil)
+	part(model, "Lid", Vector3.new(3.4, 5, 3.4), base * CFrame.new(0, 1.5, 0) * CFrame.Angles(0, 0, math.rad(90)), GOLD:Lerp(Color3.new(1, 1, 1), 0.15),
+		Enum.Material.Foil, Enum.PartType.Cylinder)
+	for _, x in ipairs({-1.6, 1.6}) do
+		part(model, "Band", Vector3.new(0.5, 3.1, 3.5), base * CFrame.new(x, 0, 0), Color3.fromRGB(90, 60, 30))
+		part(model, "LidBand", Vector3.new(0.5, 3.5, 3.5), base * CFrame.new(x, 1.5, 0) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(90, 60, 30),
+			nil, Enum.PartType.Cylinder)
+	end
+	local lock = part(model, "Lock", Vector3.new(0.9, 1.1, 0.4), base * CFrame.new(0, 0.6, -1.8), Color3.fromRGB(120, 255, 220), Enum.Material.Neon)
+	local light = Instance.new("PointLight")
+	light.Color = GOLD
+	light.Range = 28
+	light.Brightness = 3
+	light.Parent = body
+	local sparkles = Instance.new("ParticleEmitter")
+	sparkles.Color = ColorSequence.new(Color3.new(1, 1, 1), GOLD)
+	sparkles.LightEmission = 1
+	sparkles.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(1, 0)})
+	sparkles.Lifetime = NumberRange.new(0.8, 1.4)
+	sparkles.Rate = 18
+	sparkles.Speed = NumberRange.new(2, 5)
+	sparkles.SpreadAngle = Vector2.new(180, 180)
+	sparkles.Parent = lock
+	model.PrimaryPart = body
+
+	-- the beam: from the vault up out of the pit, so you can see where to dig
+	local top = world.Origin.Y + 45
+	local height = top - position.Y
+	local beam = part(model, "Beam", Vector3.new(height, 1.6, 1.6), CFrame.new(position.X, position.Y + height / 2, position.Z) * CFrame.Angles(0, 0, math.rad(90)),
+		GOLD, Enum.Material.Neon, Enum.PartType.Cylinder)
+	beam.Transparency = 0.45
+	beam.CastShadow = false
+	local tip = part(model, "BeamTip", Vector3.new(1, 1, 1), CFrame.new(position.X, top, position.Z), GOLD)
+	tip.Transparency = 1
+	local sign = Instance.new("BillboardGui")
+	sign.Size = UDim2.fromOffset(260, 80)
+	sign.StudsOffset = Vector3.new(0, 4, 0)
+	sign.AlwaysOnTop = true
+	sign.MaxDistance = 700
+	sign.Parent = tip
+	local function text(t, y, size, color)
+		local l = Instance.new("TextLabel")
+		l.BackgroundTransparency = 1
+		l.Size = UDim2.new(1, 0, 0.5, 0)
+		l.Position = UDim2.fromScale(0, y)
+		l.Font = Enum.Font.FredokaOne
+		l.Text = t
+		l.TextScaled = true
+		l.TextColor3 = color
+		l.Parent = sign
+		local stroke = Instance.new("UIStroke")
+		stroke.Thickness = 3
+		stroke.Color = Color3.fromRGB(40, 25, 5)
+		stroke.Parent = l
+		return l
+	end
+	text("BURIED VAULT", 0, 40, GOLD)
+	text(math.floor(depth) .. "m DOWN  ·  DIG IT OUT!", 0.5, 28, Color3.new(1, 1, 1))
+	return model
+end
+
+local function removeVault(worldId, sink)
+	local vault = active[worldId]
+	if not vault then return end
+	active[worldId] = nil
+	local model = vault.Model
+	if sink and model.PrimaryPart then
+		for _, p in ipairs(model:GetDescendants()) do
+			if p:IsA("BasePart") then
+				TweenService:Create(p, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+					{CFrame = p.CFrame - Vector3.new(0, 12, 0), Transparency = 1}):Play()
+			end
+		end
+		Debris:AddItem(model, 1.6)
+	else
+		model:Destroy()
+	end
+end
+
+local function spawnVault(world)
+	-- which zone (only the first three: every pickaxe past the starter can reach them)
+	local roll, zoneIndex = rng:NextNumber(), 1
+	local running = 0
+	for i, w in ipairs(ZONE_WEIGHTS) do
+		running += w
+		if roll <= running then zoneIndex = i break end
+	end
+	local zone = world.Zones[zoneIndex]
+	local depth = rng:NextNumber(-zone.Top + 8, -zone.Bottom - 8)
+	local a = rng:NextNumber(0, math.pi * 2)
+	local r = rng:NextNumber(world.CenterNoDigRadius + 8, world.PitRadius - 8)
+	local position = world.Origin + Vector3.new(math.cos(a) * r, -depth, math.sin(a) * r)
+	local worlds = workspace:FindFirstChild("Worlds")
+	local container = worlds and worlds:FindFirstChild("World" .. world.Id) or workspace
+	local model = buildVault(world, position, depth)
+	model.Parent = container
+	local vault = {Model = model, Position = position, Zone = zone, Spawned = os.clock()}
+	active[world.Id] = vault
+	announce(world.Id, "{Coin} A BURIED VAULT appeared " .. math.floor(depth) .. "m down! Follow the golden beam and dig it out first!", GOLD)
+	task.delay(LIFETIME, function()
+		if active[world.Id] == vault then
+			removeVault(world.Id, true)
+			announce(world.Id, "The Buried Vault sank out of reach...", Color3.fromRGB(200, 200, 215))
+		end
+	end)
+end
+
+local function claim(player, world, vault)
+	removeVault(world.Id, false)
+	local Api = GimmickHooks.Api
+	Api.Burst(vault.Position, GOLD, 60, 22)
+	-- the reward: a deep-layer meme rolled with huge luck, left in the dirt to pull out
+	local deep = world.Zones[math.min(3, #world.Zones)]
+	local artifact = ArtifactData.RollForZone(deep, REWARD_LUCK)
+	if artifact and not Api.GiveFind(player, deep, REWARD_LUCK, vault.Position, artifact) then
+		Api.AddArtifactNow(player, artifact) -- they're already pulling something out: straight into the bag
+		Quests.Found(player, artifact, deep.Index)
+	end
+	local cash = math.floor(world.Price * REWARD_CASH)
+	if cash > 0 then PlayerData.AddMoney(player, cash) end
+	local data = PlayerData.Get(player)
+	if data then
+		data.Gems = (data.Gems or 0) + REWARD_GEMS
+		PlayerData.Refresh(player)
+	end
+	Api.Message(player, "{Coin} VAULT CRACKED! +" .. ArtifactData.FormatMoney(cash) .. " +" .. REWARD_GEMS .. " gems, and a rare meme is waiting in the dirt!", GOLD)
+	announce(world.Id, player.DisplayName .. " cracked open the Buried Vault!", GOLD)
+	Quests.Progress(player, "Vault")
+end
+
+for _, world in ipairs(GameConfig.Worlds) do
+	if world.Id ~= 1 and world.Enabled then
+		-- a swing close enough to the vault cracks it (and takes the place of a normal find roll)
+		GimmickHooks.Register(world.Id, "AfterDig", function(player, dig)
+			local vault = active[world.Id]
+			if vault and (dig.Position - vault.Position).Magnitude <= CLAIM_RADIUS then
+				claim(player, world, vault)
+				return true
+			end
+			return nil
+		end)
+		task.spawn(function()
+			task.wait(rng:NextNumber(60, 120))
+			while true do
+				if not active[world.Id] and #playersIn(world.Id) > 0 then
+					spawnVault(world)
+				end
+				task.wait(rng:NextNumber(EVERY[1], EVERY[2]))
+			end
+		end)
+	end
+end
+]=])
 install(game:GetService("ServerScriptService"), "CityBuilder", "ModuleScript", [=[
 -- CityBuilder (ModuleScript in ServerScriptService)
 -- Rebuilds the city skyline in the cartoony 2050 style. It reads where every old tower
@@ -5591,6 +5926,7 @@ local WorldBuilder = require(script.Parent:WaitForChild("WorldBuilder"))
 local BuriedPainting = require(script.Parent:WaitForChild("BuriedPainting"))
 local DigBoosts = require(script.Parent:WaitForChild("DigBoosts"))
 local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+local Quests = require(script.Parent:WaitForChild("Quests"))
 local TweenService = game:GetService("TweenService")
 
 local terrain = workspace.Terrain
@@ -5813,9 +6149,11 @@ local function resolveFind(player, take)
 	local data = PlayerData.Get(player)
 	if take and data and player.Parent then
 		-- a world gimmick may take over giving it (e.g. a meme ghost that must be captured first)
-		local handled = GimmickHooks.Run("OnPull", getWorld(player).Id, player, find.Artifact, find.Model:GetPivot().Position)
+		local handled = GimmickHooks.Run("OnPull", getWorld(player).Id, player, find.Artifact, find.Model:GetPivot().Position,
+			find.Zone and find.Zone.Index)
 		if not handled then
 			PlayerData.AddArtifact(player, find.Artifact.Id)
+			Quests.Found(player, find.Artifact, find.Zone and find.Zone.Index)
 		end
 		player:SetAttribute("TutorialFound", true)
 		data.Stats.TotalDigs += 1
@@ -5929,7 +6267,7 @@ local function giveArtifact(player, zone, luck, grade, position, forcedArtifact)
 	model.Parent = findsFolder
 	revealFx(cf, rarity.Color)
 
-	local find = {Artifact = artifact, Model = model, Info = info}
+	local find = {Artifact = artifact, Model = model, Info = info, Zone = zone}
 	pending[player] = find
 	info.Painting = model
 	prompt.Triggered:Connect(function(who)
@@ -6092,7 +6430,11 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 
 	-- Combo: keep digging without long pauses to build it up (more luck per dig)
 	if now - (lastHit[player] or 0) <= COMBO_WINDOW then
-		combos[player] = math.min((combos[player] or 0) + 1, COMBO_MAX)
+		local before = combos[player] or 0
+		combos[player] = math.min(before + 1, COMBO_MAX)
+		if before < COMBO_MAX and combos[player] == COMBO_MAX then
+			Quests.Progress(player, "Combo") -- world quests: "build a x10 dig combo"
+		end
 	else
 		combos[player] = 1
 	end
@@ -6907,7 +7249,7 @@ install(game:GetService("ServerScriptService"), "GimmickHooks", "ModuleScript", 
 --   BeforeDig(player, dig)        return "block" to stop this swing (e.g. frozen permafrost)
 --   AfterDig(player, dig)         return true if it took over this swing's find roll
 --                                 (e.g. a curse trap or a data node went off instead)
---   OnPull(player, artifact, pos) return true if it takes over giving the artifact
+--   OnPull(player, artifact, pos, zoneIndex)  return true if it takes over giving the artifact
 --                                 (e.g. a meme ghost has to be captured first)
 --   LuckMult(player, dig)         return a luck multiplier for this swing
 -- dig = {Zone = zone, ZoneIndex = n, Position = where it hit, Def = the pickaxe}
@@ -7007,6 +7349,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
 local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+local Quests = require(script.Parent:WaitForChild("Quests"))
 
 local Gimmick = {}
 local TRAP_CHANCE = 0.06
@@ -7050,6 +7393,7 @@ function Gimmick.Start(ctx)
 			traps[player] = nil
 			PlayerData.AddMoney(player, reward)
 			Api.Message(player, "{Coin} Curse broken! +" .. ArtifactData.FormatMoney(reward) .. " in ancient gold!", Color3.fromRGB(255, 214, 90))
+			Quests.Progress(player, "Curse")
 		else
 			fail(player)
 		end
@@ -7074,6 +7418,7 @@ local Debris = game:GetService("Debris")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+local Quests = require(script.Parent:WaitForChild("Quests"))
 
 local Gimmick = {}
 local NODE_CHANCE = 0.07
@@ -7127,6 +7472,7 @@ function Gimmick.Start(ctx)
 			local corrupted = ArtifactData.GetCorrupted(base) or base
 			if Api.GiveFind(player, node.Zone, node.Luck, node.Position, corrupted) then
 				Api.Message(player, "{Disk} HACKED! A Corrupted meme (2x income) is waiting in the dirt!", Color3.fromRGB(80, 255, 220))
+				Quests.Progress(player, "Hack")
 			end
 		else
 			Api.Burst(node.Position, Color3.fromRGB(255, 60, 120), 24, 12)
@@ -7153,6 +7499,7 @@ local Debris = game:GetService("Debris")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+local Quests = require(script.Parent:WaitForChild("Quests"))
 
 local Gimmick = {}
 local BOMBS = 10
@@ -7231,6 +7578,7 @@ function Gimmick.Start(ctx)
 			rock:SetAttribute("Taken", true)
 			PlayerData.AddMoney(player, reward)
 			ReplicatedStorage.Remotes.DigProgress:FireClient(player, "{Volcano} Forge Nugget! +" .. ArtifactData.FormatMoney(reward), Color3.fromRGB(255, 170, 70))
+			Quests.Progress(player, "Nugget")
 			burst(ctx.Folder, rock.Position, Color3.fromRGB(255, 150, 40), 20)
 			rock:Destroy()
 		end)
@@ -7557,6 +7905,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
 local buildVisitor = require(script.Parent:WaitForChild("VisitorModels"))
+local Quests = require(script.Parent:WaitForChild("Quests"))
 
 local Gimmick = {}
 local BOOST = {Name = "SUGAR RUSH", CooldownMult = 1 / 1.5}
@@ -7618,6 +7967,7 @@ function Gimmick.Start(ctx)
 		end
 		ctx.Boosts.GivePersonal(player, table.clone(BOOST), BOOST_SECONDS)
 		ReplicatedStorage.Remotes.DigProgress:FireClient(player, "{Candy} SUGAR RUSH! You dig 1.5x faster for 3 minutes!", Color3.fromRGB(255, 150, 220))
+		Quests.Progress(player, "Sugar")
 	end)
 
 	local function stop(i)
@@ -7742,6 +8092,7 @@ install(game:GetService("ServerScriptService"), "Gimmick_Permafrost", "ModuleScr
 -- The flare's state lives in the player's "HeatUntil" / "FlareReadyAt" attributes (os.time()).
 
 local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+local Quests = require(script.Parent:WaitForChild("Quests"))
 
 local Gimmick = {}
 local FROZEN_CHANCE = 0.5  -- chance an unheated swing skids off the permafrost
@@ -7798,6 +8149,7 @@ function Gimmick.Start(ctx)
 			end)
 		end
 		Api.Message(player, "{Fire} Torch Flare! You melt through permafrost for 20 seconds.", Color3.fromRGB(255, 170, 80))
+		Quests.Progress(player, "Flare")
 	end)
 end
 
@@ -7818,6 +8170,7 @@ local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local ArtifactModels = require(ReplicatedStorage:WaitForChild("ArtifactModels"))
 local MemeFigures = require(ReplicatedStorage:WaitForChild("MemeFigures"))
 local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+local Quests = require(script.Parent:WaitForChild("Quests"))
 
 local Gimmick = {}
 local HITS_NEEDED = 4
@@ -7904,11 +8257,11 @@ function Gimmick.Start(ctx)
 	end
 
 	-- the find is pulled out: instead of going into the bag, its ghost escapes
-	GimmickHooks.Register(world.Id, "OnPull", function(player, artifact, position)
+	GimmickHooks.Register(world.Id, "OnPull", function(player, artifact, position, zoneIndex)
 		task.delay(1.2, function()
 			if not player.Parent then return end
 			local ghost = makeGhost(ctx.Folder, artifact, position + Vector3.new(0, 2, 0))
-			local entry = {Owner = player, Artifact = artifact, Hits = 0}
+			local entry = {Owner = player, Artifact = artifact, Hits = 0, ZoneIndex = zoneIndex}
 			ghosts[ghost] = entry
 			Api.Message(player, "{Ghost} The " .. artifact.Name .. " escaped as a ghost! Click it " .. HITS_NEEDED .. " times to capture it!", Color3.fromRGB(255, 170, 230))
 			-- dart around the pit until it's caught or gets away
@@ -7962,6 +8315,8 @@ function Gimmick.Start(ctx)
 			Api.Burst(body.Position, body.Color, 40, 14)
 			ghost:Destroy()
 			Api.AddArtifactNow(player, entry.Artifact)
+			Quests.Found(player, entry.Artifact, entry.ZoneIndex) -- here a find only counts once its ghost is caught
+			Quests.Progress(player, "Ghost")
 			Api.Message(player, "{Ghost} Captured! The " .. entry.Artifact.Name .. " is in your bag.", Color3.fromRGB(150, 255, 200))
 		end
 	end)
@@ -9593,6 +9948,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local QuestData = require(ReplicatedStorage:WaitForChild("QuestData"))
 
 local ProfileService = require(script.Parent:WaitForChild("ProfileService"))
 
@@ -9606,6 +9962,10 @@ local profiles = {} -- [player] = ProfileService profile
 
 local changedEvent = Instance.new("BindableEvent")
 PlayerData.Changed = changedEvent.Event -- fires (player, data) whenever something changes
+local artifactAddedEvent = Instance.new("BindableEvent")
+-- fires (player, artifactId, isNew) when a meme goes into the bag; isNew = first time ever
+-- found (the Meme Index, see Quests)
+PlayerData.ArtifactAdded = artifactAddedEvent.Event
 
 ---------------------------------------------------------------------
 -- DEFAULT DATA FOR NEW PLAYERS
@@ -9638,6 +9998,10 @@ local function defaultData()
 		Rebirths = 0,
 		Gems = 0,
 		GemLuckLevel = 0, -- the Lucky Charm gem upgrade (+10% luck per level)
+		-- world quests, the Meme Index and World Mastery (Quests.lua, QuestData)
+		Quests = {},       -- [worldId] = {Step = n, Progress = n}
+		Discovered = {},   -- [memeId] = true: every meme ever found
+		IndexClaimed = {}, -- [worldId] = true: that world's index is complete (+income on its memes)
 	}
 end
 
@@ -9675,7 +10039,12 @@ local function computeIncome(data)
 	for slot, artifactId in pairs(data.Displayed) do
 		local artifact = ArtifactData.GetArtifact(artifactId)
 		if artifact and data.UnlockedSlots[slot] then
-			total += ArtifactData.GetIncome(artifact)
+			local income = ArtifactData.GetIncome(artifact)
+			-- a completed Meme Index boosts that world's memes
+			if data.IndexClaimed and data.IndexClaimed[tostring(artifact.World)] then
+				income *= 1 + QuestData.IndexIncomeBonus
+			end
+			total += income
 		end
 	end
 	-- every rebirth adds a permanent income bonus
@@ -9879,7 +10248,14 @@ function PlayerData.AddArtifact(player, artifactId)
 	local uid = tostring(data.NextUid)
 	data.NextUid += 1
 	data.Inventory[uid] = artifactId
+	-- the Meme Index: corrupted copies count as their original
+	local artifact = ArtifactData.GetArtifact(artifactId)
+	local indexId = artifact and (artifact.BaseId or artifact.Id) or artifactId
+	data.Discovered = data.Discovered or {}
+	local isNew = not data.Discovered[indexId]
+	data.Discovered[indexId] = true
 	refresh(player)
+	artifactAddedEvent:Fire(player, artifactId, isNew)
 	return uid
 end
 
@@ -12565,6 +12941,244 @@ task.spawn(function()
 end)
 
 return ProfileService]=])
+install(game:GetService("ServerScriptService"), "Quests", "ModuleScript", [=[
+-- Quests (ModuleScript in ServerScriptService)
+-- World quests, the Meme Index and World Mastery for worlds 2-9 (the lists are in
+-- ReplicatedStorage.QuestData). Other server scripts report what players do:
+--   Quests.Found(player, artifact, zoneIndex)  a meme was dug up (and kept)
+--   Quests.Progress(player, kind, amount)      something else happened (Ghost, Flare, Vault...)
+-- Progress only counts toward the quest the player is on in the world they're standing in.
+-- Finishing a quest pays its reward straight away and moves on to the next one; finishing
+-- the last one masters the world (+25% luck there, a LuckMult gimmick hook).
+-- The Meme Index (every meme you've ever found) is tracked in PlayerData.AddArtifact; this
+-- module pays the reward when a world's page is complete. Its income bonus is applied by
+-- PlayerData's income (data.IndexClaimed).
+--
+-- Saved in the player's data:
+--   Quests = {["2"] = {Step = 3, Progress = 1}, ...}   (Step past the last = mastered)
+--   Discovered = {[memeId] = true}                    IndexClaimed = {["2"] = true}
+-- The client asks for its state with the GetQuestState RemoteFunction and is pushed
+-- updates on the QuestUpdate RemoteEvent ("State", state) and ("Complete", info).
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local QuestData = require(ReplicatedStorage:WaitForChild("QuestData"))
+local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+
+local Quests = {}
+
+-- (DigManager loads this module before it makes the Remotes folder, so make it if needed)
+local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+if not remotes then
+	remotes = Instance.new("Folder")
+	remotes.Name = "Remotes"
+	remotes.Parent = ReplicatedStorage
+end
+local function remoteEvent(name)
+	local r = remotes:FindFirstChild(name) or Instance.new("RemoteEvent")
+	r.Name = name
+	r.Parent = remotes
+	return r
+end
+local updateRemote = remoteEvent("QuestUpdate")
+local announceRemote = remoteEvent("Announcement")
+local getState = remotes:FindFirstChild("GetQuestState") or Instance.new("RemoteFunction")
+getState.Name = "GetQuestState"
+getState.Parent = remotes
+
+-- which world each meme belongs to, and how many memes each world has (for the index)
+local worldMemes = {} -- [worldId] = {ids}
+for _, artifact in ipairs(ArtifactData.Artifacts) do
+	if not artifact.BaseId then
+		worldMemes[artifact.World] = worldMemes[artifact.World] or {}
+		table.insert(worldMemes[artifact.World], artifact.Id)
+	end
+end
+Quests.WorldMemes = worldMemes
+
+local function questState(data, worldId)
+	data.Quests = data.Quests or {}
+	local key = tostring(worldId)
+	data.Quests[key] = data.Quests[key] or {Step = 1, Progress = 0}
+	return data.Quests[key]
+end
+
+function Quests.IsMastered(player, worldId)
+	local data = PlayerData.Get(player)
+	if not data or not QuestData.Worlds[worldId] then return false end
+	return questState(data, worldId).Step > QuestData.Count(worldId)
+end
+
+-- everything the client needs to draw the Quests window
+local function snapshot(data)
+	local state = {Quests = {}, Discovered = {}, IndexClaimed = {}}
+	for worldId in pairs(QuestData.Worlds) do
+		local q = questState(data, worldId)
+		state.Quests[tostring(worldId)] = {Step = q.Step, Progress = q.Progress}
+	end
+	for id in pairs(data.Discovered or {}) do table.insert(state.Discovered, id) end
+	for key, value in pairs(data.IndexClaimed or {}) do state.IndexClaimed[key] = value end
+	return state
+end
+
+local function push(player)
+	local data = PlayerData.Get(player)
+	if data then updateRemote:FireClient(player, "State", snapshot(data)) end
+end
+Quests.Push = push
+
+getState.OnServerInvoke = function(player)
+	local data = PlayerData.WaitForData(player)
+	return data and snapshot(data) or nil
+end
+
+local function giveGems(player, amount)
+	local data = PlayerData.Get(player)
+	if not data or amount <= 0 then return end
+	data.Gems = (data.Gems or 0) + amount
+	PlayerData.Refresh(player)
+end
+
+local function rewardText(cash, gems)
+	local parts = {}
+	if cash > 0 then table.insert(parts, "+" .. ArtifactData.FormatMoney(cash)) end
+	if gems > 0 then table.insert(parts, "+" .. gems .. " gems") end
+	return table.concat(parts, "  ")
+end
+
+-- adds progress to the quest the player is on in this world; pays out when it's done
+local function advance(player, worldId, kind, amount, test)
+	local list = QuestData.Worlds[worldId]
+	local data = PlayerData.Get(player)
+	if not list or not data then return end
+	local q = questState(data, worldId)
+	local quest = list[q.Step]
+	if not quest or quest.Kind ~= kind then return end
+	if test and not test(quest) then return end
+	q.Progress = math.min(q.Progress + (amount or 1), quest.Goal)
+	if q.Progress < quest.Goal then
+		push(player)
+		return
+	end
+	-- done: pay it, move on
+	local world = GameConfig.GetWorld(worldId)
+	local cash = math.floor((world and world.Price or 0) * (quest.Cash or 0))
+	if cash > 0 then PlayerData.AddMoney(player, cash) end
+	giveGems(player, quest.Gems or 0)
+	q.Step += 1
+	q.Progress = 0
+	local mastered = q.Step > #list
+	updateRemote:FireClient(player, "Complete", {
+		World = worldId, Text = quest.Text, Reward = rewardText(cash, quest.Gems or 0), Mastered = mastered,
+		Next = list[q.Step] and list[q.Step].Text or nil,
+	})
+	if mastered then
+		announceRemote:FireAllClients(player.DisplayName .. " MASTERED " .. (world and world.Name or "a world") .. "! +25% luck there forever.",
+			Color3.fromRGB(255, 215, 90))
+	end
+	push(player)
+end
+
+local function currentWorldId(player)
+	return player:GetAttribute("CurrentWorld") or 1
+end
+
+function Quests.Progress(player, kind, amount)
+	advance(player, currentWorldId(player), kind, amount)
+end
+
+local function eventRunning(worldId)
+	local worlds = workspace:FindFirstChild("Worlds")
+	local container = worlds and worlds:FindFirstChild("World" .. worldId)
+	local event = container and container:GetAttribute("Event")
+	return typeof(event) == "string" and event ~= ""
+end
+
+-- a meme was dug up and kept (zoneIndex = the depth zone it came from, nil if unknown)
+function Quests.Found(player, artifact, zoneIndex)
+	if not artifact then return end
+	local worldId = currentWorldId(player)
+	advance(player, worldId, "Find", 1)
+	if zoneIndex then
+		advance(player, worldId, "FindZone", 1, function(quest) return zoneIndex >= (quest.Zone or 1) end)
+	end
+	local rarityIndex = ArtifactData.GetRarityIndex(artifact.Rarity)
+	advance(player, worldId, "FindRarity", 1, function(quest) return rarityIndex >= ArtifactData.GetRarityIndex(quest.Rarity) end)
+	if eventRunning(worldId) then
+		advance(player, worldId, "EventFind", 1)
+	end
+end
+
+---------------------------------------------------------------------
+-- MEME INDEX: PlayerData marks every meme you get as discovered; when a world's whole page
+-- is found, pay the reward once and switch on its income bonus
+---------------------------------------------------------------------
+local function checkIndex(player, worldId)
+	local data = PlayerData.Get(player)
+	local ids = worldMemes[worldId]
+	if not data or not ids or worldId == 1 then return end
+	data.IndexClaimed = data.IndexClaimed or {}
+	local key = tostring(worldId)
+	if data.IndexClaimed[key] then return end
+	for _, id in ipairs(ids) do
+		if not (data.Discovered and data.Discovered[id]) then return end
+	end
+	data.IndexClaimed[key] = true
+	giveGems(player, QuestData.IndexGems)
+	PlayerData.Refresh(player) -- the income bonus kicks in
+	local world = GameConfig.GetWorld(worldId)
+	updateRemote:FireClient(player, "Complete", {
+		World = worldId, Index = true, Text = (world and world.Name or "World") .. " Meme Index complete!",
+		Reward = "+" .. QuestData.IndexGems .. " gems  +" .. math.floor(QuestData.IndexIncomeBonus * 100) .. "% income from its memes",
+	})
+	announceRemote:FireAllClients(player.DisplayName .. " completed the " .. (world and world.Name or "") .. " Meme Index!", Color3.fromRGB(120, 230, 255))
+end
+
+PlayerData.ArtifactAdded:Connect(function(player, artifactId, isNew)
+	local artifact = ArtifactData.GetArtifact(artifactId)
+	if not artifact then return end
+	if isNew then
+		checkIndex(player, artifact.World)
+		push(player)
+	end
+end)
+
+---------------------------------------------------------------------
+-- MASTERY: +25% luck in a world once all its quests are done
+---------------------------------------------------------------------
+for worldId in pairs(QuestData.Worlds) do
+	GimmickHooks.Register(worldId, "LuckMult", function(player)
+		return Quests.IsMastered(player, worldId) and QuestData.MasteryLuck or 1
+	end)
+end
+
+-- returning players: everything already in their bag or museum counts as discovered, and
+-- worlds whose index they already finished pay out
+local function onLoaded(player)
+	local data = PlayerData.WaitForData(player)
+	if not data then return end
+	data.Discovered = data.Discovered or {}
+	for _, list in ipairs({data.Inventory or {}, data.Displayed or {}}) do
+		for _, id in pairs(list) do
+			local artifact = ArtifactData.GetArtifact(id)
+			if artifact then data.Discovered[artifact.BaseId or artifact.Id] = true end
+		end
+	end
+	for worldId in pairs(QuestData.Worlds) do
+		questState(data, worldId)
+		checkIndex(player, worldId)
+	end
+	push(player)
+end
+Players.PlayerAdded:Connect(onLoaded)
+for _, player in ipairs(Players:GetPlayers()) do task.spawn(onLoaded, player) end
+
+return Quests
+]=])
 install(game:GetService("ServerScriptService"), "RebirthManager", "Script", [=[
 -- RebirthManager (Script in ServerScriptService)
 -- REBIRTH: once you have enough cash you can rebirth. Your cash goes back to the starting
@@ -16013,7 +16627,7 @@ end
 
 local menu = Instance.new("Frame")
 menu.BackgroundTransparency = 1
-menu.Size = UDim2.fromOffset(116, 240)
+menu.Size = UDim2.fromOffset(116, 350)
 menu.Position = UDim2.new(0, 12, 0, 74)
 menu.Parent = gui
 
@@ -16047,6 +16661,19 @@ rebirthButton.MouseButton1Click:Connect(function()
 	click()
 	UIBus.Fire("Rebirth")
 end)
+
+-- Quests: the same square tile as the Bag, in gold (world quests + Meme Index, QuestClient)
+local questButton = UIKit.button(menu, "", {Size = UDim2.fromOffset(98, 98), Position = UDim2.new(0.5, 0, 0, 244), AnchorPoint = Vector2.new(0.5, 0),
+	Color = rgb(255, 170, 40), Radius = 12, Pattern = false})
+questButton.Name = "Quests"
+UIKit.icon(questButton, "Star", {Size = UDim2.fromScale(0.86, 0.86), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
+UIKit.label(questButton, "Quests", {Size = UDim2.new(1, -6, 0, 30), Position = UDim2.new(0.5, 0, 0.5, 8), AnchorPoint = Vector2.new(0.5, 0.5),
+	Color = rgb(255, 240, 200), Stroke = 3.5, MaxText = 26}).ZIndex = 4
+local questKey = UIKit.panel(questButton, {Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0, 6, 1, -6), AnchorPoint = Vector2.new(0, 1),
+	Color = rgb(150, 90, 10), Radius = 5, Stroke = 2, StrokeColor = C.White, Shade = false})
+questKey.ZIndex = 4
+UIKit.label(questKey, "J", {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, MaxText = 16}).ZIndex = 5
+questButton.MouseButton1Click:Connect(function() UIBus.Fire("Quests") end)
 
 ---------------------------------------------------------------------
 -- TOP RIGHT CORNER: a small dark round Settings button up in Roblox's top bar row
@@ -16902,6 +17529,395 @@ task.spawn(function()
 		end
 		task.wait(0.25)
 	end
+end)
+]=])
+install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "QuestClient", "LocalScript", [=[
+-- QuestClient (LocalScript in StarterPlayer > StarterPlayerScripts)
+-- The goals of worlds 2-9 on screen (see ReplicatedStorage.QuestData and the Quests server
+-- module):
+--   * QUEST TRACKER: top right, the quest you're on in the world you're in, with a progress
+--     bar. Click it to open the Quests window.
+--   * QUESTS WINDOW (the Quests button on the left, or UIBus "Quests"): two tabs.
+--       QUESTS      each world's quest chain: done / current (with progress) / locked, the
+--                   rewards, and World Mastery (+25% luck there) at the end
+--       MEME INDEX  every meme of the world: found ones as their 3D model, the rest as "?",
+--                   and the completion reward (+15% income from that world's memes)
+--   * A big banner when a quest (or an index page) is completed.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local QuestData = require(ReplicatedStorage:WaitForChild("QuestData"))
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local UIBus = require(ReplicatedStorage:WaitForChild("UIBus"))
+local Audio = require(ReplicatedStorage:WaitForChild("Audio"))
+local C = UIKit.Colors
+local rgb = Color3.fromRGB
+
+local player = Players.LocalPlayer
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+local updateRemote = remotes:WaitForChild("QuestUpdate")
+local getState = remotes:WaitForChild("GetQuestState")
+
+local GOLD = rgb(255, 196, 50)
+local QUEST_WORLDS = {}
+for worldId in pairs(QuestData.Worlds) do table.insert(QUEST_WORLDS, worldId) end
+table.sort(QUEST_WORLDS)
+
+local state = nil -- {Quests = {["2"] = {Step, Progress}}, Discovered = {ids}, IndexClaimed = {}}
+local discovered = {}
+
+local function worldMemes(worldId)
+	local list = {}
+	for _, artifact in ipairs(ArtifactData.Artifacts) do
+		if artifact.World == worldId and not artifact.BaseId then table.insert(list, artifact) end
+	end
+	return list
+end
+
+local function questOf(worldId)
+	local q = state and state.Quests[tostring(worldId)]
+	return q or {Step = 1, Progress = 0}
+end
+
+local function isUnlocked(worldId)
+	local list = player:GetAttribute("UnlockedWorlds") or ""
+	for id in string.gmatch(list, "[^,]+") do
+		if tonumber(id) == worldId then return true end
+	end
+	return false
+end
+
+local function rewardText(worldId, quest)
+	local world = GameConfig.GetWorld(worldId)
+	local cash = math.floor((world and world.Price or 0) * (quest.Cash or 0))
+	return "+" .. ArtifactData.FormatMoney(cash) .. "  +" .. (quest.Gems or 0) .. " gems"
+end
+
+local gui = UIKit.screen(player, "QuestGui", 4)
+
+-- a thin rounded progress bar (returns the fill frame)
+local function bar(parent, props, fraction, color)
+	local track = UIKit.panel(parent, {Size = props.Size, Position = props.Position, AnchorPoint = props.AnchorPoint,
+		Color = rgb(225, 220, 245), Radius = 8, Stroke = 2, StrokeColor = rgb(90, 80, 130), Shade = false})
+	local fill = UIKit.panel(track, {Size = UDim2.fromScale(math.clamp(fraction, 0, 1), 1), Color = color, Radius = 8, Stroke = false, ShadeAmount = 0.25})
+	fill.Name = "Fill"
+	fill.Visible = fraction > 0
+	return fill, track
+end
+
+---------------------------------------------------------------------
+-- QUEST TRACKER (top right)
+---------------------------------------------------------------------
+local tracker = Instance.new("TextButton")
+tracker.Name = "QuestTracker"
+tracker.Text = ""
+tracker.AutoButtonColor = false
+tracker.BackgroundColor3 = rgb(40, 32, 70)
+tracker.BackgroundTransparency = 0.15
+tracker.Size = UDim2.fromOffset(300, 92)
+tracker.Position = UDim2.new(1, -128, 0, 164) -- under the world intro + event timers, left of the depth meter
+tracker.AnchorPoint = Vector2.new(1, 0)
+tracker.Visible = false
+tracker.Parent = gui
+UIKit.corner(tracker, 16)
+UIKit.outline(tracker, 3, C.Outline)
+UIKit.icon(tracker, "Star", {Size = UDim2.fromOffset(48, 48), Position = UDim2.new(0, 6, 0, 6)})
+local trackerTitle = UIKit.label(tracker, "QUEST", {Size = UDim2.new(1, -66, 0, 24), Position = UDim2.fromOffset(58, 6), Align = "Left",
+	Color = GOLD, Stroke = 2.5, MaxText = 20})
+local trackerText = UIKit.label(tracker, "", {Size = UDim2.new(1, -66, 0, 36), Position = UDim2.fromOffset(58, 30), Align = "Left",
+	Stroke = 2, MaxText = 17})
+local trackerFill = bar(tracker, {Size = UDim2.new(1, -24, 0, 14), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1)}, 0, C.Mint)
+local trackerCount = UIKit.label(trackerFill.Parent, "", {Size = UDim2.fromScale(1, 1.2), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+	Stroke = 2, MaxText = 13})
+trackerCount.ZIndex = 3
+
+local function refreshTracker()
+	local worldId = player:GetAttribute("CurrentWorld") or 1
+	local list = QuestData.Worlds[worldId]
+	if not state or not list then
+		tracker.Visible = false
+		return
+	end
+	tracker.Visible = true
+	local q = questOf(worldId)
+	local quest = list[q.Step]
+	if not quest then
+		trackerTitle.Text = "WORLD MASTERED"
+		trackerText.Text = "+25% luck here forever. Check the Meme Index!"
+		trackerFill.Size = UDim2.fromScale(1, 1)
+		trackerFill.Visible = true
+		trackerCount.Text = QuestData.Count(worldId) .. "/" .. QuestData.Count(worldId) .. " quests"
+		return
+	end
+	trackerTitle.Text = "QUEST " .. q.Step .. "/" .. #list
+	trackerText.Text = quest.Text
+	local fraction = q.Progress / quest.Goal
+	trackerFill.Visible = fraction > 0
+	TweenService:Create(trackerFill, TweenInfo.new(0.35, Enum.EasingStyle.Quad), {Size = UDim2.fromScale(math.clamp(fraction, 0.04, 1), 1)}):Play()
+	trackerCount.Text = q.Progress .. " / " .. quest.Goal
+end
+
+---------------------------------------------------------------------
+-- QUESTS WINDOW
+---------------------------------------------------------------------
+local window, content = UIKit.window(gui, "Quests", UDim2.fromOffset(780, 540), rgb(255, 170, 40), "Star")
+window.Name = "QuestWindow"
+
+local tab = "Quests"
+local selectedWorld = 2
+
+local tabRow = Instance.new("Frame")
+tabRow.BackgroundTransparency = 1
+tabRow.Size = UDim2.new(1, 0, 0, 44)
+tabRow.Parent = content
+local questsTab = UIKit.button(tabRow, "QUESTS", {Size = UDim2.fromOffset(170, 42), Color = rgb(255, 170, 40), Icon = "Star", MaxText = 20})
+local indexTab = UIKit.button(tabRow, "MEME INDEX", {Size = UDim2.fromOffset(200, 42), Position = UDim2.fromOffset(180, 0), Color = C.Lilac, Icon = "Picture", MaxText = 20})
+questsTab.Name = "QuestsTab"
+indexTab.Name = "IndexTab"
+tabRow.Name = "Tabs"
+
+local worldRow = Instance.new("Frame")
+worldRow.BackgroundTransparency = 1
+worldRow.Size = UDim2.new(1, 0, 0, 40)
+worldRow.Position = UDim2.fromOffset(0, 52)
+worldRow.Parent = content
+local worldLayout = Instance.new("UIListLayout")
+worldLayout.FillDirection = Enum.FillDirection.Horizontal
+worldLayout.Padding = UDim.new(0, 6)
+worldLayout.SortOrder = Enum.SortOrder.LayoutOrder
+worldLayout.Parent = worldRow
+local worldButtons = {}
+for i, worldId in ipairs(QUEST_WORLDS) do
+	local world = GameConfig.GetWorld(worldId)
+	local short = world and string.match(world.Name, "^(%S+)") or ("World " .. worldId)
+	local b = UIKit.button(worldRow, short, {Size = UDim2.new(1 / #QUEST_WORLDS, -6, 1, 0), Color = C.Sky, Radius = 10, MaxText = 15, Pattern = false})
+	b.LayoutOrder = i
+	worldButtons[worldId] = b
+end
+
+local body = Instance.new("Frame")
+body.BackgroundTransparency = 1
+body.Size = UDim2.new(1, 0, 1, -104)
+body.Position = UDim2.fromOffset(0, 102)
+body.Parent = content
+
+local function clearBody()
+	for _, child in ipairs(body:GetChildren()) do child:Destroy() end
+end
+
+local function drawQuests(worldId)
+	local list = QuestData.Worlds[worldId] or {}
+	local q = questOf(worldId)
+	local mastered = q.Step > #list
+	-- the mastery banner on top
+	local banner = UIKit.panel(body, {Size = UDim2.new(1, -10, 0, 46), Color = mastered and GOLD or rgb(70, 60, 120), Radius = 12, Stroke = 2.5})
+	UIKit.icon(banner, mastered and "Crown" or "Luck", {Size = UDim2.fromOffset(44, 44), Position = UDim2.new(0, 4, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+	UIKit.label(banner, mastered and "WORLD MASTERED!  +25% luck here forever"
+		or ("Finish all " .. #list .. " quests to MASTER this world: +25% luck here forever"),
+		{Size = UDim2.new(1, -64, 0.8, 0), Position = UDim2.new(0, 54, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Align = "Left", Stroke = 2.5, MaxText = 20})
+	local scroller = UIKit.list(body, 8)
+	scroller.Size = UDim2.new(1, 0, 1, -54)
+	scroller.Position = UDim2.fromOffset(0, 54)
+	if not isUnlocked(worldId) then
+		local note = UIKit.panel(scroller, {Size = UDim2.new(1, -10, 0, 60), Color = C.Row, Radius = 12})
+		UIKit.icon(note, "Lock", {Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0, 8, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+		UIKit.label(note, "Unlock this world at the World Gate to start its quests.", {Size = UDim2.new(1, -74, 0.7, 0), Position = UDim2.new(0, 62, 0.5, 0),
+			AnchorPoint = Vector2.new(0, 0.5), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 20})
+	end
+	for i, quest in ipairs(list) do
+		local done = i < q.Step
+		local current = i == q.Step
+		local row = UIKit.panel(scroller, {Size = UDim2.new(1, -10, 0, 64), Color = done and rgb(210, 250, 225) or (current and rgb(255, 245, 210) or C.Row),
+			Radius = 12, Stroke = current and 3 or 2})
+		row.LayoutOrder = i
+		local badge = UIKit.panel(row, {Size = UDim2.fromOffset(44, 44), Position = UDim2.new(0, 10, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+			Color = done and C.Mint or (current and GOLD or rgb(180, 175, 200)), Radius = 22, Stroke = 2.5})
+		if done then
+			UIKit.icon(badge, "Star", {Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5)})
+		else
+			UIKit.label(badge, tostring(i), {Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+				Stroke = 2.5, MaxText = 24})
+		end
+		UIKit.label(row, quest.Text, {Size = UDim2.new(0.58, 0, 0, 26), Position = UDim2.new(0, 66, 0, current and 6 or 19), Align = "Left",
+			Color = (done or current) and C.Ink or C.Grey, Stroke = 0, MaxText = 20})
+		if current then
+			local fill = bar(row, {Size = UDim2.new(0.56, 0, 0, 16), Position = UDim2.new(0, 66, 1, -10), AnchorPoint = Vector2.new(0, 1)},
+				q.Progress / quest.Goal, C.Mint)
+			UIKit.label(fill.Parent, q.Progress .. " / " .. quest.Goal, {Size = UDim2.fromScale(1, 1.2), Position = UDim2.fromScale(0.5, 0.5),
+				AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, MaxText = 13}).ZIndex = 3
+		end
+		UIKit.label(row, done and "DONE" or rewardText(worldId, quest), {Size = UDim2.new(0.3, -12, 0, 30), Position = UDim2.new(1, -12, 0.5, 0),
+			AnchorPoint = Vector2.new(1, 0.5), Align = "Right", Color = done and C.Mint or rgb(40, 150, 70), Stroke = done and 2 or 0, MaxText = 18})
+	end
+end
+
+local function drawIndex(worldId)
+	local memes = worldMemes(worldId)
+	local found = 0
+	for _, artifact in ipairs(memes) do
+		if discovered[artifact.Id] then found += 1 end
+	end
+	local claimed = state and state.IndexClaimed[tostring(worldId)]
+	local banner = UIKit.panel(body, {Size = UDim2.new(1, -10, 0, 46), Color = claimed and C.Sky or rgb(70, 60, 120), Radius = 12, Stroke = 2.5})
+	UIKit.icon(banner, claimed and "Crown" or "Picture", {Size = UDim2.fromOffset(44, 44), Position = UDim2.new(0, 4, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+	UIKit.label(banner, (claimed and "COMPLETE!  " or "") .. "Found " .. found .. " / " .. #memes .. "   ·   Find them all: +"
+		.. math.floor(QuestData.IndexIncomeBonus * 100) .. "% income from these memes + " .. QuestData.IndexGems .. " gems",
+		{Size = UDim2.new(1, -64, 0.8, 0), Position = UDim2.new(0, 54, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Align = "Left", Stroke = 2.5, MaxText = 19})
+	local scroller = Instance.new("ScrollingFrame")
+	scroller.BackgroundTransparency = 1
+	scroller.BorderSizePixel = 0
+	scroller.ScrollBarThickness = 8
+	scroller.ScrollBarImageColor3 = C.Lilac
+	scroller.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	scroller.CanvasSize = UDim2.new()
+	scroller.Size = UDim2.new(1, 0, 1, -54)
+	scroller.Position = UDim2.fromOffset(0, 54)
+	scroller.Parent = body
+	local grid = Instance.new("UIGridLayout")
+	grid.CellSize = UDim2.fromOffset(132, 150)
+	grid.CellPadding = UDim2.fromOffset(10, 10)
+	grid.SortOrder = Enum.SortOrder.LayoutOrder
+	grid.Parent = scroller
+	local pad = Instance.new("UIPadding")
+	pad.PaddingTop = UDim.new(0, 6)
+	pad.PaddingLeft = UDim.new(0, 4)
+	pad.Parent = scroller
+	for i, artifact in ipairs(memes) do
+		local cell = Instance.new("Frame")
+		cell.BackgroundTransparency = 1
+		cell.LayoutOrder = i
+		cell.Parent = scroller
+		if discovered[artifact.Id] then
+			UIKit.artifactIcon(cell, artifact, {Size = UDim2.fromOffset(120, 116), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0)})
+			UIKit.label(cell, artifact.Name, {Size = UDim2.new(1, 0, 0, 30), Position = UDim2.new(0, 0, 1, 0), AnchorPoint = Vector2.new(0, 1),
+				Color = C.Ink, Stroke = 0, MaxText = 15})
+		else
+			local tile = UIKit.panel(cell, {Size = UDim2.fromOffset(120, 116), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0),
+				Color = rgb(60, 54, 90), Radius = 16, Stroke = 3})
+			UIKit.label(tile, "?", {Size = UDim2.fromScale(0.6, 0.6), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+				Color = rgb(170, 160, 210), Stroke = 3, MaxText = 60})
+			local rarity = ArtifactData.GetRarity(artifact.Rarity)
+			UIKit.label(cell, rarity and rarity.Secret and "Secret" or artifact.Rarity, {Size = UDim2.new(1, 0, 0, 30), Position = UDim2.new(0, 0, 1, 0),
+				AnchorPoint = Vector2.new(0, 1), Color = rarity and rarity.Color or C.Grey, Stroke = 2, MaxText = 15})
+		end
+	end
+end
+
+local function redraw()
+	if not window.Visible then return end
+	clearBody()
+	questsTab.BackgroundColor3 = tab == "Quests" and rgb(255, 170, 40) or C.Lilac
+	indexTab.BackgroundColor3 = tab == "Index" and rgb(255, 170, 40) or C.Lilac
+	for worldId, b in pairs(worldButtons) do
+		local q = questOf(worldId)
+		local mastered = q.Step > QuestData.Count(worldId)
+		b.BackgroundColor3 = worldId == selectedWorld and GOLD or (not isUnlocked(worldId) and rgb(150, 145, 170) or (mastered and C.Mint or C.Sky))
+	end
+	if tab == "Quests" then drawQuests(selectedWorld) else drawIndex(selectedWorld) end
+end
+
+local function openWindow(which)
+	tab = which or tab
+	local here = player:GetAttribute("CurrentWorld") or 1
+	if QuestData.Worlds[here] then selectedWorld = here end
+	window.Visible = true
+	UIKit.pop(window, 0.8)
+	redraw()
+end
+
+questsTab.MouseButton1Click:Connect(function() tab = "Quests" redraw() end)
+indexTab.MouseButton1Click:Connect(function() tab = "Index" redraw() end)
+for worldId, b in pairs(worldButtons) do
+	b.MouseButton1Click:Connect(function()
+		selectedWorld = worldId
+		redraw()
+	end)
+end
+tracker.MouseButton1Click:Connect(function()
+	if window.Visible then window.Visible = false else openWindow("Quests") end
+end)
+UIBus.On("Quests", function()
+	if window.Visible then window.Visible = false else openWindow() end
+end)
+-- J for the quest journal (Q is taken by the curse traps in Chrome Dunes)
+game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+	if not gameProcessed and input.KeyCode == Enum.KeyCode.J then
+		if window.Visible then window.Visible = false else openWindow() end
+	end
+end)
+
+---------------------------------------------------------------------
+-- QUEST COMPLETE banner
+---------------------------------------------------------------------
+local banner = UIKit.panel(gui, {Size = UDim2.fromOffset(520, 120), Position = UDim2.new(0.5, 0, 0, -140), AnchorPoint = Vector2.new(0.5, 0),
+	Color = GOLD, Radius = 22, Stroke = 5, StrokeColor = C.Outline})
+banner.Name = "QuestComplete"
+banner.Visible = false
+local bannerIcon = UIKit.icon(banner, "Star", {Size = UDim2.fromOffset(96, 96), Position = UDim2.new(0, 8, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+local bannerTitle = UIKit.label(banner, "QUEST COMPLETE!", {Size = UDim2.new(1, -120, 0, 40), Position = UDim2.fromOffset(108, 8), Align = "Left",
+	Stroke = 3.5, MaxText = 34})
+local bannerText = UIKit.label(banner, "", {Size = UDim2.new(1, -120, 0, 26), Position = UDim2.fromOffset(108, 48), Align = "Left",
+	Color = C.Ink, Stroke = 0, MaxText = 20})
+local bannerReward = UIKit.label(banner, "", {Size = UDim2.new(1, -120, 0, 30), Position = UDim2.fromOffset(108, 78), Align = "Left",
+	Color = rgb(20, 120, 50), Stroke = 0, MaxText = 22})
+local bannerToken = 0
+
+local function showBanner(info)
+	bannerToken += 1
+	local token = bannerToken
+	if info.Index then
+		bannerTitle.Text = "MEME INDEX COMPLETE!"
+		UIKit.setIcon(bannerIcon, "Picture")
+	elseif info.Mastered then
+		bannerTitle.Text = "WORLD MASTERED!"
+		UIKit.setIcon(bannerIcon, "Crown")
+	else
+		bannerTitle.Text = "QUEST COMPLETE!"
+		UIKit.setIcon(bannerIcon, "Star")
+	end
+	bannerText.Text = info.Text or ""
+	bannerReward.Text = info.Reward or ""
+	banner.Visible = true
+	banner.Position = UDim2.new(0.5, 0, 0, -140)
+	TweenService:Create(banner, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, 0, 0, 96)}):Play()
+	pcall(function() Audio.sfx("Find") end)
+	task.delay(4, function()
+		if bannerToken ~= token then return end
+		local out = TweenService:Create(banner, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(0.5, 0, 0, -140)})
+		out:Play()
+		out.Completed:Wait()
+		if bannerToken == token then banner.Visible = false end
+	end)
+end
+
+---------------------------------------------------------------------
+-- STATE
+---------------------------------------------------------------------
+local function setState(newState)
+	state = newState
+	discovered = {}
+	for _, id in ipairs(state and state.Discovered or {}) do discovered[id] = true end
+	refreshTracker()
+	redraw()
+end
+
+updateRemote.OnClientEvent:Connect(function(kind, payload)
+	if kind == "State" then
+		setState(payload)
+	elseif kind == "Complete" and typeof(payload) == "table" then
+		showBanner(payload)
+	end
+end)
+player:GetAttributeChangedSignal("CurrentWorld"):Connect(refreshTracker)
+player:GetAttributeChangedSignal("UnlockedWorlds"):Connect(redraw)
+
+task.spawn(function()
+	local ok, result = pcall(function() return getState:InvokeServer() end)
+	if ok and result then setState(result) end
 end)
 ]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "RebirthClient", "LocalScript", [=[
@@ -19453,4 +20469,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 18:46). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 19:15). Now save the place (Ctrl+S).")

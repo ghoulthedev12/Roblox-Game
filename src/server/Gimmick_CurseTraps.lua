@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
 local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+local Quests = require(script.Parent:WaitForChild("Quests"))
 
 local Gimmick = {}
 local TRAP_CHANCE = 0.06
@@ -53,6 +54,7 @@ function Gimmick.Start(ctx)
 			traps[player] = nil
 			PlayerData.AddMoney(player, reward)
 			Api.Message(player, "{Coin} Curse broken! +" .. ArtifactData.FormatMoney(reward) .. " in ancient gold!", Color3.fromRGB(255, 214, 90))
+			Quests.Progress(player, "Curse")
 		else
 			fail(player)
 		end

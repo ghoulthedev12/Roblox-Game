@@ -7,6 +7,7 @@
 -- The flare's state lives in the player's "HeatUntil" / "FlareReadyAt" attributes (os.time()).
 
 local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+local Quests = require(script.Parent:WaitForChild("Quests"))
 
 local Gimmick = {}
 local FROZEN_CHANCE = 0.5  -- chance an unheated swing skids off the permafrost
@@ -63,6 +64,7 @@ function Gimmick.Start(ctx)
 			end)
 		end
 		Api.Message(player, "{Fire} Torch Flare! You melt through permafrost for 20 seconds.", Color3.fromRGB(255, 170, 80))
+		Quests.Progress(player, "Flare")
 	end)
 end
 

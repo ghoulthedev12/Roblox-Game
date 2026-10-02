@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local QuestData = require(ReplicatedStorage:WaitForChild("QuestData"))
 
 local ProfileService = require(script.Parent:WaitForChild("ProfileService"))
 
@@ -24,6 +25,10 @@ local profiles = {} -- [player] = ProfileService profile
 
 local changedEvent = Instance.new("BindableEvent")
 PlayerData.Changed = changedEvent.Event -- fires (player, data) whenever something changes
+local artifactAddedEvent = Instance.new("BindableEvent")
+-- fires (player, artifactId, isNew) when a meme goes into the bag; isNew = first time ever
+-- found (the Meme Index, see Quests)
+PlayerData.ArtifactAdded = artifactAddedEvent.Event
 
 ---------------------------------------------------------------------
 -- DEFAULT DATA FOR NEW PLAYERS
@@ -56,6 +61,10 @@ local function defaultData()
 		Rebirths = 0,
 		Gems = 0,
 		GemLuckLevel = 0, -- the Lucky Charm gem upgrade (+10% luck per level)
+		-- world quests, the Meme Index and World Mastery (Quests.lua, QuestData)
+		Quests = {},       -- [worldId] = {Step = n, Progress = n}
+		Discovered = {},   -- [memeId] = true: every meme ever found
+		IndexClaimed = {}, -- [worldId] = true: that world's index is complete (+income on its memes)
 	}
 end
 
@@ -93,7 +102,12 @@ local function computeIncome(data)
 	for slot, artifactId in pairs(data.Displayed) do
 		local artifact = ArtifactData.GetArtifact(artifactId)
 		if artifact and data.UnlockedSlots[slot] then
-			total += ArtifactData.GetIncome(artifact)
+			local income = ArtifactData.GetIncome(artifact)
+			-- a completed Meme Index boosts that world's memes
+			if data.IndexClaimed and data.IndexClaimed[tostring(artifact.World)] then
+				income *= 1 + QuestData.IndexIncomeBonus
+			end
+			total += income
 		end
 	end
 	-- every rebirth adds a permanent income bonus
@@ -297,7 +311,14 @@ function PlayerData.AddArtifact(player, artifactId)
 	local uid = tostring(data.NextUid)
 	data.NextUid += 1
 	data.Inventory[uid] = artifactId
+	-- the Meme Index: corrupted copies count as their original
+	local artifact = ArtifactData.GetArtifact(artifactId)
+	local indexId = artifact and (artifact.BaseId or artifact.Id) or artifactId
+	data.Discovered = data.Discovered or {}
+	local isNew = not data.Discovered[indexId]
+	data.Discovered[indexId] = true
 	refresh(player)
+	artifactAddedEvent:Fire(player, artifactId, isNew)
 	return uid
 end
 

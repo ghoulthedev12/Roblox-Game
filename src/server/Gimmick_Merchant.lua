@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
 local buildVisitor = require(script.Parent:WaitForChild("VisitorModels"))
+local Quests = require(script.Parent:WaitForChild("Quests"))
 
 local Gimmick = {}
 local BOOST = {Name = "SUGAR RUSH", CooldownMult = 1 / 1.5}
@@ -69,6 +70,7 @@ function Gimmick.Start(ctx)
 		end
 		ctx.Boosts.GivePersonal(player, table.clone(BOOST), BOOST_SECONDS)
 		ReplicatedStorage.Remotes.DigProgress:FireClient(player, "{Candy} SUGAR RUSH! You dig 1.5x faster for 3 minutes!", Color3.fromRGB(255, 150, 220))
+		Quests.Progress(player, "Sugar")
 	end)
 
 	local function stop(i)

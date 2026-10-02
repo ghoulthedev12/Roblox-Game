@@ -89,6 +89,23 @@ through the World Gate, each unlocked with cash:
 - `src/shared/ArtifactsWorlds.lua`: each world's 14 memes.
 - `src/server/WorldBuilder.lua`: builds the island and its themed decorations.
 
+## Goals in worlds 2-9 (quests, Meme Index, Buried Vaults)
+So there's always something to chase in the other worlds:
+- **World quests** (`src/shared/QuestData.lua`, `src/server/Quests.lua`): each world has a chain
+  of 7 quests built around its twist (capture ghosts, break curses, hack Data Nodes, grab Forge
+  Nuggets, dig during events, x10 combos, Legendary finds...). One at a time, in order; each pays
+  cash (a share of the world's unlock price) and gems. Finishing all 7 **masters** the world:
+  +25% luck there forever.
+- **Meme Index**: every meme you ever find is remembered (`Discovered` in the save). Find all 20
+  of a world's memes for +15% income from that world's memes on display and 40 gems.
+- **Buried Vaults** (`src/server/BuriedVault.server.lua`): every 3-5 minutes a golden vault is
+  buried in the pit of a world that has players in it, with a golden beam and its depth above
+  it. The first to dig into it gets a rare meme from the deep layers, gems and cash.
+- On screen (`src/client/QuestClient.client.lua`): a quest tracker at the top right, the
+  **Quests** button on the left (or press **J**) with the QUESTS and MEME INDEX tabs, and a
+  banner when a quest is done. Progress is reported with `Quests.Found(...)` /
+  `Quests.Progress(player, kind)` from DigManager and the world gimmicks.
+
 ## Meme pictures
 `assets/meme_images/` has an original meme picture for every artifact (see its CREDITS.md).
 To put them in the game:

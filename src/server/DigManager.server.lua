@@ -17,6 +17,7 @@ local WorldBuilder = require(script.Parent:WaitForChild("WorldBuilder"))
 local BuriedPainting = require(script.Parent:WaitForChild("BuriedPainting"))
 local DigBoosts = require(script.Parent:WaitForChild("DigBoosts"))
 local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+local Quests = require(script.Parent:WaitForChild("Quests"))
 local TweenService = game:GetService("TweenService")
 
 local terrain = workspace.Terrain
@@ -239,9 +240,11 @@ local function resolveFind(player, take)
 	local data = PlayerData.Get(player)
 	if take and data and player.Parent then
 		-- a world gimmick may take over giving it (e.g. a meme ghost that must be captured first)
-		local handled = GimmickHooks.Run("OnPull", getWorld(player).Id, player, find.Artifact, find.Model:GetPivot().Position)
+		local handled = GimmickHooks.Run("OnPull", getWorld(player).Id, player, find.Artifact, find.Model:GetPivot().Position,
+			find.Zone and find.Zone.Index)
 		if not handled then
 			PlayerData.AddArtifact(player, find.Artifact.Id)
+			Quests.Found(player, find.Artifact, find.Zone and find.Zone.Index)
 		end
 		player:SetAttribute("TutorialFound", true)
 		data.Stats.TotalDigs += 1
@@ -355,7 +358,7 @@ local function giveArtifact(player, zone, luck, grade, position, forcedArtifact)
 	model.Parent = findsFolder
 	revealFx(cf, rarity.Color)
 
-	local find = {Artifact = artifact, Model = model, Info = info}
+	local find = {Artifact = artifact, Model = model, Info = info, Zone = zone}
 	pending[player] = find
 	info.Painting = model
 	prompt.Triggered:Connect(function(who)
@@ -518,7 +521,11 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 
 	-- Combo: keep digging without long pauses to build it up (more luck per dig)
 	if now - (lastHit[player] or 0) <= COMBO_WINDOW then
-		combos[player] = math.min((combos[player] or 0) + 1, COMBO_MAX)
+		local before = combos[player] or 0
+		combos[player] = math.min(before + 1, COMBO_MAX)
+		if before < COMBO_MAX and combos[player] == COMBO_MAX then
+			Quests.Progress(player, "Combo") -- world quests: "build a x10 dig combo"
+		end
 	else
 		combos[player] = 1
 	end

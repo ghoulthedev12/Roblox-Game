@@ -12,6 +12,7 @@ local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local ArtifactModels = require(ReplicatedStorage:WaitForChild("ArtifactModels"))
 local MemeFigures = require(ReplicatedStorage:WaitForChild("MemeFigures"))
 local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+local Quests = require(script.Parent:WaitForChild("Quests"))
 
 local Gimmick = {}
 local HITS_NEEDED = 4
@@ -98,11 +99,11 @@ function Gimmick.Start(ctx)
 	end
 
 	-- the find is pulled out: instead of going into the bag, its ghost escapes
-	GimmickHooks.Register(world.Id, "OnPull", function(player, artifact, position)
+	GimmickHooks.Register(world.Id, "OnPull", function(player, artifact, position, zoneIndex)
 		task.delay(1.2, function()
 			if not player.Parent then return end
 			local ghost = makeGhost(ctx.Folder, artifact, position + Vector3.new(0, 2, 0))
-			local entry = {Owner = player, Artifact = artifact, Hits = 0}
+			local entry = {Owner = player, Artifact = artifact, Hits = 0, ZoneIndex = zoneIndex}
 			ghosts[ghost] = entry
 			Api.Message(player, "{Ghost} The " .. artifact.Name .. " escaped as a ghost! Click it " .. HITS_NEEDED .. " times to capture it!", Color3.fromRGB(255, 170, 230))
 			-- dart around the pit until it's caught or gets away
@@ -156,6 +157,8 @@ function Gimmick.Start(ctx)
 			Api.Burst(body.Position, body.Color, 40, 14)
 			ghost:Destroy()
 			Api.AddArtifactNow(player, entry.Artifact)
+			Quests.Found(player, entry.Artifact, entry.ZoneIndex) -- here a find only counts once its ghost is caught
+			Quests.Progress(player, "Ghost")
 			Api.Message(player, "{Ghost} Captured! The " .. entry.Artifact.Name .. " is in your bag.", Color3.fromRGB(150, 255, 200))
 		end
 	end)

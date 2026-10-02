@@ -99,7 +99,7 @@ end
 
 local menu = Instance.new("Frame")
 menu.BackgroundTransparency = 1
-menu.Size = UDim2.fromOffset(116, 240)
+menu.Size = UDim2.fromOffset(116, 350)
 menu.Position = UDim2.new(0, 12, 0, 74)
 menu.Parent = gui
 
@@ -133,6 +133,19 @@ rebirthButton.MouseButton1Click:Connect(function()
 	click()
 	UIBus.Fire("Rebirth")
 end)
+
+-- Quests: the same square tile as the Bag, in gold (world quests + Meme Index, QuestClient)
+local questButton = UIKit.button(menu, "", {Size = UDim2.fromOffset(98, 98), Position = UDim2.new(0.5, 0, 0, 244), AnchorPoint = Vector2.new(0.5, 0),
+	Color = rgb(255, 170, 40), Radius = 12, Pattern = false})
+questButton.Name = "Quests"
+UIKit.icon(questButton, "Star", {Size = UDim2.fromScale(0.86, 0.86), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
+UIKit.label(questButton, "Quests", {Size = UDim2.new(1, -6, 0, 30), Position = UDim2.new(0.5, 0, 0.5, 8), AnchorPoint = Vector2.new(0.5, 0.5),
+	Color = rgb(255, 240, 200), Stroke = 3.5, MaxText = 26}).ZIndex = 4
+local questKey = UIKit.panel(questButton, {Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0, 6, 1, -6), AnchorPoint = Vector2.new(0, 1),
+	Color = rgb(150, 90, 10), Radius = 5, Stroke = 2, StrokeColor = C.White, Shade = false})
+questKey.ZIndex = 4
+UIKit.label(questKey, "J", {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, MaxText = 16}).ZIndex = 5
+questButton.MouseButton1Click:Connect(function() UIBus.Fire("Quests") end)
 
 ---------------------------------------------------------------------
 -- TOP RIGHT CORNER: a small dark round Settings button up in Roblox's top bar row

@@ -9,6 +9,7 @@ local Debris = game:GetService("Debris")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
+local Quests = require(script.Parent:WaitForChild("Quests"))
 
 local Gimmick = {}
 local NODE_CHANCE = 0.07
@@ -62,6 +63,7 @@ function Gimmick.Start(ctx)
 			local corrupted = ArtifactData.GetCorrupted(base) or base
 			if Api.GiveFind(player, node.Zone, node.Luck, node.Position, corrupted) then
 				Api.Message(player, "{Disk} HACKED! A Corrupted meme (2x income) is waiting in the dirt!", Color3.fromRGB(80, 255, 220))
+				Quests.Progress(player, "Hack")
 			end
 		else
 			Api.Burst(node.Position, Color3.fromRGB(255, 60, 120), 24, 12)
