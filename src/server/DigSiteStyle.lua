@@ -347,6 +347,11 @@ return function(digSite, world)
 		end
 	end
 
+	-- the old internet's relics, half buried around the yard (world 1, see PitRelics)
+	if world.WorkYard then
+		require(script.Parent:WaitForChild("PitRelics"))(b, world)
+	end
+
 	-- party lights strung between the lamp posts (world 1 has 6 lamps on a ring)
 	local lamps = {}
 	for _, d in ipairs(digSite:GetDescendants()) do
