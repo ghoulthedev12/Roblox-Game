@@ -16206,11 +16206,12 @@ function WorldOneDecor.build(parent)
 	shoring(b)
 	for _, p in ipairs(folder:GetDescendants()) do
 		if p:IsA("BasePart") then
-			-- flat plaza pieces and the shoring hidden in the walls never get in the way
-			local flat = p.Name:find("Tile") or p.Name:find("Inlay") or p.Name:find("Shoring")
-			if flat then
-				p.CanCollide = p.Name:find("Shoring") ~= nil
+			-- the shoring hidden in the walls never gets in the way; the flat plaza pieces are what
+			-- you walk on (they sit in a bed dug out of the terrain, with no ground under them)
+			if p.Name:find("Shoring") then
 				p.CanQuery = false
+				p.CastShadow = false
+			elseif p.Name:find("Tile") or p.Name:find("Inlay") then
 				p.CastShadow = false
 			end
 		end
@@ -21582,4 +21583,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 23:42). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 23:53). Now save the place (Ctrl+S).")
