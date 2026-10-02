@@ -13995,7 +13995,6 @@ local TweenService = game:GetService("TweenService")
 
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
-local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
 local buildVisitor = require(script.Parent:WaitForChild("VisitorModels"))
 local AlienPortal = require(script.Parent:WaitForChild("AlienPortal"))
 local RunService = game:GetService("RunService")
@@ -14100,6 +14099,12 @@ end
 ---------------------------------------------------------------------
 -- REACTIONS (a speech bubble with a 3D face over the visitor's head)
 ---------------------------------------------------------------------
+-- (built by each player's VisitorReactions script: a 3D face made here on the server sits
+-- under the visitor in the Workspace, and with streaming on it never reaches the players)
+local reactionRemote = Instance.new("RemoteEvent")
+reactionRemote.Name = "VisitorReaction"
+reactionRemote.Parent = ReplicatedStorage:WaitForChild("Remotes")
+
 local function react(npc, artifact)
 	local head = npc:FindFirstChild("Head")
 	if not head then return end
@@ -14107,43 +14112,7 @@ local function react(npc, artifact)
 	local pool = rarity >= 5 and REACTIONS.High or (rarity >= 3 and REACTIONS.Mid or REACTIONS.Low)
 	-- rare memes almost always get a great reaction; common ones sometimes still impress
 	if rarity < 5 and rng:NextNumber() < 0.15 then pool = REACTIONS.High end
-
-	local old = head:FindFirstChild("Reaction")
-	if old then old:Destroy() end
-	local gui = Instance.new("BillboardGui")
-	gui.Name = "Reaction"
-	gui.Size = UDim2.fromScale(0, 0)
-	gui.StudsOffset = Vector3.new(0, 2.6, 0)
-	gui.AlwaysOnTop = false
-	gui.MaxDistance = 90
-	gui.LightInfluence = 0
-	gui.Parent = head
-
-	local bubble = Instance.new("Frame")
-	bubble.Size = UDim2.fromScale(1, 1)
-	bubble.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	bubble.Parent = gui
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0.5, 0)
-	corner.Parent = bubble
-	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 3
-	stroke.Color = ArtifactData.GetRarity(artifact.Rarity).Color
-	stroke.Parent = bubble
-	local face = UIKit.icon(bubble, pool[rng:NextInteger(1, #pool)], {Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5),
-		AnchorPoint = Vector2.new(0.5, 0.5)})
-
-	-- pop in, hover, fade out
-	TweenService:Create(gui, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromScale(2.6, 2.6)}):Play()
-	TweenService:Create(gui, TweenInfo.new(2.4, Enum.EasingStyle.Sine), {StudsOffset = Vector3.new(0, 3.4, 0)}):Play()
-	task.delay(2.2, function()
-		if not gui.Parent then return end
-		local fade = TweenInfo.new(0.4)
-		TweenService:Create(bubble, fade, {BackgroundTransparency = 1}):Play()
-		TweenService:Create(stroke, fade, {Transparency = 1}):Play()
-		TweenService:Create(face, fade, {ImageTransparency = 1}):Play()
-		task.delay(0.45, function() gui:Destroy() end)
-	end)
+	reactionRemote:FireAllClients(head, pool[rng:NextInteger(1, #pool)], ArtifactData.GetRarity(artifact.Rarity).Color)
 end
 
 ---------------------------------------------------------------------
@@ -14528,7 +14497,9 @@ local function scaleAndFade(npc, fromScale, toScale, fromAlpha, toAlpha, duratio
 	while npc.Parent do
 		local u = math.clamp((os.clock() - start) / duration, 0, 1)
 		local e = u * u * (3 - 2 * u)
-		pcall(function() npc:ScaleTo(math.max(fromScale + (toScale - fromScale) * e, 0.05)) end)
+		if fromScale ~= toScale then
+			pcall(function() npc:ScaleTo(math.max(fromScale + (toScale - fromScale) * e, 0.05)) end)
+		end
 		local alpha = fromAlpha + (toAlpha - fromAlpha) * e
 		for _, look in ipairs(looks) do
 			look.Thing.Transparency = look.Base + (1 - look.Base) * alpha
@@ -14578,9 +14549,10 @@ local function stepOut(npc, portal, offset)
 	humanoid.WalkSpeed = rng:NextNumber(11, 14)
 	npc:PivotTo(CFrame.lookAt(core, Vector3.new(front.X, core.Y, front.Z)))
 	root.Anchored = true
-	pcall(function() npc:ScaleTo(0.05) end)
 	npc.Parent = visitorsFolder
-	scaleAndFade(npc, 0.05, 1, 1, 0, 0.6)
+	-- fades in at full size: growing it from 5% left its small alien parts (eyes, fangs,
+	-- fingers) stuck at 5%, so the aliens walked around invisible
+	scaleAndFade(npc, 1, 1, 1, 0, 0.6)
 	if not npc.Parent then return false end
 	root.Anchored = false
 	pcall(function() root:SetNetworkOwner(nil) end)
@@ -20454,6 +20426,73 @@ RunService.RenderStepped:Connect(function()
 end)
 
 ]=])
+install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "VisitorReactions", "LocalScript", [=[
+-- VisitorReactions (LocalScript in StarterPlayer > StarterPlayerScripts)
+-- When a museum visitor looks at a meme, the server (VisitorManager) says which face it
+-- makes; this pops a speech bubble with that 3D face over the visitor's head. It's built
+-- here, in the PlayerGui, because a 3D face made on the server would sit in the Workspace,
+-- where streaming never sends it to the players (the bubble showed up empty).
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+
+local player = Players.LocalPlayer
+local reactionRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("VisitorReaction")
+
+local bubbles = {} -- [head] = the bubble showing over it
+
+reactionRemote.OnClientEvent:Connect(function(head, iconName, color)
+	if typeof(head) ~= "Instance" or not head:IsA("BasePart") or not head.Parent then return end
+	local old = bubbles[head]
+	if old then old:Destroy() end
+
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "VisitorReaction"
+	gui.Adornee = head
+	gui.Size = UDim2.fromScale(0, 0)
+	gui.StudsOffset = Vector3.new(0, 2.6, 0)
+	gui.AlwaysOnTop = false
+	gui.MaxDistance = 90
+	gui.LightInfluence = 0
+	gui.ResetOnSpawn = false
+	gui.Parent = player:WaitForChild("PlayerGui")
+	bubbles[head] = gui
+
+	local bubble = Instance.new("Frame")
+	bubble.Size = UDim2.fromScale(1, 1)
+	bubble.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	bubble.Parent = gui
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.5, 0)
+	corner.Parent = bubble
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 3
+	stroke.Color = typeof(color) == "Color3" and color or Color3.fromRGB(40, 40, 60)
+	stroke.Parent = bubble
+	local face = UIKit.icon(bubble, iconName, {Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = Vector2.new(0.5, 0.5)})
+
+	-- pop in, hover, fade out
+	TweenService:Create(gui, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromScale(2.6, 2.6)}):Play()
+	TweenService:Create(gui, TweenInfo.new(2.4, Enum.EasingStyle.Sine), {StudsOffset = Vector3.new(0, 3.4, 0)}):Play()
+	task.delay(2.2, function()
+		if not gui.Parent then return end
+		local fade = TweenInfo.new(0.4)
+		TweenService:Create(bubble, fade, {BackgroundTransparency = 1}):Play()
+		TweenService:Create(stroke, fade, {Transparency = 1}):Play()
+		TweenService:Create(face, fade, {ImageTransparency = 1}):Play()
+		local picture = face:FindFirstChild("IconImage")
+		if picture then TweenService:Create(picture, fade, {ImageTransparency = 1}):Play() end
+		task.delay(0.45, function()
+			if bubbles[head] == gui then bubbles[head] = nil end
+			gui:Destroy()
+		end)
+	end)
+end)
+]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "WorldClient", "LocalScript", [=[
 -- WorldClient (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- The World Map opened at any World Gate: a card per world showing whether it's unlocked,
@@ -21224,4 +21263,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 22:43). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 22:53). Now save the place (Ctrl+S).")
