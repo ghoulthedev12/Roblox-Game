@@ -15,6 +15,9 @@
 -- Tool space: the handle runs along Z, the head is at -Z, the grip end at +Z; +Y is the
 -- direction the pick's arms point (the swing plane). Returns function(def) -> Tool.
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PickaxeMeshData = require(ReplicatedStorage:WaitForChild("PickaxeMeshData"))
+
 local SCALE = 0.7
 -- the crystal-tech look every pickaxe shares: cyan neon cutting edges, dark handles with a
 -- glowing inlay, floating crystals and a spark trail off the tips
@@ -203,6 +206,65 @@ local function crystal(tool, name, cf, length, color)
 	return shell, core
 end
 
+---------------------------------------------------------------------
+-- BLENDER PICKAXES (worlds 2-9): each one is a unique mesh made in tools/blender/pickaxes.py
+-- (a koi fish, a rocket, an anchor, a candy cane...) plus a glowing mesh drawn as Neon.
+-- Used once File > Import 3D of assets/models/PickaxeMeshes.fbx + the installer have put
+-- them in ReplicatedStorage > PickaxeMeshes; until then those pickaxes stay part-built.
+---------------------------------------------------------------------
+local function meshSource(name)
+	local folder = ReplicatedStorage:FindFirstChild("PickaxeMeshes")
+	local item = folder and folder:FindFirstChild(name)
+	if item and not item:IsA("MeshPart") then item = item:FindFirstChildWhichIsA("MeshPart", true) end
+	return item
+end
+
+local function meshPiece(tool, name, src, size, center)
+	local part = src:Clone()
+	part.Name = name
+	part.Size = size
+	part.CFrame = CFrame.new(center)
+	part.Anchored = false
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.Massless = true
+	part.Parent = tool
+	return part
+end
+
+-- returns the head's tips (where the trails come off), its socket and glowing part, or nil
+local function buildFromMesh(tool, def, look)
+	local data = PickaxeMeshData[def.Id]
+	local bodySrc = data and meshSource(def.Id)
+	if not bodySrc then return nil end
+	meshPiece(tool, "PickaxeBody", bodySrc, data.Size, data.Center)
+	look.Gem = data.GlowColor -- the light, sparkles and swoosh take the pickaxe's glow color
+	local glowSrc = data.GlowSize and meshSource(def.Id .. "Glow")
+	local gem
+	if glowSrc then
+		gem = meshPiece(tool, "HeadGem", glowSrc, data.GlowSize, data.GlowCenter)
+		for _, child in ipairs(gem:GetChildren()) do
+			if child:IsA("SurfaceAppearance") then child:Destroy() end
+		end
+		pcall(function() gem.TextureID = "" end)
+		gem.Material = Enum.Material.Neon
+		gem.Color = data.GlowColor
+		gem.CastShadow = false
+	end
+	-- an invisible socket where the arms meet the handle: the dig effects and the swoosh
+	-- trail come off it (ShovelClient looks for "Blade")
+	local socket = newPart(tool, "Blade", Vector3.new(0.72, 1, 1), CFrame.new(0, 0, -2.6), look.Frame)
+	socket.Transparency = 1
+	local tips = {}
+	for _, position in ipairs(data.Tips) do
+		local tip = newPart(tool, "HeadTip", Vector3.new(0.2, 0.2, 0.2), CFrame.new(position), look.Gem)
+		tip.Transparency = 1
+		table.insert(tips, tip)
+	end
+	return {Tips = tips, Socket = socket, Gem = gem or socket}
+end
+
 return function(def)
 	local look = table.clone(lookFor(def))
 	-- dark handles everywhere (a hint of the pickaxe's own color stays in them)
@@ -222,227 +284,233 @@ return function(def)
 	local handle = newPart(tool, "Handle", Vector3.new(0.3, 0.3, 4.6), CFrame.new(), look.Handle)
 	handle.Transparency = 1
 
-	-- HANDLE: a square dark shaft from the head down to the pommel
-	local HEAD_Z, END_Z = -2.6, 2.2
 	local RIGHT_Z, LEFT_Z = 1.55, 0.55 -- where the hands hold it (right hand low, left hand above)
-	newPart(tool, "Shaft", Vector3.new(0.26, 0.26, END_Z - HEAD_Z), CFrame.new(0, 0, (END_Z + HEAD_Z) / 2), look.Handle)
-	-- glowing cyan inlay lines down both sides of the shaft (between the head and the grip)
-	for _, sx in ipairs({-1, 1}) do
-		newPart(tool, "ShaftGlow", Vector3.new(0.04, 0.08, 2.7), CFrame.new(sx * 0.135, 0, -0.95), NEON_EDGE, Enum.Material.Neon)
-	end
-	-- grip wrap: stacked cubes, alternating shades
-	for i = 0, 4 do
-		newPart(tool, "GripWrap", Vector3.new(0.34, 0.34, 0.24), CFrame.new(0, 0, 1.05 + i * 0.24), shade(look.Wrap, i))
-	end
-	for _, z in ipairs({0.88, 2.28 - 0.1}) do
-		newPart(tool, "Collar", Vector3.new(0.4, 0.4, 0.14), CFrame.new(0, 0, z), look.Frame, Enum.Material.Metal)
-	end
-	gemNode(tool, "Pommel", END_Z + 0.25, 0.62, look, glowing)
-	-- gem nodes up the handle (more on better pickaxes)
-	local nodes = tier >= 7 and {-1.75, -0.1} or (tier >= 3 and {-1.6} or {})
-	for _, z in ipairs(nodes) do
-		gemNode(tool, "HandleNode", z, 0.5, look, glowing)
-	end
-	-- the diamond cage with a floating gem (tier 4+)
-	if tier >= 4 then
-		local top, bottom, mid, w = -1.35, -0.35, -0.85, 0.42
-		local a, b2 = Vector3.new(0, 0, top), Vector3.new(0, 0, bottom)
-		for _, s in ipairs({-1, 1}) do
-			local side = Vector3.new(0, s * w, mid)
-			bar(tool, "CageBar", a, side, 0.12, look.Handle)
-			bar(tool, "CageBar", side, b2, 0.12, look.Handle)
+	local tips, socket, gem
+	local meshed = buildFromMesh(tool, def, look)
+	if meshed then
+		tips, socket, gem = meshed.Tips, meshed.Socket, meshed.Gem
+	else
+		-- HANDLE: a square dark shaft from the head down to the pommel
+		local HEAD_Z, END_Z = -2.6, 2.2
+		newPart(tool, "Shaft", Vector3.new(0.26, 0.26, END_Z - HEAD_Z), CFrame.new(0, 0, (END_Z + HEAD_Z) / 2), look.Handle)
+		-- glowing cyan inlay lines down both sides of the shaft (between the head and the grip)
+		for _, sx in ipairs({-1, 1}) do
+			newPart(tool, "ShaftGlow", Vector3.new(0.04, 0.08, 2.7), CFrame.new(sx * 0.135, 0, -0.95), NEON_EDGE, Enum.Material.Neon)
 		end
-		newPart(tool, "CageGem", Vector3.new(0.3, 0.34, 0.34), CFrame.new(0, 0, mid) * DIAMOND, look.Gem, Enum.Material.Neon)
-	end
+		-- grip wrap: stacked cubes, alternating shades
+		for i = 0, 4 do
+			newPart(tool, "GripWrap", Vector3.new(0.34, 0.34, 0.24), CFrame.new(0, 0, 1.05 + i * 0.24), shade(look.Wrap, i))
+		end
+		for _, z in ipairs({0.88, 2.28 - 0.1}) do
+			newPart(tool, "Collar", Vector3.new(0.4, 0.4, 0.14), CFrame.new(0, 0, z), look.Frame, Enum.Material.Metal)
+		end
+		gemNode(tool, "Pommel", END_Z + 0.25, 0.62, look, glowing)
+		-- gem nodes up the handle (more on better pickaxes)
+		local nodes = tier >= 7 and {-1.75, -0.1} or (tier >= 3 and {-1.6} or {})
+		for _, z in ipairs(nodes) do
+			gemNode(tool, "HandleNode", z, 0.5, look, glowing)
+		end
+		-- the diamond cage with a floating gem (tier 4+)
+		if tier >= 4 then
+			local top, bottom, mid, w = -1.35, -0.35, -0.85, 0.42
+			local a, b2 = Vector3.new(0, 0, top), Vector3.new(0, 0, bottom)
+			for _, s in ipairs({-1, 1}) do
+				local side = Vector3.new(0, s * w, mid)
+				bar(tool, "CageBar", a, side, 0.12, look.Handle)
+				bar(tool, "CageBar", side, b2, 0.12, look.Handle)
+			end
+			newPart(tool, "CageGem", Vector3.new(0.3, 0.34, 0.34), CFrame.new(0, 0, mid) * DIAMOND, look.Gem, Enum.Material.Neon)
+		end
 
-	-- HEAD
-	local tips = {}
-	local H = Vector3.new(0, 0, HEAD_Z)
-	local socket = newPart(tool, "Blade", Vector3.new(0.72, 1, 1), CFrame.new(H) * DIAMOND, look.Frame)
-	local gem = newPart(tool, "HeadGem", Vector3.new(0.86, 0.5, 0.5), CFrame.new(H) * DIAMOND, look.Gem, glowing and Enum.Material.Neon or Enum.Material.Glass)
-	newPart(tool, "Crown", Vector3.new(0.4, 0.42, 0.42), CFrame.new(H + Vector3.new(0, 0, -0.78)) * DIAMOND, look.Edge)
-	local style = look.Head
-	local jagged = tier >= 5 and (tier >= 8 and look.Gem or NEON_EDGE) or nil
-	local arm = function(t, h, side, lk, opts)
-		if lk.Frame and jagged then
-			opts = table.clone(opts)
-			opts.Jagged = jagged
-		end
-		local parts, tip = arm(t, h, side, lk, opts)
-		if lk.Frame then -- not the glowing core inside a crystal head, or the second blade
-			table.insert(tips, tip)
-		end
-		return parts, tip
-	end
-	if style == "Wide" then
-		for _, s in ipairs({-1, 1}) do
-			arm(tool, H, s, look, {Radius = 3.4, Reach = 0.62, Count = 8, Rows = 3, Size = 0.58})
-		end
-	elseif style == "Spiked" then
-		for _, s in ipairs({-1, 1}) do
-			arm(tool, H, s, look, {Radius = 2.3, Reach = 1.1, Count = 7, Rows = 2, Size = 0.66, Spikes = true})
-		end
-	elseif style == "Crystal" then
-		for _, s in ipairs({-1, 1}) do
-			arm(tool, H, s, look, {Radius = 2.4, Reach = 1.05, Count = 7, Rows = 3, Size = 0.6, Glass = true, Material = Enum.Material.Glass})
-			-- glowing core running inside the glass
-			arm(tool, H, s, {Main = look.Gem, Edge = look.Gem}, {Radius = 2.4, Reach = 0.95, Count = 6, Rows = 1, Size = 0.3, Material = Enum.Material.Neon})
-		end
-	elseif style == "Hammer" then
-		arm(tool, H, 1, look, {Radius = 2.3, Reach = 1.15, Count = 7, Rows = 2, Size = 0.66})
-		hammer(tool, H, -1, look)
-	elseif style == "Bone" then
-		-- BONE EXCAVATOR: each arm is a curved bone of knuckled segments ending in a claw,
-		-- with a little skull holding it all on the shaft
-		local R = 2.3
-		for _, s in ipairs({-1, 1}) do
-			local points = {}
-			for k, phi in ipairs({0.28, 0.62, 0.96, 1.3}) do
-				points[k] = arcPoint(H, s, R, phi)
+		-- HEAD
+		tips = {}
+		local H = Vector3.new(0, 0, HEAD_Z)
+		socket = newPart(tool, "Blade", Vector3.new(0.72, 1, 1), CFrame.new(H) * DIAMOND, look.Frame)
+		gem = newPart(tool, "HeadGem", Vector3.new(0.86, 0.5, 0.5), CFrame.new(H) * DIAMOND, look.Gem, glowing and Enum.Material.Neon or Enum.Material.Glass)
+		newPart(tool, "Crown", Vector3.new(0.4, 0.42, 0.42), CFrame.new(H + Vector3.new(0, 0, -0.78)) * DIAMOND, look.Edge)
+		local style = look.Head
+		local jagged = tier >= 5 and (tier >= 8 and look.Gem or NEON_EDGE) or nil
+		local arm = function(t, h, side, lk, opts)
+			if lk.Frame and jagged then
+				opts = table.clone(opts)
+				opts.Jagged = jagged
 			end
-			for k = 1, 3 do
-				bar(tool, "BoneShaft", points[k], points[k + 1], 0.38 - k * 0.03, shade(look.Main, k))
+			local parts, tip = arm(t, h, side, lk, opts)
+			if lk.Frame then -- not the glowing core inside a crystal head, or the second blade
+				table.insert(tips, tip)
 			end
-			for k = 1, 4 do
-				newPart(tool, "BoneKnuckle", Vector3.one * (0.62 - k * 0.05), CFrame.new(points[k]), look.Main, nil, Enum.PartType.Ball)
-			end
-			local dir = (points[4] - points[3]).Unit
-			local clawPos = points[4] + dir * 0.4
-			table.insert(tips, newPart(tool, "HeadTip", Vector3.new(0.26, 0.26, 0.9), CFrame.lookAt(clawPos, clawPos + dir), NEON_EDGE, Enum.Material.Neon))
+			return parts, tip
 		end
-		local skull = newPart(tool, "Skull", Vector3.one * 1.15, CFrame.new(H + Vector3.new(0, 0, -0.15)), look.Main, nil, Enum.PartType.Ball)
-		for _, sy in ipairs({-1, 1}) do
-			for _, sx in ipairs({-1, 1}) do
-				newPart(tool, "SkullEye", Vector3.one * 0.26, CFrame.new(skull.CFrame.Position + Vector3.new(sx * 0.5, sy * 0.2, -0.15)), look.Gem, Enum.Material.Neon, Enum.PartType.Ball)
+		if style == "Wide" then
+			for _, s in ipairs({-1, 1}) do
+				arm(tool, H, s, look, {Radius = 3.4, Reach = 0.62, Count = 8, Rows = 3, Size = 0.58})
 			end
-		end
-	elseif style == "Drill" then
-		-- MECHANICAL DRILL: a motor block with a spiralled drill bit sticking out of each side
-		-- and a spinning turbine around the shaft
-		newPart(tool, "DrillMotor", Vector3.new(0.95, 1.4, 1.4), CFrame.new(H), look.Frame, Enum.Material.Metal)
-		newPart(tool, "MotorStripe", Vector3.new(1, 0.16, 1.44), CFrame.new(H + Vector3.new(0, 0.35, 0)), NEON_EDGE, Enum.Material.Neon)
-		newPart(tool, "MotorStripe", Vector3.new(1, 0.16, 1.44), CFrame.new(H - Vector3.new(0, 0.35, 0)), NEON_EDGE, Enum.Material.Neon)
-		for _, s in ipairs({-1, 1}) do
-			for k = 0, 4 do
-				local d = 1.15 - k * 0.2
-				local seg = newPart(tool, "DrillBit", Vector3.new(0.44, d, d), CFrame.new(H + Vector3.new(0, s * (0.95 + k * 0.42), 0)) * CFrame.Angles(0, 0, math.rad(90)),
-					shade(k % 2 == 0 and look.Main or look.Edge, k), Enum.Material.Metal)
-				seg.Shape = Enum.PartType.Cylinder
-				-- the spiral ridge winding around the bit
-				for r = 0, 2 do
-					local a = k * 1.3 + r * math.pi * 2 / 3
-					newPart(tool, "DrillRidge", Vector3.new(0.12, 0.34, 0.12),
-						CFrame.new(H + Vector3.new(math.cos(a) * d / 2, s * (0.95 + k * 0.42), math.sin(a) * d / 2)) * CFrame.Angles(0, -a, math.rad(30)), look.Edge, Enum.Material.Metal)
+		elseif style == "Spiked" then
+			for _, s in ipairs({-1, 1}) do
+				arm(tool, H, s, look, {Radius = 2.3, Reach = 1.1, Count = 7, Rows = 2, Size = 0.66, Spikes = true})
+			end
+		elseif style == "Crystal" then
+			for _, s in ipairs({-1, 1}) do
+				arm(tool, H, s, look, {Radius = 2.4, Reach = 1.05, Count = 7, Rows = 3, Size = 0.6, Glass = true, Material = Enum.Material.Glass})
+				-- glowing core running inside the glass
+				arm(tool, H, s, {Main = look.Gem, Edge = look.Gem}, {Radius = 2.4, Reach = 0.95, Count = 6, Rows = 1, Size = 0.3, Material = Enum.Material.Neon})
+			end
+		elseif style == "Hammer" then
+			arm(tool, H, 1, look, {Radius = 2.3, Reach = 1.15, Count = 7, Rows = 2, Size = 0.66})
+			hammer(tool, H, -1, look)
+		elseif style == "Bone" then
+			-- BONE EXCAVATOR: each arm is a curved bone of knuckled segments ending in a claw,
+			-- with a little skull holding it all on the shaft
+			local R = 2.3
+			for _, s in ipairs({-1, 1}) do
+				local points = {}
+				for k, phi in ipairs({0.28, 0.62, 0.96, 1.3}) do
+					points[k] = arcPoint(H, s, R, phi)
+				end
+				for k = 1, 3 do
+					bar(tool, "BoneShaft", points[k], points[k + 1], 0.38 - k * 0.03, shade(look.Main, k))
+				end
+				for k = 1, 4 do
+					newPart(tool, "BoneKnuckle", Vector3.one * (0.62 - k * 0.05), CFrame.new(points[k]), look.Main, nil, Enum.PartType.Ball)
+				end
+				local dir = (points[4] - points[3]).Unit
+				local clawPos = points[4] + dir * 0.4
+				table.insert(tips, newPart(tool, "HeadTip", Vector3.new(0.26, 0.26, 0.9), CFrame.lookAt(clawPos, clawPos + dir), NEON_EDGE, Enum.Material.Neon))
+			end
+			local skull = newPart(tool, "Skull", Vector3.one * 1.15, CFrame.new(H + Vector3.new(0, 0, -0.15)), look.Main, nil, Enum.PartType.Ball)
+			for _, sy in ipairs({-1, 1}) do
+				for _, sx in ipairs({-1, 1}) do
+					newPart(tool, "SkullEye", Vector3.one * 0.26, CFrame.new(skull.CFrame.Position + Vector3.new(sx * 0.5, sy * 0.2, -0.15)), look.Gem, Enum.Material.Neon, Enum.PartType.Ball)
 				end
 			end
-			table.insert(tips, newPart(tool, "HeadTip", Vector3.new(0.3, 0.3, 0.3), CFrame.new(H + Vector3.new(0, s * 3.1, 0)) * DIAMOND, NEON_EDGE, Enum.Material.Neon))
-		end
-		for i = 1, 6 do
-			local a = i * math.pi / 3
-			local blade = newPart(tool, "TurbineBlade", Vector3.new(0.12, 0.5, 0.2), CFrame.new(H + Vector3.new(math.cos(a) * 0.95, math.sin(a) * 0.95, 0.9)) * CFrame.Angles(0, 0, a),
-				look.Edge, Enum.Material.Metal)
-			blade:SetAttribute("OrbitCenter", H + Vector3.new(0, 0, 0.9))
-			blade:SetAttribute("OrbitSpeed", 9)
-		end
-	elseif style == "Plasma" then
-		-- PLASMA LASER PICK: dark emitter prongs firing a curved blade of glowing plasma
-		for _, s in ipairs({-1, 1}) do
-			arm(tool, H, s, {Main = look.Handle:Lerp(Color3.new(0, 0, 0), 0.3), Edge = look.Frame}, {Radius = 2.3, Reach = 0.35, Count = 3, Rows = 2, Size = 0.62, Material = Enum.Material.Metal})
-			arm(tool, H, s, {Main = look.Gem, Edge = Color3.new(1, 1, 1), Frame = look.Gem}, {Radius = 2.35, Reach = 1.3, Count = 12, Rows = 1, Size = 0.42, Material = Enum.Material.Neon})
-			for k = 1, 3 do
-				local ring = newPart(tool, "PlasmaCoil", Vector3.new(0.3, 0.9 - k * 0.1, 0.9 - k * 0.1), CFrame.new(arcPoint(H, s, 2.35, 0.25 + k * 0.08)) * CFrame.Angles(s * (0.25 + k * 0.08), 0, math.rad(90)),
-					NEON_EDGE, Enum.Material.Neon)
-				ring.Shape = Enum.PartType.Cylinder
-				ring.Transparency = 0.3
-			end
-		end
-	elseif style == "Quantum" then
-		-- QUANTUM ANTI-GRAVITY DIGGER: the head floats free of the shaft; a glowing core holds
-		-- two glassy blades in place while halo rings and shards orbit around it
-		local F = H + Vector3.new(0, 0, -0.45)
-		newPart(tool, "QuantumCore", Vector3.one * 0.95, CFrame.new(F), look.Gem, Enum.Material.Neon, Enum.PartType.Ball)
-		for _, s in ipairs({-1, 1}) do
-			arm(tool, F, s, {Main = look.Main, Edge = look.Gem, Frame = look.Frame}, {Radius = 2.5, Reach = 1.2, Count = 7, Rows = 2, Size = 0.46, Material = Enum.Material.Glass, Glass = true})
-		end
-		for i = 1, 18 do
-			local a = i / 18 * math.pi * 2
-			local seg = newPart(tool, "QuantumHalo", Vector3.new(0.1, 0.4, 0.1), CFrame.new(F + Vector3.new(math.cos(a) * 1.35, math.sin(a) * 1.35, 0)) * CFrame.Angles(0, 0, a), NEON_EDGE, Enum.Material.Neon)
-			seg:SetAttribute("OrbitCenter", F)
-			seg:SetAttribute("OrbitSpeed", 2.4)
-		end
-		for i = 1, 5 do
-			local a = i / 5 * math.pi * 2
-			local shard = newPart(tool, "QuantumShard", Vector3.new(0.18, 0.18, 0.5), CFrame.new(F + Vector3.new(math.cos(a) * 0.9, math.sin(a) * 0.9, 0.9)) * CFrame.Angles(0.6, 0.4, a),
-				look.Gem, Enum.Material.Neon)
-			shard:SetAttribute("OrbitCenter", F + Vector3.new(0, 0, 0.9))
-			shard:SetAttribute("OrbitSpeed", -3.5)
-		end
-	else -- Crescent
-		for _, s in ipairs({-1, 1}) do
-			arm(tool, H, s, look, {Radius = 2.3, Reach = 1.15, Count = 7, Rows = tier >= 5 and 3 or 2, Size = 0.66})
-		end
-	end
-	-- side plates that hold the head on the shaft
-	for _, s in ipairs({-1, 1}) do
-		newPart(tool, "HeadBracket", Vector3.new(0.5, 0.3, 0.7), CFrame.new(H + Vector3.new(0, s * 0.42, 0.55)), look.Handle)
-	end
-
-	-- DUAL BLADE (tier 7+): a second, thinner blade of pure energy on each side of the head
-	local classicHead = style ~= "Bone" and style ~= "Drill" and style ~= "Plasma" and style ~= "Quantum"
-	if tier >= 7 and classicHead then
-		for _, sx in ipairs({-1, 1}) do
-			local offset = H + Vector3.new(sx * 0.5, 0, 0.1)
+		elseif style == "Drill" then
+			-- MECHANICAL DRILL: a motor block with a spiralled drill bit sticking out of each side
+			-- and a spinning turbine around the shaft
+			newPart(tool, "DrillMotor", Vector3.new(0.95, 1.4, 1.4), CFrame.new(H), look.Frame, Enum.Material.Metal)
+			newPart(tool, "MotorStripe", Vector3.new(1, 0.16, 1.44), CFrame.new(H + Vector3.new(0, 0.35, 0)), NEON_EDGE, Enum.Material.Neon)
+			newPart(tool, "MotorStripe", Vector3.new(1, 0.16, 1.44), CFrame.new(H - Vector3.new(0, 0.35, 0)), NEON_EDGE, Enum.Material.Neon)
 			for _, s in ipairs({-1, 1}) do
-				arm(tool, offset, s, {Main = look.Gem, Edge = NEON_EDGE}, {Radius = 2.1, Reach = 1, Count = 6, Rows = 1, Size = 0.32, Material = Enum.Material.Neon})
+				for k = 0, 4 do
+					local d = 1.15 - k * 0.2
+					local seg = newPart(tool, "DrillBit", Vector3.new(0.44, d, d), CFrame.new(H + Vector3.new(0, s * (0.95 + k * 0.42), 0)) * CFrame.Angles(0, 0, math.rad(90)),
+						shade(k % 2 == 0 and look.Main or look.Edge, k), Enum.Material.Metal)
+					seg.Shape = Enum.PartType.Cylinder
+					-- the spiral ridge winding around the bit
+					for r = 0, 2 do
+						local a = k * 1.3 + r * math.pi * 2 / 3
+						newPart(tool, "DrillRidge", Vector3.new(0.12, 0.34, 0.12),
+							CFrame.new(H + Vector3.new(math.cos(a) * d / 2, s * (0.95 + k * 0.42), math.sin(a) * d / 2)) * CFrame.Angles(0, -a, math.rad(30)), look.Edge, Enum.Material.Metal)
+					end
+				end
+				table.insert(tips, newPart(tool, "HeadTip", Vector3.new(0.3, 0.3, 0.3), CFrame.new(H + Vector3.new(0, s * 3.1, 0)) * DIAMOND, NEON_EDGE, Enum.Material.Neon))
+			end
+			for i = 1, 6 do
+				local a = i * math.pi / 3
+				local blade = newPart(tool, "TurbineBlade", Vector3.new(0.12, 0.5, 0.2), CFrame.new(H + Vector3.new(math.cos(a) * 0.95, math.sin(a) * 0.95, 0.9)) * CFrame.Angles(0, 0, a),
+					look.Edge, Enum.Material.Metal)
+				blade:SetAttribute("OrbitCenter", H + Vector3.new(0, 0, 0.9))
+				blade:SetAttribute("OrbitSpeed", 9)
+			end
+		elseif style == "Plasma" then
+			-- PLASMA LASER PICK: dark emitter prongs firing a curved blade of glowing plasma
+			for _, s in ipairs({-1, 1}) do
+				arm(tool, H, s, {Main = look.Handle:Lerp(Color3.new(0, 0, 0), 0.3), Edge = look.Frame}, {Radius = 2.3, Reach = 0.35, Count = 3, Rows = 2, Size = 0.62, Material = Enum.Material.Metal})
+				arm(tool, H, s, {Main = look.Gem, Edge = Color3.new(1, 1, 1), Frame = look.Gem}, {Radius = 2.35, Reach = 1.3, Count = 12, Rows = 1, Size = 0.42, Material = Enum.Material.Neon})
+				for k = 1, 3 do
+					local ring = newPart(tool, "PlasmaCoil", Vector3.new(0.3, 0.9 - k * 0.1, 0.9 - k * 0.1), CFrame.new(arcPoint(H, s, 2.35, 0.25 + k * 0.08)) * CFrame.Angles(s * (0.25 + k * 0.08), 0, math.rad(90)),
+						NEON_EDGE, Enum.Material.Neon)
+					ring.Shape = Enum.PartType.Cylinder
+					ring.Transparency = 0.3
+				end
+			end
+		elseif style == "Quantum" then
+			-- QUANTUM ANTI-GRAVITY DIGGER: the head floats free of the shaft; a glowing core holds
+			-- two glassy blades in place while halo rings and shards orbit around it
+			local F = H + Vector3.new(0, 0, -0.45)
+			newPart(tool, "QuantumCore", Vector3.one * 0.95, CFrame.new(F), look.Gem, Enum.Material.Neon, Enum.PartType.Ball)
+			for _, s in ipairs({-1, 1}) do
+				arm(tool, F, s, {Main = look.Main, Edge = look.Gem, Frame = look.Frame}, {Radius = 2.5, Reach = 1.2, Count = 7, Rows = 2, Size = 0.46, Material = Enum.Material.Glass, Glass = true})
+			end
+			for i = 1, 18 do
+				local a = i / 18 * math.pi * 2
+				local seg = newPart(tool, "QuantumHalo", Vector3.new(0.1, 0.4, 0.1), CFrame.new(F + Vector3.new(math.cos(a) * 1.35, math.sin(a) * 1.35, 0)) * CFrame.Angles(0, 0, a), NEON_EDGE, Enum.Material.Neon)
+				seg:SetAttribute("OrbitCenter", F)
+				seg:SetAttribute("OrbitSpeed", 2.4)
+			end
+			for i = 1, 5 do
+				local a = i / 5 * math.pi * 2
+				local shard = newPart(tool, "QuantumShard", Vector3.new(0.18, 0.18, 0.5), CFrame.new(F + Vector3.new(math.cos(a) * 0.9, math.sin(a) * 0.9, 0.9)) * CFrame.Angles(0.6, 0.4, a),
+					look.Gem, Enum.Material.Neon)
+				shard:SetAttribute("OrbitCenter", F + Vector3.new(0, 0, 0.9))
+				shard:SetAttribute("OrbitSpeed", -3.5)
+			end
+		else -- Crescent
+			for _, s in ipairs({-1, 1}) do
+				arm(tool, H, s, look, {Radius = 2.3, Reach = 1.15, Count = 7, Rows = tier >= 5 and 3 or 2, Size = 0.66})
 			end
 		end
-	end
-
-	-- ROTATING CORE (tier 3+): glowing bits circling the head's gem, faster on better pickaxes
-	if tier >= 3 then
-		local n = tier >= 6 and 6 or 4
-		for i = 1, n do
-			local a = math.pi * 2 * i / n
-			local bit = newPart(tool, "CoreBit", Vector3.new(0.18, 0.18, 0.18), CFrame.new(H + Vector3.new(math.cos(a) * 0.95, math.sin(a) * 0.95, 0)) * DIAMOND,
-				i % 2 == 0 and look.Gem or NEON_EDGE, Enum.Material.Neon)
-			bit:SetAttribute("OrbitCenter", H)
-			bit:SetAttribute("OrbitSpeed", 2 + tier * 0.4)
+		-- side plates that hold the head on the shaft
+		for _, s in ipairs({-1, 1}) do
+			newPart(tool, "HeadBracket", Vector3.new(0.5, 0.3, 0.7), CFrame.new(H + Vector3.new(0, s * 0.42, 0.55)), look.Handle)
 		end
-		-- a spinning ring around the socket
-		local ringCount = 10
-		for i = 1, ringCount do
-			local a = math.pi * 2 * i / ringCount
-			local seg = newPart(tool, "CoreRing", Vector3.new(0.08, 0.34, 0.08), CFrame.new(H + Vector3.new(math.cos(a) * 1.2, math.sin(a) * 1.2, 0)) * CFrame.Angles(0, 0, a),
-				NEON_EDGE, Enum.Material.Neon)
-			seg:SetAttribute("OrbitCenter", H)
-			seg:SetAttribute("OrbitSpeed", -(1.2 + tier * 0.2))
-		end
-	end
 
-	-- ORBITING CUBES around the handle below the head (tier 6+), spun by the client
-	if tier >= 6 then
-		local center = Vector3.new(0, 0, -1.9)
-		local n = tier - 3
-		for i = 1, n do
-			local a = math.pi * 2 * i / n
-			local cube = newPart(tool, "OrbitCube", Vector3.new(0.2, 0.2, 0.2), CFrame.new(center + Vector3.new(math.cos(a) * 0.62, math.sin(a) * 0.62, 0)) * CFrame.Angles(0.6, 0.6, 0), look.Gem, Enum.Material.Neon)
-			cube:SetAttribute("OrbitCenter", center)
-			cube:SetAttribute("OrbitSpeed", 2.6)
+		-- DUAL BLADE (tier 7+): a second, thinner blade of pure energy on each side of the head
+		local classicHead = style ~= "Bone" and style ~= "Drill" and style ~= "Plasma" and style ~= "Quantum"
+		if tier >= 7 and classicHead then
+			for _, sx in ipairs({-1, 1}) do
+				local offset = H + Vector3.new(sx * 0.5, 0, 0.1)
+				for _, s in ipairs({-1, 1}) do
+					arm(tool, offset, s, {Main = look.Gem, Edge = NEON_EDGE}, {Radius = 2.1, Reach = 1, Count = 6, Rows = 1, Size = 0.32, Material = Enum.Material.Neon})
+				end
+			end
 		end
-	end
 
-	-- FLOATING CRYSTALS: glassy shards hovering around the shaft under the head, orbiting it
-	-- (every pickaxe has one; better ones have up to four)
-	do
-		local center = Vector3.new(0, 0, -1.15)
-		local n = math.clamp(1 + math.floor(tier / 3), 1, 4)
-		for i = 1, n do
-			local a = math.pi * 2 * i / n + 0.4
-			local pos = center + Vector3.new(math.cos(a) * 0.95, math.sin(a) * 0.95, 0)
-			local shell, core = crystal(tool, "FloatCrystal", CFrame.new(pos) * CFrame.Angles(0.35, 0.2, a), 0.55 + tier * 0.02, i % 2 == 0 and look.Gem or NEON_EDGE)
-			for _, p in ipairs({shell, core}) do
-				p:SetAttribute("OrbitCenter", center)
-				p:SetAttribute("OrbitSpeed", 1.4)
+		-- ROTATING CORE (tier 3+): glowing bits circling the head's gem, faster on better pickaxes
+		if tier >= 3 then
+			local n = tier >= 6 and 6 or 4
+			for i = 1, n do
+				local a = math.pi * 2 * i / n
+				local bit = newPart(tool, "CoreBit", Vector3.new(0.18, 0.18, 0.18), CFrame.new(H + Vector3.new(math.cos(a) * 0.95, math.sin(a) * 0.95, 0)) * DIAMOND,
+					i % 2 == 0 and look.Gem or NEON_EDGE, Enum.Material.Neon)
+				bit:SetAttribute("OrbitCenter", H)
+				bit:SetAttribute("OrbitSpeed", 2 + tier * 0.4)
+			end
+			-- a spinning ring around the socket
+			local ringCount = 10
+			for i = 1, ringCount do
+				local a = math.pi * 2 * i / ringCount
+				local seg = newPart(tool, "CoreRing", Vector3.new(0.08, 0.34, 0.08), CFrame.new(H + Vector3.new(math.cos(a) * 1.2, math.sin(a) * 1.2, 0)) * CFrame.Angles(0, 0, a),
+					NEON_EDGE, Enum.Material.Neon)
+				seg:SetAttribute("OrbitCenter", H)
+				seg:SetAttribute("OrbitSpeed", -(1.2 + tier * 0.2))
+			end
+		end
+
+		-- ORBITING CUBES around the handle below the head (tier 6+), spun by the client
+		if tier >= 6 then
+			local center = Vector3.new(0, 0, -1.9)
+			local n = tier - 3
+			for i = 1, n do
+				local a = math.pi * 2 * i / n
+				local cube = newPart(tool, "OrbitCube", Vector3.new(0.2, 0.2, 0.2), CFrame.new(center + Vector3.new(math.cos(a) * 0.62, math.sin(a) * 0.62, 0)) * CFrame.Angles(0.6, 0.6, 0), look.Gem, Enum.Material.Neon)
+				cube:SetAttribute("OrbitCenter", center)
+				cube:SetAttribute("OrbitSpeed", 2.6)
+			end
+		end
+
+		-- FLOATING CRYSTALS: glassy shards hovering around the shaft under the head, orbiting it
+		-- (every pickaxe has one; better ones have up to four)
+		do
+			local center = Vector3.new(0, 0, -1.15)
+			local n = math.clamp(1 + math.floor(tier / 3), 1, 4)
+			for i = 1, n do
+				local a = math.pi * 2 * i / n + 0.4
+				local pos = center + Vector3.new(math.cos(a) * 0.95, math.sin(a) * 0.95, 0)
+				local shell, core = crystal(tool, "FloatCrystal", CFrame.new(pos) * CFrame.Angles(0.35, 0.2, a), 0.55 + tier * 0.02, i % 2 == 0 and look.Gem or NEON_EDGE)
+				for _, p in ipairs({shell, core}) do
+					p:SetAttribute("OrbitCenter", center)
+					p:SetAttribute("OrbitSpeed", 1.4)
+				end
 			end
 		end
 	end

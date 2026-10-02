@@ -94,6 +94,7 @@ end
 collectMeshes("MemeMeshes", {"DaWaeEchidna", "SeaShantyMug", "AisleYodelSet", "ConvinceMeTable", "ShockedRodent", "IsThisABird", "ChonkyBunny", "SpicyLasagna", "SpikedShellCrown", "GrapeSurgery", "BadBoyHatchback", "TempleTap", "SteamedClams", "MegaSealTape", "PurpleTitanBuggy", "OrcaRebellionBoat", "NeverMissDartboard", "CrimeTownBoss", "BoneComedian", "SugarSneakJohnny", "FrostFlask", "BreathtakingCyberGuy", "EnslavedMoisture", "StonksHead", "AhShucks", "UncannyHedgehog", "SpaceInfant", "MeAndTheCrew", "CyberWedgeTruck", "YelledAtCat", "RaidAlien", "AngelWingDancer", "KombuchaDisgust", "DoubleTakeBlink", "TallPinkPiglet", "SpongeLeaving", "CappuccinoBallerina", "FrozenCoffinDance", "HundredMenGorilla", "GothDanceHands", "NatureHealingSwan", "OnceAgainLectern", "LockdownSourdough", "HeadBobCat", "PallbearerCoin", "TumbleJellyBean", "SwoleVsSmol", "PointingLaughChair", "PolkaSpinCow", "SusBean", "PartyCornerGuy", "BeepBopMicKid", "TradeOfferScroll", "BigMittensChair", "ThinkSonThink", "SneakerShark", "JawlineChad", "BingChillingCone", "SigmaGrindset", "EmotionalDamage", "YesNoLabDog", "AssistantSam", "LampOilMerchant", "MaulingTimeVampire", "GentlePillSquad", "WiseMysticalTree", "ItsCornCob", "UncannySuperDad", "GirlDinnerPlate", "PhonkEyebrowSpeaker", "RizzFaceMask", "ClangingPipe", "BetterCallPaul", "KingPrawnCrooner", "OhioFinalBoss", "OhYeahVillain", "LogBatGuy", "ShailushaiCat", "BirthdayShake", "WhistleEdit", "PeachesTurtleKing", "KindergartenMascot", "CursedCartoonTape", "AwkwardSmileGuy", "LaughCryCarSeat", "CanonEventWeb", "PinkbombFeature", "BoulderEyebrow", "PointingSuits", "MewingHush", "EnglishSpanishChair", "AHyuckDog", "NoScopeOlympian", "PommelHorseLegend", "BratGreenSlab", "PedroRaccoon", "CrocBomber", "ChillDude", "BabyHippo", "DubaiChocolate", "LowTaperFade", "ShushUpTablet", "BigGamerChair", "SixSevenHands", "TakeEggCushion", "IbizaBossDancer", "BoutiqueRock", "LittleFrenchFish", "VeryDemureTeacup", "JohnPorkPhone", "BeforeGTA6Hourglass", "StandingOnBusiness", "AuraBoatBow", "PaperclipHelper", "ZombieChickenRider", "JetTooHoliday", "PressureDiverHelmet", "AbyssalAngler", "GlitchWhale", "AtlantisJawlineChad", "SpookySkeleton", "PumpkinDancer", "GhostlySwampFrog", "BonkShiba", "SadViolinHamster", "ConfusedMathCat", "JellyTimeBanana", "RainbowPastryCat", "WowShiba", "ProblemGrinCoin", "MeLikeyTablet", "RageScreamTablet", "ForeverAlone", "BadLuckBryan", "FrowningCat", "PunchMonkey", "PhantomChonkyBunny", "CemeterySpecter", "UndeadSanic", "GraveyardOssuary", "CyberWowShiba", "GlitchSwampFrog", "QuantumShockedRodent", "VoidStonks", "MultiverseSpaceInfant", "BulletDodgeGuy", "NeonSusBean", "HoloJawlineChad", "CosmicShake", "SpacePolkaCow", "InterdimensionalChillDude", "CyberSingingThrone", "UniversalSanic", "ExponentialOgre", "MiraculousGnome", "ApexWowShiba", "GoldenSwampFrog", "ToorngEntity", "HighRollerBrainrot", "ImmeasupremeOverlord", "QuantumDatFrog", "SubatomicSwampFrog", "ParticleWowShiba", "AntimatterEchidna", "StringTheoryBunny", "WarpSpeedStonks", "ParallelJawlineChad", "RealityWarpedSponge", "TimeFoldPanels", "DarkMatterHippo", "RomanEmpireBust", "HypercubeChillDude", "ZeroPointThrone", "TesseractShake", "SingularityGrinCoin", "EventHorizonShiba", "NeverGonnaStair", "QuantumBrainrotGod", "MemeMatrix", "OriginalShiba"}, "No meme meshes yet: File > Import 3D > assets/models/MemeMeshes.fbx, then run this installer again")
 collectMeshes("PortalModels", {"GatePortalFrame", "GatePortalGlow", "GateHorizon", "GateVortexA", "GateVortexB", "AlienPortalRim", "AlienPortalFunnel", "AlienPortalSwirl"}, "No portal meshes yet: File > Import 3D > assets/models/PortalMeshes.fbx, then run this installer again")
 collectMeshes("UIIcons", {"Shop", "Bag", "Museum", "Rebirth", "World", "Settings", "Gem", "Cash", "Income", "SoundOn", "SoundOff", "Music", "Bell", "Lock", "Luck", "Pickaxe", "Star", "Sparkle", "Heart", "Pin", "Alien", "Fire", "Skull", "Disk", "Volcano", "Candy", "Ghost", "Bubble", "Ice", "Snowflake", "Coin", "Warning", "Boom", "Party", "Picture", "Hole", "Elevator", "Crown", "FaceHappy", "FaceLaugh", "FaceLove", "FaceWow", "FaceCool", "FaceMeh", "FaceSick"}, "No 3D UI icons yet: File > Import 3D > assets/models/UIIcons.fbx, then run this installer again")
+collectMeshes("PickaxeMeshes", {"BlossomTrowel", "BambooSpade", "KoiScoop", "LanternSpade", "LanternSpadeGlow", "KatanaShovel", "KatanaShovelGlow", "PetalExcavator", "PetalExcavatorGlow", "HanamiHarvester", "HanamiHarvesterGlow", "MeteorScoop", "MeteorScoopGlow", "RocketSpade", "RocketSpadeGlow", "OrbitShovel", "OrbitShovelGlow", "NebulaTrowel", "NebulaTrowelGlow", "CometCrusher", "CometCrusherGlow", "SupernovaSpade", "SupernovaSpadeGlow", "EventHorizon", "EventHorizonGlow", "SnowballScoop", "IcicleSpade", "PenguinPaddle", "FrostbiteShovel", "FrostbiteShovelGlow", "BlizzardBreaker", "BlizzardBreakerGlow", "AuroraAuger", "AuroraAugerGlow", "AbsoluteZeroSpade", "AbsoluteZeroSpadeGlow", "SandyScoop", "CactusSpade", "MirageShovel", "MirageShovelGlow", "PharaohSpade", "SolarSifter", "SolarSifterGlow", "SandstormDrill", "SunKingShovel", "SunKingShovelGlow", "SeashellScoop", "AnchorSpade", "PearlShovel", "PearlShovelGlow", "TridentTrowel", "TridentTrowelGlow", "KrakenClaw", "TidalExcavator", "TidalExcavatorGlow", "AtlantisSpade", "AtlantisSpadeGlow", "LollipopScoop", "CandyCaneSpade", "GummyShovel", "SprinkleSpade", "ChocoCrusher", "JawbreakerAuger", "SugarRushSpade", "SugarRushSpadeGlow", "EmberSpade", "EmberSpadeGlow", "AnvilShovel", "AnvilShovelGlow", "MagmaScoop", "MagmaScoopGlow", "ObsidianBlade", "ObsidianBladeGlow", "DragonboneSpade", "DragonboneSpadeGlow", "InfernoAuger", "InfernoAugerGlow", "CoreBreaker", "CoreBreakerGlow", "PlaceholderSpade", "PixelShovel", "LagSpade", "LagSpadeGlow", "WireframeShovel", "WireframeShovelGlow", "Error404Scoop", "Error404ScoopGlow", "DebugDrill", "DebugDrillGlow", "TheFinalPatch", "TheFinalPatchGlow"}, "No pickaxe meshes yet: File > Import 3D > assets/models/PickaxeMeshes.fbx, then run this installer again")
 do local old = game:GetService("ServerScriptService"):FindFirstChild("DataManager") if old then old:Destroy() print("Removed DataManager") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
 do local old = game:GetService("ReplicatedStorage"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
@@ -2498,6 +2499,72 @@ MemeList.Worlds = {
 
 return MemeList
 ]=])
+install(game:GetService("ReplicatedStorage"), "PickaxeMeshData", "ModuleScript", [=[
+-- PickaxeMeshData (ModuleScript in ReplicatedStorage)
+-- Written by tools/blender/pickaxes.py: the Blender pickaxes of worlds 2-9. Studio's
+-- File > Import 3D of assets/models/PickaxeMeshes.fbx + the installer put the meshes in
+-- ReplicatedStorage > PickaxeMeshes (<Id> and <Id>Glow). Data = each mesh's size and where
+-- its center sits in tool space (head at -Z, arms along Y), the glow color, and the tips the
+-- spark trails come off. PickaxeModels builds from these when the meshes are there.
+return {
+	BlossomTrowel = {Size = Vector3.new(0.660, 4.270, 5.610), Center = Vector3.new(0.000, 0.000, -0.305), GlowColor = Color3.fromRGB(255, 120, 180), Tips = {Vector3.new(0.000, 2.099, -1.240), Vector3.new(0.000, -2.099, -1.240)}},
+	BambooSpade = {Size = Vector3.new(0.500, 4.202, 5.745), Center = Vector3.new(0.000, 0.000, -0.373), GlowColor = Color3.fromRGB(190, 255, 120), Tips = {Vector3.new(0.000, 1.961, -1.398), Vector3.new(0.000, -1.961, -1.398)}},
+	KoiScoop = {Size = Vector3.new(0.680, 3.978, 5.979), Center = Vector3.new(0.000, -0.089, -0.489), GlowColor = Color3.fromRGB(255, 170, 90), Tips = {Vector3.new(0.000, 1.950, -2.800), Vector3.new(0.000, -2.050, -2.700)}},
+	LanternSpade = {Size = Vector3.new(1.000, 4.270, 6.860), Center = Vector3.new(0.000, 0.000, -0.930), GlowSize = Vector3.new(0.700, 0.700, 0.850), GlowCenter = Vector3.new(0.000, 0.000, -3.550), GlowColor = Color3.fromRGB(255, 190, 90), Tips = {Vector3.new(0.000, 2.099, -1.240), Vector3.new(0.000, -2.099, -1.240)}},
+	KatanaShovel = {Size = Vector3.new(1.000, 4.682, 5.250), Center = Vector3.new(0.000, 0.000, -0.225), GlowSize = Vector3.new(0.050, 4.761, 1.381), GlowCenter = Vector3.new(0.000, 0.000, -1.942), GlowColor = Color3.fromRGB(210, 235, 255), Tips = {Vector3.new(0.000, 2.342, -1.243), Vector3.new(0.000, -2.342, -1.243)}},
+	PetalExcavator = {Size = Vector3.new(0.900, 4.385, 5.865), Center = Vector3.new(0.000, -0.056, -0.432), GlowSize = Vector3.new(0.500, 0.500, 0.500), GlowCenter = Vector3.new(0.000, 0.750, -2.600), GlowColor = Color3.fromRGB(255, 110, 190), Tips = {Vector3.new(0.000, -2.300, -2.700), Vector3.new(0.000, 1.800, -2.600)}},
+	HanamiHarvester = {Size = Vector3.new(0.820, 4.885, 5.865), Center = Vector3.new(0.000, 0.000, -0.432), GlowSize = Vector3.new(0.700, 4.694, 1.850), GlowCenter = Vector3.new(0.000, 0.000, -1.885), GlowColor = Color3.fromRGB(255, 140, 210), Tips = {Vector3.new(0.000, 2.237, -1.070), Vector3.new(0.000, -2.237, -1.070)}},
+	MeteorScoop = {Size = Vector3.new(0.834, 4.162, 5.623), Center = Vector3.new(-0.000, 0.000, -0.312), GlowSize = Vector3.new(0.720, 3.937, 1.201), GlowCenter = Vector3.new(0.000, 0.000, -2.185), GlowColor = Color3.fromRGB(255, 140, 60), Tips = {Vector3.new(0.000, 1.908, -1.495), Vector3.new(0.000, -1.908, -1.495)}},
+	RocketSpade = {Size = Vector3.new(1.818, 3.350, 6.009), Center = Vector3.new(0.000, 0.225, -0.504), GlowSize = Vector3.new(0.480, 0.700, 0.480), GlowCenter = Vector3.new(0.000, -1.750, -2.600), GlowColor = Color3.fromRGB(255, 160, 60), Tips = {Vector3.new(0.000, 1.950, -2.600), Vector3.new(0.000, -2.050, -2.600)}},
+	OrbitShovel = {Size = Vector3.new(1.624, 4.270, 5.965), Center = Vector3.new(-0.000, 0.000, -0.482), GlowSize = Vector3.new(1.730, 1.139, 1.842), GlowCenter = Vector3.new(-0.000, 0.000, -2.600), GlowColor = Color3.fromRGB(150, 200, 255), Tips = {Vector3.new(0.000, 2.099, -1.240), Vector3.new(0.000, -2.099, -1.240)}},
+	NebulaTrowel = {Size = Vector3.new(0.950, 4.453, 5.575), Center = Vector3.new(0.000, 0.000, -0.287), GlowSize = Vector3.new(0.590, 3.758, 1.144), GlowCenter = Vector3.new(0.045, 0.100, -2.378), GlowColor = Color3.fromRGB(200, 120, 255), Tips = {Vector3.new(0.000, 2.191, -1.180), Vector3.new(0.000, -2.191, -1.180)}},
+	CometCrusher = {Size = Vector3.new(1.100, 3.900, 5.650), Center = Vector3.new(0.000, -0.600, -0.325), GlowSize = Vector3.new(0.800, 0.800, 0.800), GlowCenter = Vector3.new(0.000, 0.850, -2.650), GlowColor = Color3.fromRGB(130, 220, 255), Tips = {Vector3.new(0.000, 1.500, -2.600), Vector3.new(0.000, -2.500, -2.350)}},
+	SupernovaSpade = {Size = Vector3.new(0.450, 4.081, 7.141), Center = Vector3.new(0.000, 0.000, -1.070), GlowSize = Vector3.new(0.500, 0.900, 0.900), GlowCenter = Vector3.new(0.000, 0.000, -2.600), GlowColor = Color3.fromRGB(255, 220, 120), Tips = {Vector3.new(0.000, 2.100, -2.600), Vector3.new(0.000, -2.100, -2.600)}},
+	EventHorizon = {Size = Vector3.new(1.200, 4.820, 5.700), Center = Vector3.new(0.000, 0.000, -0.350), GlowSize = Vector3.new(2.140, 4.724, 1.985), GlowCenter = Vector3.new(0.000, 0.000, -1.985), GlowColor = Color3.fromRGB(190, 130, 255), Tips = {Vector3.new(0.000, 2.372, -0.888), Vector3.new(0.000, -2.372, -0.888)}},
+	SnowballScoop = {Size = Vector3.new(1.475, 3.679, 5.750), Center = Vector3.new(0.088, -0.190, -0.375), GlowColor = Color3.fromRGB(190, 235, 255), Tips = {Vector3.new(0.000, -1.995, -1.444), Vector3.new(0.000, 1.650, -2.600)}},
+	IcicleSpade = {Size = Vector3.new(0.750, 4.600, 5.668), Center = Vector3.new(0.000, 0.000, -0.334), GlowColor = Color3.fromRGB(170, 230, 255), Tips = {Vector3.new(0.000, 2.300, -2.285), Vector3.new(0.000, -2.300, -2.285)}},
+	PenguinPaddle = {Size = Vector3.new(0.970, 4.082, 5.650), Center = Vector3.new(0.000, 0.000, -0.325), GlowColor = Color3.fromRGB(255, 200, 90), Tips = {Vector3.new(0.000, 2.100, -2.400), Vector3.new(0.000, -2.100, -2.400)}},
+	FrostbiteShovel = {Size = Vector3.new(0.693, 4.270, 5.500), Center = Vector3.new(-0.000, 0.000, -0.250), GlowSize = Vector3.new(0.480, 4.412, 1.502), GlowCenter = Vector3.new(0.210, 0.000, -1.999), GlowColor = Color3.fromRGB(110, 220, 255), Tips = {Vector3.new(0.000, 2.099, -1.240), Vector3.new(0.000, -2.099, -1.240)}},
+	BlizzardBreaker = {Size = Vector3.new(1.000, 3.530, 5.850), Center = Vector3.new(0.000, -0.065, -0.425), GlowSize = Vector3.new(0.280, 0.280, 0.280), GlowCenter = Vector3.new(0.000, -1.150, -2.600), GlowColor = Color3.fromRGB(200, 240, 255), Tips = {Vector3.new(0.000, 1.750, -2.600), Vector3.new(0.000, -1.150, -1.850)}},
+	AuroraAuger = {Size = Vector3.new(0.693, 4.084, 5.550), Center = Vector3.new(-0.000, 0.000, -0.275), GlowSize = Vector3.new(0.060, 4.138, 1.199), GlowCenter = Vector3.new(0.000, 0.000, -2.000), GlowColor = Color3.fromRGB(110, 255, 190), Tips = {Vector3.new(0.000, 2.008, -1.299), Vector3.new(0.000, -2.008, -1.299)}},
+	AbsoluteZeroSpade = {Size = Vector3.new(0.750, 5.100, 5.539), Center = Vector3.new(-0.000, 0.000, -0.269), GlowSize = Vector3.new(0.550, 3.800, 0.550), GlowCenter = Vector3.new(0.000, 0.000, -2.600), GlowColor = Color3.fromRGB(220, 245, 255), Tips = {Vector3.new(0.000, 2.550, -2.600), Vector3.new(0.000, -2.550, -2.600)}},
+	SandyScoop = {Size = Vector3.new(0.700, 4.104, 5.500), Center = Vector3.new(0.000, 0.000, -0.250), GlowColor = Color3.fromRGB(255, 220, 140), Tips = {Vector3.new(0.000, 1.908, -1.495), Vector3.new(0.000, -1.908, -1.495)}},
+	CactusSpade = {Size = Vector3.new(0.750, 4.163, 6.008), Center = Vector3.new(0.000, 0.000, -0.504), GlowColor = Color3.fromRGB(255, 120, 170), Tips = {Vector3.new(0.000, 1.872, -1.453), Vector3.new(0.000, -1.872, -1.453)}},
+	MirageShovel = {Size = Vector3.new(0.700, 3.960, 5.621), Center = Vector3.new(0.000, 0.000, -0.310), GlowSize = Vector3.new(0.060, 3.964, 0.404), GlowCenter = Vector3.new(0.100, 0.000, -2.594), GlowColor = Color3.fromRGB(200, 230, 255), Tips = {Vector3.new(0.000, 2.000, -2.700), Vector3.new(0.000, -2.000, -2.700)}},
+	PharaohSpade = {Size = Vector3.new(0.700, 4.270, 5.854), Center = Vector3.new(0.050, 0.000, -0.427), GlowColor = Color3.fromRGB(90, 160, 255), Tips = {Vector3.new(0.000, 2.099, -1.240), Vector3.new(0.000, -2.099, -1.240)}},
+	SolarSifter = {Size = Vector3.new(0.450, 3.995, 5.600), Center = Vector3.new(0.000, 0.000, -0.300), GlowSize = Vector3.new(0.360, 0.760, 0.760), GlowCenter = Vector3.new(0.000, 0.000, -2.600), GlowColor = Color3.fromRGB(255, 220, 90), Tips = {Vector3.new(0.000, 2.000, -2.600), Vector3.new(0.000, -2.000, -2.600)}},
+	SandstormDrill = {Size = Vector3.new(1.100, 5.100, 5.690), Center = Vector3.new(0.000, 0.000, -0.345), GlowColor = Color3.fromRGB(255, 210, 120), Tips = {Vector3.new(0.000, 2.550, -2.600), Vector3.new(0.000, -2.550, -2.600)}},
+	SunKingShovel = {Size = Vector3.new(0.450, 4.453, 6.313), Center = Vector3.new(0.000, 0.000, -0.657), GlowSize = Vector3.new(0.400, 0.960, 0.960), GlowCenter = Vector3.new(0.000, 0.000, -2.600), GlowColor = Color3.fromRGB(255, 200, 60), Tips = {Vector3.new(0.000, 2.191, -1.180), Vector3.new(0.000, -2.191, -1.180)}},
+	SeashellScoop = {Size = Vector3.new(0.920, 3.400, 6.370), Center = Vector3.new(0.000, 0.000, -0.685), GlowColor = Color3.fromRGB(255, 200, 210), Tips = {Vector3.new(0.000, 1.750, -2.600), Vector3.new(0.000, -1.750, -2.600)}},
+	AnchorSpade = {Size = Vector3.new(0.450, 3.610, 6.090), Center = Vector3.new(0.000, 0.000, -0.545), GlowColor = Color3.fromRGB(120, 200, 255), Tips = {Vector3.new(0.000, 1.798, -0.792), Vector3.new(0.000, -1.798, -0.792)}},
+	PearlShovel = {Size = Vector3.new(1.120, 4.270, 5.850), Center = Vector3.new(0.085, 0.000, -0.425), GlowSize = Vector3.new(0.300, 0.300, 0.300), GlowCenter = Vector3.new(0.200, 0.120, -2.600), GlowColor = Color3.fromRGB(255, 245, 255), Tips = {Vector3.new(0.000, 2.099, -1.240), Vector3.new(0.000, -2.099, -1.240)}},
+	TridentTrowel = {Size = Vector3.new(0.480, 4.764, 5.932), Center = Vector3.new(0.000, 0.882, -0.466), GlowSize = Vector3.new(0.300, 0.300, 0.300), GlowCenter = Vector3.new(0.000, 0.900, -2.600), GlowColor = Color3.fromRGB(255, 220, 120), Tips = {Vector3.new(0.000, 2.800, -2.000), Vector3.new(0.000, 3.300, -2.600), Vector3.new(0.000, 2.800, -3.200)}},
+	KrakenClaw = {Size = Vector3.new(1.100, 4.224, 5.994), Center = Vector3.new(0.000, 0.000, -0.497), GlowColor = Color3.fromRGB(220, 120, 255), Tips = {Vector3.new(-0.200, 2.100, -1.764), Vector3.new(-0.200, -2.100, -1.764)}},
+	TidalExcavator = {Size = Vector3.new(0.800, 4.463, 5.550), Center = Vector3.new(0.000, 0.000, -0.275), GlowSize = Vector3.new(0.080, 3.788, 1.122), GlowCenter = Vector3.new(0.000, 0.000, -2.062), GlowColor = Color3.fromRGB(80, 200, 255), Tips = {Vector3.new(0.000, 2.191, -1.180), Vector3.new(0.000, -2.191, -1.180)}},
+	AtlantisSpade = {Size = Vector3.new(0.950, 4.453, 5.650), Center = Vector3.new(0.000, 0.000, -0.325), GlowSize = Vector3.new(0.760, 4.527, 1.538), GlowCenter = Vector3.new(0.345, 0.000, -2.056), GlowColor = Color3.fromRGB(90, 255, 230), Tips = {Vector3.new(0.000, 2.191, -1.180), Vector3.new(0.000, -2.191, -1.180)}},
+	LollipopScoop = {Size = Vector3.new(0.450, 3.922, 6.100), Center = Vector3.new(0.000, -0.061, -0.550), GlowColor = Color3.fromRGB(255, 150, 220), Tips = {Vector3.new(0.000, 1.900, -2.600), Vector3.new(0.000, -1.822, -1.545)}},
+	CandyCaneSpade = {Size = Vector3.new(0.600, 4.680, 5.400), Center = Vector3.new(0.000, 0.000, -0.200), GlowColor = Color3.fromRGB(255, 120, 140), Tips = {Vector3.new(0.000, 2.120, -0.988), Vector3.new(0.000, -2.120, -0.988)}},
+	GummyShovel = {Size = Vector3.new(0.750, 3.439, 5.660), Center = Vector3.new(0.000, -0.275, -0.330), GlowColor = Color3.fromRGB(255, 120, 140), Tips = {Vector3.new(0.000, 1.450, -2.600), Vector3.new(0.000, -2.000, -2.600)}},
+	SprinkleSpade = {Size = Vector3.new(0.700, 4.400, 6.100), Center = Vector3.new(0.000, 0.000, -0.550), GlowColor = Color3.fromRGB(255, 160, 220), Tips = {Vector3.new(0.000, 2.200, -2.600), Vector3.new(0.000, -2.200, -2.600)}},
+	ChocoCrusher = {Size = Vector3.new(0.600, 3.480, 5.575), Center = Vector3.new(0.000, 0.000, -0.287), GlowColor = Color3.fromRGB(255, 200, 140), Tips = {Vector3.new(0.000, 1.700, -2.600), Vector3.new(0.000, -1.700, -2.600)}},
+	JawbreakerAuger = {Size = Vector3.new(1.520, 3.800, 5.850), Center = Vector3.new(0.010, 0.000, -0.425), GlowColor = Color3.fromRGB(255, 230, 120), Tips = {Vector3.new(0.000, 1.900, -2.600), Vector3.new(0.000, -1.900, -2.600)}},
+	SugarRushSpade = {Size = Vector3.new(0.455, 4.248, 5.800), Center = Vector3.new(-0.002, 0.000, -0.400), GlowSize = Vector3.new(0.385, 4.562, 1.473), GlowCenter = Vector3.new(0.157, 0.000, -2.014), GlowColor = Color3.fromRGB(255, 120, 255), Tips = {Vector3.new(0.000, 2.004, -1.229), Vector3.new(0.000, -2.004, -1.229)}},
+	EmberSpade = {Size = Vector3.new(0.700, 4.270, 5.500), Center = Vector3.new(0.000, 0.000, -0.250), GlowSize = Vector3.new(0.315, 3.966, 1.063), GlowCenter = Vector3.new(0.000, 0.000, -2.114), GlowColor = Color3.fromRGB(255, 140, 40), Tips = {Vector3.new(0.000, 2.099, -1.240), Vector3.new(0.000, -2.099, -1.240)}},
+	AnvilShovel = {Size = Vector3.new(0.920, 3.450, 5.820), Center = Vector3.new(0.000, 0.375, -0.410), GlowSize = Vector3.new(0.300, 0.600, 0.060), GlowCenter = Vector3.new(0.000, 0.200, -3.330), GlowColor = Color3.fromRGB(255, 170, 80), Tips = {Vector3.new(0.000, 2.100, -2.900), Vector3.new(0.000, -1.350, -2.950)}},
+	MagmaScoop = {Size = Vector3.new(0.834, 4.111, 5.576), Center = Vector3.new(-0.000, 0.000, -0.288), GlowSize = Vector3.new(0.920, 4.117, 1.465), GlowCenter = Vector3.new(0.000, 0.000, -2.017), GlowColor = Color3.fromRGB(255, 120, 30), Tips = {Vector3.new(0.000, 1.908, -1.495), Vector3.new(0.000, -1.908, -1.495)}},
+	ObsidianBlade = {Size = Vector3.new(0.618, 4.400, 5.595), Center = Vector3.new(0.000, 0.000, -0.297), GlowSize = Vector3.new(0.045, 4.204, 0.212), GlowCenter = Vector3.new(-0.002, 0.000, -2.710), GlowColor = Color3.fromRGB(180, 110, 255), Tips = {Vector3.new(0.000, 2.200, -2.600), Vector3.new(0.000, -2.200, -2.600)}},
+	DragonboneSpade = {Size = Vector3.new(1.320, 4.324, 5.950), Center = Vector3.new(0.000, 0.000, -0.475), GlowSize = Vector3.new(0.910, 0.100, 0.100), GlowCenter = Vector3.new(0.000, 0.220, -2.980), GlowColor = Color3.fromRGB(255, 120, 60), Tips = {Vector3.new(0.000, 2.144, -1.133), Vector3.new(0.000, -2.144, -1.133)}},
+	InfernoAuger = {Size = Vector3.new(0.750, 4.764, 5.699), Center = Vector3.new(0.000, 0.000, -0.349), GlowSize = Vector3.new(0.120, 4.129, 0.263), GlowCenter = Vector3.new(0.110, 0.000, -2.570), GlowColor = Color3.fromRGB(255, 150, 30), Tips = {Vector3.new(0.000, 2.400, -2.400), Vector3.new(0.000, -2.400, -2.400)}},
+	CoreBreaker = {Size = Vector3.new(1.150, 4.547, 5.708), Center = Vector3.new(0.000, 0.000, -0.354), GlowSize = Vector3.new(1.050, 4.383, 1.867), GlowCenter = Vector3.new(0.000, 0.000, -2.192), GlowColor = Color3.fromRGB(255, 170, 40), Tips = {Vector3.new(0.000, 2.237, -1.070), Vector3.new(0.000, -2.237, -1.070)}},
+	PlaceholderSpade = {Size = Vector3.new(0.700, 3.900, 5.450), Center = Vector3.new(0.000, 0.000, -0.225), GlowColor = Color3.fromRGB(255, 0, 220), Tips = {Vector3.new(0.000, 1.950, -2.600), Vector3.new(0.000, -1.950, -2.600)}},
+	PixelShovel = {Size = Vector3.new(0.360, 4.420, 5.620), Center = Vector3.new(0.000, 0.000, -0.310), GlowColor = Color3.fromRGB(110, 220, 255), Tips = {Vector3.new(0.000, 2.040, -1.580), Vector3.new(0.000, -2.040, -1.580)}},
+	LagSpade = {Size = Vector3.new(1.045, 4.270, 5.450), Center = Vector3.new(0.222, 0.000, -0.225), GlowSize = Vector3.new(0.080, 0.500, 0.500), GlowCenter = Vector3.new(0.350, 0.000, -2.600), GlowColor = Color3.fromRGB(90, 255, 230), Tips = {Vector3.new(0.000, 2.099, -1.240), Vector3.new(0.000, -2.099, -1.240)}},
+	WireframeShovel = {Size = Vector3.new(0.450, 0.600, 5.400), Center = Vector3.new(0.000, 0.000, -0.200), GlowSize = Vector3.new(0.700, 4.548, 1.864), GlowCenter = Vector3.new(0.000, 0.000, -2.058), GlowColor = Color3.fromRGB(60, 255, 140), Tips = {Vector3.new(0.000, 2.236, -1.151), Vector3.new(0.000, -2.236, -1.151)}},
+	Error404Scoop = {Size = Vector3.new(0.620, 4.281, 5.700), Center = Vector3.new(0.000, 0.000, -0.350), GlowSize = Vector3.new(0.080, 1.000, 0.950), GlowCenter = Vector3.new(0.330, 0.000, -2.600), GlowColor = Color3.fromRGB(255, 80, 90), Tips = {Vector3.new(0.000, 2.050, -1.343), Vector3.new(0.000, -2.050, -1.343)}},
+	DebugDrill = {Size = Vector3.new(0.900, 5.150, 5.650), Center = Vector3.new(0.000, 0.000, -0.325), GlowSize = Vector3.new(0.060, 0.700, 0.750), GlowCenter = Vector3.new(0.460, 0.000, -2.650), GlowColor = Color3.fromRGB(70, 255, 120), Tips = {Vector3.new(0.000, 2.550, -2.600), Vector3.new(0.000, -2.550, -2.600)}},
+	TheFinalPatch = {Size = Vector3.new(0.520, 4.453, 5.923), Center = Vector3.new(0.000, 0.000, -0.462), GlowSize = Vector3.new(1.600, 4.557, 2.416), GlowCenter = Vector3.new(0.000, 0.000, -2.442), GlowColor = Color3.fromRGB(255, 240, 170), Tips = {Vector3.new(0.000, 2.191, -1.180), Vector3.new(0.000, -2.191, -1.180)}},
+}
+]=])
 install(game:GetService("ReplicatedStorage"), "PickaxeModels", "ModuleScript", [=[
 -- PickaxeModels (ModuleScript in ReplicatedStorage)
 -- Builds every digging tool as a blocky voxel pickaxe: a head made of little cubes that arc
@@ -2515,6 +2582,9 @@ install(game:GetService("ReplicatedStorage"), "PickaxeModels", "ModuleScript", [
 --
 -- Tool space: the handle runs along Z, the head is at -Z, the grip end at +Z; +Y is the
 -- direction the pick's arms point (the swing plane). Returns function(def) -> Tool.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PickaxeMeshData = require(ReplicatedStorage:WaitForChild("PickaxeMeshData"))
 
 local SCALE = 0.7
 -- the crystal-tech look every pickaxe shares: cyan neon cutting edges, dark handles with a
@@ -2704,6 +2774,65 @@ local function crystal(tool, name, cf, length, color)
 	return shell, core
 end
 
+---------------------------------------------------------------------
+-- BLENDER PICKAXES (worlds 2-9): each one is a unique mesh made in tools/blender/pickaxes.py
+-- (a koi fish, a rocket, an anchor, a candy cane...) plus a glowing mesh drawn as Neon.
+-- Used once File > Import 3D of assets/models/PickaxeMeshes.fbx + the installer have put
+-- them in ReplicatedStorage > PickaxeMeshes; until then those pickaxes stay part-built.
+---------------------------------------------------------------------
+local function meshSource(name)
+	local folder = ReplicatedStorage:FindFirstChild("PickaxeMeshes")
+	local item = folder and folder:FindFirstChild(name)
+	if item and not item:IsA("MeshPart") then item = item:FindFirstChildWhichIsA("MeshPart", true) end
+	return item
+end
+
+local function meshPiece(tool, name, src, size, center)
+	local part = src:Clone()
+	part.Name = name
+	part.Size = size
+	part.CFrame = CFrame.new(center)
+	part.Anchored = false
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.Massless = true
+	part.Parent = tool
+	return part
+end
+
+-- returns the head's tips (where the trails come off), its socket and glowing part, or nil
+local function buildFromMesh(tool, def, look)
+	local data = PickaxeMeshData[def.Id]
+	local bodySrc = data and meshSource(def.Id)
+	if not bodySrc then return nil end
+	meshPiece(tool, "PickaxeBody", bodySrc, data.Size, data.Center)
+	look.Gem = data.GlowColor -- the light, sparkles and swoosh take the pickaxe's glow color
+	local glowSrc = data.GlowSize and meshSource(def.Id .. "Glow")
+	local gem
+	if glowSrc then
+		gem = meshPiece(tool, "HeadGem", glowSrc, data.GlowSize, data.GlowCenter)
+		for _, child in ipairs(gem:GetChildren()) do
+			if child:IsA("SurfaceAppearance") then child:Destroy() end
+		end
+		pcall(function() gem.TextureID = "" end)
+		gem.Material = Enum.Material.Neon
+		gem.Color = data.GlowColor
+		gem.CastShadow = false
+	end
+	-- an invisible socket where the arms meet the handle: the dig effects and the swoosh
+	-- trail come off it (ShovelClient looks for "Blade")
+	local socket = newPart(tool, "Blade", Vector3.new(0.72, 1, 1), CFrame.new(0, 0, -2.6), look.Frame)
+	socket.Transparency = 1
+	local tips = {}
+	for _, position in ipairs(data.Tips) do
+		local tip = newPart(tool, "HeadTip", Vector3.new(0.2, 0.2, 0.2), CFrame.new(position), look.Gem)
+		tip.Transparency = 1
+		table.insert(tips, tip)
+	end
+	return {Tips = tips, Socket = socket, Gem = gem or socket}
+end
+
 return function(def)
 	local look = table.clone(lookFor(def))
 	-- dark handles everywhere (a hint of the pickaxe's own color stays in them)
@@ -2723,227 +2852,233 @@ return function(def)
 	local handle = newPart(tool, "Handle", Vector3.new(0.3, 0.3, 4.6), CFrame.new(), look.Handle)
 	handle.Transparency = 1
 
-	-- HANDLE: a square dark shaft from the head down to the pommel
-	local HEAD_Z, END_Z = -2.6, 2.2
 	local RIGHT_Z, LEFT_Z = 1.55, 0.55 -- where the hands hold it (right hand low, left hand above)
-	newPart(tool, "Shaft", Vector3.new(0.26, 0.26, END_Z - HEAD_Z), CFrame.new(0, 0, (END_Z + HEAD_Z) / 2), look.Handle)
-	-- glowing cyan inlay lines down both sides of the shaft (between the head and the grip)
-	for _, sx in ipairs({-1, 1}) do
-		newPart(tool, "ShaftGlow", Vector3.new(0.04, 0.08, 2.7), CFrame.new(sx * 0.135, 0, -0.95), NEON_EDGE, Enum.Material.Neon)
-	end
-	-- grip wrap: stacked cubes, alternating shades
-	for i = 0, 4 do
-		newPart(tool, "GripWrap", Vector3.new(0.34, 0.34, 0.24), CFrame.new(0, 0, 1.05 + i * 0.24), shade(look.Wrap, i))
-	end
-	for _, z in ipairs({0.88, 2.28 - 0.1}) do
-		newPart(tool, "Collar", Vector3.new(0.4, 0.4, 0.14), CFrame.new(0, 0, z), look.Frame, Enum.Material.Metal)
-	end
-	gemNode(tool, "Pommel", END_Z + 0.25, 0.62, look, glowing)
-	-- gem nodes up the handle (more on better pickaxes)
-	local nodes = tier >= 7 and {-1.75, -0.1} or (tier >= 3 and {-1.6} or {})
-	for _, z in ipairs(nodes) do
-		gemNode(tool, "HandleNode", z, 0.5, look, glowing)
-	end
-	-- the diamond cage with a floating gem (tier 4+)
-	if tier >= 4 then
-		local top, bottom, mid, w = -1.35, -0.35, -0.85, 0.42
-		local a, b2 = Vector3.new(0, 0, top), Vector3.new(0, 0, bottom)
-		for _, s in ipairs({-1, 1}) do
-			local side = Vector3.new(0, s * w, mid)
-			bar(tool, "CageBar", a, side, 0.12, look.Handle)
-			bar(tool, "CageBar", side, b2, 0.12, look.Handle)
+	local tips, socket, gem
+	local meshed = buildFromMesh(tool, def, look)
+	if meshed then
+		tips, socket, gem = meshed.Tips, meshed.Socket, meshed.Gem
+	else
+		-- HANDLE: a square dark shaft from the head down to the pommel
+		local HEAD_Z, END_Z = -2.6, 2.2
+		newPart(tool, "Shaft", Vector3.new(0.26, 0.26, END_Z - HEAD_Z), CFrame.new(0, 0, (END_Z + HEAD_Z) / 2), look.Handle)
+		-- glowing cyan inlay lines down both sides of the shaft (between the head and the grip)
+		for _, sx in ipairs({-1, 1}) do
+			newPart(tool, "ShaftGlow", Vector3.new(0.04, 0.08, 2.7), CFrame.new(sx * 0.135, 0, -0.95), NEON_EDGE, Enum.Material.Neon)
 		end
-		newPart(tool, "CageGem", Vector3.new(0.3, 0.34, 0.34), CFrame.new(0, 0, mid) * DIAMOND, look.Gem, Enum.Material.Neon)
-	end
+		-- grip wrap: stacked cubes, alternating shades
+		for i = 0, 4 do
+			newPart(tool, "GripWrap", Vector3.new(0.34, 0.34, 0.24), CFrame.new(0, 0, 1.05 + i * 0.24), shade(look.Wrap, i))
+		end
+		for _, z in ipairs({0.88, 2.28 - 0.1}) do
+			newPart(tool, "Collar", Vector3.new(0.4, 0.4, 0.14), CFrame.new(0, 0, z), look.Frame, Enum.Material.Metal)
+		end
+		gemNode(tool, "Pommel", END_Z + 0.25, 0.62, look, glowing)
+		-- gem nodes up the handle (more on better pickaxes)
+		local nodes = tier >= 7 and {-1.75, -0.1} or (tier >= 3 and {-1.6} or {})
+		for _, z in ipairs(nodes) do
+			gemNode(tool, "HandleNode", z, 0.5, look, glowing)
+		end
+		-- the diamond cage with a floating gem (tier 4+)
+		if tier >= 4 then
+			local top, bottom, mid, w = -1.35, -0.35, -0.85, 0.42
+			local a, b2 = Vector3.new(0, 0, top), Vector3.new(0, 0, bottom)
+			for _, s in ipairs({-1, 1}) do
+				local side = Vector3.new(0, s * w, mid)
+				bar(tool, "CageBar", a, side, 0.12, look.Handle)
+				bar(tool, "CageBar", side, b2, 0.12, look.Handle)
+			end
+			newPart(tool, "CageGem", Vector3.new(0.3, 0.34, 0.34), CFrame.new(0, 0, mid) * DIAMOND, look.Gem, Enum.Material.Neon)
+		end
 
-	-- HEAD
-	local tips = {}
-	local H = Vector3.new(0, 0, HEAD_Z)
-	local socket = newPart(tool, "Blade", Vector3.new(0.72, 1, 1), CFrame.new(H) * DIAMOND, look.Frame)
-	local gem = newPart(tool, "HeadGem", Vector3.new(0.86, 0.5, 0.5), CFrame.new(H) * DIAMOND, look.Gem, glowing and Enum.Material.Neon or Enum.Material.Glass)
-	newPart(tool, "Crown", Vector3.new(0.4, 0.42, 0.42), CFrame.new(H + Vector3.new(0, 0, -0.78)) * DIAMOND, look.Edge)
-	local style = look.Head
-	local jagged = tier >= 5 and (tier >= 8 and look.Gem or NEON_EDGE) or nil
-	local arm = function(t, h, side, lk, opts)
-		if lk.Frame and jagged then
-			opts = table.clone(opts)
-			opts.Jagged = jagged
-		end
-		local parts, tip = arm(t, h, side, lk, opts)
-		if lk.Frame then -- not the glowing core inside a crystal head, or the second blade
-			table.insert(tips, tip)
-		end
-		return parts, tip
-	end
-	if style == "Wide" then
-		for _, s in ipairs({-1, 1}) do
-			arm(tool, H, s, look, {Radius = 3.4, Reach = 0.62, Count = 8, Rows = 3, Size = 0.58})
-		end
-	elseif style == "Spiked" then
-		for _, s in ipairs({-1, 1}) do
-			arm(tool, H, s, look, {Radius = 2.3, Reach = 1.1, Count = 7, Rows = 2, Size = 0.66, Spikes = true})
-		end
-	elseif style == "Crystal" then
-		for _, s in ipairs({-1, 1}) do
-			arm(tool, H, s, look, {Radius = 2.4, Reach = 1.05, Count = 7, Rows = 3, Size = 0.6, Glass = true, Material = Enum.Material.Glass})
-			-- glowing core running inside the glass
-			arm(tool, H, s, {Main = look.Gem, Edge = look.Gem}, {Radius = 2.4, Reach = 0.95, Count = 6, Rows = 1, Size = 0.3, Material = Enum.Material.Neon})
-		end
-	elseif style == "Hammer" then
-		arm(tool, H, 1, look, {Radius = 2.3, Reach = 1.15, Count = 7, Rows = 2, Size = 0.66})
-		hammer(tool, H, -1, look)
-	elseif style == "Bone" then
-		-- BONE EXCAVATOR: each arm is a curved bone of knuckled segments ending in a claw,
-		-- with a little skull holding it all on the shaft
-		local R = 2.3
-		for _, s in ipairs({-1, 1}) do
-			local points = {}
-			for k, phi in ipairs({0.28, 0.62, 0.96, 1.3}) do
-				points[k] = arcPoint(H, s, R, phi)
+		-- HEAD
+		tips = {}
+		local H = Vector3.new(0, 0, HEAD_Z)
+		socket = newPart(tool, "Blade", Vector3.new(0.72, 1, 1), CFrame.new(H) * DIAMOND, look.Frame)
+		gem = newPart(tool, "HeadGem", Vector3.new(0.86, 0.5, 0.5), CFrame.new(H) * DIAMOND, look.Gem, glowing and Enum.Material.Neon or Enum.Material.Glass)
+		newPart(tool, "Crown", Vector3.new(0.4, 0.42, 0.42), CFrame.new(H + Vector3.new(0, 0, -0.78)) * DIAMOND, look.Edge)
+		local style = look.Head
+		local jagged = tier >= 5 and (tier >= 8 and look.Gem or NEON_EDGE) or nil
+		local arm = function(t, h, side, lk, opts)
+			if lk.Frame and jagged then
+				opts = table.clone(opts)
+				opts.Jagged = jagged
 			end
-			for k = 1, 3 do
-				bar(tool, "BoneShaft", points[k], points[k + 1], 0.38 - k * 0.03, shade(look.Main, k))
+			local parts, tip = arm(t, h, side, lk, opts)
+			if lk.Frame then -- not the glowing core inside a crystal head, or the second blade
+				table.insert(tips, tip)
 			end
-			for k = 1, 4 do
-				newPart(tool, "BoneKnuckle", Vector3.one * (0.62 - k * 0.05), CFrame.new(points[k]), look.Main, nil, Enum.PartType.Ball)
-			end
-			local dir = (points[4] - points[3]).Unit
-			local clawPos = points[4] + dir * 0.4
-			table.insert(tips, newPart(tool, "HeadTip", Vector3.new(0.26, 0.26, 0.9), CFrame.lookAt(clawPos, clawPos + dir), NEON_EDGE, Enum.Material.Neon))
+			return parts, tip
 		end
-		local skull = newPart(tool, "Skull", Vector3.one * 1.15, CFrame.new(H + Vector3.new(0, 0, -0.15)), look.Main, nil, Enum.PartType.Ball)
-		for _, sy in ipairs({-1, 1}) do
-			for _, sx in ipairs({-1, 1}) do
-				newPart(tool, "SkullEye", Vector3.one * 0.26, CFrame.new(skull.CFrame.Position + Vector3.new(sx * 0.5, sy * 0.2, -0.15)), look.Gem, Enum.Material.Neon, Enum.PartType.Ball)
+		if style == "Wide" then
+			for _, s in ipairs({-1, 1}) do
+				arm(tool, H, s, look, {Radius = 3.4, Reach = 0.62, Count = 8, Rows = 3, Size = 0.58})
 			end
-		end
-	elseif style == "Drill" then
-		-- MECHANICAL DRILL: a motor block with a spiralled drill bit sticking out of each side
-		-- and a spinning turbine around the shaft
-		newPart(tool, "DrillMotor", Vector3.new(0.95, 1.4, 1.4), CFrame.new(H), look.Frame, Enum.Material.Metal)
-		newPart(tool, "MotorStripe", Vector3.new(1, 0.16, 1.44), CFrame.new(H + Vector3.new(0, 0.35, 0)), NEON_EDGE, Enum.Material.Neon)
-		newPart(tool, "MotorStripe", Vector3.new(1, 0.16, 1.44), CFrame.new(H - Vector3.new(0, 0.35, 0)), NEON_EDGE, Enum.Material.Neon)
-		for _, s in ipairs({-1, 1}) do
-			for k = 0, 4 do
-				local d = 1.15 - k * 0.2
-				local seg = newPart(tool, "DrillBit", Vector3.new(0.44, d, d), CFrame.new(H + Vector3.new(0, s * (0.95 + k * 0.42), 0)) * CFrame.Angles(0, 0, math.rad(90)),
-					shade(k % 2 == 0 and look.Main or look.Edge, k), Enum.Material.Metal)
-				seg.Shape = Enum.PartType.Cylinder
-				-- the spiral ridge winding around the bit
-				for r = 0, 2 do
-					local a = k * 1.3 + r * math.pi * 2 / 3
-					newPart(tool, "DrillRidge", Vector3.new(0.12, 0.34, 0.12),
-						CFrame.new(H + Vector3.new(math.cos(a) * d / 2, s * (0.95 + k * 0.42), math.sin(a) * d / 2)) * CFrame.Angles(0, -a, math.rad(30)), look.Edge, Enum.Material.Metal)
+		elseif style == "Spiked" then
+			for _, s in ipairs({-1, 1}) do
+				arm(tool, H, s, look, {Radius = 2.3, Reach = 1.1, Count = 7, Rows = 2, Size = 0.66, Spikes = true})
+			end
+		elseif style == "Crystal" then
+			for _, s in ipairs({-1, 1}) do
+				arm(tool, H, s, look, {Radius = 2.4, Reach = 1.05, Count = 7, Rows = 3, Size = 0.6, Glass = true, Material = Enum.Material.Glass})
+				-- glowing core running inside the glass
+				arm(tool, H, s, {Main = look.Gem, Edge = look.Gem}, {Radius = 2.4, Reach = 0.95, Count = 6, Rows = 1, Size = 0.3, Material = Enum.Material.Neon})
+			end
+		elseif style == "Hammer" then
+			arm(tool, H, 1, look, {Radius = 2.3, Reach = 1.15, Count = 7, Rows = 2, Size = 0.66})
+			hammer(tool, H, -1, look)
+		elseif style == "Bone" then
+			-- BONE EXCAVATOR: each arm is a curved bone of knuckled segments ending in a claw,
+			-- with a little skull holding it all on the shaft
+			local R = 2.3
+			for _, s in ipairs({-1, 1}) do
+				local points = {}
+				for k, phi in ipairs({0.28, 0.62, 0.96, 1.3}) do
+					points[k] = arcPoint(H, s, R, phi)
+				end
+				for k = 1, 3 do
+					bar(tool, "BoneShaft", points[k], points[k + 1], 0.38 - k * 0.03, shade(look.Main, k))
+				end
+				for k = 1, 4 do
+					newPart(tool, "BoneKnuckle", Vector3.one * (0.62 - k * 0.05), CFrame.new(points[k]), look.Main, nil, Enum.PartType.Ball)
+				end
+				local dir = (points[4] - points[3]).Unit
+				local clawPos = points[4] + dir * 0.4
+				table.insert(tips, newPart(tool, "HeadTip", Vector3.new(0.26, 0.26, 0.9), CFrame.lookAt(clawPos, clawPos + dir), NEON_EDGE, Enum.Material.Neon))
+			end
+			local skull = newPart(tool, "Skull", Vector3.one * 1.15, CFrame.new(H + Vector3.new(0, 0, -0.15)), look.Main, nil, Enum.PartType.Ball)
+			for _, sy in ipairs({-1, 1}) do
+				for _, sx in ipairs({-1, 1}) do
+					newPart(tool, "SkullEye", Vector3.one * 0.26, CFrame.new(skull.CFrame.Position + Vector3.new(sx * 0.5, sy * 0.2, -0.15)), look.Gem, Enum.Material.Neon, Enum.PartType.Ball)
 				end
 			end
-			table.insert(tips, newPart(tool, "HeadTip", Vector3.new(0.3, 0.3, 0.3), CFrame.new(H + Vector3.new(0, s * 3.1, 0)) * DIAMOND, NEON_EDGE, Enum.Material.Neon))
-		end
-		for i = 1, 6 do
-			local a = i * math.pi / 3
-			local blade = newPart(tool, "TurbineBlade", Vector3.new(0.12, 0.5, 0.2), CFrame.new(H + Vector3.new(math.cos(a) * 0.95, math.sin(a) * 0.95, 0.9)) * CFrame.Angles(0, 0, a),
-				look.Edge, Enum.Material.Metal)
-			blade:SetAttribute("OrbitCenter", H + Vector3.new(0, 0, 0.9))
-			blade:SetAttribute("OrbitSpeed", 9)
-		end
-	elseif style == "Plasma" then
-		-- PLASMA LASER PICK: dark emitter prongs firing a curved blade of glowing plasma
-		for _, s in ipairs({-1, 1}) do
-			arm(tool, H, s, {Main = look.Handle:Lerp(Color3.new(0, 0, 0), 0.3), Edge = look.Frame}, {Radius = 2.3, Reach = 0.35, Count = 3, Rows = 2, Size = 0.62, Material = Enum.Material.Metal})
-			arm(tool, H, s, {Main = look.Gem, Edge = Color3.new(1, 1, 1), Frame = look.Gem}, {Radius = 2.35, Reach = 1.3, Count = 12, Rows = 1, Size = 0.42, Material = Enum.Material.Neon})
-			for k = 1, 3 do
-				local ring = newPart(tool, "PlasmaCoil", Vector3.new(0.3, 0.9 - k * 0.1, 0.9 - k * 0.1), CFrame.new(arcPoint(H, s, 2.35, 0.25 + k * 0.08)) * CFrame.Angles(s * (0.25 + k * 0.08), 0, math.rad(90)),
-					NEON_EDGE, Enum.Material.Neon)
-				ring.Shape = Enum.PartType.Cylinder
-				ring.Transparency = 0.3
-			end
-		end
-	elseif style == "Quantum" then
-		-- QUANTUM ANTI-GRAVITY DIGGER: the head floats free of the shaft; a glowing core holds
-		-- two glassy blades in place while halo rings and shards orbit around it
-		local F = H + Vector3.new(0, 0, -0.45)
-		newPart(tool, "QuantumCore", Vector3.one * 0.95, CFrame.new(F), look.Gem, Enum.Material.Neon, Enum.PartType.Ball)
-		for _, s in ipairs({-1, 1}) do
-			arm(tool, F, s, {Main = look.Main, Edge = look.Gem, Frame = look.Frame}, {Radius = 2.5, Reach = 1.2, Count = 7, Rows = 2, Size = 0.46, Material = Enum.Material.Glass, Glass = true})
-		end
-		for i = 1, 18 do
-			local a = i / 18 * math.pi * 2
-			local seg = newPart(tool, "QuantumHalo", Vector3.new(0.1, 0.4, 0.1), CFrame.new(F + Vector3.new(math.cos(a) * 1.35, math.sin(a) * 1.35, 0)) * CFrame.Angles(0, 0, a), NEON_EDGE, Enum.Material.Neon)
-			seg:SetAttribute("OrbitCenter", F)
-			seg:SetAttribute("OrbitSpeed", 2.4)
-		end
-		for i = 1, 5 do
-			local a = i / 5 * math.pi * 2
-			local shard = newPart(tool, "QuantumShard", Vector3.new(0.18, 0.18, 0.5), CFrame.new(F + Vector3.new(math.cos(a) * 0.9, math.sin(a) * 0.9, 0.9)) * CFrame.Angles(0.6, 0.4, a),
-				look.Gem, Enum.Material.Neon)
-			shard:SetAttribute("OrbitCenter", F + Vector3.new(0, 0, 0.9))
-			shard:SetAttribute("OrbitSpeed", -3.5)
-		end
-	else -- Crescent
-		for _, s in ipairs({-1, 1}) do
-			arm(tool, H, s, look, {Radius = 2.3, Reach = 1.15, Count = 7, Rows = tier >= 5 and 3 or 2, Size = 0.66})
-		end
-	end
-	-- side plates that hold the head on the shaft
-	for _, s in ipairs({-1, 1}) do
-		newPart(tool, "HeadBracket", Vector3.new(0.5, 0.3, 0.7), CFrame.new(H + Vector3.new(0, s * 0.42, 0.55)), look.Handle)
-	end
-
-	-- DUAL BLADE (tier 7+): a second, thinner blade of pure energy on each side of the head
-	local classicHead = style ~= "Bone" and style ~= "Drill" and style ~= "Plasma" and style ~= "Quantum"
-	if tier >= 7 and classicHead then
-		for _, sx in ipairs({-1, 1}) do
-			local offset = H + Vector3.new(sx * 0.5, 0, 0.1)
+		elseif style == "Drill" then
+			-- MECHANICAL DRILL: a motor block with a spiralled drill bit sticking out of each side
+			-- and a spinning turbine around the shaft
+			newPart(tool, "DrillMotor", Vector3.new(0.95, 1.4, 1.4), CFrame.new(H), look.Frame, Enum.Material.Metal)
+			newPart(tool, "MotorStripe", Vector3.new(1, 0.16, 1.44), CFrame.new(H + Vector3.new(0, 0.35, 0)), NEON_EDGE, Enum.Material.Neon)
+			newPart(tool, "MotorStripe", Vector3.new(1, 0.16, 1.44), CFrame.new(H - Vector3.new(0, 0.35, 0)), NEON_EDGE, Enum.Material.Neon)
 			for _, s in ipairs({-1, 1}) do
-				arm(tool, offset, s, {Main = look.Gem, Edge = NEON_EDGE}, {Radius = 2.1, Reach = 1, Count = 6, Rows = 1, Size = 0.32, Material = Enum.Material.Neon})
+				for k = 0, 4 do
+					local d = 1.15 - k * 0.2
+					local seg = newPart(tool, "DrillBit", Vector3.new(0.44, d, d), CFrame.new(H + Vector3.new(0, s * (0.95 + k * 0.42), 0)) * CFrame.Angles(0, 0, math.rad(90)),
+						shade(k % 2 == 0 and look.Main or look.Edge, k), Enum.Material.Metal)
+					seg.Shape = Enum.PartType.Cylinder
+					-- the spiral ridge winding around the bit
+					for r = 0, 2 do
+						local a = k * 1.3 + r * math.pi * 2 / 3
+						newPart(tool, "DrillRidge", Vector3.new(0.12, 0.34, 0.12),
+							CFrame.new(H + Vector3.new(math.cos(a) * d / 2, s * (0.95 + k * 0.42), math.sin(a) * d / 2)) * CFrame.Angles(0, -a, math.rad(30)), look.Edge, Enum.Material.Metal)
+					end
+				end
+				table.insert(tips, newPart(tool, "HeadTip", Vector3.new(0.3, 0.3, 0.3), CFrame.new(H + Vector3.new(0, s * 3.1, 0)) * DIAMOND, NEON_EDGE, Enum.Material.Neon))
+			end
+			for i = 1, 6 do
+				local a = i * math.pi / 3
+				local blade = newPart(tool, "TurbineBlade", Vector3.new(0.12, 0.5, 0.2), CFrame.new(H + Vector3.new(math.cos(a) * 0.95, math.sin(a) * 0.95, 0.9)) * CFrame.Angles(0, 0, a),
+					look.Edge, Enum.Material.Metal)
+				blade:SetAttribute("OrbitCenter", H + Vector3.new(0, 0, 0.9))
+				blade:SetAttribute("OrbitSpeed", 9)
+			end
+		elseif style == "Plasma" then
+			-- PLASMA LASER PICK: dark emitter prongs firing a curved blade of glowing plasma
+			for _, s in ipairs({-1, 1}) do
+				arm(tool, H, s, {Main = look.Handle:Lerp(Color3.new(0, 0, 0), 0.3), Edge = look.Frame}, {Radius = 2.3, Reach = 0.35, Count = 3, Rows = 2, Size = 0.62, Material = Enum.Material.Metal})
+				arm(tool, H, s, {Main = look.Gem, Edge = Color3.new(1, 1, 1), Frame = look.Gem}, {Radius = 2.35, Reach = 1.3, Count = 12, Rows = 1, Size = 0.42, Material = Enum.Material.Neon})
+				for k = 1, 3 do
+					local ring = newPart(tool, "PlasmaCoil", Vector3.new(0.3, 0.9 - k * 0.1, 0.9 - k * 0.1), CFrame.new(arcPoint(H, s, 2.35, 0.25 + k * 0.08)) * CFrame.Angles(s * (0.25 + k * 0.08), 0, math.rad(90)),
+						NEON_EDGE, Enum.Material.Neon)
+					ring.Shape = Enum.PartType.Cylinder
+					ring.Transparency = 0.3
+				end
+			end
+		elseif style == "Quantum" then
+			-- QUANTUM ANTI-GRAVITY DIGGER: the head floats free of the shaft; a glowing core holds
+			-- two glassy blades in place while halo rings and shards orbit around it
+			local F = H + Vector3.new(0, 0, -0.45)
+			newPart(tool, "QuantumCore", Vector3.one * 0.95, CFrame.new(F), look.Gem, Enum.Material.Neon, Enum.PartType.Ball)
+			for _, s in ipairs({-1, 1}) do
+				arm(tool, F, s, {Main = look.Main, Edge = look.Gem, Frame = look.Frame}, {Radius = 2.5, Reach = 1.2, Count = 7, Rows = 2, Size = 0.46, Material = Enum.Material.Glass, Glass = true})
+			end
+			for i = 1, 18 do
+				local a = i / 18 * math.pi * 2
+				local seg = newPart(tool, "QuantumHalo", Vector3.new(0.1, 0.4, 0.1), CFrame.new(F + Vector3.new(math.cos(a) * 1.35, math.sin(a) * 1.35, 0)) * CFrame.Angles(0, 0, a), NEON_EDGE, Enum.Material.Neon)
+				seg:SetAttribute("OrbitCenter", F)
+				seg:SetAttribute("OrbitSpeed", 2.4)
+			end
+			for i = 1, 5 do
+				local a = i / 5 * math.pi * 2
+				local shard = newPart(tool, "QuantumShard", Vector3.new(0.18, 0.18, 0.5), CFrame.new(F + Vector3.new(math.cos(a) * 0.9, math.sin(a) * 0.9, 0.9)) * CFrame.Angles(0.6, 0.4, a),
+					look.Gem, Enum.Material.Neon)
+				shard:SetAttribute("OrbitCenter", F + Vector3.new(0, 0, 0.9))
+				shard:SetAttribute("OrbitSpeed", -3.5)
+			end
+		else -- Crescent
+			for _, s in ipairs({-1, 1}) do
+				arm(tool, H, s, look, {Radius = 2.3, Reach = 1.15, Count = 7, Rows = tier >= 5 and 3 or 2, Size = 0.66})
 			end
 		end
-	end
-
-	-- ROTATING CORE (tier 3+): glowing bits circling the head's gem, faster on better pickaxes
-	if tier >= 3 then
-		local n = tier >= 6 and 6 or 4
-		for i = 1, n do
-			local a = math.pi * 2 * i / n
-			local bit = newPart(tool, "CoreBit", Vector3.new(0.18, 0.18, 0.18), CFrame.new(H + Vector3.new(math.cos(a) * 0.95, math.sin(a) * 0.95, 0)) * DIAMOND,
-				i % 2 == 0 and look.Gem or NEON_EDGE, Enum.Material.Neon)
-			bit:SetAttribute("OrbitCenter", H)
-			bit:SetAttribute("OrbitSpeed", 2 + tier * 0.4)
+		-- side plates that hold the head on the shaft
+		for _, s in ipairs({-1, 1}) do
+			newPart(tool, "HeadBracket", Vector3.new(0.5, 0.3, 0.7), CFrame.new(H + Vector3.new(0, s * 0.42, 0.55)), look.Handle)
 		end
-		-- a spinning ring around the socket
-		local ringCount = 10
-		for i = 1, ringCount do
-			local a = math.pi * 2 * i / ringCount
-			local seg = newPart(tool, "CoreRing", Vector3.new(0.08, 0.34, 0.08), CFrame.new(H + Vector3.new(math.cos(a) * 1.2, math.sin(a) * 1.2, 0)) * CFrame.Angles(0, 0, a),
-				NEON_EDGE, Enum.Material.Neon)
-			seg:SetAttribute("OrbitCenter", H)
-			seg:SetAttribute("OrbitSpeed", -(1.2 + tier * 0.2))
-		end
-	end
 
-	-- ORBITING CUBES around the handle below the head (tier 6+), spun by the client
-	if tier >= 6 then
-		local center = Vector3.new(0, 0, -1.9)
-		local n = tier - 3
-		for i = 1, n do
-			local a = math.pi * 2 * i / n
-			local cube = newPart(tool, "OrbitCube", Vector3.new(0.2, 0.2, 0.2), CFrame.new(center + Vector3.new(math.cos(a) * 0.62, math.sin(a) * 0.62, 0)) * CFrame.Angles(0.6, 0.6, 0), look.Gem, Enum.Material.Neon)
-			cube:SetAttribute("OrbitCenter", center)
-			cube:SetAttribute("OrbitSpeed", 2.6)
+		-- DUAL BLADE (tier 7+): a second, thinner blade of pure energy on each side of the head
+		local classicHead = style ~= "Bone" and style ~= "Drill" and style ~= "Plasma" and style ~= "Quantum"
+		if tier >= 7 and classicHead then
+			for _, sx in ipairs({-1, 1}) do
+				local offset = H + Vector3.new(sx * 0.5, 0, 0.1)
+				for _, s in ipairs({-1, 1}) do
+					arm(tool, offset, s, {Main = look.Gem, Edge = NEON_EDGE}, {Radius = 2.1, Reach = 1, Count = 6, Rows = 1, Size = 0.32, Material = Enum.Material.Neon})
+				end
+			end
 		end
-	end
 
-	-- FLOATING CRYSTALS: glassy shards hovering around the shaft under the head, orbiting it
-	-- (every pickaxe has one; better ones have up to four)
-	do
-		local center = Vector3.new(0, 0, -1.15)
-		local n = math.clamp(1 + math.floor(tier / 3), 1, 4)
-		for i = 1, n do
-			local a = math.pi * 2 * i / n + 0.4
-			local pos = center + Vector3.new(math.cos(a) * 0.95, math.sin(a) * 0.95, 0)
-			local shell, core = crystal(tool, "FloatCrystal", CFrame.new(pos) * CFrame.Angles(0.35, 0.2, a), 0.55 + tier * 0.02, i % 2 == 0 and look.Gem or NEON_EDGE)
-			for _, p in ipairs({shell, core}) do
-				p:SetAttribute("OrbitCenter", center)
-				p:SetAttribute("OrbitSpeed", 1.4)
+		-- ROTATING CORE (tier 3+): glowing bits circling the head's gem, faster on better pickaxes
+		if tier >= 3 then
+			local n = tier >= 6 and 6 or 4
+			for i = 1, n do
+				local a = math.pi * 2 * i / n
+				local bit = newPart(tool, "CoreBit", Vector3.new(0.18, 0.18, 0.18), CFrame.new(H + Vector3.new(math.cos(a) * 0.95, math.sin(a) * 0.95, 0)) * DIAMOND,
+					i % 2 == 0 and look.Gem or NEON_EDGE, Enum.Material.Neon)
+				bit:SetAttribute("OrbitCenter", H)
+				bit:SetAttribute("OrbitSpeed", 2 + tier * 0.4)
+			end
+			-- a spinning ring around the socket
+			local ringCount = 10
+			for i = 1, ringCount do
+				local a = math.pi * 2 * i / ringCount
+				local seg = newPart(tool, "CoreRing", Vector3.new(0.08, 0.34, 0.08), CFrame.new(H + Vector3.new(math.cos(a) * 1.2, math.sin(a) * 1.2, 0)) * CFrame.Angles(0, 0, a),
+					NEON_EDGE, Enum.Material.Neon)
+				seg:SetAttribute("OrbitCenter", H)
+				seg:SetAttribute("OrbitSpeed", -(1.2 + tier * 0.2))
+			end
+		end
+
+		-- ORBITING CUBES around the handle below the head (tier 6+), spun by the client
+		if tier >= 6 then
+			local center = Vector3.new(0, 0, -1.9)
+			local n = tier - 3
+			for i = 1, n do
+				local a = math.pi * 2 * i / n
+				local cube = newPart(tool, "OrbitCube", Vector3.new(0.2, 0.2, 0.2), CFrame.new(center + Vector3.new(math.cos(a) * 0.62, math.sin(a) * 0.62, 0)) * CFrame.Angles(0.6, 0.6, 0), look.Gem, Enum.Material.Neon)
+				cube:SetAttribute("OrbitCenter", center)
+				cube:SetAttribute("OrbitSpeed", 2.6)
+			end
+		end
+
+		-- FLOATING CRYSTALS: glassy shards hovering around the shaft under the head, orbiting it
+		-- (every pickaxe has one; better ones have up to four)
+		do
+			local center = Vector3.new(0, 0, -1.15)
+			local n = math.clamp(1 + math.floor(tier / 3), 1, 4)
+			for i = 1, n do
+				local a = math.pi * 2 * i / n + 0.4
+				local pos = center + Vector3.new(math.cos(a) * 0.95, math.sin(a) * 0.95, 0)
+				local shell, core = crystal(tool, "FloatCrystal", CFrame.new(pos) * CFrame.Angles(0.35, 0.2, a), 0.55 + tier * 0.02, i % 2 == 0 and look.Gem or NEON_EDGE)
+				for _, p in ipairs({shell, core}) do
+					p:SetAttribute("OrbitCenter", center)
+					p:SetAttribute("OrbitSpeed", 1.4)
+				end
 			end
 		end
 	end
@@ -19314,4 +19449,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 17:30). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 17:34). Now save the place (Ctrl+S).")
