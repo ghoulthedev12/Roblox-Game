@@ -389,6 +389,9 @@ function GameConfig.FillDigTerrain(terrain, world)
 		terrain:FillBlock(CFrame.new(origin + Vector3.new(0, -2, 0)), Vector3.new(200, 4, 200), surface)
 	end
 	if world.WorkYard then
+		-- under the plaza ring around the yard: stone, not grass (grass blades would poke up
+		-- through the plaza tiles and the yard's curb)
+		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -2, 0)), 4, world.WorkYard.Radius + 12, Enum.Material.Slate)
 		-- a dirt work yard around the dig site, inside the plaza's mosaic ring
 		terrain:FillCylinder(CFrame.new(origin + Vector3.new(0, -2, 0)), 4, world.WorkYard.Radius, Enum.Material[world.WorkYard.Material])
 	end

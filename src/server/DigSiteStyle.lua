@@ -322,6 +322,31 @@ return function(digSite, world)
 		end
 	end
 
+	-- YARD CURB: terrain can't make a clean edge against the plaza tiles (the dirt smears over
+	-- them), so a raised stone curb runs round the edge of the dirt work yard and covers it,
+	-- with a lilac top trim and a soft glowing line; open where the walkways cross
+	if world.WorkYard then
+		local R = world.WorkYard.Radius
+		local CURB = 150
+		local gap = math.deg((7 + 1) / (R - 6)) -- half a walkway plus a little, in degrees (at the curb's inner edge)
+		for i = 0, CURB - 1 do
+			local deg = (i + 0.5) * 360 / CURB
+			local fromPath = math.abs(((deg + 30) % 60) - 30)
+			if not (world.HubPaths and fromPath < gap) then
+				local a = math.rad(deg)
+				local out = Vector3.new(math.cos(a), 0, math.sin(a))
+				local tangent = Vector3.new(-math.sin(a), 0, math.cos(a))
+				local length = 2 * math.pi * R / CURB + 0.3
+				local face = CFrame.fromMatrix(Vector3.zero, tangent, Vector3.yAxis, -out)
+				local at = function(r, y) return CFrame.new(out * r + Vector3.new(0, y, 0)) * face end
+				-- wide enough to cover the band where the terrain blends the dirt into the plaza
+				b:box("YardCurb", Vector3.new(length, 1.3, 9), at(R - 1.8, 0.25), "White")
+				b:box("YardCurbTrim", Vector3.new(length, 0.25, 1.2), at(R - 5.7, 0.95), "Lilac")
+				b:box("YardCurbGlow", Vector3.new(length, 0.12, 0.35), at(R + 2.4, 0.95), "GlowCyan")
+			end
+		end
+	end
+
 	-- party lights strung between the lamp posts (world 1 has 6 lamps on a ring)
 	local lamps = {}
 	for _, d in ipairs(digSite:GetDescendants()) do
