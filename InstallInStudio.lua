@@ -17192,9 +17192,11 @@ local swingFxRemote = remotes:WaitForChild("ShovelSwingFx")
 -- Bend  = torso side bend (+ = lean left), Look = head pitch (+ = look down)
 -- Crouch = knee bend, degrees (the body drops, the feet stay planted)
 -- Hip   = pelvis pitch (+ = the whole upper body tips forward from the hips)
-local CHANNELS = {"Tilt", "Turn", "Roll", "Lean", "Twist", "Bend", "Look", "Crouch", "Hip"}
+-- Shift = weight shift, studs: the pelvis slides forward (+) or back (-) over the planted feet
+-- Grip  = how far the left hand has slid down the handle to meet the right (0 = apart, 1 = together)
+local CHANNELS = {"Tilt", "Turn", "Roll", "Lean", "Twist", "Bend", "Look", "Crouch", "Hip", "Shift", "Grip"}
 -- ready stance: pickaxe held low and across the body, head out to the side (clear of the face)
-local IDLE = {Hand = Vector3.new(0.35, -0.15, -0.8), Tilt = 105, Turn = 30, Roll = 15, Lean = 3, Twist = 0, Bend = 0, Look = 2, Crouch = 6, Hip = 2}
+local IDLE = {Hand = Vector3.new(0.35, -0.15, -0.8), Tilt = 105, Turn = 30, Roll = 15, Lean = 3, Twist = 0, Bend = 0, Look = 2, Crouch = 8, Hip = 2, Shift = 0, Grip = 0}
 
 -- easing curves: how each part of the swing speeds up and slows down
 local function easeInOutSine(u) return -(math.cos(math.pi * u) - 1) / 2 end
@@ -17207,24 +17209,26 @@ local function easeOutBack(u)
 end
 local function easeInOutCubic(u) return u < 0.5 and 4 * u * u * u or 1 - (-2 * u + 2) ^ 3 / 2 end
 
--- The dig, key by key: an overhead power chop, like a miner's pickaxe. The pickaxe is hauled
--- up high over the head (the body leans back into it), hangs there for a split second, then
--- whips down in an accelerating arc into the ground in front while the whole body drives
--- forward and drops into a crouch; on impact it freezes, rings, bounces back up out of the
--- dirt (which bursts up off the head) and settles into the ready stance.
+-- The dig, key by key: an overhead power chop, like a miner's pickaxe. The feet stay planted
+-- (left foot forward) while the body does the work: the weight rocks back onto the rear foot
+-- as the pickaxe is hauled up high over the head and the chest arches back, it hangs there
+-- for a split second, then the hips drive the weight forward, the chest folds over and the
+-- knees sink while the pickaxe whips down in an accelerating arc and the top hand slides down
+-- the handle to meet the bottom one (like a real swing); on impact it freezes, rings, bounces
+-- back up out of the dirt (which bursts up off the head) and the body rises back to ready.
 -- Ease = how the motion INTO that key is timed.
 local SWING = {
 	{T = 0.00, Pose = IDLE},
-	-- wind-up: hauled up over the right shoulder, head pointing up and back
-	{T = 0.17, Ease = easeOutCubic, Pose = {Hand = Vector3.new(0.45, 1.5, 0.1), Tilt = 222, Turn = -4, Roll = -12, Lean = -12, Twist = -20, Bend = -4, Look = -14, Crouch = 6, Hip = -8}},
+	-- wind-up: hauled up over the right shoulder, head pointing up and back, weight on the back foot
+	{T = 0.17, Ease = easeOutCubic, Pose = {Hand = Vector3.new(0.45, 1.5, 0.1), Tilt = 222, Turn = -4, Roll = -12, Lean = -14, Twist = -22, Bend = -4, Look = -16, Crouch = 8, Hip = -8, Shift = -0.2, Grip = 0}},
 	-- anticipation: it keeps creeping back while the body coils (the hang before the hit)
-	{T = 0.25, Ease = easeOutSine, Pose = {Hand = Vector3.new(0.4, 1.62, 0.3), Tilt = 236, Turn = -2, Roll = -8, Lean = -16, Twist = -24, Bend = -5, Look = -16, Crouch = 10, Hip = -10}},
-	-- strike: whipped down into the dirt in front of the feet, the body following through
-	{T = 0.36, Ease = easeInQuad, Pose = {Hand = Vector3.new(0.1, -0.85, -1.9), Tilt = 34, Turn = 2, Roll = 2, Lean = 32, Twist = 6, Bend = 3, Look = 26, Crouch = 42, Hip = 30}},
-	-- recoil: the head bounces back up out of the hole
-	{T = 0.50, Ease = easeOutCubic, Pose = {Hand = Vector3.new(0.18, -0.45, -1.55), Tilt = 62, Turn = 6, Roll = 6, Lean = 22, Twist = 0, Bend = 2, Look = 18, Crouch = 30, Hip = 18}},
-	-- lift: pulled up out of the ground
-	{T = 0.70, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.3, 0.05, -1.05), Tilt = 98, Turn = 16, Roll = 10, Lean = 9, Twist = -4, Bend = 1, Look = 8, Crouch = 14, Hip = 6}},
+	{T = 0.25, Ease = easeOutSine, Pose = {Hand = Vector3.new(0.4, 1.62, 0.3), Tilt = 236, Turn = -2, Roll = -8, Lean = -18, Twist = -26, Bend = -5, Look = -18, Crouch = 12, Hip = -10, Shift = -0.24, Grip = 0.05}},
+	-- strike: whipped down into the dirt in front of the feet, the hips driving the weight forward
+	{T = 0.36, Ease = easeInQuad, Pose = {Hand = Vector3.new(0.1, -0.85, -1.9), Tilt = 34, Turn = 2, Roll = 2, Lean = 26, Twist = 8, Bend = 3, Look = 30, Crouch = 40, Hip = 18, Shift = 0.42, Grip = 0.9}},
+	-- recoil: the head bounces back up out of the hole, the body still sunk over it
+	{T = 0.50, Ease = easeOutCubic, Pose = {Hand = Vector3.new(0.18, -0.45, -1.55), Tilt = 62, Turn = 6, Roll = 6, Lean = 18, Twist = 2, Bend = 2, Look = 20, Crouch = 32, Hip = 12, Shift = 0.32, Grip = 0.75}},
+	-- lift: pulled up out of the ground as the body straightens up, hands sliding apart again
+	{T = 0.70, Ease = easeInOutSine, Pose = {Hand = Vector3.new(0.3, 0.05, -1.05), Tilt = 98, Turn = 16, Roll = 10, Lean = 9, Twist = -4, Bend = 1, Look = 8, Crouch = 14, Hip = 6, Shift = 0.1, Grip = 0.3}},
 	-- settle back into the ready stance
 	{T = 1.00, Ease = easeOutBack, Pose = IDLE},
 }
@@ -17269,6 +17273,7 @@ local function idlePose(clock, moving)
 		Roll = IDLE.Roll + sway * 3, Lean = IDLE.Lean + breathe * 0.6 + moving * 5,
 		Twist = IDLE.Twist + sway * 2, Bend = sway * 1.5 + step * 1.2, Look = -breathe * 2,
 		Crouch = IDLE.Crouch * (1 - moving) + breathe, Hip = IDLE.Hip,
+		Shift = sway * 0.04 * (1 - moving), Grip = 0,
 	}
 end
 
@@ -17313,6 +17318,22 @@ local function newArmIK(humanoid, name, upper, hand, target, pole)
 	return ik
 end
 
+-- A body joint we bend by moving its C0. Classic R15 joints are Motor6Ds; with Roblox's avatar
+-- joint upgrade they are AnimationConstraints instead, whose C0 is read-only and follows their
+-- Attachment0, so for those we move that attachment.
+local function bodyJoint(joint)
+	if joint and joint:IsA("Motor6D") then
+		return {Joint = joint, Target = joint, Property = "C0", Base = joint.C0}
+	elseif joint and joint:IsA("AnimationConstraint") and joint.Attachment0 then
+		return {Joint = joint, Target = joint.Attachment0, Property = "CFrame", Base = joint.Attachment0.CFrame}
+	end
+	return nil
+end
+
+local function setJoint(joint, cframe)
+	if joint and joint.Target.Parent then joint.Target[joint.Property] = cframe end
+end
+
 local function destroyRig(character)
 	local rig = rigs[character]
 	if not rig then return end
@@ -17320,11 +17341,8 @@ local function destroyRig(character)
 	for _, thing in ipairs(rig.Cleanup) do
 		thing:Destroy()
 	end
-	if rig.Waist and rig.Waist.Parent then rig.Waist.C0 = rig.WaistC0 end
-	if rig.Neck and rig.Neck.Parent then rig.Neck.C0 = rig.NeckC0 end
-	if rig.Hips and rig.Hips.Parent then rig.Hips.C0 = rig.HipsC0 end
-	for _, leg in ipairs(rig.Legs) do
-		if leg.Motor.Parent then leg.Motor.C0 = leg.C0 end
+	for _, key in ipairs({"Waist", "Neck", "Hips"}) do
+		if rig[key] then setJoint(rig[key], rig[key].Base) end
 	end
 	if rig.Tool then
 		for _, d in ipairs(rig.Tool:GetDescendants()) do
@@ -17446,26 +17464,46 @@ local function createRig(character, tool)
 		trail.Parent = bladePart
 	end
 
-	-- leg joints for the crouch: hip, knee and ankle on each side
+	local head = character:FindFirstChild("Head")
+	local lowerTorso = character:FindFirstChild("LowerTorso")
+	local waist = bodyJoint(upperTorso:FindFirstChild("Waist"))
+	local neck = bodyJoint(head and head:FindFirstChild("Neck"))
+	local rootJoint = lowerTorso and lowerTorso:FindFirstChild("Root")
+	local hips = bodyJoint(rootJoint)
+	-- the pelvis's C1 (LowerTorso side of the root joint), to work out where the hips end up
+	if hips then
+		hips.C1 = rootJoint:IsA("Motor6D") and rootJoint.C1 or rootJoint.Attachment1 and rootJoint.Attachment1.CFrame or CFrame.identity
+	end
+
+	-- legs: the feet are planted in a staggered digging stance (left foot forward, right foot
+	-- back and turned out) and each frame the hip, knee and ankle are solved so the pelvis can
+	-- sink, rock and tip over them while the soles stay flat. These joints are driven through
+	-- their Transform (replacing the avatar's idle animation on the legs while standing still).
 	local legs = {}
 	local legLength = 0
 	for _, side in ipairs({"Left", "Right"}) do
 		local upper, lower, foot = character:FindFirstChild(side .. "UpperLeg"), character:FindFirstChild(side .. "LowerLeg"), character:FindFirstChild(side .. "Foot")
-		for _, joint in ipairs({{upper, "Hip"}, {lower, "Knee"}, {foot, "Ankle"}}) do
-			local motor = joint[1] and joint[1]:FindFirstChild(side .. joint[2])
-			if motor and motor:IsA("Motor6D") then
-				table.insert(legs, {Motor = motor, C0 = motor.C0, Kind = joint[2]})
-			end
+		local hipJoint = bodyJoint(upper and upper:FindFirstChild(side .. "Hip"))
+		local kneeJoint = bodyJoint(lower and lower:FindFirstChild(side .. "Knee"))
+		local ankleJoint = bodyJoint(foot and foot:FindFirstChild(side .. "Ankle"))
+		local hipAt = lowerTorso and lowerTorso:FindFirstChild(side .. "HipRigAttachment")
+		local upperHip, upperKnee = upper and upper:FindFirstChild(side .. "HipRigAttachment"), upper and upper:FindFirstChild(side .. "KneeRigAttachment")
+		local lowerKnee, lowerAnkle = lower and lower:FindFirstChild(side .. "KneeRigAttachment"), lower and lower:FindFirstChild(side .. "AnkleRigAttachment")
+		if hips and hipJoint and kneeJoint and ankleJoint and hipAt and upperHip and upperKnee and lowerKnee and lowerAnkle then
+			local thigh = (upperHip.Position - upperKnee.Position).Magnitude
+			local shin = (lowerKnee.Position - lowerAnkle.Position).Magnitude
+			legLength = thigh + shin
+			-- where the ankle sits with straight legs, then moved into the stance
+			local hipRest = (hips.Base * hips.C1:Inverse() * hipAt.CFrame).Position
+			table.insert(legs, {
+				Hip = hipJoint, Knee = kneeJoint, Ankle = ankleJoint, HipAttachment = hipAt.Position,
+				Thigh = thigh, Shin = shin,
+				AnkleTarget = Vector2.new(hipRest.Y - thigh - shin, hipRest.Z + (side == "Left" and -0.4 or 0.36)),
+				ToeOut = math.rad(side == "Left" and 6 or -22),
+			})
 		end
-		if side == "Left" and upper and lower then legLength = upper.Size.Y + lower.Size.Y end
 	end
 	if legLength == 0 then legLength = 2.2 end
-
-	local waist = upperTorso:FindFirstChild("Waist")
-	local head = character:FindFirstChild("Head")
-	local neck = head and head:FindFirstChild("Neck")
-	local lowerTorso = character:FindFirstChild("LowerTorso")
-	local hips = lowerTorso and lowerTorso:FindFirstChild("Root")
 	local rig = {
 		Tool = tool, Root = root, Puppet = puppet, Blade = bladePart or (puppet[#puppet] and puppet[#puppet].Part),
 		HoldZ = (tool:GetAttribute("RightHoldZ") or tool:GetAttribute("TopHoldZ") or 1.1) - 0.12, -- right hand near the end
@@ -17473,13 +17511,8 @@ local function createRig(character, tool)
 		TipZ = tipZ,
 		RightTarget = rightTarget,
 		LeftTarget = leftIK and leftTarget or nil,
-		Waist = waist and waist:IsA("Motor6D") and waist or nil,
-		WaistC0 = waist and waist:IsA("Motor6D") and waist.C0 or nil,
-		Neck = neck and neck:IsA("Motor6D") and neck or nil,
-		NeckC0 = neck and neck:IsA("Motor6D") and neck.C0 or nil,
-		Hips = hips and hips:IsA("Motor6D") and hips or nil,
-		HipsC0 = hips and hips:IsA("Motor6D") and hips.C0 or nil,
-		Legs = legs, LegLength = legLength,
+		Waist = waist, Neck = neck, Hips = hips,
+		Legs = legs, LegWeight = 0, LegLength = legLength,
 		Humanoid = humanoid, Trail = trail, ImpactAt = nil, Smooth = nil,
 		SwingStart = nil, SwingLength = 0.4, Struck = true, Flung = true,
 		EquipStart = os.clock(), Caught = false, Landed = false,
@@ -17840,27 +17873,55 @@ local function poseRig(character, rig, clock, dt)
 	local handCF = handShovelCF * CFrame.new(0, 0, rig.HoldZ) * rig.GripOffset:Inverse()
 	rig.RightTarget.CFrame = rig.Root.CFrame:ToObjectSpace(handCF)
 	if rig.LeftTarget then
-		rig.LeftTarget.Position = rig.Root.CFrame:PointToObjectSpace((handShovelCF * CFrame.new(0, 0, rig.LeftHoldZ)).Position)
+		-- the top hand slides down the handle toward the bottom hand during the strike
+		local slideTo = math.max(rig.HoldZ - 0.4, rig.LeftHoldZ)
+		local leftZ = rig.LeftHoldZ + (slideTo - rig.LeftHoldZ) * math.clamp(pose.Grip or 0, 0, 1)
+		rig.LeftTarget.Position = rig.Root.CFrame:PointToObjectSpace((handShovelCF * CFrame.new(0, 0, leftZ)).Position)
 	end
 	-- whole body: the torso bends and twists with the swing, the hips counter-turn a little,
 	-- and the head follows the pickaxe (looks up at the top, down at the impact)
 	if rig.Waist then
-		rig.Waist.C0 = rig.WaistC0 * CFrame.Angles(math.rad(-pose.Lean), math.rad(pose.Twist), math.rad(pose.Bend))
+		setJoint(rig.Waist, rig.Waist.Base * CFrame.Angles(math.rad(-pose.Lean), math.rad(pose.Twist), math.rad(pose.Bend)))
 	end
-	-- legs: the knees bend and the body drops (feet stay planted), and the pelvis tips the
-	-- whole upper body forward from the hips while the thighs stay put
+	-- legs: while standing, the feet stay planted, so the pelvis can sink (knees bend), rock
+	-- forward and back over the feet and tip the upper body forward from the hips.
+	-- Walking or jumping fades this out and hands the legs back to the walk animation.
+	local grounded = rig.Humanoid.FloorMaterial ~= Enum.Material.Air
+	local planted = grounded and 1 - moving or 0
+	rig.LegWeight += (planted - rig.LegWeight) * (1 - math.exp(-14 * (dt or 1 / 60)))
+	local weight = rig.LegWeight
 	local crouch = math.rad(math.max(pose.Crouch or 0, 0))
 	local hip = math.rad(pose.Hip or 0)
-	local drop = rig.LegLength * 0.5 * (1 - math.cos(crouch)) * 2
+	-- (+0.06: a staggered stance needs slightly soft knees for both feet to reach the ground)
+	local drop = (rig.LegLength * (1 - math.cos(crouch)) + 0.06) * weight
+	local shift = (pose.Shift or 0) * weight
 	if rig.Hips then
-		rig.Hips.C0 = CFrame.new(0, -drop, 0) * rig.HipsC0 * CFrame.Angles(-hip, math.rad(-pose.Twist * 0.35), 0)
-	end
-	for _, leg in ipairs(rig.Legs) do
-		local angle = leg.Kind == "Hip" and crouch + hip or leg.Kind == "Knee" and -2 * crouch or crouch
-		leg.Motor.C0 = leg.C0 * CFrame.Angles(angle, 0, 0)
+		local pelvisC0 = CFrame.new(0, -drop, -shift) * rig.Hips.Base * CFrame.Angles(-hip, math.rad(-pose.Twist * 0.35), 0)
+		setJoint(rig.Hips, pelvisC0)
+		-- two-bone IK per leg, side view (Y up, Z back; angles swing the limb forward from
+		-- straight down, which is also what a positive X rotation of a joint's C0 does)
+		local pelvis = pelvisC0 * rig.Hips.C1:Inverse()
+		for _, leg in ipairs(rig.Legs) do
+			local hipPos = pelvis * leg.HipAttachment
+			local ankle = leg.AnkleTarget -- (y, z)
+			local toAnkle = ankle - Vector2.new(hipPos.Y, hipPos.Z)
+			local a, b = leg.Thigh, leg.Shin
+			local reach = math.clamp(toAnkle.Magnitude, math.abs(a - b) + 0.01, a + b - 0.001)
+			local lineAngle = math.atan2(-toAnkle.Y, -toAnkle.X)
+			local bend = math.acos(math.clamp((a * a + reach * reach - b * b) / (2 * a * reach), -1, 1))
+			local thighAngle = lineAngle + bend -- the knee points forward
+			local knee = Vector2.new(hipPos.Y - a * math.cos(thighAngle), hipPos.Z - a * math.sin(thighAngle))
+			local toFoot = ankle - knee
+			local shinAngle = math.atan2(-toFoot.Y, -toFoot.X)
+			-- joint angles: relative to the pelvis (tipped back by -hip), thigh and shin; the
+			-- ankle keeps the sole flat (applied on PreSimulation, see below)
+			leg.HipPose = CFrame.Angles(thighAngle + hip, leg.ToeOut, 0)
+			leg.KneePose = CFrame.Angles(shinAngle - thighAngle, 0, 0)
+			leg.AnklePose = CFrame.Angles(-shinAngle, 0, 0)
+		end
 	end
 	if rig.Neck then
-		rig.Neck.C0 = rig.NeckC0 * CFrame.Angles(math.rad(-pose.Look), math.rad(-pose.Twist * 0.4), 0)
+		setJoint(rig.Neck, rig.Neck.Base * CFrame.Angles(math.rad(-pose.Look), math.rad(-pose.Twist * 0.4), 0))
 	end
 end
 
@@ -17887,6 +17948,25 @@ RunService.RenderStepped:Connect(function(dt)
 			destroyRig(character)
 		else
 			poseRig(character, rig, clock, dt)
+		end
+	end
+end)
+
+-- the planted legs replace the avatar's animation on the pelvis and legs (blended by how
+-- planted they are). Transform is what animations write, so this runs right after they do.
+RunService.PreSimulation:Connect(function()
+	for _, rig in pairs(rigs) do
+		local weight = rig.LegWeight
+		if weight > 0.001 and rig.Hips then
+			local pelvis = rig.Hips.Joint
+			pelvis.Transform = pelvis.Transform:Lerp(CFrame.identity, weight)
+			for _, leg in ipairs(rig.Legs) do
+				if leg.HipPose then
+					leg.Hip.Joint.Transform = leg.Hip.Joint.Transform:Lerp(leg.HipPose, weight)
+					leg.Knee.Joint.Transform = leg.Knee.Joint.Transform:Lerp(leg.KneePose, weight)
+					leg.Ankle.Joint.Transform = leg.Ankle.Joint.Transform:Lerp(leg.AnklePose, weight)
+				end
+			end
 		end
 	end
 end)
@@ -19234,4 +19314,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 00:36). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-02 17:30). Now save the place (Ctrl+S).")
