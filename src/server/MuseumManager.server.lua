@@ -309,14 +309,74 @@ placeRemote.OnServerEvent:Connect(function(player, index, artifactId)
 	messageRemote:FireClient(player, artifact.Name .. " is on display! +" .. ArtifactData.FormatMoney(ArtifactData.GetIncome(artifact)) .. "/s", true)
 end)
 
+-- EQUIP BEST (inventory window): your best-earning memes, from the bag and the museum
+-- together, fill every unlocked slot; memes that lose their spot go back to the bag. Memes
+-- already on display stay in their slot when they make the cut (no needless shuffling).
+local function equipBest(player, data, museum)
+	local slots = {}
+	for index = 1, SLOT_COUNT do
+		if PlayerData.IsSlotUnlocked(player, index) then table.insert(slots, index) end
+	end
+	local pool = {} -- {Artifact, Income, Slot (if on display)}
+	for _, id in pairs(data.Inventory) do
+		local artifact = ArtifactData.GetArtifact(id)
+		if artifact then table.insert(pool, {Artifact = artifact, Income = ArtifactData.GetIncome(artifact)}) end
+	end
+	for _, index in ipairs(slots) do
+		local artifact = ArtifactData.GetArtifact(data.Displayed[tostring(index)] or "")
+		if artifact then table.insert(pool, {Artifact = artifact, Income = ArtifactData.GetIncome(artifact), Slot = index}) end
+	end
+	table.sort(pool, function(a, b)
+		if a.Income ~= b.Income then return a.Income > b.Income end
+		return a.Slot ~= nil and b.Slot == nil
+	end)
+	local keep, incoming = {}, {}
+	for i = 1, math.min(#slots, #pool) do
+		if pool[i].Slot then keep[pool[i].Slot] = true else table.insert(incoming, pool[i].Artifact) end
+	end
+	if #incoming == 0 then
+		messageRemote:FireClient(player, #pool == 0 and "Your bag is empty. Go dig up some memes!" or "Your best memes are already on display!", #pool > 0)
+		return
+	end
+	local before = PlayerData.GetIncome(player)
+	-- weaker memes leave their slots for the bag...
+	for _, index in ipairs(slots) do
+		local old = data.Displayed[tostring(index)]
+		if old and not keep[index] then
+			PlayerData.SetDisplayed(player, index, nil)
+			PlayerData.AddArtifact(player, old)
+		end
+	end
+	-- ...and the best ones from the bag take the free slots
+	local nextMeme = 1
+	for _, index in ipairs(slots) do
+		local artifact = incoming[nextMeme]
+		if not artifact then break end
+		if not data.Displayed[tostring(index)] and takeFromInventory(player, artifact.Id) then
+			PlayerData.SetDisplayed(player, index, artifact.Id)
+			nextMeme += 1
+		end
+	end
+	refreshAllSlots(player)
+	inventoryChangedRemote:FireClient(player)
+	local after = PlayerData.GetIncome(player)
+	messageRemote:FireClient(player, "{Museum} Your best memes are on display! Now earning " .. ArtifactData.FormatMoney(after) .. "/s"
+		.. (after > before and (" (+" .. ArtifactData.FormatMoney(after - before) .. "/s)") or ""), true)
+end
+
 -- PLACE ALL (inventory window): every empty, unlocked slot gets your best-earning meme
+-- (with "Best": EQUIP BEST, above)
 local lastPlaceAll = {}
-placeAllRemote.OnServerEvent:Connect(function(player)
+placeAllRemote.OnServerEvent:Connect(function(player, mode)
 	if os.clock() - (lastPlaceAll[player] or 0) < 1 then return end
 	lastPlaceAll[player] = os.clock()
 	local data = PlayerData.Get(player)
 	local museum = museums[player]
 	if not data or not museum then return end
+	if mode == "Best" then
+		equipBest(player, data, museum)
+		return
+	end
 	-- the bag's memes, best earners first
 	local memes = {}
 	for _, id in pairs(data.Inventory) do

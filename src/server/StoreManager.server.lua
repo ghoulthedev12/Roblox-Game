@@ -77,12 +77,14 @@ local function checkOwnership(player)
 	if not data or not player.Parent then return end
 	data.Passes = data.Passes or {}
 	data.Receipts = data.Receipts or {}
+	-- Roblox's answer is the truth (bought on the website, in another server, or refunded);
+	-- the save only remembers it for offline earnings and for when Roblox can't be asked
 	for _, pass in ipairs(StoreData.Passes) do
-		if pass.Id > 0 and not data.Passes[pass.Key] then
+		if pass.Id > 0 then
 			local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, pass.Id)
-			if ok and owns then
-				data.Passes[pass.Key] = true -- bought on the website, or in another server
-				if pass.Key == "RelicPickaxe" then data.UseRelic = true end
+			if ok then
+				if owns and not data.Passes[pass.Key] and pass.Key == "RelicPickaxe" then data.UseRelic = true end
+				data.Passes[pass.Key] = owns or nil
 			end
 		end
 	end
@@ -93,7 +95,8 @@ for _, player in ipairs(Players:GetPlayers()) do task.spawn(checkOwnership, play
 
 MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
 	local pass = passById[passId]
-	if purchased and pass then grantPass(player, pass, false) end
+	-- (a purchase in Studio is only a test: it lasts for that session)
+	if purchased and pass then grantPass(player, pass, IS_STUDIO) end
 end)
 
 ---------------------------------------------------------------------

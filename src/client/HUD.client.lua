@@ -1,6 +1,8 @@
 -- HUD (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- The always-on screen, in a big chunky style:
---   * TOP: three wide studded buttons (Shop, Museum, Worlds) with the world you're in under them
+--   * TOP: three wide studded buttons (Shop, Museum, Worlds) with the world you're in under them,
+--     right at the top edge of the screen (in Roblox's top bar row). Inside a museum they make
+--     way for the museum's UP / DOWN floor buttons (MuseumClient sets the InMuseum attribute).
 --   * LEFT: the Bag as a square item tile and Rebirth as a big icon (red badge when a rebirth is ready)
 --   * TOP RIGHT CORNER: a small round Settings button (music and sound live in Settings)
 --   * BOTTOM LEFT: big gem and money numbers (money short: $15.7B), income under them
@@ -56,13 +58,16 @@ end
 -- TOP: three big studded buttons, and the world you're in under them
 ---------------------------------------------------------------------
 local TOP_W, TOP_H, TOP_GAP = 180, 64, 12 -- 180 wide keeps clear of the world tips at the top right
+-- its own screen that reaches into Roblox's top bar row, so the buttons sit at the very top
+local topGui = UIKit.screen(player, "HUDTop", 1)
+topGui.IgnoreGuiInset = true
 local topBar = Instance.new("Frame")
 topBar.Name = "TopBar"
 topBar.BackgroundTransparency = 1
 topBar.Size = UDim2.fromOffset(TOP_W * 3 + TOP_GAP * 2, TOP_H + 36)
-topBar.Position = UDim2.new(0.5, 0, 0, 8)
+topBar.Position = UDim2.new(0.5, 0, 0, 6)
 topBar.AnchorPoint = Vector2.new(0.5, 0)
-topBar.Parent = gui
+topBar.Parent = topGui
 
 local function topButton(index, text, color, onClick)
 	local b = UIKit.button(topBar, text, {Size = UDim2.fromOffset(TOP_W, TOP_H), Position = UDim2.fromOffset((index - 1) * (TOP_W + TOP_GAP), 0),
@@ -81,6 +86,13 @@ topButton(3, "Worlds", rgb(236, 56, 72), function() UIBus.Fire("Teleport") end)
 
 local worldText = UIKit.label(topBar, "", {Size = UDim2.new(1, 40, 0, 28), Position = UDim2.new(0.5, 0, 0, TOP_H + 6), AnchorPoint = Vector2.new(0.5, 0),
 	Color = C.White, Stroke = 3, MaxText = 26})
+
+-- inside a museum the museum's UP / DOWN buttons take this spot
+local function museumCheck()
+	topBar.Visible = not player:GetAttribute("InMuseum")
+end
+player:GetAttributeChangedSignal("InMuseum"):Connect(museumCheck)
+museumCheck()
 
 ---------------------------------------------------------------------
 -- LEFT: the Bag as a square item tile (backpack, name across it, key square)
@@ -165,10 +177,26 @@ petButton.MouseButton1Click:Connect(function() UIBus.Fire("Pets") end)
 local storeButton = UIKit.button(menu, "", {Size = UDim2.fromOffset(98, 98), Position = UDim2.new(0, 166, 0, 0), AnchorPoint = Vector2.new(0.5, 0),
 	Color = rgb(255, 196, 40), Radius = 12, Pattern = false})
 storeButton.Name = "Store"
-UIKit.icon(storeButton, "PassMoney", {Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
-UIKit.label(storeButton, "Store", {Size = UDim2.new(1, -6, 0, 30), Position = UDim2.new(0.5, 0, 0.5, 8), AnchorPoint = Vector2.new(0.5, 0.5),
+-- the treasure chest pokes out over the top of the tile and wobbles now and then
+local storeIcon = UIKit.icon(storeButton, "StoreIcon", {Size = UDim2.fromScale(1.12, 1.12), Position = UDim2.new(0.5, 0, 0.36, 0),
+	AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
+UIKit.label(storeButton, "Store", {Size = UDim2.new(1, -6, 0, 30), Position = UDim2.new(0.5, 0, 1, -18), AnchorPoint = Vector2.new(0.5, 0.5),
 	Color = rgb(255, 245, 200), Stroke = 3.5, MaxText = 26}).ZIndex = 4
 storeButton.MouseButton1Click:Connect(function() UIBus.Fire("Store") end)
+task.spawn(function()
+	local wobble = TweenInfo.new(0.12, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+	while storeIcon.Parent do
+		task.wait(4)
+		-- (a frame's Rotation doesn't turn its children: turn the picture itself)
+		local picture = storeIcon:FindFirstChild("IconImage")
+		if picture then
+			for _, angle in ipairs({-10, 9, -6, 4, 0}) do
+				TweenService:Create(picture, wobble, {Rotation = angle}):Play()
+				task.wait(0.12)
+			end
+		end
+	end
+end)
 
 ---------------------------------------------------------------------
 -- TOP RIGHT CORNER: a small dark round Settings button up in Roblox's top bar row

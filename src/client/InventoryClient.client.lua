@@ -23,13 +23,19 @@ local gui = UIKit.screen(player, "InventoryGui", 3)
 -- WINDOW
 ---------------------------------------------------------------------
 local window, content = UIKit.window(gui, "INVENTORY", UDim2.fromOffset(740, 560), C.Sun, "Bag")
-local countLabel = UIKit.label(content, "", {Size = UDim2.new(1, -260, 0, 26), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 22})
-UIKit.label(content, "Click a meme to hold it", {Size = UDim2.new(1, -260, 0, 14), Position = UDim2.fromOffset(4, 28), Align = "Left", Color = C.Grey, Stroke = 0,
+local countLabel = UIKit.label(content, "", {Size = UDim2.new(1, -470, 0, 26), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 22})
+UIKit.label(content, "Click a meme to hold it", {Size = UDim2.new(1, -470, 0, 14), Position = UDim2.fromOffset(4, 28), Align = "Left", Color = C.Grey, Stroke = 0,
 	Font = UIKit.BodyFont, MaxText = 13})
 -- fills every empty display slot in your museum with your best-earning memes
 local placeAllButton = UIKit.button(content, "PLACE ALL IN MUSEUM", {Icon = "Museum", Size = UDim2.fromOffset(270, 40), Position = UDim2.new(1, -4, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Violet, Radius = 19, MaxText = 16})
 placeAllButton.MouseButton1Click:Connect(function()
 	remotes:WaitForChild("PlaceAll"):FireServer()
+end)
+-- puts your best-earning memes (from the bag AND the museum) on display, weaker ones go back to the bag
+local equipBestButton = UIKit.button(content, "EQUIP BEST", {Icon = "Star", Size = UDim2.fromOffset(186, 40), Position = UDim2.new(1, -284, 0, 0), AnchorPoint = Vector2.new(1, 0),
+	Color = C.Mint, Radius = 19, MaxText = 16})
+equipBestButton.MouseButton1Click:Connect(function()
+	remotes:WaitForChild("PlaceAll"):FireServer("Best")
 end)
 
 local gridHolder = Instance.new("ScrollingFrame")

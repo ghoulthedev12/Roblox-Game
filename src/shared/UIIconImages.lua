@@ -23,4 +23,5 @@ return {
 	PassPickaxe = "rbxassetid://88528019682299",
 	PassEgg = "rbxassetid://105493672711547",
 	PassEgg3 = "rbxassetid://74595878127307",
+	StoreIcon = "rbxassetid://130979109714990", -- the HUD's Store button: a treasure chest
 }

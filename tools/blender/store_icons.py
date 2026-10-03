@@ -30,6 +30,7 @@ FONT = "C:/Windows/Fonts/seguibl.ttf"  # Segoe UI Black: thick and round (Blende
 
 # the background of the Creator Hub version: (center, edge) colors
 BACKGROUNDS = {
+    "StoreIcon": ((255, 230, 130), (205, 120, 20)),
     "PassMoney": ((140, 235, 120), (30, 130, 60)),
     "PassSpeed": ((140, 215, 255), (30, 100, 210)),
     "PassHoles": ((255, 205, 130), (190, 95, 40)),
@@ -237,7 +238,46 @@ def build_egg3():
     return view
 
 
+def build_store():
+    """The HUD's Store button: an open treasure chest heaped with gold coins and a big gem."""
+    view = View(5.0, 20, -18, 0.1)
+    wood = material("ChestWood", rgb(190, 100, 45), rough=0.35, coat=0.6)
+    woodDark = material("ChestWoodDark", rgb(140, 70, 30), rough=0.4, coat=0.5)
+    gold = material("ChestGold", rgb(255, 205, 55), rough=0.15, coat=1.0, metal=0.3)
+    goldEdge = material("CoinEdge", rgb(232, 155, 30), rough=0.2, coat=0.9, metal=0.3)
+    hole = material("Keyhole", rgb(50, 30, 20), rough=0.6, coat=0.1)
+    # the chest: a wooden box with gold corners and straps, a lock plate on the front
+    rounded_box("Chest", (3.3, 2.0, 1.7), wood, loc=(0, 0, -0.9), bevel=0.22)
+    rounded_box("ChestBottom", (3.42, 2.1, 0.32), woodDark, loc=(0, 0, -1.62), bevel=0.12)
+    for x in (-1.12, 1.12):
+        rounded_box("StrapGold", (0.34, 2.12, 1.76), gold, loc=(x, 0, -0.88), bevel=0.1)
+    rounded_box("RimGold", (3.42, 2.12, 0.26), gold, loc=(0, 0, -0.08), bevel=0.1)
+    rounded_box("LockPlate", (0.7, 0.24, 0.8), gold, loc=(0, -1.06, -0.55), bevel=0.12)
+    cylinder("Hole", 0.11, 0.1, hole, loc=(0, -1.19, -0.45), rot=(R(90), 0, 0), bevel=0.0)
+    # the lid, swung open behind
+    rounded_box("Lid", (3.3, 0.5, 1.9), wood, loc=(0, 1.25, 0.75), rot=(R(-18), 0, 0), bevel=0.2)
+    rounded_box("LidRim", (3.42, 0.6, 0.26), gold, loc=(0, 1.42, 1.62), rot=(R(-18), 0, 0), bevel=0.1)
+    # a heap of gold coins spilling over the rim
+    heap = [(-0.9, -0.3, 0.12, 20), (-0.25, -0.5, 0.2, -15), (0.55, -0.35, 0.15, 30), (1.05, 0.1, 0.08, -25), (-1.1, 0.35, 0.1, 10),
+            (0.2, 0.3, 0.35, 40), (-0.5, 0.2, 0.42, -35), (0.75, -0.75, 0.0, 70), (-0.95, -0.85, -0.1, -60)]
+    for x, y, z, tilt in heap:
+        cylinder("PrintCoin", 0.42, 0.13, goldEdge, loc=(x, y, z), rot=(R(tilt), R(tilt * 0.5), 0), bevel=0.04)
+        cylinder("PrintCoin", 0.33, 0.15, gold, loc=(x, y, z), rot=(R(tilt), R(tilt * 0.5), 0), bevel=0.03)
+    sphere("Heap", 1.0, gold, loc=(0, 0.05, -0.15), scale=(1.45, 0.85, 0.42))
+    # a big purple gem on top (the HUD's gem, moved up there)
+    before = set(bpy.data.objects)
+    K.build_gem()
+    for o in set(bpy.data.objects) - before:
+        o.scale = (0.48, 0.48, 0.48)
+        o.location = (0.25, 0.1, 1.05)
+        o.rotation_euler = (R(10), R(-15), R(12))
+    sparkle(view, -1.75, 1.45, 0.38)
+    sparkle(view, 1.8, 1.0, 0.3)
+    return view
+
+
 ICONS = {
+    "StoreIcon": build_store,
     "PassMoney": build_money,
     "PassSpeed": build_speed,
     "PassHoles": build_holes,

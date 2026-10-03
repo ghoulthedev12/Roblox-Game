@@ -343,21 +343,24 @@ inventoryChangedRemote.OnClientEvent:Connect(function()
 end)
 
 ---------------------------------------------------------------------
--- FLOOR BUTTONS (only while you're inside a museum): big studded buttons at the top center,
+-- FLOOR BUTTONS (only while you're inside a museum): big studded buttons at the very top of
+-- the screen, in place of the HUD's Shop / Museum / Worlds (which hide while InMuseum is set):
 -- a blue UP with a white arrow on its left and a red DOWN with the arrow on its right. Only
 -- the ones you can use show: UP alone on the ground floor, both in between, DOWN alone on top.
 ---------------------------------------------------------------------
+local floorGui = UIKit.screen(player, "MuseumFloors", 1)
+floorGui.IgnoreGuiInset = true -- up in Roblox's top bar row, like the HUD's top buttons
 local floorBar = Instance.new("Frame")
 floorBar.Name = "FloorButtons"
 floorBar.BackgroundTransparency = 1
-floorBar.Size = UDim2.fromOffset(500, 110)
-floorBar.Position = UDim2.new(0.5, 0, 0, 108) -- under the HUD's top buttons
+floorBar.Size = UDim2.fromOffset(500, 104)
+floorBar.Position = UDim2.new(0.5, 0, 0, 6)
 floorBar.AnchorPoint = Vector2.new(0.5, 0)
 floorBar.Visible = false
-floorBar.Parent = gui
+floorBar.Parent = floorGui
 local buttonRow = Instance.new("Frame")
 buttonRow.BackgroundTransparency = 1
-buttonRow.Size = UDim2.new(1, 0, 0, 74)
+buttonRow.Size = UDim2.new(1, 0, 0, 64)
 buttonRow.Parent = floorBar
 local rowLayout = Instance.new("UIListLayout")
 rowLayout.FillDirection = Enum.FillDirection.Horizontal
@@ -367,7 +370,7 @@ rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
 rowLayout.Parent = buttonRow
 
 local function floorButton(text, color, arrow, arrowOnLeft, order)
-	local b, label = UIKit.button(buttonRow, text, {Size = UDim2.fromOffset(220, 70), Color = color, Radius = 12, MaxText = 40})
+	local b, label = UIKit.button(buttonRow, text, {Size = UDim2.fromOffset(220, 64), Color = color, Radius = 10, MaxText = 40})
 	b.Name = text
 	b.LayoutOrder = order
 	UIKit.arrowIcon(b, arrow, {Size = UDim2.fromOffset(62, 62), Position = UDim2.new(arrowOnLeft and 0 or 1, arrowOnLeft and 12 or -12, 0.5, -3),
@@ -380,7 +383,7 @@ local upButton = floorButton("UP", rgb(48, 160, 245), "Up", true, 1)
 local downButton = floorButton("DOWN", rgb(232, 50, 64), "Down", false, 2)
 
 -- which floor you're on, and the price of the next floor while it's still locked
-local floorLabel = UIKit.label(floorBar, "", {Size = UDim2.new(1, 0, 0, 24), Position = UDim2.new(0.5, 0, 0, 78), AnchorPoint = Vector2.new(0.5, 0),
+local floorLabel = UIKit.label(floorBar, "", {Size = UDim2.new(1, 0, 0, 24), Position = UDim2.new(0.5, 0, 0, 70), AnchorPoint = Vector2.new(0.5, 0),
 	Color = C.White, Stroke = 3, MaxText = 22})
 
 local function currentMuseumFloor()
@@ -405,6 +408,9 @@ task.spawn(function()
 	while true do
 		local museum, floor = currentMuseumFloor()
 		floorBar.Visible = museum ~= nil
+		if player:GetAttribute("InMuseum") ~= (museum ~= nil) then
+			player:SetAttribute("InMuseum", museum ~= nil) -- the HUD hides its top buttons meanwhile
+		end
 		if museum then
 			local opened = string.split(museum:GetAttribute("UnlockedFloors") or "1", ",")
 			local owned = museum:GetAttribute("OwnerUserId") == player.UserId

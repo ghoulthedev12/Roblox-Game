@@ -4066,6 +4066,7 @@ return {
 	PassPickaxe = "rbxassetid://88528019682299",
 	PassEgg = "rbxassetid://105493672711547",
 	PassEgg3 = "rbxassetid://74595878127307",
+	StoreIcon = "rbxassetid://130979109714990", -- the HUD's Store button: a treasure chest
 }
 ]=])
 install(game:GetService("ReplicatedStorage"), "UIIconList", "ModuleScript", [=[
@@ -10609,14 +10610,74 @@ placeRemote.OnServerEvent:Connect(function(player, index, artifactId)
 	messageRemote:FireClient(player, artifact.Name .. " is on display! +" .. ArtifactData.FormatMoney(ArtifactData.GetIncome(artifact)) .. "/s", true)
 end)
 
+-- EQUIP BEST (inventory window): your best-earning memes, from the bag and the museum
+-- together, fill every unlocked slot; memes that lose their spot go back to the bag. Memes
+-- already on display stay in their slot when they make the cut (no needless shuffling).
+local function equipBest(player, data, museum)
+	local slots = {}
+	for index = 1, SLOT_COUNT do
+		if PlayerData.IsSlotUnlocked(player, index) then table.insert(slots, index) end
+	end
+	local pool = {} -- {Artifact, Income, Slot (if on display)}
+	for _, id in pairs(data.Inventory) do
+		local artifact = ArtifactData.GetArtifact(id)
+		if artifact then table.insert(pool, {Artifact = artifact, Income = ArtifactData.GetIncome(artifact)}) end
+	end
+	for _, index in ipairs(slots) do
+		local artifact = ArtifactData.GetArtifact(data.Displayed[tostring(index)] or "")
+		if artifact then table.insert(pool, {Artifact = artifact, Income = ArtifactData.GetIncome(artifact), Slot = index}) end
+	end
+	table.sort(pool, function(a, b)
+		if a.Income ~= b.Income then return a.Income > b.Income end
+		return a.Slot ~= nil and b.Slot == nil
+	end)
+	local keep, incoming = {}, {}
+	for i = 1, math.min(#slots, #pool) do
+		if pool[i].Slot then keep[pool[i].Slot] = true else table.insert(incoming, pool[i].Artifact) end
+	end
+	if #incoming == 0 then
+		messageRemote:FireClient(player, #pool == 0 and "Your bag is empty. Go dig up some memes!" or "Your best memes are already on display!", #pool > 0)
+		return
+	end
+	local before = PlayerData.GetIncome(player)
+	-- weaker memes leave their slots for the bag...
+	for _, index in ipairs(slots) do
+		local old = data.Displayed[tostring(index)]
+		if old and not keep[index] then
+			PlayerData.SetDisplayed(player, index, nil)
+			PlayerData.AddArtifact(player, old)
+		end
+	end
+	-- ...and the best ones from the bag take the free slots
+	local nextMeme = 1
+	for _, index in ipairs(slots) do
+		local artifact = incoming[nextMeme]
+		if not artifact then break end
+		if not data.Displayed[tostring(index)] and takeFromInventory(player, artifact.Id) then
+			PlayerData.SetDisplayed(player, index, artifact.Id)
+			nextMeme += 1
+		end
+	end
+	refreshAllSlots(player)
+	inventoryChangedRemote:FireClient(player)
+	local after = PlayerData.GetIncome(player)
+	messageRemote:FireClient(player, "{Museum} Your best memes are on display! Now earning " .. ArtifactData.FormatMoney(after) .. "/s"
+		.. (after > before and (" (+" .. ArtifactData.FormatMoney(after - before) .. "/s)") or ""), true)
+end
+
 -- PLACE ALL (inventory window): every empty, unlocked slot gets your best-earning meme
+-- (with "Best": EQUIP BEST, above)
 local lastPlaceAll = {}
-placeAllRemote.OnServerEvent:Connect(function(player)
+placeAllRemote.OnServerEvent:Connect(function(player, mode)
 	if os.clock() - (lastPlaceAll[player] or 0) < 1 then return end
 	lastPlaceAll[player] = os.clock()
 	local data = PlayerData.Get(player)
 	local museum = museums[player]
 	if not data or not museum then return end
+	if mode == "Best" then
+		equipBest(player, data, museum)
+		return
+	end
 	-- the bag's memes, best earners first
 	local memes = {}
 	for _, id in pairs(data.Inventory) do
@@ -15094,12 +15155,14 @@ local function checkOwnership(player)
 	if not data or not player.Parent then return end
 	data.Passes = data.Passes or {}
 	data.Receipts = data.Receipts or {}
+	-- Roblox's answer is the truth (bought on the website, in another server, or refunded);
+	-- the save only remembers it for offline earnings and for when Roblox can't be asked
 	for _, pass in ipairs(StoreData.Passes) do
-		if pass.Id > 0 and not data.Passes[pass.Key] then
+		if pass.Id > 0 then
 			local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, pass.Id)
-			if ok and owns then
-				data.Passes[pass.Key] = true -- bought on the website, or in another server
-				if pass.Key == "RelicPickaxe" then data.UseRelic = true end
+			if ok then
+				if owns and not data.Passes[pass.Key] and pass.Key == "RelicPickaxe" then data.UseRelic = true end
+				data.Passes[pass.Key] = owns or nil
 			end
 		end
 	end
@@ -15110,7 +15173,8 @@ for _, player in ipairs(Players:GetPlayers()) do task.spawn(checkOwnership, play
 
 MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
 	local pass = passById[passId]
-	if purchased and pass then grantPass(player, pass, false) end
+	-- (a purchase in Studio is only a test: it lasts for that session)
+	if purchased and pass then grantPass(player, pass, IS_STUDIO) end
 end)
 
 ---------------------------------------------------------------------
@@ -18509,7 +18573,9 @@ end)
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "HUD", "LocalScript", [=[
 -- HUD (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- The always-on screen, in a big chunky style:
---   * TOP: three wide studded buttons (Shop, Museum, Worlds) with the world you're in under them
+--   * TOP: three wide studded buttons (Shop, Museum, Worlds) with the world you're in under them,
+--     right at the top edge of the screen (in Roblox's top bar row). Inside a museum they make
+--     way for the museum's UP / DOWN floor buttons (MuseumClient sets the InMuseum attribute).
 --   * LEFT: the Bag as a square item tile and Rebirth as a big icon (red badge when a rebirth is ready)
 --   * TOP RIGHT CORNER: a small round Settings button (music and sound live in Settings)
 --   * BOTTOM LEFT: big gem and money numbers (money short: $15.7B), income under them
@@ -18565,13 +18631,16 @@ end
 -- TOP: three big studded buttons, and the world you're in under them
 ---------------------------------------------------------------------
 local TOP_W, TOP_H, TOP_GAP = 180, 64, 12 -- 180 wide keeps clear of the world tips at the top right
+-- its own screen that reaches into Roblox's top bar row, so the buttons sit at the very top
+local topGui = UIKit.screen(player, "HUDTop", 1)
+topGui.IgnoreGuiInset = true
 local topBar = Instance.new("Frame")
 topBar.Name = "TopBar"
 topBar.BackgroundTransparency = 1
 topBar.Size = UDim2.fromOffset(TOP_W * 3 + TOP_GAP * 2, TOP_H + 36)
-topBar.Position = UDim2.new(0.5, 0, 0, 8)
+topBar.Position = UDim2.new(0.5, 0, 0, 6)
 topBar.AnchorPoint = Vector2.new(0.5, 0)
-topBar.Parent = gui
+topBar.Parent = topGui
 
 local function topButton(index, text, color, onClick)
 	local b = UIKit.button(topBar, text, {Size = UDim2.fromOffset(TOP_W, TOP_H), Position = UDim2.fromOffset((index - 1) * (TOP_W + TOP_GAP), 0),
@@ -18590,6 +18659,13 @@ topButton(3, "Worlds", rgb(236, 56, 72), function() UIBus.Fire("Teleport") end)
 
 local worldText = UIKit.label(topBar, "", {Size = UDim2.new(1, 40, 0, 28), Position = UDim2.new(0.5, 0, 0, TOP_H + 6), AnchorPoint = Vector2.new(0.5, 0),
 	Color = C.White, Stroke = 3, MaxText = 26})
+
+-- inside a museum the museum's UP / DOWN buttons take this spot
+local function museumCheck()
+	topBar.Visible = not player:GetAttribute("InMuseum")
+end
+player:GetAttributeChangedSignal("InMuseum"):Connect(museumCheck)
+museumCheck()
 
 ---------------------------------------------------------------------
 -- LEFT: the Bag as a square item tile (backpack, name across it, key square)
@@ -18674,10 +18750,26 @@ petButton.MouseButton1Click:Connect(function() UIBus.Fire("Pets") end)
 local storeButton = UIKit.button(menu, "", {Size = UDim2.fromOffset(98, 98), Position = UDim2.new(0, 166, 0, 0), AnchorPoint = Vector2.new(0.5, 0),
 	Color = rgb(255, 196, 40), Radius = 12, Pattern = false})
 storeButton.Name = "Store"
-UIKit.icon(storeButton, "PassMoney", {Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
-UIKit.label(storeButton, "Store", {Size = UDim2.new(1, -6, 0, 30), Position = UDim2.new(0.5, 0, 0.5, 8), AnchorPoint = Vector2.new(0.5, 0.5),
+-- the treasure chest pokes out over the top of the tile and wobbles now and then
+local storeIcon = UIKit.icon(storeButton, "StoreIcon", {Size = UDim2.fromScale(1.12, 1.12), Position = UDim2.new(0.5, 0, 0.36, 0),
+	AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
+UIKit.label(storeButton, "Store", {Size = UDim2.new(1, -6, 0, 30), Position = UDim2.new(0.5, 0, 1, -18), AnchorPoint = Vector2.new(0.5, 0.5),
 	Color = rgb(255, 245, 200), Stroke = 3.5, MaxText = 26}).ZIndex = 4
 storeButton.MouseButton1Click:Connect(function() UIBus.Fire("Store") end)
+task.spawn(function()
+	local wobble = TweenInfo.new(0.12, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+	while storeIcon.Parent do
+		task.wait(4)
+		-- (a frame's Rotation doesn't turn its children: turn the picture itself)
+		local picture = storeIcon:FindFirstChild("IconImage")
+		if picture then
+			for _, angle in ipairs({-10, 9, -6, 4, 0}) do
+				TweenService:Create(picture, wobble, {Rotation = angle}):Play()
+				task.wait(0.12)
+			end
+		end
+	end
+end)
 
 ---------------------------------------------------------------------
 -- TOP RIGHT CORNER: a small dark round Settings button up in Roblox's top bar row
@@ -18973,13 +19065,19 @@ local gui = UIKit.screen(player, "InventoryGui", 3)
 -- WINDOW
 ---------------------------------------------------------------------
 local window, content = UIKit.window(gui, "INVENTORY", UDim2.fromOffset(740, 560), C.Sun, "Bag")
-local countLabel = UIKit.label(content, "", {Size = UDim2.new(1, -260, 0, 26), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 22})
-UIKit.label(content, "Click a meme to hold it", {Size = UDim2.new(1, -260, 0, 14), Position = UDim2.fromOffset(4, 28), Align = "Left", Color = C.Grey, Stroke = 0,
+local countLabel = UIKit.label(content, "", {Size = UDim2.new(1, -470, 0, 26), Position = UDim2.fromOffset(4, 4), Align = "Left", Color = C.Violet, Stroke = 0, MaxText = 22})
+UIKit.label(content, "Click a meme to hold it", {Size = UDim2.new(1, -470, 0, 14), Position = UDim2.fromOffset(4, 28), Align = "Left", Color = C.Grey, Stroke = 0,
 	Font = UIKit.BodyFont, MaxText = 13})
 -- fills every empty display slot in your museum with your best-earning memes
 local placeAllButton = UIKit.button(content, "PLACE ALL IN MUSEUM", {Icon = "Museum", Size = UDim2.fromOffset(270, 40), Position = UDim2.new(1, -4, 0, 0), AnchorPoint = Vector2.new(1, 0), Color = C.Violet, Radius = 19, MaxText = 16})
 placeAllButton.MouseButton1Click:Connect(function()
 	remotes:WaitForChild("PlaceAll"):FireServer()
+end)
+-- puts your best-earning memes (from the bag AND the museum) on display, weaker ones go back to the bag
+local equipBestButton = UIKit.button(content, "EQUIP BEST", {Icon = "Star", Size = UDim2.fromOffset(186, 40), Position = UDim2.new(1, -284, 0, 0), AnchorPoint = Vector2.new(1, 0),
+	Color = C.Mint, Radius = 19, MaxText = 16})
+equipBestButton.MouseButton1Click:Connect(function()
+	remotes:WaitForChild("PlaceAll"):FireServer("Best")
 end)
 
 local gridHolder = Instance.new("ScrollingFrame")
@@ -19457,21 +19555,24 @@ inventoryChangedRemote.OnClientEvent:Connect(function()
 end)
 
 ---------------------------------------------------------------------
--- FLOOR BUTTONS (only while you're inside a museum): big studded buttons at the top center,
+-- FLOOR BUTTONS (only while you're inside a museum): big studded buttons at the very top of
+-- the screen, in place of the HUD's Shop / Museum / Worlds (which hide while InMuseum is set):
 -- a blue UP with a white arrow on its left and a red DOWN with the arrow on its right. Only
 -- the ones you can use show: UP alone on the ground floor, both in between, DOWN alone on top.
 ---------------------------------------------------------------------
+local floorGui = UIKit.screen(player, "MuseumFloors", 1)
+floorGui.IgnoreGuiInset = true -- up in Roblox's top bar row, like the HUD's top buttons
 local floorBar = Instance.new("Frame")
 floorBar.Name = "FloorButtons"
 floorBar.BackgroundTransparency = 1
-floorBar.Size = UDim2.fromOffset(500, 110)
-floorBar.Position = UDim2.new(0.5, 0, 0, 108) -- under the HUD's top buttons
+floorBar.Size = UDim2.fromOffset(500, 104)
+floorBar.Position = UDim2.new(0.5, 0, 0, 6)
 floorBar.AnchorPoint = Vector2.new(0.5, 0)
 floorBar.Visible = false
-floorBar.Parent = gui
+floorBar.Parent = floorGui
 local buttonRow = Instance.new("Frame")
 buttonRow.BackgroundTransparency = 1
-buttonRow.Size = UDim2.new(1, 0, 0, 74)
+buttonRow.Size = UDim2.new(1, 0, 0, 64)
 buttonRow.Parent = floorBar
 local rowLayout = Instance.new("UIListLayout")
 rowLayout.FillDirection = Enum.FillDirection.Horizontal
@@ -19481,7 +19582,7 @@ rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
 rowLayout.Parent = buttonRow
 
 local function floorButton(text, color, arrow, arrowOnLeft, order)
-	local b, label = UIKit.button(buttonRow, text, {Size = UDim2.fromOffset(220, 70), Color = color, Radius = 12, MaxText = 40})
+	local b, label = UIKit.button(buttonRow, text, {Size = UDim2.fromOffset(220, 64), Color = color, Radius = 10, MaxText = 40})
 	b.Name = text
 	b.LayoutOrder = order
 	UIKit.arrowIcon(b, arrow, {Size = UDim2.fromOffset(62, 62), Position = UDim2.new(arrowOnLeft and 0 or 1, arrowOnLeft and 12 or -12, 0.5, -3),
@@ -19494,7 +19595,7 @@ local upButton = floorButton("UP", rgb(48, 160, 245), "Up", true, 1)
 local downButton = floorButton("DOWN", rgb(232, 50, 64), "Down", false, 2)
 
 -- which floor you're on, and the price of the next floor while it's still locked
-local floorLabel = UIKit.label(floorBar, "", {Size = UDim2.new(1, 0, 0, 24), Position = UDim2.new(0.5, 0, 0, 78), AnchorPoint = Vector2.new(0.5, 0),
+local floorLabel = UIKit.label(floorBar, "", {Size = UDim2.new(1, 0, 0, 24), Position = UDim2.new(0.5, 0, 0, 70), AnchorPoint = Vector2.new(0.5, 0),
 	Color = C.White, Stroke = 3, MaxText = 22})
 
 local function currentMuseumFloor()
@@ -19519,6 +19620,9 @@ task.spawn(function()
 	while true do
 		local museum, floor = currentMuseumFloor()
 		floorBar.Visible = museum ~= nil
+		if player:GetAttribute("InMuseum") ~= (museum ~= nil) then
+			player:SetAttribute("InMuseum", museum ~= nil) -- the HUD hides its top buttons meanwhile
+		end
 		if museum then
 			local opened = string.split(museum:GetAttribute("UnlockedFloors") or "1", ",")
 			local owned = museum:GetAttribute("OwnerUserId") == player.UserId
@@ -22252,16 +22356,19 @@ end)
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "StoreClient", "LocalScript", [=[
 -- StoreClient (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- The Robux Store window (the Store button on the left, or UIBus "Store"), see StoreData:
---   * left: the four game passes as cards (icon, what it does, a Robux button, or OWNED;
---     the Relic Pickaxe gets an EQUIP button when you've switched to a shop pickaxe)
---   * right: the Relic Egg, turning, with its five pets and their chances, and buttons to
---     buy 1 or 3 eggs
+--   * left: the four game passes as bold colored cards: a big glossy icon popping out on a
+--     glow, the name, what it does, and a Robux price button (OWNED once bought; the Relic
+--     Pickaxe gets an EQUIP button when you've switched to a shop pickaxe). Ribbons mark the
+--     popular and the best one.
+--   * right: the Relic Egg showcase: the egg turning on a glow, its five pets with their
+--     chances, and buttons to buy 1 or 3 eggs (the 3 shows how much it saves)
 -- Buying goes through the StoreBuy remote; StoreManager shows Roblox's purchase prompt.
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local PetData = require(ReplicatedStorage:WaitForChild("PetData"))
 local PetVisuals = require(ReplicatedStorage:WaitForChild("PetVisuals"))
@@ -22278,50 +22385,169 @@ local equipRemote = remotes:WaitForChild("EquipShovel")
 
 local IS_STUDIO = RunService:IsStudio()
 local GOLD = rgb(255, 196, 40)
+local GREY = rgb(150, 145, 170)
+local ROBUX = "rbxasset://textures/ui/common/robux@3x.png" -- Roblox's own Robux symbol (white)
+
+-- which passes get a ribbon
+local RIBBONS = {DoubleMoney = {"POPULAR", rgb(255, 70, 90)}, RelicPickaxe = {"BEST!", rgb(150, 70, 255)}}
 
 ---------------------------------------------------------------------
 -- PRICES: read from Roblox once (the Creator Hub price), StoreData's Robux as a fallback
 ---------------------------------------------------------------------
 local prices = {} -- [key] = Robux
-local function priceText(item)
-	if item.Id == 0 and not IS_STUDIO then return "SOON" end
-	return "R$ " .. (prices[item.Key] or item.Robux)
+local function price(item)
+	return prices[item.Key] or item.Robux
+end
+local function forSale(item)
+	return item.Id > 0 or IS_STUDIO
+end
+
+---------------------------------------------------------------------
+-- BUILDING BLOCKS
+---------------------------------------------------------------------
+-- a soft round glow (behind icons and the egg): three circles, fainter toward the outside
+-- (UIGradient only fades in straight lines, so the rings do the round fade)
+local function glow(parent, size, position, color, z)
+	local g = Instance.new("Frame")
+	g.Name = "Glow"
+	g.BackgroundTransparency = 1
+	g.Size = size
+	g.Position = position
+	g.AnchorPoint = Vector2.new(0.5, 0.5)
+	g.Parent = parent
+	local ratio = Instance.new("UIAspectRatioConstraint")
+	ratio.Parent = g
+	for _, ring in ipairs({{1, 0.84}, {0.72, 0.7}, {0.44, 0.55}}) do
+		local circle = Instance.new("Frame")
+		circle.BorderSizePixel = 0
+		circle.BackgroundColor3 = color
+		circle.BackgroundTransparency = ring[2]
+		circle.Size = UDim2.fromScale(ring[1], ring[1])
+		circle.Position = UDim2.fromScale(0.5, 0.5)
+		circle.AnchorPoint = Vector2.new(0.5, 0.5)
+		circle.ZIndex = z or 1
+		circle.Parent = g
+		UIKit.corner(circle, 999)
+	end
+	return g
+end
+
+-- a top-to-bottom sheen over a panel (lighter on top, darker at the bottom)
+local function sheen(frame, top, bottom)
+	local gradient = Instance.new("UIGradient")
+	gradient.Rotation = 90
+	gradient.Color = ColorSequence.new(Color3.new(top, top, top), Color3.new(bottom, bottom, bottom))
+	gradient.Parent = frame
+	return gradient
+end
+
+-- a slanted ribbon on a card's top-left corner (top-right with onRight)
+local function ribbon(card, text, color, onRight)
+	local tag = UIKit.panel(card, {Size = UDim2.fromOffset(104, 30), Position = onRight and UDim2.new(1, 10, 0, -10) or UDim2.new(0, -10, 0, -10),
+		AnchorPoint = Vector2.new(onRight and 1 or 0, 0), Color = color, Radius = 8, Stroke = 2.5, StrokeColor = C.Outline, ShadeAmount = 0.15})
+	tag.Rotation = onRight and 8 or -8
+	tag.ZIndex = 6
+	UIKit.label(tag, text, {Size = UDim2.fromScale(0.86, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+		Stroke = 2.5, MaxText = 20}).ZIndex = 7
+	return tag
+end
+
+-- a studded button showing the Robux symbol and a price (or a plain word like OWNED)
+local function priceButton(parent, props)
+	local b, label = UIKit.button(parent, "", props)
+	label.Visible = false
+	local row = Instance.new("Frame")
+	row.Name = "PriceRow"
+	row.BackgroundTransparency = 1
+	row.Size = UDim2.new(1, -16, 1, -14)
+	row.Position = UDim2.new(0.5, 0, 0.5, -2)
+	row.AnchorPoint = Vector2.new(0.5, 0.5)
+	row.ZIndex = 3
+	row.Parent = b
+	local layout = Instance.new("UIListLayout")
+	layout.FillDirection = Enum.FillDirection.Horizontal
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout.VerticalAlignment = Enum.VerticalAlignment.Center
+	layout.Padding = UDim.new(0, 6)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = row
+	local prefix = UIKit.label(row, "", {Size = UDim2.new(0, 0, 0.9, 0), Stroke = 3, MaxText = props.MaxText or 28})
+	prefix.AutomaticSize = Enum.AutomaticSize.X
+	prefix.TextScaled = false
+	prefix.TextSize = props.TextSize or 26
+	prefix.LayoutOrder = 1
+	prefix.ZIndex = 3
+	local icon = Instance.new("ImageLabel")
+	icon.Name = "Robux"
+	icon.BackgroundTransparency = 1
+	icon.Image = ROBUX
+	icon.Size = UDim2.fromOffset((props.TextSize or 26) + 6, (props.TextSize or 26) + 6)
+	icon.LayoutOrder = 2
+	icon.ZIndex = 3
+	icon.Parent = row
+	local text = UIKit.label(row, "", {Size = UDim2.new(0, 0, 0.9, 0), Stroke = 3, MaxText = props.MaxText or 28})
+	text.AutomaticSize = Enum.AutomaticSize.X
+	text.TextScaled = false
+	text.TextSize = props.TextSize or 26
+	text.LayoutOrder = 3
+	text.ZIndex = 3
+	-- set(prefix text, Robux amount or nil, color, or a plain word with no Robux symbol)
+	local function set(word, robux, color, before)
+		b.BackgroundColor3 = color
+		prefix.Text = before or ""
+		prefix.Visible = before ~= nil
+		icon.Visible = robux ~= nil
+		text.Text = robux and tostring(robux) or word
+	end
+	return b, set
 end
 
 ---------------------------------------------------------------------
 -- WINDOW
 ---------------------------------------------------------------------
 local gui = UIKit.screen(player, "StoreUI", 7)
-local window, content = UIKit.window(gui, "Store", UDim2.fromOffset(880, 570), GOLD, "PassMoney")
+local window, content = UIKit.window(gui, "Store", UDim2.fromOffset(940, 600), GOLD, "StoreIcon")
 window.Name = "StoreWindow"
 
 -- left: game passes, 2 x 2
 local passArea = Instance.new("Frame")
 passArea.BackgroundTransparency = 1
-passArea.Size = UDim2.new(0.62, -8, 1, 0)
+passArea.Size = UDim2.new(0.64, -8, 1, 0)
 passArea.Parent = content
-UIKit.label(passArea, "GAME PASSES", {Size = UDim2.new(1, 0, 0, 30), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 26})
+local passTitle = UIKit.panel(passArea, {Size = UDim2.fromOffset(210, 34), Color = rgb(52, 44, 88), Radius = 10, Stroke = 2.5})
+UIKit.label(passTitle, "GAME PASSES", {Size = UDim2.fromScale(0.9, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+	Color = GOLD, Stroke = 2.5, MaxText = 24})
+UIKit.label(passArea, "Bought once, yours forever!", {Size = UDim2.new(1, -224, 0, 24), Position = UDim2.fromOffset(222, 5), Align = "Left",
+	Color = C.Grey, Stroke = 0, MaxText = 18, Font = UIKit.BodyFont})
 local passGrid = Instance.new("Frame")
 passGrid.BackgroundTransparency = 1
-passGrid.Size = UDim2.new(1, 0, 1, -36)
-passGrid.Position = UDim2.fromOffset(0, 36)
+passGrid.Size = UDim2.new(1, 0, 1, -48)
+passGrid.Position = UDim2.fromOffset(0, 48)
 passGrid.Parent = passArea
 local gridLayout = Instance.new("UIGridLayout")
-gridLayout.CellSize = UDim2.new(0.5, -6, 0.5, -6)
-gridLayout.CellPadding = UDim2.fromOffset(12, 12)
+gridLayout.CellSize = UDim2.new(0.5, -8, 0.5, -8)
+gridLayout.CellPadding = UDim2.fromOffset(16, 16)
 gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 gridLayout.Parent = passGrid
 
-local passButtons = {} -- [key] = button
+local passSetters = {} -- [key] = set(...)
 for i, pass in ipairs(StoreData.Passes) do
-	local card = UIKit.panel(passGrid, {Color = pass.Color:Lerp(Color3.new(1, 1, 1), 0.72), Radius = 16, Stroke = 3, StrokeColor = pass.Color:Lerp(C.Outline, 0.55)})
+	local card = UIKit.panel(passGrid, {Color = pass.Color, Radius = 18, Stroke = 4, StrokeColor = C.Outline, Shade = false})
 	card.LayoutOrder = i
-	UIKit.icon(card, pass.Icon, {Size = UDim2.fromScale(0.36, 0.5), Position = UDim2.new(0, 4, 0, 2)}).ZIndex = 2
-	UIKit.label(card, pass.Name, {Size = UDim2.new(0.62, -10, 0.2, 0), Position = UDim2.new(0.38, 0, 0.06, 0), Align = "Left", Stroke = 3, MaxText = 26})
-	UIKit.label(card, pass.Text, {Size = UDim2.new(0.62, -10, 0.3, 0), Position = UDim2.new(0.38, 0, 0.26, 0), Align = "Left", VAlign = "Top",
-		Color = C.Ink, Stroke = 0, MaxText = 15, Font = UIKit.BodyFont})
-	local button = UIKit.button(card, priceText(pass), {Size = UDim2.new(1, -20, 0.3, 0), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1),
-		Color = C.Money, MaxText = 26})
+	sheen(card, 1, 0.72)
+	-- the icon, big, on a glow, poking out over the card's top-left
+	glow(card, UDim2.fromScale(0.62, 0.62), UDim2.fromScale(0.25, 0.36), Color3.new(1, 1, 1), 1)
+	local icon = UIKit.icon(card, pass.Icon, {Size = UDim2.fromScale(0.5, 0.66), Position = UDim2.fromScale(0.25, 0.33), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 3})
+	local square = Instance.new("UIAspectRatioConstraint")
+	square.Parent = icon
+	UIKit.label(card, string.upper(pass.Name), {Size = UDim2.new(0.5, -10, 0.24, 0), Position = UDim2.new(0.5, 0, 0.07, 0), Align = "Left",
+		Stroke = 3.5, MaxText = 30}).ZIndex = 3
+	local blurb = UIKit.label(card, pass.Text, {Size = UDim2.new(0.5, -12, 0.33, 0), Position = UDim2.new(0.5, 0, 0.31, 0), Align = "Left", VAlign = "Top",
+		Color = C.White, Stroke = 1.5, MaxText = 17, Font = UIKit.BodyFont})
+	blurb.ZIndex = 3
+	local button, set = priceButton(card, {Size = UDim2.new(1, -24, 0.27, 0), Position = UDim2.new(0.5, 0, 1, -12), AnchorPoint = Vector2.new(0.5, 1),
+		Color = C.Money, TextSize = 28})
+	button.ZIndex = 4
 	button.MouseButton1Click:Connect(function()
 		if pass.Key == "RelicPickaxe" and StoreData.PlayerOwns(player, pass.Key) then
 			equipRemote:FireServer("RelicPickaxe")
@@ -22329,48 +22555,72 @@ for i, pass in ipairs(StoreData.Passes) do
 			buyRemote:FireServer(pass.Key)
 		end
 	end)
-	passButtons[pass.Key] = button
+	-- the card grows a little under the mouse
+	local grow = Instance.new("UIScale")
+	grow.Parent = card
+	card.MouseEnter:Connect(function() TweenService:Create(grow, TweenInfo.new(0.12), {Scale = 1.03}):Play() end)
+	card.MouseLeave:Connect(function() TweenService:Create(grow, TweenInfo.new(0.12), {Scale = 1}):Play() end)
+	if RIBBONS[pass.Key] then ribbon(card, RIBBONS[pass.Key][1], RIBBONS[pass.Key][2]) end
+	passSetters[pass.Key] = set
 end
 
--- right: the Relic Egg
+-- right: the Relic Egg showcase
 local egg = PetData.RelicEgg
-local eggPanel = UIKit.panel(content, {Size = UDim2.new(0.38, -8, 1, 0), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0),
-	Color = rgb(40, 34, 70), Radius = 18, Stroke = 3})
-UIKit.label(eggPanel, string.upper(egg.Name), {Size = UDim2.new(1, -20, 0.08, 0), Position = UDim2.new(0.5, 0, 0.02, 0), AnchorPoint = Vector2.new(0.5, 0),
-	Color = GOLD, Stroke = 3, MaxText = 30})
+local eggPanel = UIKit.panel(content, {Size = UDim2.new(0.36, -8, 1, 0), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0),
+	Color = rgb(70, 50, 140), Radius = 20, Stroke = 4, StrokeColor = C.Outline, Shade = false})
+sheen(eggPanel, 1, 0.55)
+ribbon(eggPanel, "EXCLUSIVE", rgb(40, 200, 185), true)
+UIKit.label(eggPanel, string.upper(egg.Name), {Size = UDim2.new(1, -20, 0.075, 0), Position = UDim2.new(0.5, 0, 0.025, 0), AnchorPoint = Vector2.new(0.5, 0),
+	Color = GOLD, Stroke = 3.5, MaxText = 34})
+local eggGlow = glow(eggPanel, UDim2.fromScale(0.7, 0.7), UDim2.fromScale(0.5, 0.2), rgb(255, 220, 120), 1)
 local eggView = Instance.new("Frame")
 eggView.BackgroundTransparency = 1
-eggView.Size = UDim2.new(1, -20, 0.27, 0)
+eggView.Size = UDim2.new(1, -20, 0.21, 0)
 eggView.Position = UDim2.new(0.5, 0, 0.1, 0)
 eggView.AnchorPoint = Vector2.new(0.5, 0)
+eggView.ZIndex = 2
 eggView.Parent = eggPanel
-PetVisuals.viewport(eggView, egg.Id, {Spin = true})
+local eggViewport = PetVisuals.viewport(eggView, egg.Id, {Spin = true})
+eggViewport.ZIndex = 2
+-- the glow behind the egg breathes
+TweenService:Create(eggGlow, TweenInfo.new(1.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Size = UDim2.fromScale(0.9, 0.9)}):Play()
+
 local chances = PetData.Chances(egg)
 for i, petId in ipairs(egg.Pets) do
 	local pet = PetData.GetPet(petId)
 	local rarity = PetData.Rarity(pet)
-	local row = UIKit.panel(eggPanel, {Size = UDim2.new(1, -20, 0.072, 0), Position = UDim2.new(0.5, 0, 0.38 + (i - 1) * 0.082, 0), AnchorPoint = Vector2.new(0.5, 0),
+	local row = UIKit.panel(eggPanel, {Size = UDim2.new(1, -20, 0.072, 0), Position = UDim2.new(0.5, 0, 0.375 + (i - 1) * 0.083, 0), AnchorPoint = Vector2.new(0.5, 0),
 		Color = rarity.Color, Radius = 10, Stroke = 2.5})
 	local view = Instance.new("Frame")
 	view.BackgroundTransparency = 1
-	view.Size = UDim2.new(0, 40, 1.3, 0)
-	view.Position = UDim2.new(0, 2, 0.5, 0)
+	view.Size = UDim2.new(0, 46, 1.4, 0)
+	view.Position = UDim2.new(0, 0, 0.5, 0)
 	view.AnchorPoint = Vector2.new(0, 0.5)
 	view.Parent = row
 	PetVisuals.viewport(view, pet.Id)
-	UIKit.label(row, pet.Name, {Size = UDim2.new(0.62, -44, 0.8, 0), Position = UDim2.new(0, 44, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+	UIKit.label(row, pet.Name, {Size = UDim2.new(0.62, -46, 0.8, 0), Position = UDim2.new(0, 46, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
 		Align = "Left", Stroke = 2.5, MaxText = 20})
 	UIKit.label(row, chances[i] .. "%", {Size = UDim2.new(0.3, 0, 0.8, 0), Position = UDim2.new(1, -8, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
 		Align = "Right", Stroke = 2.5, MaxText = 20})
 end
-UIKit.label(eggPanel, "Exclusive pets: every one boosts money, luck AND speed!", {Size = UDim2.new(1, -24, 0.06, 0), Position = UDim2.new(0.5, 0, 0.79, 0),
-	AnchorPoint = Vector2.new(0.5, 0), Color = rgb(150, 245, 230), Stroke = 0, MaxText = 15, Font = UIKit.BodyFont})
-local productButtons = {}
+UIKit.label(eggPanel, "Boosts money, luck AND speed!", {Size = UDim2.new(1, -24, 0.045, 0), Position = UDim2.new(0.5, 0, 0.315, 0),
+	AnchorPoint = Vector2.new(0.5, 0), Color = rgb(170, 250, 235), Stroke = 1.5, MaxText = 16, Font = UIKit.BodyFont})
+local productSetters = {}
+local saveTag
 for i, product in ipairs(StoreData.Products) do
-	local b = UIKit.button(eggPanel, "", {Size = UDim2.new(0.5, -14, 0.12, 0), Position = UDim2.new(i == 1 and 0 or 1, i == 1 and 10 or -10, 1, -10),
-		AnchorPoint = Vector2.new(i == 1 and 0 or 1, 1), Color = i == 1 and C.Money or GOLD, MaxText = 20})
+	local b, set = priceButton(eggPanel, {Size = UDim2.new(0.5, -15, 0.13, 0), Position = UDim2.new(i == 1 and 0 or 1, i == 1 and 10 or -10, 1, -10),
+		AnchorPoint = Vector2.new(i == 1 and 0 or 1, 1), Color = i == 1 and C.Money or GOLD, TextSize = 22})
 	b.MouseButton1Click:Connect(function() buyRemote:FireServer(product.Key) end)
-	productButtons[product.Key] = b
+	productSetters[product.Key] = set
+	if product.Amount > 1 then
+		saveTag = UIKit.panel(b, {Size = UDim2.fromOffset(84, 24), Position = UDim2.new(1, 8, 0, -6), AnchorPoint = Vector2.new(1, 0.5),
+			Color = rgb(255, 70, 90), Radius = 8, Stroke = 2, StrokeColor = C.Outline})
+		saveTag.Rotation = 8
+		saveTag.ZIndex = 6
+		saveTag.Visible = false
+		UIKit.label(saveTag, "", {Name = "Text", Size = UDim2.fromScale(0.9, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
+			Stroke = 2, MaxText = 16}).ZIndex = 7
+	end
 end
 
 ---------------------------------------------------------------------
@@ -22378,21 +22628,38 @@ end
 ---------------------------------------------------------------------
 local function refresh()
 	for _, pass in ipairs(StoreData.Passes) do
-		local button = passButtons[pass.Key]
+		local set = passSetters[pass.Key]
 		if StoreData.PlayerOwns(player, pass.Key) then
 			local inHand = string.sub(player:GetAttribute("EquippedShovel") or "", 1, 12) == "RelicPickaxe"
 			if pass.Key == "RelicPickaxe" and not inHand then
-				UIKit.setButton(button, "EQUIP", C.Sky)
+				set("EQUIP", nil, C.Sky)
 			else
-				UIKit.setButton(button, "OWNED", rgb(150, 145, 170))
+				set("OWNED", nil, GREY)
 			end
+		elseif forSale(pass) then
+			set(nil, price(pass), C.Money)
 		else
-			UIKit.setButton(button, priceText(pass), pass.Id == 0 and not IS_STUDIO and rgb(150, 145, 170) or C.Money)
+			set("SOON", nil, GREY)
 		end
 	end
+	local one
 	for i, product in ipairs(StoreData.Products) do
-		local text = "x" .. product.Amount .. "  " .. priceText(product)
-		UIKit.setButton(productButtons[product.Key], text, product.Id == 0 and not IS_STUDIO and rgb(150, 145, 170) or (i == 1 and C.Money or GOLD))
+		if product.Amount == 1 then one = product end
+		if forSale(product) then
+			productSetters[product.Key](nil, price(product), i == 1 and C.Money or GOLD, "x" .. product.Amount)
+		else
+			productSetters[product.Key]("SOON", nil, GREY)
+		end
+	end
+	-- "SAVE 12%" on the bigger pack
+	for _, product in ipairs(StoreData.Products) do
+		if product.Amount > 1 and one and saveTag then
+			local full = price(one) * product.Amount
+			local save = math.floor((1 - price(product) / full) * 100 + 0.5)
+			saveTag.Visible = save > 0 and forSale(product)
+			local label = saveTag:FindFirstChildWhichIsA("TextLabel")
+			if label then label.Text = "SAVE " .. save .. "%" end
+		end
 	end
 end
 refresh()
@@ -23494,4 +23761,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-03 13:43). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-03 14:00). Now save the place (Ctrl+S).")
