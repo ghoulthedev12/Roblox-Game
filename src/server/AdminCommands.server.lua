@@ -11,13 +11,14 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TextChatService = game:GetService("TextChatService")
+local GroupService = game:GetService("GroupService")
 
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
 local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 
 -- extra admins by UserId (find it in the profile link: roblox.com/users/<UserId>/profile)
 local ADMIN_IDS = {
-	-- 123456789,
+	3644018974, -- ghouIk1 (owner)
 }
 local MIN_GROUP_RANK = 255 -- 255 = group owner; lower it (e.g. 254) to let group admins in too
 
@@ -33,6 +34,8 @@ local function isAdmin(player)
 	if game.CreatorType == Enum.CreatorType.User then
 		return player.UserId == game.CreatorId
 	end
+	local okInfo, info = pcall(GroupService.GetGroupInfoAsync, GroupService, game.CreatorId)
+	if okInfo and info.Owner and info.Owner.Id == player.UserId then return true end
 	local ok, rank = pcall(player.GetRankInGroup, player, game.CreatorId)
 	return ok and rank >= MIN_GROUP_RANK
 end
