@@ -33,6 +33,10 @@ game systems. The owner is a beginner on Windows: explain steps simply, one at a
   per world) + `src/shared/PetMeshData.lua`; the installer moves them to ReplicatedStorage >
   PetModels. Stats and eggs: `src/shared/PetData.lua`; models: `PetVisuals` (round stand-ins
   until imported; `MESH_TURN` there if they face backwards); server `PetManager`, client `PetClient`.
+- The Relic Egg (Robux) and its 5 pets are in `pets.py` too (RELIC). The Relic Pickaxe (game
+  pass) is in `pickaxes.py` (EXCLUSIVE), exported into PickaxeMeshes.fbx and also alone into
+  `RelicPickaxe.fbx`. Store icons: `tools/blender/store_icons.py`. Store code: StoreData /
+  StoreManager / StoreClient (see README "The Robux Store").
 - Portals: `tools/blender/portals.py` -> `PortalMeshes.fbx` + `src/shared/PortalMeshes.lua`.
 - UI icons: `tools/blender/ui_icons.py` -> `UIIcons.fbx`, pictures in `assets/ui/icons`,
   `src/shared/UIIconList.lua`. Shown with `UIKit.icon(parent, "Name")`.

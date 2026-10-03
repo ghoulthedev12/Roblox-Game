@@ -9,6 +9,9 @@
 --     player's PetClient moves them) and boost them: income (PlayerData), Dig Luck and Dig
 --     Speed (DigBoosts reads the PetLuck / PetSpeed attributes set here).
 --   * The Pets window asks for the list and equips, unequips and deletes through PetAction.
+--   * THE RELIC EGG is bought with Robux: its stand in World 1 asks StoreManager to show the
+--     purchase (the StorePrompt event), and StoreManager hatches the paid eggs through the
+--     GrantEggs function made here.
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -18,11 +21,13 @@ local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local PetData = require(ReplicatedStorage:WaitForChild("PetData"))
 local PetVisuals = require(ReplicatedStorage:WaitForChild("PetVisuals"))
+local StoreData = require(ReplicatedStorage:WaitForChild("StoreData"))
 local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
 
 local STAND_SPOT = {Angle = 150, Distance = 80} -- the shop is at 30 degrees, the gate at -30
 local STAND_SPOT_WORLD_1 = {Angle = 165, Distance = 89} -- (World 1's Research Lab is at 150)
+local RELIC_STAND_SPOT = {Angle = 225, Distance = 89} -- the Relic Egg (180 is a walkway, 200-215 the scanner)
 local HATCH_COOLDOWN = 1.2 -- seconds between hatches (the hatch takes a moment on screen)
 
 local rng = Random.new()
@@ -116,20 +121,24 @@ end
 ---------------------------------------------------------------------
 local lastHatch = {}
 
-local function hatch(player, egg, amount)
+-- paid = bought with Robux: no cash, no cooldown, and it hatches even past the pet limit
+-- (a purchase is never lost). Returns true once the pets are in the save.
+local function hatch(player, egg, amount, paid)
 	local data = PlayerData.Get(player)
-	if not data then return end
-	if os.clock() - (lastHatch[player] or 0) < HATCH_COOLDOWN then return end
-	local room = PetData.MaxOwned - count(data)
-	if room <= 0 then
-		say(player, "Your pets are full (" .. PetData.MaxOwned .. ")! Delete some in the Pets window.", false)
-		return
-	end
-	amount = math.min(amount, room)
-	local cost = egg.Price * amount
-	if not PlayerData.SpendMoney(player, cost) then
-		say(player, "You need " .. ArtifactData.FormatMoney(cost) .. " to hatch " .. (amount > 1 and amount .. " eggs" or "this egg") .. ".", false)
-		return
+	if not data then return false end
+	if not paid then
+		if os.clock() - (lastHatch[player] or 0) < HATCH_COOLDOWN then return false end
+		local room = PetData.MaxOwned - count(data)
+		if room <= 0 then
+			say(player, "Your pets are full (" .. PetData.MaxOwned .. ")! Delete some in the Pets window.", false)
+			return false
+		end
+		amount = math.min(amount, room)
+		local cost = egg.Price * amount
+		if not PlayerData.SpendMoney(player, cost) then
+			say(player, "You need " .. ArtifactData.FormatMoney(cost) .. " to hatch " .. (amount > 1 and amount .. " eggs" or "this egg") .. ".", false)
+			return false
+		end
 	end
 	lastHatch[player] = os.clock()
 	local got = {}
@@ -148,6 +157,16 @@ local function hatch(player, egg, amount)
 	end
 	hatchedRemote:FireClient(player, egg.Id, got)
 	changed(player)
+	return true
+end
+
+-- StoreManager: hatch eggs someone paid Robux for
+local grantEggs = script.Parent:FindFirstChild("GrantEggs") or Instance.new("BindableFunction")
+grantEggs.Name = "GrantEggs"
+grantEggs.Parent = script.Parent
+grantEggs.OnInvoke = function(player, eggId, amount)
+	local egg = PetData.EggsById[eggId]
+	return egg ~= nil and hatch(player, egg, amount, true)
 end
 
 ---------------------------------------------------------------------
@@ -235,7 +254,7 @@ end
 
 local UP = CFrame.Angles(0, 0, math.rad(90)) -- a cylinder standing upright
 
-local function sign(anchor, egg)
+local function sign(anchor, egg, priceText)
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "EggSign"
 	gui.Size = UDim2.fromScale(11, 9.5)
@@ -246,22 +265,30 @@ local function sign(anchor, egg)
 	local panel = UIKit.panel(gui, {Size = UDim2.fromScale(1, 1), Color = Color3.fromRGB(40, 34, 70), Radius = 18, Stroke = 4})
 	UIKit.label(panel, string.upper(egg.Name), {Size = UDim2.new(1, -16, 0.15, 0), Position = UDim2.fromScale(0.5, 0.03), AnchorPoint = Vector2.new(0.5, 0),
 		Stroke = 3, MaxText = 60})
-	UIKit.label(panel, ArtifactData.FormatMoney(egg.Price), {Size = UDim2.new(1, -16, 0.12, 0), Position = UDim2.fromScale(0.5, 0.18), AnchorPoint = Vector2.new(0.5, 0),
-		Color = Color3.fromRGB(120, 240, 100), Stroke = 3, MaxText = 50})
+	UIKit.label(panel, priceText or ArtifactData.FormatMoney(egg.Price), {Size = UDim2.new(1, -16, 0.12, 0), Position = UDim2.fromScale(0.5, 0.18), AnchorPoint = Vector2.new(0.5, 0),
+		Color = egg.Robux and Color3.fromRGB(255, 215, 70) or Color3.fromRGB(120, 240, 100), Stroke = 3, MaxText = 50})
+	local chances = PetData.Chances(egg)
 	for i, petId in ipairs(egg.Pets) do
 		local pet = PetData.GetPet(petId)
-		local rarity = PetData.Rarities[i]
+		local rarity = PetData.Rarities[pet.Rarity]
 		local row = UIKit.panel(panel, {Size = UDim2.new(0.92, 0, 0.115, 0), Position = UDim2.new(0.5, 0, 0.33 + (i - 1) * 0.128, 0), AnchorPoint = Vector2.new(0.5, 0),
 			Color = rarity.Color, Radius = 10, Stroke = 2.5})
 		UIKit.label(row, pet.Name, {Size = UDim2.new(0.68, 0, 0.8, 0), Position = UDim2.new(0.04, 0, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
 			Align = "Left", Stroke = 2.5, MaxText = 40})
-		UIKit.label(row, rarity.Chance .. "%", {Size = UDim2.new(0.26, 0, 0.8, 0), Position = UDim2.new(0.96, 0, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+		UIKit.label(row, chances[i] .. "%", {Size = UDim2.new(0.26, 0, 0.8, 0), Position = UDim2.new(0.96, 0, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
 			Align = "Right", Stroke = 2.5, MaxText = 40})
 	end
 end
 
-local function buildStand(world, egg, parent)
-	local spot = world.Id == 1 and STAND_SPOT_WORLD_1 or STAND_SPOT
+-- the Robux egg's prompts show its price in Robux, from the store's products (1 and 3 eggs)
+local function relicProduct(amount)
+	for _, product in ipairs(StoreData.Products) do
+		if product.Egg == "RelicEgg" and product.Amount == amount then return product end
+	end
+end
+
+local function buildStand(world, egg, parent, spotOverride)
+	local spot = spotOverride or (world.Id == 1 and STAND_SPOT_WORLD_1 or STAND_SPOT)
 	local a = math.rad(spot.Angle)
 	local origin = world.Origin
 	local pos = origin + Vector3.new(math.cos(a) * spot.Distance, 0, math.sin(a) * spot.Distance)
@@ -269,7 +296,10 @@ local function buildStand(world, egg, parent)
 	local look = world.Look or {}
 	local main = look.Main or Color3.fromRGB(190, 160, 240)
 	local glow = look.Glow or Color3.fromRGB(60, 220, 240)
-	local light = Color3.fromRGB(246, 246, 252)
+	if egg.Robux then -- the Relic Egg's stand is gold and turquoise
+		main, glow = Color3.fromRGB(255, 200, 60), Color3.fromRGB(40, 220, 200)
+	end
+	local light = egg.Robux and Color3.fromRGB(255, 236, 170) or Color3.fromRGB(246, 246, 252)
 
 	GameConfig.LevelGround(workspace.Terrain, base, 16, 16)
 	local stand = Instance.new("Model")
@@ -307,7 +337,7 @@ local function buildStand(world, egg, parent)
 	anchor.Transparency = 1
 	anchor.CanCollide = false
 	anchor.CanQuery = false
-	sign(anchor, egg)
+	sign(anchor, egg, egg.Robux and "ROBUX EGG" or nil)
 
 	local promptPart = part(stand, "HatchPrompt", Vector3.new(2, 2, 2), base * CFrame.new(0, 5, 0), light)
 	promptPart.Transparency = 1
@@ -317,7 +347,8 @@ local function buildStand(world, egg, parent)
 		local amount, key = option[1], option[2]
 		local prompt = Instance.new("ProximityPrompt")
 		prompt.Name = "Hatch" .. amount
-		prompt.ObjectText = egg.Name .. "  ·  " .. ArtifactData.FormatMoney(egg.Price * amount)
+		local product = egg.Robux and relicProduct(amount)
+		prompt.ObjectText = egg.Name .. "  ·  " .. (product and (product.Robux .. " Robux") or ArtifactData.FormatMoney(egg.Price * amount))
 		prompt.ActionText = "Hatch " .. amount
 		prompt.KeyboardKeyCode = key
 		prompt.GamepadKeyCode = amount == 1 and Enum.KeyCode.ButtonX or Enum.KeyCode.ButtonY
@@ -327,7 +358,13 @@ local function buildStand(world, egg, parent)
 		prompt.UIOffset = Vector2.new(0, amount == 1 and 0 or 72)
 		prompt.Parent = promptPart
 		prompt.Triggered:Connect(function(player)
-			hatch(player, egg, amount)
+			if product then
+				-- StoreManager shows the Robux purchase; the eggs hatch once it's paid
+				local storePrompt = script.Parent:FindFirstChild("StorePrompt")
+				if storePrompt then storePrompt:Fire(player, product.Key) end
+			else
+				hatch(player, egg, amount)
+			end
 		end)
 	end
 	stand.Parent = parent
@@ -353,5 +390,7 @@ task.spawn(function()
 			if not ok then warn("Egg stand for world " .. worldId .. ": " .. tostring(err)) end
 		end
 	end
-	print("PetManager ready: " .. #PetData.Order .. " pets in " .. #PetData.Eggs .. " eggs")
+	local ok, err = pcall(buildStand, GameConfig.Worlds[1], PetData.RelicEgg, folder, RELIC_STAND_SPOT)
+	if not ok then warn("Relic Egg stand: " .. tostring(err)) end
+	print("PetManager ready: " .. #PetData.Order .. " pets in " .. #PetData.Eggs .. " eggs + the Relic Egg")
 end)

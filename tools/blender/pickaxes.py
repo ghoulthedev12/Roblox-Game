@@ -51,6 +51,9 @@ for _name, _c in [
     ("anvil", (60, 64, 74)), ("magma", (110, 50, 40)), ("obsidian", (30, 24, 44)), ("dragonbone", (240, 230, 200)),
     ("placeholder", (160, 160, 160)), ("missing", (255, 0, 220)), ("pixel1", (90, 200, 255)), ("pixel2", (40, 110, 200)),
     ("wire", (60, 255, 140)), ("error", (230, 50, 60)), ("terminal", (20, 30, 24)), ("patch", (245, 200, 150)),
+    # the Relic Pickaxe (the Robux game pass)
+    ("relicgold", (255, 214, 70)), ("relicgolddark", (226, 162, 44)), ("relicteal", (40, 205, 190)),
+    ("relicruby", (235, 40, 80)), ("relicdark", (40, 36, 60)),
 ]:
     rgb(_name, *_c)
 
@@ -1086,6 +1089,31 @@ def _(p):
     p.glow.torus("glow", 0.75, 0.05, loc=(0, H.y + 1.0, 0), rot=(90, 0, 0))
 
 
+# ---- Exclusive: the Relic Pickaxe (the Robux game pass, usable in every world) -------------
+@design("RelicPickaxe", (70, 255, 225))
+def _(p):
+    handle(p, "relicdark", "relicteal", accent="relicgold",
+           pommel=lambda m: m.blob("relicruby", (0.42, 0.42, 0.42), loc=(0, -2.34, 0)))
+    m = p.body
+    for side in (1, -1):
+        arm(p, "relicgold", side, R_=2.4, r0=0.38, r1=0.05)
+        for k in (4, 8):
+            arm_ring(m, "relicteal", side, 2.4, 1.15, k, 14, 0.27 - k * 0.012, 0.06)
+        p.glow.tube("glow", arc(side, 2.62, 0.12, 1.02, 10), 0.045, seg=6)
+    # a golden sun disc for a socket, rays on the diagonals and a big ruby in the middle
+    m.cyl("relicgolddark", 0.82, 0.46, loc=tuple(H), rot=(0, 90, 0), seg=32)
+    m.cyl("relicgold", 0.7, 0.56, loc=tuple(H), rot=(0, 90, 0), seg=32)
+    for k in range(4):
+        a = R(45 + k * 90)
+        d = Vector((0, math.cos(a), math.sin(a)))
+        rod(m, "relicgold", H + d * 0.72, H + d * 1.15, 0.13, 0.02, seg=6)
+    m.blob("relicruby", (0.95, 0.62, 0.62), loc=tuple(H))
+    for sx in (-1, 1):
+        p.glow.torus("glow", 0.58, 0.035, loc=(sx * 0.29, H.y, 0), rot=(0, 90, 0))
+        m.blob("white", (0.08, 0.12, 0.12), loc=(sx * 0.44, H.y + 0.14, 0.14))
+    p.glow.torus("glow", 0.6, 0.04, loc=(0, H.y + 1.15, 0), rot=(90, 0, 0))  # a halo over the head
+
+
 # ------------------------------------------------------------------------------------------
 # finishing, export, previews
 # ------------------------------------------------------------------------------------------
@@ -1226,33 +1254,47 @@ WORLDS = [
     ["EmberSpade", "AnvilShovel", "MagmaScoop", "ObsidianBlade", "DragonboneSpade", "InfernoAuger", "CoreBreaker"],
     ["PlaceholderSpade", "PixelShovel", "LagSpade", "WireframeShovel", "Error404Scoop", "DebugDrill", "TheFinalPatch"],
 ]
+# not sold in any world's shop: the Relic Pickaxe comes with a game pass. It goes into
+# PickaxeMeshes.fbx like the others and also into its own small RelicPickaxe.fbx, so a place
+# that already has the other pickaxes only needs that one imported.
+EXCLUSIVE = ["RelicPickaxe"]
 
 
 def export_all():
     memekit.reset()
     all_data, objs = {}, []
-    for w, ids in enumerate(WORLDS):
+    exclusive = []
+    for w, ids in enumerate(WORLDS + [EXCLUSIVE]):
         for i, pid in enumerate(ids):
             pieces, data = build(pid)
             all_data[pid] = data
             for o in pieces:
                 o.location = (i * 7, w * 7, 0)
                 objs.append(o)
-    bpy.ops.object.select_all(action="DESELECT")
-    for o in objs:
-        o.select_set(True)
-    bpy.context.view_layer.objects.active = objs[0]
-    path = os.path.join(memekit.OUT, "PickaxeMeshes.fbx")
-    bpy.ops.export_scene.fbx(filepath=path, use_selection=True, apply_unit_scale=True, apply_scale_options="FBX_SCALE_ALL",
-                             axis_forward="-Z", axis_up="Y", mesh_smooth_type="FACE", path_mode="COPY", embed_textures=True,
-                             bake_space_transform=True)
+                if pid in EXCLUSIVE:
+                    exclusive.append(o)
+
+    def export(selection, name):
+        bpy.ops.object.select_all(action="DESELECT")
+        for o in selection:
+            o.select_set(True)
+        bpy.context.view_layer.objects.active = selection[0]
+        path = os.path.join(memekit.OUT, name)
+        bpy.ops.export_scene.fbx(filepath=path, use_selection=True, apply_unit_scale=True, apply_scale_options="FBX_SCALE_ALL",
+                                 axis_forward="-Z", axis_up="Y", mesh_smooth_type="FACE", path_mode="COPY", embed_textures=True,
+                                 bake_space_transform=True)
+        print("wrote", path, "with", len(selection), "meshes")
+    export(objs, "PickaxeMeshes.fbx")
+    export(exclusive, "RelicPickaxe.fbx")
     write_lua(all_data)
-    print("wrote", path, "with", len(objs), "meshes")
 
 
 def main(args):
     os.makedirs(PREVIEW, exist_ok=True)
     if args and args[0] == "preview":
+        if "relic" in args[1:]:
+            preview(EXCLUSIVE, os.path.join(PREVIEW, "Pickaxe_Relic.png"))
+            return
         for w, ids in enumerate(WORLDS):
             if len(args) == 1 or str(w + 2) in args[1:]:
                 preview(ids, os.path.join(PREVIEW, "Pickaxes_World%d.png" % (w + 2)))

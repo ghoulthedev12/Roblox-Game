@@ -1,13 +1,14 @@
 -- DigBoosts (ModuleScript in ServerScriptService)
 -- Digging bonuses: the world gimmicks' temporary ones (world-wide events like Gold Rush,
 -- Blizzard luck, Glitch Surge, and personal boosts like the Candy merchant's Sugar Rush),
--- and the equipped pets' Dig Luck and Dig Speed.
+-- the equipped pets' Dig Luck and Dig Speed, and the 2x Dig Speed game pass.
 -- DigManager asks DigBoosts.Get(player, world) on every swing. Each player's attributes
 -- "DigSpeedMult" (swing cooldown multiplier), "WorldEvent" and "WorldEventEnds" and
 -- "PersonalBoost"/"PersonalBoostEnds" are kept up to date so the client can show them.
 
 local Players = game:GetService("Players")
 local PetData = require(game:GetService("ReplicatedStorage"):WaitForChild("PetData"))
+local StoreData = require(game:GetService("ReplicatedStorage"):WaitForChild("StoreData"))
 
 local DigBoosts = {}
 
@@ -43,6 +44,12 @@ function DigBoosts.GetPersonal(player)
 	return active(p) and p or nil
 end
 
+-- the swing cooldown multiplier from pets and the 2x Dig Speed game pass
+local function speedMult(player)
+	local pass = StoreData.PlayerOwns(player, "DoubleSpeed") and 2 or 1
+	return 1 / ((1 + (player:GetAttribute("PetSpeed") or 0)) * pass)
+end
+
 -- the multipliers for this player's next swing in this world
 function DigBoosts.Get(player, world)
 	local find, luck, cooldown = 1, 1, 1
@@ -62,7 +69,7 @@ function DigBoosts.Get(player, world)
 	local petLuck = player:GetAttribute("PetLuck") or 0
 	find *= 1 + math.min(petLuck, PetData.FindCap)
 	luck *= 1 + petLuck * 0.5
-	cooldown /= 1 + (player:GetAttribute("PetSpeed") or 0)
+	cooldown *= speedMult(player)
 	return {Find = find, Luck = luck, Cooldown = cooldown}
 end
 
@@ -74,7 +81,7 @@ task.spawn(function()
 			local e = DigBoosts.GetWorldEvent(worldId)
 			local p = DigBoosts.GetPersonal(player)
 			local now = os.clock()
-			local cooldown = (e and e.CooldownMult or 1) * (p and p.CooldownMult or 1) / (1 + (player:GetAttribute("PetSpeed") or 0))
+			local cooldown = (e and e.CooldownMult or 1) * (p and p.CooldownMult or 1) * speedMult(player)
 			player:SetAttribute("DigSpeedMult", cooldown)
 			player:SetAttribute("WorldEvent", e and e.Name or "")
 			player:SetAttribute("WorldEventLeft", e and math.ceil(e.EndsAt - now) or 0)

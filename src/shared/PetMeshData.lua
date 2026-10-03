@@ -57,4 +57,10 @@ return {
 	GlitchCat = {Size = Vector3.new(2.120, 3.198, 2.747)},
 	CodeBug = {Size = Vector3.new(2.533, 2.080, 2.910)},
 	NullUnicorn = {Size = Vector3.new(1.700, 3.882, 4.199)},
+	RelicEgg = {Size = Vector3.new(2.318, 3.500, 2.482)},
+	FossilRex = {Size = Vector3.new(1.450, 2.905, 4.198)},
+	MummyCat = {Size = Vector3.new(1.560, 2.996, 2.338)},
+	TotemOwl = {Size = Vector3.new(3.676, 2.900, 1.700)},
+	IdolMonkey = {Size = Vector3.new(2.200, 2.775, 2.128)},
+	RelicDragon = {Size = Vector3.new(4.659, 4.000, 4.751)},
 }

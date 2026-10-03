@@ -51,6 +51,7 @@ local WORLD_HEADS = {"Crescent", "Wide", "Bone", "Drill", "Crystal", "Plasma", "
 local function lookFor(def)
 	if LOOKS[def.Id] then return LOOKS[def.Id] end
 	local look = def.Look
+	if look and look.Head and look.Main then return look end -- a full look of its own (the Relic Pickaxe)
 	if look and look.Colors then
 		local c = look.Colors
 		return {
@@ -239,12 +240,13 @@ end
 
 -- returns the head's tips (where the trails come off), its socket and glowing part, or nil
 local function buildFromMesh(tool, def, look)
-	local data = PickaxeMeshData[def.Id]
-	local bodySrc = data and meshSource(def.Id)
+	local meshId = def.Mesh or def.Id -- the Relic Pickaxe of every world shares one mesh
+	local data = PickaxeMeshData[meshId]
+	local bodySrc = data and meshSource(meshId)
 	if not bodySrc then return nil end
 	meshPiece(tool, "PickaxeBody", bodySrc, data.Size, data.Center)
 	look.Gem = data.GlowColor -- the light, sparkles and swoosh take the pickaxe's glow color
-	local glowSrc = data.GlowSize and meshSource(def.Id .. "Glow")
+	local glowSrc = data.GlowSize and meshSource(meshId .. "Glow")
 	local gem
 	if glowSrc then
 		gem = meshPiece(tool, "HeadGem", glowSrc, data.GlowSize, data.GlowCenter)

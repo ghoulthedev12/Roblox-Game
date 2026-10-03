@@ -53,6 +53,11 @@ for _name, _c in [
     # eggs
     ("eggwhite", (246, 244, 250)), ("eggice", (190, 230, 255)), ("eggchrome", (215, 220, 232)), ("eggteal", (60, 190, 190)),
     ("eggcandy", (255, 240, 248)), ("eggmagma", (44, 38, 44)), ("eggglitch", (200, 50, 200)),
+    # the Relic Egg (bought with Robux) and its pets: gold, turquoise, ruby, old stone and bone
+    ("relicgold", (255, 218, 80)), ("relicgolddark", (226, 162, 44)), ("relicteal", (40, 205, 190)),
+    ("relicruby", (235, 40, 80)), ("relicstone", (150, 130, 110)), ("relicstonedark", (100, 84, 72)),
+    ("bone", (240, 232, 205)), ("bonedark", (200, 186, 150)), ("bandage", (236, 228, 208)), ("bandagedark", (190, 178, 150)),
+    ("totemred", (210, 70, 50)), ("totemwood", (170, 105, 60)), ("jade", (70, 200, 120)),
 ]:
     rgb(_name, *_c)
 
@@ -1165,8 +1170,147 @@ def glitch_egg():
     return m
 
 
+# ------------------------------------------------------------------------------------------
+# THE RELIC EGG (bought with Robux): an ancient golden egg dug up from the old internet, and
+# its five exclusive pets (Rare, Rare, Epic, Epic, Legendary)
+# ------------------------------------------------------------------------------------------
+def relic_egg():
+    m = Meme("RelicEgg")
+    egg_shell(m, "relicgold")
+    egg_band(m, "relicteal", 0.3, 0.1)
+    egg_band(m, "relicteal", 0.68, 0.08)
+    for k in range(12):  # a ring of carved glyph tiles, leaving room for the ruby on the front
+        a = k * 30
+        if abs(a - 270) > 25:
+            on_shell(m, "relicgolddark" if k % 2 else "relicteal", a, 0.49, (0.08, 0.2, 0.28), shape="box")
+    x, y, z = egg_point(-90, 0.49, 0.04)
+    m.blob("relicgolddark", (0.62, 0.22, 0.62), (x, y + 0.04, z))  # the ruby's gold setting
+    m.blob("relicruby", (0.46, 0.2, 0.46), (x, y - 0.04, z))
+    m.blob("petwhite", (0.1, 0.05, 0.1), (x + 0.1, y - 0.14, z + 0.1))
+    for k in range(5):
+        on_shell(m, "relicruby", k * 72 + 18, 0.14, (0.1, 0.2, 0.2))
+        on_shell(m, "relicteal", k * 72 + 54, 0.84, (0.08, 0.15, 0.15))
+    m.cyl("relicgolddark", 0.24, 0.22, (0, 0, EGG_H - 0.02), radius2=0.12, seg=20)
+    m.blob("relicruby", (0.28, 0.28, 0.28), (0, 0, EGG_H + 0.18))
+    return m
+
+
+def fossil_rex():
+    m = Meme("FossilRex")
+    m.blob("bone", (1.4, 1.7, 1.5), (0, 0.3, 1.25))
+    for k in range(4):  # rib bands, like a fossil
+        m.torus("bonedark", 0.66, 0.06, (0, -0.05 + k * 0.25, 1.3), rot=(90, 0, 0), scale=(1.0, 1.0, 1.08))
+    head = head_blob(m, "bone", (0, -0.7, 2.35, 1.3, 1.4, 1.1))
+    m.blob("bone", (1.05, 0.8, 0.5), (0, -1.3, 2.02))  # snout
+    face(m, head, eye=0.24, spacing=0.24, ez=0.17, smile=False)
+    for x in (-0.3, -0.1, 0.1, 0.3):  # little teeth
+        m.cyl("petwhite", 0.06, 0.16, (x, -1.58, 1.82), rot=(180, 0, 0), radius2=0.01, seg=6)
+    for sx in (-1, 1):
+        m.blob("eyeink", (0.08, 0.08, 0.06), (sx * 0.16, -1.69, 2.12))  # nostrils
+        m.tube("bone", [(sx * 0.55, -0.45, 1.5), (sx * 0.62, -0.8, 1.32)], 0.1)  # tiny arms
+        m.blob("bone", (0.55, 0.7, 0.8), (sx * 0.45, 0.35, 0.6))  # legs
+        m.blob("bonedark", (0.5, 0.75, 0.25), (sx * 0.45, 0.12, 0.12))
+    tail_tube(m, "bone", [(0, 1.0, 1.1), (0, 1.6, 0.9), (0, 2.1, 0.72), (0, 2.45, 0.66)], 0.45, 0.1)
+    for k in range(4):  # stone plates down its back
+        m.cyl("relicstone", 0.17, 0.32, (0, 0.0 + k * 0.32, 2.0 - k * 0.12), radius2=0.02, seg=4)
+    return m
+
+
+def mummy_cat():
+    m = Meme("MummyCat")
+    m.blob("bandage", (1.5, 1.4, 1.5), (0, 0.15, 0.85))
+    head = head_blob(m, "bandage", (0, -0.25, 2.05, 1.5, 1.3, 1.2))
+    for k, z in enumerate((0.45, 0.8, 1.15)):  # wraps around the body
+        m.torus("bandagedark", 0.72, 0.06, (0, 0.15, z), rot=(0, (k - 1) * 10, 0), scale=(1, 0.93, 1))
+    for k, z in enumerate((1.75, 2.42)):  # ...and the head
+        m.torus("bandagedark", 0.68 if k == 0 else 0.62, 0.06, (0, -0.25, z), rot=(0, 8 - k * 16, 0), scale=(1, 0.86, 1))
+    # one big glowing eye peeking out, the other bandaged over
+    y = front_y(head, -0.33, 0.1)
+    m.eye((-0.33, y + 0.05, 2.17), (0.42, 0.25, 0.48), iris="relicteal", white="eyeink")
+    m.box("bandagedark", (0.55, 0.14, 0.16), (0.33, front_y(head, 0.33, 0.1) - 0.02, 2.17), rot=(0, -18, 0), bevel=0.05)
+    m.blob("blush", (0.24, 0.06, 0.12), (0.4, front_y(head, 0.4, -0.15) + 0.02, 1.9))
+    for sx in (-1, 1):
+        ear(m, "bandage", "blush", sx * 0.45, -0.2, 2.45, 0.45, 0.55, tilt=sx * 15)
+        m.blob("bandage", (0.4, 0.5, 0.3), (sx * 0.35, -0.5, 0.15))  # paws
+    tail_tube(m, "bandage", [(0, 0.8, 0.4), (0.4, 1.2, 0.5), (0.6, 1.3, 1.0), (0.5, 1.2, 1.4)], 0.14, 0.1)
+    m.blob("relicgold", (0.32, 0.12, 0.3), (0, -0.58, 1.3))  # a scarab amulet
+    m.blob("relicteal", (0.16, 0.08, 0.15), (0, -0.64, 1.3))
+    return m
+
+
+def totem_owl():
+    m = Meme("TotemOwl")
+    m.squircle("totemwood", (1.6, 1.4, 2.4), (0, 0, 1.3), power=3)  # a carved wooden post
+    m.box("relicteal", (1.66, 1.46, 0.2), (0, 0, 0.5), bevel=0.05)
+    m.box("totemred", (1.66, 1.46, 0.16), (0, 0, 0.74), bevel=0.05)
+    for sx in (-1, 1):  # big round gold eyes
+        m.cyl("relicgold", 0.38, 0.12, (sx * 0.38, -0.7, 1.95), rot=(90, 0, 0), seg=24)
+        m.cyl("eyeink", 0.2, 0.14, (sx * 0.38, -0.74, 1.95), rot=(90, 0, 0), seg=20)
+        m.blob("petwhite", (0.09, 0.05, 0.09), (sx * 0.38 + 0.07, -0.82, 2.03))
+        m.cyl("totemwood", 0.22, 0.6, (sx * 0.55, 0, 2.62), rot=(0, sx * 25, 0), radius2=0.03, seg=4)  # ear tufts
+        wing(m, "totemred", sx, sx * 0.75, 0.1, 1.15, 1.1, 1.35, rot=0)
+        wing(m, "relicteal", sx, sx * 0.78, 0.02, 1.2, 0.72, 0.9, rot=0)
+        m.blob("relicgold", (0.35, 0.4, 0.15), (sx * 0.35, -0.45, 0.08))  # feet
+    m.cyl("relicgold", 0.16, 0.38, (0, -0.78, 1.62), rot=(90, 0, 0), radius2=0.02, seg=4)  # beak
+    for k in range(2):  # gold chevrons carved into its belly
+        m.relief("relicgold", [(-0.35, 0), (0, -0.25), (0.35, 0), (0.35, 0.13), (0, -0.12), (-0.35, 0.13)], 0.08,
+                 (0, -0.72, 1.12 - k * 0.24))
+    return m
+
+
+def idol_monkey():
+    m = Meme("IdolMonkey")
+    m.squircle("relicstone", (1.8, 1.6, 0.5), (0, 0, 0.25), power=4)  # a stone plinth
+    m.box("relicstonedark", (1.84, 1.64, 0.1), (0, 0, 0.44), bevel=0.03)
+    m.blob("relicgold", (1.4, 1.2, 1.3), (0, 0.1, 1.15))
+    head = head_blob(m, "relicgold", (0, -0.2, 2.2, 1.4, 1.2, 1.15))
+    m.blob("relicgolddark", (0.9, 0.5, 0.6), (0, -0.7, 2.0))  # muzzle
+    for sx in (-1, 1):
+        m.cyl("relicgold", 0.32, 0.18, (sx * 0.78, -0.1, 2.3), rot=(90, 0, 0), seg=20)  # round ears
+        m.cyl("relicgolddark", 0.2, 0.2, (sx * 0.78, -0.14, 2.3), rot=(90, 0, 0), seg=16)
+        x = sx * 0.28
+        y = front_y(head, x, 0.2)
+        m.blob("relicruby", (0.26, 0.12, 0.3), (x, y + 0.02, 2.4))  # ruby eyes
+        m.blob("petwhite", (0.07, 0.04, 0.07), (x + 0.06, y - 0.04, 2.47))
+        m.tube("relicgold", [(sx * 0.6, -0.05, 1.5), (sx * 0.55, -0.5, 1.2), (sx * 0.25, -0.68, 1.1)], 0.13)  # arms
+        m.blob("relicgold", (0.6, 0.8, 0.4), (sx * 0.4, -0.35, 0.7))  # crossed legs
+    m.tube("eyeink", [(-0.18, -0.96, 1.92), (0, -0.99, 1.86), (0.18, -0.96, 1.92)], 0.035, seg=8)  # a smile
+    m.torus("relicteal", 0.64, 0.07, (0, -0.2, 2.58), scale=(1.05, 0.92, 1))  # a headband
+    m.blob("relicteal", (0.42, 0.32, 0.42), (0, -0.78, 1.1))  # the gem it holds
+    tail_tube(m, "relicgold", [(0, 0.7, 0.8), (0.5, 1.0, 0.9), (0.7, 0.9, 1.4), (0.5, 0.8, 1.7)], 0.12, 0.08)
+    return m
+
+
+def relic_dragon():
+    m = Meme("RelicDragon")
+    m.blob("relicgold", (1.5, 1.9, 1.8), (0, 0.25, 1.2))
+    m.blob("relicteal", (1.0, 0.6, 1.3), (0, -0.5, 1.1))  # belly
+    for k in range(4):
+        m.box("relicgolddark", (0.8, 0.08, 0.07), (0, -0.79, 0.72 + k * 0.27), bevel=0.02)
+    head = head_blob(m, "relicgold", (0, -0.75, 2.4, 1.45, 1.35, 1.2))
+    m.blob("relicgolddark", (0.85, 0.7, 0.5), (0, -1.35, 2.18))  # snout
+    face(m, head, eye=0.24, spacing=0.24, ez=0.15, white="petwhite", iris="relicteal", smile=False)
+    m.blob("relicruby", (0.3, 0.14, 0.3), (0, front_y(head, 0, 0.4) + 0.03, 2.84))  # a ruby on its brow
+    for sx in (-1, 1):
+        m.blob("eyeink", (0.1, 0.1, 0.08), (sx * 0.18, -1.7, 2.24))
+        m.cyl("relicteal", 0.13, 0.8, (sx * 0.42, -0.5, 3.15), rot=(-25, sx * 20, 0), radius2=0.02, seg=12)  # horns
+        wing(m, "relicgold", sx, sx * 0.6, 0.55, 1.6, 1.8, 1.7, rot=-15)
+        wing(m, "relicteal", sx, sx * 0.62, 0.47, 1.7, 1.35, 1.25, rot=-15)
+        m.blob("relicgold", (0.55, 0.7, 0.5), (sx * 0.55, -0.35, 0.25))  # feet
+        for t in (-1, 0, 1):
+            m.cyl("bone", 0.06, 0.16, (sx * 0.55 + t * 0.15, -0.72, 0.15), rot=(90, 0, 0), radius2=0.01, seg=6)
+    tail_tube(m, "relicgold", [(0, 1.0, 0.6), (0, 1.7, 0.45), (0.3, 2.3, 0.6), (0.5, 2.6, 1.0)], 0.4, 0.1)
+    m.cyl("relicteal", 0.3, 0.45, (0.55, 2.7, 1.25), radius2=0.02, seg=4)
+    for k in range(4):
+        m.cyl("relicteal", 0.16, 0.36, (0, 0.0 + k * 0.38, 2.2 - k * 0.12), radius2=0.02, seg=4)
+    m.torus("relicgold", 0.55, 0.06, (0, -0.65, 3.8), rot=(15, 0, 0))  # a golden halo
+    return m
+
+
+RELIC = (relic_egg, [fossil_rex, mummy_cat, totem_owl, idol_monkey, relic_dragon])
+
 WORLDS = [
-    (byte_egg, [pixel_pup, buffer_snail, floppy_frog, wifi_owl, server_dragon]),
+    (byte_egg,[pixel_pup, buffer_snail, floppy_frog, wifi_owl, server_dragon]),
     (blossom_egg, [petal_bunny, lantern_moth, koi_bot, bamboo_panda, blossom_kitsune]),
     (cosmic_egg, [star_blob, comet_pup, planet_turtle, astro_axolotl, nebula_whale]),
     (frost_egg, [snow_seal, penguin_bot, ice_fox, yeti_cub, crystal_mammoth]),
@@ -1176,13 +1320,16 @@ WORLDS = [
     (magma_egg, [ember_slime, magma_gecko, anvil_turtle, lava_golem, phoenix]),
     (glitch_egg, [error_cube, pixel_ghost, glitch_cat, code_bug, null_unicorn]),
 ]
-BUILDERS = [b for egg, pets in WORLDS for b in [egg] + pets]
+BUILDERS = [b for egg, pets in WORLDS + [RELIC] for b in [egg] + pets]
 
 
 def main():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     preview = os.path.join(memekit.ROOT, "assets", "models", "previews")
     os.makedirs(preview, exist_ok=True)
+    if "--relic-sheet" in args:  # just the Relic Egg row, to look at it quickly
+        memekit.sheet([RELIC[0]] + RELIC[1], os.path.join(preview, "Sheet_relic_pets.png"), per_row=6, cell=300)
+        return
     if "--no-sheet" not in args:
         memekit.sheet(BUILDERS, os.path.join(preview, "Sheet_pets.png"), per_row=6, cell=300)
     memekit.reset()

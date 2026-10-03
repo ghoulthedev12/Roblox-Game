@@ -282,8 +282,32 @@ for _, world in ipairs(GameConfig.Worlds) do
 	end
 end
 
+-- The Relic Pickaxe (the Robux game pass, see StoreData): one in every world, never sold in a
+-- shop. It digs as deep as that world's best pickaxe, a bit wider, with +50% luck, +15% find
+-- chance and 15% faster swings. Same Blender mesh everywhere (PickaxeMeshData.RelicPickaxe).
+GameConfig.RelicPickaxes = {} -- [worldId] = def, id "RelicPickaxe_<worldId>"
+for _, world in ipairs(GameConfig.Worlds) do
+	local best = world.Shovels[#world.Shovels]
+	local def = {
+		Id = "RelicPickaxe_" .. world.Id, Name = "Relic Pickaxe", Mesh = "RelicPickaxe", Exclusive = true,
+		Description = "An exclusive golden pickaxe from the buried internet.",
+		World = world.Id, Price = 0, MaxZone = best.MaxZone,
+		Power = best.Power + 1, FindChance = best.FindChance * 1.15, Luck = best.Luck * 1.5, Cooldown = best.Cooldown * 0.85,
+		Color = Color3.fromRGB(255, 205, 60), Material = "SmoothPlastic",
+		Look = {Head = "Crescent", Main = Color3.fromRGB(255, 205, 60), Edge = Color3.fromRGB(230, 160, 40), Frame = Color3.fromRGB(255, 225, 120),
+			Gem = Color3.fromRGB(70, 255, 225), Handle = Color3.fromRGB(40, 36, 60), Wrap = Color3.fromRGB(40, 205, 190)},
+	}
+	def.DigRadius = GameConfig.DigRadiusForPower(def.Power)
+	GameConfig.RelicPickaxes[world.Id] = def
+	shovelById[def.Id] = def
+end
+
 function GameConfig.GetShovel(shovelId)
 	return shovelById[shovelId]
+end
+
+function GameConfig.RelicPickaxe(world)
+	return GameConfig.RelicPickaxes[world.Id]
 end
 
 function GameConfig.GetWorld(worldId)

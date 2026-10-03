@@ -161,6 +161,15 @@ petKey.ZIndex = 4
 UIKit.label(petKey, "P", {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, MaxText = 16}).ZIndex = 5
 petButton.MouseButton1Click:Connect(function() UIBus.Fire("Pets") end)
 
+-- Store: a gold tile beside the Bag (the Robux store: game passes and the Relic Egg, StoreClient)
+local storeButton = UIKit.button(menu, "", {Size = UDim2.fromOffset(98, 98), Position = UDim2.new(0, 166, 0, 0), AnchorPoint = Vector2.new(0.5, 0),
+	Color = rgb(255, 196, 40), Radius = 12, Pattern = false})
+storeButton.Name = "Store"
+UIKit.icon(storeButton, "PassMoney", {Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
+UIKit.label(storeButton, "Store", {Size = UDim2.new(1, -6, 0, 30), Position = UDim2.new(0.5, 0, 0.5, 8), AnchorPoint = Vector2.new(0.5, 0.5),
+	Color = rgb(255, 245, 200), Stroke = 3.5, MaxText = 26}).ZIndex = 4
+storeButton.MouseButton1Click:Connect(function() UIBus.Fire("Store") end)
+
 ---------------------------------------------------------------------
 -- TOP RIGHT CORNER: a small dark round Settings button up in Roblox's top bar row
 -- (music and sound effects are in the Settings window)

@@ -94,9 +94,9 @@ end
 collectMeshes("MemeMeshes", {"DaWaeEchidna", "SeaShantyMug", "AisleYodelSet", "ConvinceMeTable", "ShockedRodent", "IsThisABird", "ChonkyBunny", "SpicyLasagna", "SpikedShellCrown", "GrapeSurgery", "BadBoyHatchback", "TempleTap", "SteamedClams", "MegaSealTape", "PurpleTitanBuggy", "OrcaRebellionBoat", "NeverMissDartboard", "CrimeTownBoss", "BoneComedian", "SugarSneakJohnny", "FrostFlask", "BreathtakingCyberGuy", "EnslavedMoisture", "StonksHead", "AhShucks", "UncannyHedgehog", "SpaceInfant", "MeAndTheCrew", "CyberWedgeTruck", "YelledAtCat", "RaidAlien", "AngelWingDancer", "KombuchaDisgust", "DoubleTakeBlink", "TallPinkPiglet", "SpongeLeaving", "CappuccinoBallerina", "FrozenCoffinDance", "HundredMenGorilla", "GothDanceHands", "NatureHealingSwan", "OnceAgainLectern", "LockdownSourdough", "HeadBobCat", "PallbearerCoin", "TumbleJellyBean", "SwoleVsSmol", "PointingLaughChair", "PolkaSpinCow", "SusBean", "PartyCornerGuy", "BeepBopMicKid", "TradeOfferScroll", "BigMittensChair", "ThinkSonThink", "SneakerShark", "JawlineChad", "BingChillingCone", "SigmaGrindset", "EmotionalDamage", "YesNoLabDog", "AssistantSam", "LampOilMerchant", "MaulingTimeVampire", "GentlePillSquad", "WiseMysticalTree", "ItsCornCob", "UncannySuperDad", "GirlDinnerPlate", "PhonkEyebrowSpeaker", "RizzFaceMask", "ClangingPipe", "BetterCallPaul", "KingPrawnCrooner", "OhioFinalBoss", "OhYeahVillain", "LogBatGuy", "ShailushaiCat", "BirthdayShake", "WhistleEdit", "PeachesTurtleKing", "KindergartenMascot", "CursedCartoonTape", "AwkwardSmileGuy", "LaughCryCarSeat", "CanonEventWeb", "PinkbombFeature", "BoulderEyebrow", "PointingSuits", "MewingHush", "EnglishSpanishChair", "AHyuckDog", "NoScopeOlympian", "PommelHorseLegend", "BratGreenSlab", "PedroRaccoon", "CrocBomber", "ChillDude", "BabyHippo", "DubaiChocolate", "LowTaperFade", "ShushUpTablet", "BigGamerChair", "SixSevenHands", "TakeEggCushion", "IbizaBossDancer", "BoutiqueRock", "LittleFrenchFish", "VeryDemureTeacup", "JohnPorkPhone", "BeforeGTA6Hourglass", "StandingOnBusiness", "AuraBoatBow", "PaperclipHelper", "ZombieChickenRider", "JetTooHoliday", "PressureDiverHelmet", "AbyssalAngler", "GlitchWhale", "AtlantisJawlineChad", "SpookySkeleton", "PumpkinDancer", "GhostlySwampFrog", "BonkShiba", "SadViolinHamster", "ConfusedMathCat", "JellyTimeBanana", "RainbowPastryCat", "WowShiba", "ProblemGrinCoin", "MeLikeyTablet", "RageScreamTablet", "ForeverAlone", "BadLuckBryan", "FrowningCat", "PunchMonkey", "PhantomChonkyBunny", "CemeterySpecter", "UndeadSanic", "GraveyardOssuary", "CyberWowShiba", "GlitchSwampFrog", "QuantumShockedRodent", "VoidStonks", "MultiverseSpaceInfant", "BulletDodgeGuy", "NeonSusBean", "HoloJawlineChad", "CosmicShake", "SpacePolkaCow", "InterdimensionalChillDude", "CyberSingingThrone", "UniversalSanic", "ExponentialOgre", "MiraculousGnome", "ApexWowShiba", "GoldenSwampFrog", "ToorngEntity", "HighRollerBrainrot", "ImmeasupremeOverlord", "QuantumDatFrog", "SubatomicSwampFrog", "ParticleWowShiba", "AntimatterEchidna", "StringTheoryBunny", "WarpSpeedStonks", "ParallelJawlineChad", "RealityWarpedSponge", "TimeFoldPanels", "DarkMatterHippo", "RomanEmpireBust", "HypercubeChillDude", "ZeroPointThrone", "TesseractShake", "SingularityGrinCoin", "EventHorizonShiba", "NeverGonnaStair", "QuantumBrainrotGod", "MemeMatrix", "OriginalShiba"}, "No meme meshes yet: File > Import 3D > assets/models/MemeMeshes.fbx, then run this installer again")
 collectMeshes("PortalModels", {"GatePortalFrame", "GatePortalGlow", "GateHorizon", "GateVortexA", "GateVortexB", "AlienPortalRim", "AlienPortalFunnel", "AlienPortalSwirl"}, "No portal meshes yet: File > Import 3D > assets/models/PortalMeshes.fbx, then run this installer again")
 collectMeshes("UIIcons", {"Shop", "Bag", "Museum", "Rebirth", "World", "Settings", "Gem", "Cash", "Income", "SoundOn", "SoundOff", "Music", "Bell", "Lock", "Luck", "Pickaxe", "Star", "Sparkle", "Heart", "Pin", "Alien", "Fire", "Skull", "Disk", "Volcano", "Candy", "Ghost", "Bubble", "Ice", "Snowflake", "Coin", "Warning", "Boom", "Party", "Picture", "Hole", "Elevator", "Crown", "FaceHappy", "FaceLaugh", "FaceLove", "FaceWow", "FaceCool", "FaceMeh", "FaceSick"}, "No 3D UI icons yet: File > Import 3D > assets/models/UIIcons.fbx, then run this installer again")
-collectMeshes("PickaxeMeshes", {"BlossomTrowel", "BambooSpade", "KoiScoop", "LanternSpade", "LanternSpadeGlow", "KatanaShovel", "KatanaShovelGlow", "PetalExcavator", "PetalExcavatorGlow", "HanamiHarvester", "HanamiHarvesterGlow", "MeteorScoop", "MeteorScoopGlow", "RocketSpade", "RocketSpadeGlow", "OrbitShovel", "OrbitShovelGlow", "NebulaTrowel", "NebulaTrowelGlow", "CometCrusher", "CometCrusherGlow", "SupernovaSpade", "SupernovaSpadeGlow", "EventHorizon", "EventHorizonGlow", "SnowballScoop", "IcicleSpade", "PenguinPaddle", "FrostbiteShovel", "FrostbiteShovelGlow", "BlizzardBreaker", "BlizzardBreakerGlow", "AuroraAuger", "AuroraAugerGlow", "AbsoluteZeroSpade", "AbsoluteZeroSpadeGlow", "SandyScoop", "CactusSpade", "MirageShovel", "MirageShovelGlow", "PharaohSpade", "SolarSifter", "SolarSifterGlow", "SandstormDrill", "SunKingShovel", "SunKingShovelGlow", "SeashellScoop", "AnchorSpade", "PearlShovel", "PearlShovelGlow", "TridentTrowel", "TridentTrowelGlow", "KrakenClaw", "TidalExcavator", "TidalExcavatorGlow", "AtlantisSpade", "AtlantisSpadeGlow", "LollipopScoop", "CandyCaneSpade", "GummyShovel", "SprinkleSpade", "ChocoCrusher", "JawbreakerAuger", "SugarRushSpade", "SugarRushSpadeGlow", "EmberSpade", "EmberSpadeGlow", "AnvilShovel", "AnvilShovelGlow", "MagmaScoop", "MagmaScoopGlow", "ObsidianBlade", "ObsidianBladeGlow", "DragonboneSpade", "DragonboneSpadeGlow", "InfernoAuger", "InfernoAugerGlow", "CoreBreaker", "CoreBreakerGlow", "PlaceholderSpade", "PixelShovel", "LagSpade", "LagSpadeGlow", "WireframeShovel", "WireframeShovelGlow", "Error404Scoop", "Error404ScoopGlow", "DebugDrill", "DebugDrillGlow", "TheFinalPatch", "TheFinalPatchGlow"}, "No pickaxe meshes yet: File > Import 3D > assets/models/PickaxeMeshes.fbx, then run this installer again")
+collectMeshes("PickaxeMeshes", {"BlossomTrowel", "BambooSpade", "KoiScoop", "LanternSpade", "LanternSpadeGlow", "KatanaShovel", "KatanaShovelGlow", "PetalExcavator", "PetalExcavatorGlow", "HanamiHarvester", "HanamiHarvesterGlow", "MeteorScoop", "MeteorScoopGlow", "RocketSpade", "RocketSpadeGlow", "OrbitShovel", "OrbitShovelGlow", "NebulaTrowel", "NebulaTrowelGlow", "CometCrusher", "CometCrusherGlow", "SupernovaSpade", "SupernovaSpadeGlow", "EventHorizon", "EventHorizonGlow", "SnowballScoop", "IcicleSpade", "PenguinPaddle", "FrostbiteShovel", "FrostbiteShovelGlow", "BlizzardBreaker", "BlizzardBreakerGlow", "AuroraAuger", "AuroraAugerGlow", "AbsoluteZeroSpade", "AbsoluteZeroSpadeGlow", "SandyScoop", "CactusSpade", "MirageShovel", "MirageShovelGlow", "PharaohSpade", "SolarSifter", "SolarSifterGlow", "SandstormDrill", "SunKingShovel", "SunKingShovelGlow", "SeashellScoop", "AnchorSpade", "PearlShovel", "PearlShovelGlow", "TridentTrowel", "TridentTrowelGlow", "KrakenClaw", "TidalExcavator", "TidalExcavatorGlow", "AtlantisSpade", "AtlantisSpadeGlow", "LollipopScoop", "CandyCaneSpade", "GummyShovel", "SprinkleSpade", "ChocoCrusher", "JawbreakerAuger", "SugarRushSpade", "SugarRushSpadeGlow", "EmberSpade", "EmberSpadeGlow", "AnvilShovel", "AnvilShovelGlow", "MagmaScoop", "MagmaScoopGlow", "ObsidianBlade", "ObsidianBladeGlow", "DragonboneSpade", "DragonboneSpadeGlow", "InfernoAuger", "InfernoAugerGlow", "CoreBreaker", "CoreBreakerGlow", "PlaceholderSpade", "PixelShovel", "LagSpade", "LagSpadeGlow", "WireframeShovel", "WireframeShovelGlow", "Error404Scoop", "Error404ScoopGlow", "DebugDrill", "DebugDrillGlow", "TheFinalPatch", "TheFinalPatchGlow", "RelicPickaxe", "RelicPickaxeGlow"}, "No pickaxe meshes yet: File > Import 3D > assets/models/PickaxeMeshes.fbx, then run this installer again")
 collectMeshes("NPCModels", {"ShopRobot", "ShopRobotGlow", "ArtDealer", "ArtDealerGlow"}, "No shopkeeper meshes yet: File > Import 3D > assets/models/NPCMeshes.fbx, then run this installer again")
-collectMeshes("PetModels", {"ByteEgg", "PixelPup", "BufferSnail", "FloppyFrog", "WifiOwl", "ServerDragon", "BlossomEgg", "PetalBunny", "LanternMoth", "KoiBot", "BambooPanda", "BlossomKitsune", "CosmicEgg", "StarBlob", "CometPup", "PlanetTurtle", "AstroAxolotl", "NebulaWhale", "FrostEgg", "SnowSeal", "PenguinBot", "IceFox", "YetiCub", "CrystalMammoth", "ChromeEgg", "SandBeetle", "CactusCat", "DroneCamel", "ChromeScorpion", "SunSphinx", "CoralEgg", "BubbleFish", "CrabBot", "JellyLamp", "OctoHacker", "TideSeahorse", "CandyEgg", "GummyCub", "DonutPup", "LollipopSheep", "CupcakeCat", "SugarDragon", "MagmaEgg", "EmberSlime", "MagmaGecko", "AnvilTurtle", "LavaGolem", "Phoenix", "GlitchEgg", "ErrorCube", "PixelGhost", "GlitchCat", "CodeBug", "NullUnicorn"}, "No pet meshes yet: File > Import 3D > assets/models/PetMeshes.fbx, then run this installer again")
+collectMeshes("PetModels", {"ByteEgg", "PixelPup", "BufferSnail", "FloppyFrog", "WifiOwl", "ServerDragon", "BlossomEgg", "PetalBunny", "LanternMoth", "KoiBot", "BambooPanda", "BlossomKitsune", "CosmicEgg", "StarBlob", "CometPup", "PlanetTurtle", "AstroAxolotl", "NebulaWhale", "FrostEgg", "SnowSeal", "PenguinBot", "IceFox", "YetiCub", "CrystalMammoth", "ChromeEgg", "SandBeetle", "CactusCat", "DroneCamel", "ChromeScorpion", "SunSphinx", "CoralEgg", "BubbleFish", "CrabBot", "JellyLamp", "OctoHacker", "TideSeahorse", "CandyEgg", "GummyCub", "DonutPup", "LollipopSheep", "CupcakeCat", "SugarDragon", "MagmaEgg", "EmberSlime", "MagmaGecko", "AnvilTurtle", "LavaGolem", "Phoenix", "GlitchEgg", "ErrorCube", "PixelGhost", "GlitchCat", "CodeBug", "NullUnicorn", "RelicEgg", "FossilRex", "MummyCat", "TotemOwl", "IdolMonkey", "RelicDragon"}, "No pet meshes yet: File > Import 3D > assets/models/PetMeshes.fbx, then run this installer again")
 do local old = game:GetService("ServerScriptService"):FindFirstChild("DataManager") if old then old:Destroy() print("Removed DataManager") end end
 do local old = game:GetService("ServerScriptService"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
 do local old = game:GetService("ReplicatedStorage"):FindFirstChild("ShovelModels") if old then old:Destroy() print("Removed ShovelModels") end end
@@ -1310,8 +1310,32 @@ for _, world in ipairs(GameConfig.Worlds) do
 	end
 end
 
+-- The Relic Pickaxe (the Robux game pass, see StoreData): one in every world, never sold in a
+-- shop. It digs as deep as that world's best pickaxe, a bit wider, with +50% luck, +15% find
+-- chance and 15% faster swings. Same Blender mesh everywhere (PickaxeMeshData.RelicPickaxe).
+GameConfig.RelicPickaxes = {} -- [worldId] = def, id "RelicPickaxe_<worldId>"
+for _, world in ipairs(GameConfig.Worlds) do
+	local best = world.Shovels[#world.Shovels]
+	local def = {
+		Id = "RelicPickaxe_" .. world.Id, Name = "Relic Pickaxe", Mesh = "RelicPickaxe", Exclusive = true,
+		Description = "An exclusive golden pickaxe from the buried internet.",
+		World = world.Id, Price = 0, MaxZone = best.MaxZone,
+		Power = best.Power + 1, FindChance = best.FindChance * 1.15, Luck = best.Luck * 1.5, Cooldown = best.Cooldown * 0.85,
+		Color = Color3.fromRGB(255, 205, 60), Material = "SmoothPlastic",
+		Look = {Head = "Crescent", Main = Color3.fromRGB(255, 205, 60), Edge = Color3.fromRGB(230, 160, 40), Frame = Color3.fromRGB(255, 225, 120),
+			Gem = Color3.fromRGB(70, 255, 225), Handle = Color3.fromRGB(40, 36, 60), Wrap = Color3.fromRGB(40, 205, 190)},
+	}
+	def.DigRadius = GameConfig.DigRadiusForPower(def.Power)
+	GameConfig.RelicPickaxes[world.Id] = def
+	shovelById[def.Id] = def
+end
+
 function GameConfig.GetShovel(shovelId)
 	return shovelById[shovelId]
+end
+
+function GameConfig.RelicPickaxe(world)
+	return GameConfig.RelicPickaxes[world.Id]
 end
 
 function GameConfig.GetWorld(worldId)
@@ -2583,6 +2607,8 @@ install(game:GetService("ReplicatedStorage"), "PetData", "ModuleScript", [=[
 --   Speed      you swing your pickaxe faster
 -- Rarer pets and pets from later worlds give bigger boosts. The meshes are made in Blender
 -- (tools/blender/pets.py, ReplicatedStorage > PetModels); PetVisuals shows them.
+-- One more egg is bought with Robux instead of cash: the Relic Egg (PetData.RelicEgg, sold by
+-- StoreManager), with five exclusive pets that are only Rare or better and boost everything.
 
 local GameConfig = require(script.Parent:WaitForChild("GameConfig"))
 
@@ -2719,9 +2745,41 @@ for worldId, entry in ipairs(EGGS) do
 	PetData.EggsById[egg.Id] = egg
 end
 
+-- THE RELIC EGG (Robux): not in any world (World = 0) and no cash price. Its five pets have
+-- their own rarities and chances, and boost all three stats, at World 9 strength and a bit more.
+local RELIC_PETS = {
+	-- {id, name, description, rarity, chance out of 100}
+	{"FossilRex", "Fossil Rex", "Dug up from the oldest server rack.", 3, 42},
+	{"MummyCat", "Mummy Cat", "Wrapped in ancient ethernet cable.", 3, 30},
+	{"TotemOwl", "Totem Owl", "Carved by the first archaeologists.", 4, 16},
+	{"IdolMonkey", "Idol Monkey", "A solid gold idol. Do not swap it for sand.", 4, 9},
+	{"RelicDragon", "Relic Dragon", "Guardian of the buried internet.", 5, 3},
+}
+local RELIC_STRENGTH = PetData.WorldFactor(9) * 1.25
+local relicEgg = {Id = "RelicEgg", Name = "Relic Egg", World = 0, Price = 0, Robux = true, Pets = {}, Chances = {}}
+for _, info in ipairs(RELIC_PETS) do
+	local power = PetData.Rarities[info[4]].Power * RELIC_STRENGTH
+	local pet = {Id = info[1], Name = info[2], Description = info[3], World = 0, Egg = relicEgg.Id, Rarity = info[4], Exclusive = true,
+		Boosts = {Money = power, Luck = power, Speed = power * 0.5}}
+	PetData.Pets[pet.Id] = pet
+	table.insert(relicEgg.Pets, pet.Id)
+	table.insert(relicEgg.Chances, info[5])
+	table.insert(PetData.Order, pet.Id)
+end
+PetData.RelicEgg = relicEgg
+PetData.EggsById[relicEgg.Id] = relicEgg
+
+-- the chance (out of 100) of each pet in an egg, in egg.Pets order
+function PetData.Chances(egg)
+	if egg.Chances then return egg.Chances end
+	local list = {}
+	for i in ipairs(egg.Pets) do list[i] = PetData.Rarities[i].Chance end
+	return list
+end
+
 -- pets that fly (they hover beside you instead of hopping along the ground)
 for _, id in ipairs({"WifiOwl", "ServerDragon", "LanternMoth", "KoiBot", "StarBlob", "NebulaWhale", "BubbleFish", "JellyLamp",
-	"SugarDragon", "Phoenix", "PixelGhost", "ErrorCube"}) do
+	"SugarDragon", "Phoenix", "PixelGhost", "ErrorCube", "TotemOwl", "RelicDragon"}) do
 	PetData.Pets[id].Fly = true
 end
 
@@ -2735,11 +2793,11 @@ end
 
 -- picks a pet from an egg (rng: a Random)
 function PetData.Roll(egg, rng)
+	local chances = PetData.Chances(egg)
 	local roll = rng:NextNumber() * 100
-	for i = #PetData.Rarities, 1, -1 do
-		local chance = PetData.Rarities[i].Chance
-		if roll < chance then return egg.Pets[i] end
-		roll -= chance
+	for i = #egg.Pets, 1, -1 do
+		if roll < chances[i] then return egg.Pets[i] end
+		roll -= chances[i]
 	end
 	return egg.Pets[1]
 end
@@ -2847,6 +2905,12 @@ return {
 	GlitchCat = {Size = Vector3.new(2.120, 3.198, 2.747)},
 	CodeBug = {Size = Vector3.new(2.533, 2.080, 2.910)},
 	NullUnicorn = {Size = Vector3.new(1.700, 3.882, 4.199)},
+	RelicEgg = {Size = Vector3.new(2.318, 3.500, 2.482)},
+	FossilRex = {Size = Vector3.new(1.450, 2.905, 4.198)},
+	MummyCat = {Size = Vector3.new(1.560, 2.996, 2.338)},
+	TotemOwl = {Size = Vector3.new(3.676, 2.900, 1.700)},
+	IdolMonkey = {Size = Vector3.new(2.200, 2.775, 2.128)},
+	RelicDragon = {Size = Vector3.new(4.659, 4.000, 4.751)},
 }
 ]=])
 install(game:GetService("ReplicatedStorage"), "PetVisuals", "ModuleScript", [=[
@@ -3073,6 +3137,7 @@ return {
 	Error404Scoop = {Size = Vector3.new(0.620, 4.281, 5.700), Center = Vector3.new(0.000, 0.000, -0.350), GlowSize = Vector3.new(0.080, 1.000, 0.950), GlowCenter = Vector3.new(0.330, 0.000, -2.600), GlowColor = Color3.fromRGB(255, 80, 90), Tips = {Vector3.new(0.000, 2.050, -1.343), Vector3.new(0.000, -2.050, -1.343)}},
 	DebugDrill = {Size = Vector3.new(0.900, 5.150, 5.650), Center = Vector3.new(0.000, 0.000, -0.325), GlowSize = Vector3.new(0.060, 0.700, 0.750), GlowCenter = Vector3.new(0.460, 0.000, -2.650), GlowColor = Color3.fromRGB(70, 255, 120), Tips = {Vector3.new(0.000, 2.550, -2.600), Vector3.new(0.000, -2.550, -2.600)}},
 	TheFinalPatch = {Size = Vector3.new(0.520, 4.453, 5.923), Center = Vector3.new(0.000, 0.000, -0.462), GlowSize = Vector3.new(1.600, 4.557, 2.416), GlowCenter = Vector3.new(0.000, 0.000, -2.442), GlowColor = Color3.fromRGB(255, 240, 170), Tips = {Vector3.new(0.000, 2.191, -1.180), Vector3.new(0.000, -2.191, -1.180)}},
+	RelicPickaxe = {Size = Vector3.new(0.960, 4.471, 5.975), Center = Vector3.new(0.000, 0.000, -0.438), GlowSize = Vector3.new(1.280, 4.530, 2.461), GlowCenter = Vector3.new(0.000, 0.000, -2.560), GlowColor = Color3.fromRGB(70, 255, 225), Tips = {Vector3.new(0.000, 2.191, -1.180), Vector3.new(0.000, -2.191, -1.180)}},
 }
 ]=])
 install(game:GetService("ReplicatedStorage"), "PickaxeModels", "ModuleScript", [=[
@@ -3129,6 +3194,7 @@ local WORLD_HEADS = {"Crescent", "Wide", "Bone", "Drill", "Crystal", "Plasma", "
 local function lookFor(def)
 	if LOOKS[def.Id] then return LOOKS[def.Id] end
 	local look = def.Look
+	if look and look.Head and look.Main then return look end -- a full look of its own (the Relic Pickaxe)
 	if look and look.Colors then
 		local c = look.Colors
 		return {
@@ -3317,12 +3383,13 @@ end
 
 -- returns the head's tips (where the trails come off), its socket and glowing part, or nil
 local function buildFromMesh(tool, def, look)
-	local data = PickaxeMeshData[def.Id]
-	local bodySrc = data and meshSource(def.Id)
+	local meshId = def.Mesh or def.Id -- the Relic Pickaxe of every world shares one mesh
+	local data = PickaxeMeshData[meshId]
+	local bodySrc = data and meshSource(meshId)
 	if not bodySrc then return nil end
 	meshPiece(tool, "PickaxeBody", bodySrc, data.Size, data.Center)
 	look.Gem = data.GlowColor -- the light, sparkles and swoosh take the pickaxe's glow color
-	local glowSrc = data.GlowSize and meshSource(def.Id .. "Glow")
+	local glowSrc = data.GlowSize and meshSource(meshId .. "Glow")
 	local gem
 	if glowSrc then
 		gem = meshPiece(tool, "HeadGem", glowSrc, data.GlowSize, data.GlowCenter)
@@ -3890,6 +3957,64 @@ end
 
 return QuestData
 ]=])
+install(game:GetService("ReplicatedStorage"), "StoreData", "ModuleScript", [=[
+-- StoreData (ModuleScript in ReplicatedStorage)
+-- The Robux store (StoreManager on the server, StoreClient for the window):
+--   GAME PASSES, bought once and kept forever:
+--     2x Money        the museum earns double (PlayerData)
+--     2x Dig Speed    pickaxe swings come twice as often (DigBoosts)
+--     2x Bigger Holes every swing carves a crater twice as wide (DigManager)
+--     Relic Pickaxe   an exclusive pickaxe for every world (GameConfig.RelicPickaxe, DigManager)
+--   DEVELOPER PRODUCTS, bought as often as you like:
+--     Relic Egg x1 / x3  hatches pets from the Relic Egg (PetData, PetManager)
+--
+-- HOW TO HOOK THEM UP: make each pass / product on the Creator Hub (create.roblox.com >
+-- your experience > Monetization > Passes / Developer Products), then paste its ID below.
+-- Until an ID is filled in, the store shows the item as "Soon", except in Studio, where
+-- buying it gives it to you for that test session only (nothing is saved), so everything can
+-- be tried before the passes exist. The price shown in the store is read from Roblox; Robux
+-- here is only a fallback for when that fails.
+
+local StoreData = {}
+
+StoreData.Passes = {
+	{Key = "DoubleMoney", Id = 0, Robux = 199, Name = "2x Money", Icon = "PassMoney", Color = Color3.fromRGB(90, 200, 80),
+		Text = "Your museum earns double money. Forever!"},
+	{Key = "DoubleSpeed", Id = 0, Robux = 149, Name = "2x Dig Speed", Icon = "PassSpeed", Color = Color3.fromRGB(70, 170, 255),
+		Text = "Swing your pickaxe twice as fast."},
+	{Key = "BigHoles", Id = 0, Robux = 99, Name = "2x Bigger Holes", Icon = "PassHoles", Color = Color3.fromRGB(230, 140, 60),
+		Text = "Every swing digs a hole twice as wide."},
+	{Key = "RelicPickaxe", Id = 0, Robux = 299, Name = "Relic Pickaxe", Icon = "PassPickaxe", Color = Color3.fromRGB(240, 180, 30),
+		Text = "Golden pickaxe for every world. Digs deepest, +50% luck!"},
+}
+
+StoreData.Products = {
+	{Key = "RelicEgg1", Id = 0, Robux = 49, Name = "Relic Egg", Amount = 1, Egg = "RelicEgg", Icon = "PassEgg"},
+	{Key = "RelicEgg3", Id = 0, Robux = 129, Name = "3 Relic Eggs", Amount = 3, Egg = "RelicEgg", Icon = "PassEgg"},
+}
+
+StoreData.PassesByKey = {}
+for _, pass in ipairs(StoreData.Passes) do StoreData.PassesByKey[pass.Key] = pass end
+StoreData.ProductsByKey = {}
+for _, product in ipairs(StoreData.Products) do StoreData.ProductsByKey[product.Key] = product end
+
+-- the player attribute that says a pass is owned (set by StoreManager): "Pass_DoubleMoney"
+function StoreData.Attribute(key)
+	return "Pass_" .. key
+end
+
+-- does this save own the pass? (data.TestPasses = Studio test buys, never kept between sessions)
+function StoreData.Owns(data, key)
+	return (data.Passes and data.Passes[key]) or (data.TestPasses and data.TestPasses[key]) or false
+end
+
+-- does this player own the pass? (anywhere: server or client)
+function StoreData.PlayerOwns(player, key)
+	return player:GetAttribute(StoreData.Attribute(key)) == true
+end
+
+return StoreData
+]=])
 install(game:GetService("ReplicatedStorage"), "UIBus", "ModuleScript", [=[
 -- UIBus (ModuleScript in ReplicatedStorage)
 -- Lets one LocalScript ask another to open a window (every LocalScript on a player's screen
@@ -3934,6 +4059,13 @@ return {
 	Lock = "rbxassetid://78646449722777",
 	Picture = "rbxassetid://119024953737683",
 	Pickaxe = "rbxassetid://89644053778488",
+	-- the Robux store (tools/blender/store_icons.py -> assets/ui/store)
+	PassMoney = "rbxassetid://129768369602621",
+	PassSpeed = "rbxassetid://88901226704548",
+	PassHoles = "rbxassetid://89007196691165",
+	PassPickaxe = "rbxassetid://88528019682299",
+	PassEgg = "rbxassetid://105493672711547",
+	PassEgg3 = "rbxassetid://74595878127307",
 }
 ]=])
 install(game:GetService("ReplicatedStorage"), "UIIconList", "ModuleScript", [=[
@@ -6351,13 +6483,14 @@ install(game:GetService("ServerScriptService"), "DigBoosts", "ModuleScript", [=[
 -- DigBoosts (ModuleScript in ServerScriptService)
 -- Digging bonuses: the world gimmicks' temporary ones (world-wide events like Gold Rush,
 -- Blizzard luck, Glitch Surge, and personal boosts like the Candy merchant's Sugar Rush),
--- and the equipped pets' Dig Luck and Dig Speed.
+-- the equipped pets' Dig Luck and Dig Speed, and the 2x Dig Speed game pass.
 -- DigManager asks DigBoosts.Get(player, world) on every swing. Each player's attributes
 -- "DigSpeedMult" (swing cooldown multiplier), "WorldEvent" and "WorldEventEnds" and
 -- "PersonalBoost"/"PersonalBoostEnds" are kept up to date so the client can show them.
 
 local Players = game:GetService("Players")
 local PetData = require(game:GetService("ReplicatedStorage"):WaitForChild("PetData"))
+local StoreData = require(game:GetService("ReplicatedStorage"):WaitForChild("StoreData"))
 
 local DigBoosts = {}
 
@@ -6393,6 +6526,12 @@ function DigBoosts.GetPersonal(player)
 	return active(p) and p or nil
 end
 
+-- the swing cooldown multiplier from pets and the 2x Dig Speed game pass
+local function speedMult(player)
+	local pass = StoreData.PlayerOwns(player, "DoubleSpeed") and 2 or 1
+	return 1 / ((1 + (player:GetAttribute("PetSpeed") or 0)) * pass)
+end
+
 -- the multipliers for this player's next swing in this world
 function DigBoosts.Get(player, world)
 	local find, luck, cooldown = 1, 1, 1
@@ -6412,7 +6551,7 @@ function DigBoosts.Get(player, world)
 	local petLuck = player:GetAttribute("PetLuck") or 0
 	find *= 1 + math.min(petLuck, PetData.FindCap)
 	luck *= 1 + petLuck * 0.5
-	cooldown /= 1 + (player:GetAttribute("PetSpeed") or 0)
+	cooldown *= speedMult(player)
 	return {Find = find, Luck = luck, Cooldown = cooldown}
 end
 
@@ -6424,7 +6563,7 @@ task.spawn(function()
 			local e = DigBoosts.GetWorldEvent(worldId)
 			local p = DigBoosts.GetPersonal(player)
 			local now = os.clock()
-			local cooldown = (e and e.CooldownMult or 1) * (p and p.CooldownMult or 1) / (1 + (player:GetAttribute("PetSpeed") or 0))
+			local cooldown = (e and e.CooldownMult or 1) * (p and p.CooldownMult or 1) * speedMult(player)
 			player:SetAttribute("DigSpeedMult", cooldown)
 			player:SetAttribute("WorldEvent", e and e.Name or "")
 			player:SetAttribute("WorldEventLeft", e and math.ceil(e.EndsAt - now) or 0)
@@ -6462,6 +6601,7 @@ local BuriedPainting = require(script.Parent:WaitForChild("BuriedPainting"))
 local DigBoosts = require(script.Parent:WaitForChild("DigBoosts"))
 local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
 local Quests = require(script.Parent:WaitForChild("Quests"))
+local StoreData = require(ReplicatedStorage:WaitForChild("StoreData"))
 local TweenService = game:GetService("TweenService")
 
 local terrain = workspace.Terrain
@@ -6527,6 +6667,9 @@ local toolTemplates = {}
 for _, def in ipairs(GameConfig.Shovels) do
 	toolTemplates[def.Id] = ShovelModels(def)
 end
+for _, def in pairs(GameConfig.RelicPickaxes) do -- the Relic Pickaxe game pass, one per world
+	toolTemplates[def.Id] = ShovelModels(def)
+end
 
 ---------------------------------------------------------------------
 -- PLAYER STATE: which world they're in, which shovel they hold there
@@ -6540,6 +6683,10 @@ end
 local function getEquippedDef(player, world)
 	world = world or getWorld(player)
 	local data = PlayerData.Get(player)
+	-- the Relic Pickaxe game pass: used in every world, unless you picked a shop pickaxe since
+	if data and StoreData.PlayerOwns(player, "RelicPickaxe") and data.UseRelic ~= false then
+		return GameConfig.RelicPickaxe(world)
+	end
 	local id = data and data.EquippedShovels[tostring(world.Id)]
 	local def = id and GameConfig.GetShovel(id)
 	if def and def.World == world.Id and data.OwnedShovels[def.Id] then
@@ -6953,6 +7100,12 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	local floorY = origin.Y + world.Zones[def.MaxZone].Bottom
 	-- the crater's radius scales straight with the shovel's Power (see GameConfig.DigRadiusForPower)
 	local radius = (GameConfig.DigRadiusForPower(def.Power) + 2) / 2 + 0.75
+	if StoreData.PlayerOwns(player, "BigHoles") then
+		-- the 2x Bigger Holes game pass; near the rim it shrinks back so it never bites further
+		-- past the pit's edge than a normal hole would
+		local flat = Vector3.new(carveAt.X - origin.X, 0, carveAt.Z - origin.Z).Magnitude
+		radius = math.max(radius, math.min(radius * 2, world.PitRadius - flat + radius))
+	end
 	local centerY = math.max(carveAt.Y + radius * 0.35, floorY + radius)
 	terrain:FillBall(Vector3.new(carveAt.X, centerY, carveAt.Z), radius, Enum.Material.Air)
 	-- the bedrock can never be dug: if the crater reached down to it, put back any bedrock
@@ -7099,6 +7252,7 @@ buyShovelRemote.OnServerEvent:Connect(function(player, shovelId)
 	end
 	data.OwnedShovels[def.Id] = true
 	data.EquippedShovels[tostring(def.World)] = def.Id
+	data.UseRelic = false -- holding the new pickaxe now (the store's Equip button brings the Relic back)
 	updateAttributes(player)
 	giveShovel(player)
 	shopMessageRemote:FireClient(player, "{Pickaxe} You bought the " .. def.Name .. "! It digs down to " .. -GameConfig.GetWorld(def.World).Zones[def.MaxZone].Bottom .. "m.", true)
@@ -7106,8 +7260,17 @@ end)
 
 equipShovelRemote.OnServerEvent:Connect(function(player, shovelId)
 	local data = PlayerData.Get(player)
+	if data and shovelId == "RelicPickaxe" then -- the store's Equip button
+		if StoreData.PlayerOwns(player, "RelicPickaxe") then
+			data.UseRelic = true
+			updateAttributes(player)
+			giveShovel(player)
+		end
+		return
+	end
 	local def = typeof(shovelId) == "string" and GameConfig.GetShovel(shovelId)
 	if not data or not def or not data.OwnedShovels[def.Id] then return end
+	data.UseRelic = false
 	data.EquippedShovels[tostring(def.World)] = def.Id
 	updateAttributes(player)
 	giveShovel(player)
@@ -7358,6 +7521,11 @@ local function onPlayerAdded(player)
 	if not player.Parent then return end
 	currentWorld[player] = GameConfig.Worlds[1] -- everyone spawns at their museum in world 1
 	updateAttributes(player)
+	-- buying the Relic Pickaxe pass (StoreManager sets the attribute) puts it in your hands
+	player:GetAttributeChangedSignal(StoreData.Attribute("RelicPickaxe")):Connect(function()
+		updateAttributes(player)
+		giveShovel(player)
+	end)
 	player.CharacterAdded:Connect(function()
 		currentWorld[player] = GameConfig.Worlds[1]
 		updateAttributes(player)
@@ -10639,6 +10807,9 @@ install(game:GetService("ServerScriptService"), "PetManager", "Script", [=[
 --     player's PetClient moves them) and boost them: income (PlayerData), Dig Luck and Dig
 --     Speed (DigBoosts reads the PetLuck / PetSpeed attributes set here).
 --   * The Pets window asks for the list and equips, unequips and deletes through PetAction.
+--   * THE RELIC EGG is bought with Robux: its stand in World 1 asks StoreManager to show the
+--     purchase (the StorePrompt event), and StoreManager hatches the paid eggs through the
+--     GrantEggs function made here.
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -10648,11 +10819,13 @@ local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local PetData = require(ReplicatedStorage:WaitForChild("PetData"))
 local PetVisuals = require(ReplicatedStorage:WaitForChild("PetVisuals"))
+local StoreData = require(ReplicatedStorage:WaitForChild("StoreData"))
 local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
 
 local STAND_SPOT = {Angle = 150, Distance = 80} -- the shop is at 30 degrees, the gate at -30
 local STAND_SPOT_WORLD_1 = {Angle = 165, Distance = 89} -- (World 1's Research Lab is at 150)
+local RELIC_STAND_SPOT = {Angle = 225, Distance = 89} -- the Relic Egg (180 is a walkway, 200-215 the scanner)
 local HATCH_COOLDOWN = 1.2 -- seconds between hatches (the hatch takes a moment on screen)
 
 local rng = Random.new()
@@ -10746,20 +10919,24 @@ end
 ---------------------------------------------------------------------
 local lastHatch = {}
 
-local function hatch(player, egg, amount)
+-- paid = bought with Robux: no cash, no cooldown, and it hatches even past the pet limit
+-- (a purchase is never lost). Returns true once the pets are in the save.
+local function hatch(player, egg, amount, paid)
 	local data = PlayerData.Get(player)
-	if not data then return end
-	if os.clock() - (lastHatch[player] or 0) < HATCH_COOLDOWN then return end
-	local room = PetData.MaxOwned - count(data)
-	if room <= 0 then
-		say(player, "Your pets are full (" .. PetData.MaxOwned .. ")! Delete some in the Pets window.", false)
-		return
-	end
-	amount = math.min(amount, room)
-	local cost = egg.Price * amount
-	if not PlayerData.SpendMoney(player, cost) then
-		say(player, "You need " .. ArtifactData.FormatMoney(cost) .. " to hatch " .. (amount > 1 and amount .. " eggs" or "this egg") .. ".", false)
-		return
+	if not data then return false end
+	if not paid then
+		if os.clock() - (lastHatch[player] or 0) < HATCH_COOLDOWN then return false end
+		local room = PetData.MaxOwned - count(data)
+		if room <= 0 then
+			say(player, "Your pets are full (" .. PetData.MaxOwned .. ")! Delete some in the Pets window.", false)
+			return false
+		end
+		amount = math.min(amount, room)
+		local cost = egg.Price * amount
+		if not PlayerData.SpendMoney(player, cost) then
+			say(player, "You need " .. ArtifactData.FormatMoney(cost) .. " to hatch " .. (amount > 1 and amount .. " eggs" or "this egg") .. ".", false)
+			return false
+		end
 	end
 	lastHatch[player] = os.clock()
 	local got = {}
@@ -10778,6 +10955,16 @@ local function hatch(player, egg, amount)
 	end
 	hatchedRemote:FireClient(player, egg.Id, got)
 	changed(player)
+	return true
+end
+
+-- StoreManager: hatch eggs someone paid Robux for
+local grantEggs = script.Parent:FindFirstChild("GrantEggs") or Instance.new("BindableFunction")
+grantEggs.Name = "GrantEggs"
+grantEggs.Parent = script.Parent
+grantEggs.OnInvoke = function(player, eggId, amount)
+	local egg = PetData.EggsById[eggId]
+	return egg ~= nil and hatch(player, egg, amount, true)
 end
 
 ---------------------------------------------------------------------
@@ -10865,7 +11052,7 @@ end
 
 local UP = CFrame.Angles(0, 0, math.rad(90)) -- a cylinder standing upright
 
-local function sign(anchor, egg)
+local function sign(anchor, egg, priceText)
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "EggSign"
 	gui.Size = UDim2.fromScale(11, 9.5)
@@ -10876,22 +11063,30 @@ local function sign(anchor, egg)
 	local panel = UIKit.panel(gui, {Size = UDim2.fromScale(1, 1), Color = Color3.fromRGB(40, 34, 70), Radius = 18, Stroke = 4})
 	UIKit.label(panel, string.upper(egg.Name), {Size = UDim2.new(1, -16, 0.15, 0), Position = UDim2.fromScale(0.5, 0.03), AnchorPoint = Vector2.new(0.5, 0),
 		Stroke = 3, MaxText = 60})
-	UIKit.label(panel, ArtifactData.FormatMoney(egg.Price), {Size = UDim2.new(1, -16, 0.12, 0), Position = UDim2.fromScale(0.5, 0.18), AnchorPoint = Vector2.new(0.5, 0),
-		Color = Color3.fromRGB(120, 240, 100), Stroke = 3, MaxText = 50})
+	UIKit.label(panel, priceText or ArtifactData.FormatMoney(egg.Price), {Size = UDim2.new(1, -16, 0.12, 0), Position = UDim2.fromScale(0.5, 0.18), AnchorPoint = Vector2.new(0.5, 0),
+		Color = egg.Robux and Color3.fromRGB(255, 215, 70) or Color3.fromRGB(120, 240, 100), Stroke = 3, MaxText = 50})
+	local chances = PetData.Chances(egg)
 	for i, petId in ipairs(egg.Pets) do
 		local pet = PetData.GetPet(petId)
-		local rarity = PetData.Rarities[i]
+		local rarity = PetData.Rarities[pet.Rarity]
 		local row = UIKit.panel(panel, {Size = UDim2.new(0.92, 0, 0.115, 0), Position = UDim2.new(0.5, 0, 0.33 + (i - 1) * 0.128, 0), AnchorPoint = Vector2.new(0.5, 0),
 			Color = rarity.Color, Radius = 10, Stroke = 2.5})
 		UIKit.label(row, pet.Name, {Size = UDim2.new(0.68, 0, 0.8, 0), Position = UDim2.new(0.04, 0, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
 			Align = "Left", Stroke = 2.5, MaxText = 40})
-		UIKit.label(row, rarity.Chance .. "%", {Size = UDim2.new(0.26, 0, 0.8, 0), Position = UDim2.new(0.96, 0, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+		UIKit.label(row, chances[i] .. "%", {Size = UDim2.new(0.26, 0, 0.8, 0), Position = UDim2.new(0.96, 0, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
 			Align = "Right", Stroke = 2.5, MaxText = 40})
 	end
 end
 
-local function buildStand(world, egg, parent)
-	local spot = world.Id == 1 and STAND_SPOT_WORLD_1 or STAND_SPOT
+-- the Robux egg's prompts show its price in Robux, from the store's products (1 and 3 eggs)
+local function relicProduct(amount)
+	for _, product in ipairs(StoreData.Products) do
+		if product.Egg == "RelicEgg" and product.Amount == amount then return product end
+	end
+end
+
+local function buildStand(world, egg, parent, spotOverride)
+	local spot = spotOverride or (world.Id == 1 and STAND_SPOT_WORLD_1 or STAND_SPOT)
 	local a = math.rad(spot.Angle)
 	local origin = world.Origin
 	local pos = origin + Vector3.new(math.cos(a) * spot.Distance, 0, math.sin(a) * spot.Distance)
@@ -10899,7 +11094,10 @@ local function buildStand(world, egg, parent)
 	local look = world.Look or {}
 	local main = look.Main or Color3.fromRGB(190, 160, 240)
 	local glow = look.Glow or Color3.fromRGB(60, 220, 240)
-	local light = Color3.fromRGB(246, 246, 252)
+	if egg.Robux then -- the Relic Egg's stand is gold and turquoise
+		main, glow = Color3.fromRGB(255, 200, 60), Color3.fromRGB(40, 220, 200)
+	end
+	local light = egg.Robux and Color3.fromRGB(255, 236, 170) or Color3.fromRGB(246, 246, 252)
 
 	GameConfig.LevelGround(workspace.Terrain, base, 16, 16)
 	local stand = Instance.new("Model")
@@ -10937,7 +11135,7 @@ local function buildStand(world, egg, parent)
 	anchor.Transparency = 1
 	anchor.CanCollide = false
 	anchor.CanQuery = false
-	sign(anchor, egg)
+	sign(anchor, egg, egg.Robux and "ROBUX EGG" or nil)
 
 	local promptPart = part(stand, "HatchPrompt", Vector3.new(2, 2, 2), base * CFrame.new(0, 5, 0), light)
 	promptPart.Transparency = 1
@@ -10947,7 +11145,8 @@ local function buildStand(world, egg, parent)
 		local amount, key = option[1], option[2]
 		local prompt = Instance.new("ProximityPrompt")
 		prompt.Name = "Hatch" .. amount
-		prompt.ObjectText = egg.Name .. "  ·  " .. ArtifactData.FormatMoney(egg.Price * amount)
+		local product = egg.Robux and relicProduct(amount)
+		prompt.ObjectText = egg.Name .. "  ·  " .. (product and (product.Robux .. " Robux") or ArtifactData.FormatMoney(egg.Price * amount))
 		prompt.ActionText = "Hatch " .. amount
 		prompt.KeyboardKeyCode = key
 		prompt.GamepadKeyCode = amount == 1 and Enum.KeyCode.ButtonX or Enum.KeyCode.ButtonY
@@ -10957,7 +11156,13 @@ local function buildStand(world, egg, parent)
 		prompt.UIOffset = Vector2.new(0, amount == 1 and 0 or 72)
 		prompt.Parent = promptPart
 		prompt.Triggered:Connect(function(player)
-			hatch(player, egg, amount)
+			if product then
+				-- StoreManager shows the Robux purchase; the eggs hatch once it's paid
+				local storePrompt = script.Parent:FindFirstChild("StorePrompt")
+				if storePrompt then storePrompt:Fire(player, product.Key) end
+			else
+				hatch(player, egg, amount)
+			end
 		end)
 	end
 	stand.Parent = parent
@@ -10983,7 +11188,9 @@ task.spawn(function()
 			if not ok then warn("Egg stand for world " .. worldId .. ": " .. tostring(err)) end
 		end
 	end
-	print("PetManager ready: " .. #PetData.Order .. " pets in " .. #PetData.Eggs .. " eggs")
+	local ok, err = pcall(buildStand, GameConfig.Worlds[1], PetData.RelicEgg, folder, RELIC_STAND_SPOT)
+	if not ok then warn("Relic Egg stand: " .. tostring(err)) end
+	print("PetManager ready: " .. #PetData.Order .. " pets in " .. #PetData.Eggs .. " eggs + the Relic Egg")
 end)
 ]=])
 install(game:GetService("ServerScriptService"), "PitRelics", "ModuleScript", [=[
@@ -11210,6 +11417,7 @@ local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local QuestData = require(ReplicatedStorage:WaitForChild("QuestData"))
 local PetData = require(ReplicatedStorage:WaitForChild("PetData"))
+local StoreData = require(ReplicatedStorage:WaitForChild("StoreData"))
 
 local ProfileService = require(script.Parent:WaitForChild("ProfileService"))
 
@@ -11267,6 +11475,9 @@ local function defaultData()
 		Pets = {},         -- [uid] = petId
 		EquippedPets = {}, -- [uid] = true: the pets following you (and boosting you)
 		NextPetUid = 1,
+		-- the Robux store (StoreManager, StoreData)
+		Passes = {},      -- [pass key] = true: game passes this player owns
+		Receipts = {},    -- [purchase id] = os.time(): developer products already given out
 	}
 end
 
@@ -11313,7 +11524,9 @@ local function computeIncome(data)
 		end
 	end
 	-- every rebirth adds a permanent income bonus; equipped pets add their money boost
-	return total * (1 + GameConfig.RebirthIncomeBonus * (data.Rebirths or 0)) * (1 + PetData.Bonuses(data).Money)
+	-- and the 2x Money game pass doubles it all
+	local pass = StoreData.Owns(data, "DoubleMoney") and 2 or 1
+	return total * (1 + GameConfig.RebirthIncomeBonus * (data.Rebirths or 0)) * (1 + PetData.Bonuses(data).Money) * pass
 end
 
 local function refresh(player)
@@ -11427,6 +11640,7 @@ local function load(player)
 		data.ImportedOldSave = true
 	end
 	migrate(data)
+	data.TestPasses = nil -- Studio test buys of the store never last past their session
 
 	-- Offline earnings
 	if returning then
@@ -14799,6 +15013,188 @@ return function(parent, world, base)
 	shop.Parent = parent
 	return shop, prompt
 end
+]=])
+install(game:GetService("ServerScriptService"), "StoreManager", "Script", [=[
+-- StoreManager (Script in ServerScriptService)
+-- The Robux store (see ReplicatedStorage.StoreData):
+--   * GAME PASSES: on join, checks which passes the player owns and saves them in their data
+--     (data.Passes); the attribute "Pass_<Key>" tells every other script (PlayerData doubles the
+--     income, DigBoosts the dig speed, DigManager the hole size and the Relic Pickaxe).
+--   * DEVELOPER PRODUCTS (the Relic Egg): ProcessReceipt hatches the eggs through PetManager's
+--     GrantEggs and remembers each purchase, so a purchase is given exactly once.
+--   * StoreBuy (from the Store window) and StorePrompt (from the Relic Egg stand) show Roblox's
+--     purchase prompt. In Studio, an item without an ID yet is given for free for that test
+--     session only (nothing is saved), so the store can be tried before the passes exist.
+
+local MarketplaceService = game:GetService("MarketplaceService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local StoreData = require(ReplicatedStorage:WaitForChild("StoreData"))
+local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+
+local MAX_RECEIPTS = 100 -- purchase ids remembered per player (the newest ones)
+local IS_STUDIO = RunService:IsStudio()
+
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+local function remote(className, name)
+	local r = remotes:FindFirstChild(name) or Instance.new(className)
+	r.Name = name
+	r.Parent = remotes
+	return r
+end
+local buyRemote = remote("RemoteEvent", "StoreBuy") -- client -> server: (item key) show the purchase
+local messageRemote = remotes:WaitForChild("ShopMessage", 30)
+
+-- PetManager's Relic Egg stand fires this with (player, product key)
+local storePrompt = script.Parent:FindFirstChild("StorePrompt") or Instance.new("BindableEvent")
+storePrompt.Name = "StorePrompt"
+storePrompt.Parent = script.Parent
+
+local function say(player, text, good)
+	if messageRemote then messageRemote:FireClient(player, text, good) end
+end
+
+local passById, productById = {}, {}
+for _, pass in ipairs(StoreData.Passes) do
+	if pass.Id > 0 then passById[pass.Id] = pass end
+end
+for _, product in ipairs(StoreData.Products) do
+	if product.Id > 0 then productById[product.Id] = product end
+end
+
+---------------------------------------------------------------------
+-- GAME PASSES
+---------------------------------------------------------------------
+-- publishes what the save owns as attributes and refreshes the income
+local function applyPasses(player, data)
+	for _, pass in ipairs(StoreData.Passes) do
+		player:SetAttribute(StoreData.Attribute(pass.Key), StoreData.Owns(data, pass.Key) and true or nil)
+	end
+	PlayerData.Refresh(player)
+end
+
+local function grantPass(player, pass, testOnly)
+	local data = PlayerData.Get(player)
+	if not data then return end
+	if testOnly then
+		data.TestPasses = data.TestPasses or {}
+		data.TestPasses[pass.Key] = true
+	else
+		data.Passes[pass.Key] = true
+	end
+	if pass.Key == "RelicPickaxe" then data.UseRelic = true end
+	applyPasses(player, data)
+	say(player, "{Star} You got " .. pass.Name .. "!" .. (testOnly and " (Studio test, not saved)" or " Thank you!"), true)
+end
+
+local function checkOwnership(player)
+	local data = PlayerData.WaitForData(player)
+	if not data or not player.Parent then return end
+	data.Passes = data.Passes or {}
+	data.Receipts = data.Receipts or {}
+	for _, pass in ipairs(StoreData.Passes) do
+		if pass.Id > 0 and not data.Passes[pass.Key] then
+			local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, pass.Id)
+			if ok and owns then
+				data.Passes[pass.Key] = true -- bought on the website, or in another server
+				if pass.Key == "RelicPickaxe" then data.UseRelic = true end
+			end
+		end
+	end
+	applyPasses(player, data)
+end
+Players.PlayerAdded:Connect(checkOwnership)
+for _, player in ipairs(Players:GetPlayers()) do task.spawn(checkOwnership, player) end
+
+MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
+	local pass = passById[passId]
+	if purchased and pass then grantPass(player, pass, false) end
+end)
+
+---------------------------------------------------------------------
+-- DEVELOPER PRODUCTS (the Relic Egg)
+---------------------------------------------------------------------
+local function grantProduct(player, product)
+	local grantEggs = script.Parent:FindFirstChild("GrantEggs")
+	if not grantEggs or not product.Egg then return false end
+	local ok, result = pcall(grantEggs.Invoke, grantEggs, player, product.Egg, product.Amount)
+	return ok and result == true
+end
+
+local function forgetOldReceipts(receipts)
+	local list = {}
+	for id, t in pairs(receipts) do table.insert(list, {id, t}) end
+	if #list <= MAX_RECEIPTS then return end
+	table.sort(list, function(a, b) return a[2] > b[2] end)
+	for i = MAX_RECEIPTS + 1, #list do receipts[list[i][1]] = nil end
+end
+
+MarketplaceService.ProcessReceipt = function(info)
+	local player = Players:GetPlayerByUserId(info.PlayerId)
+	local product = productById[info.ProductId]
+	if not player or not product then
+		return Enum.ProductPurchaseDecision.NotProcessedYet -- Roblox tries again next time they join
+	end
+	local data = PlayerData.Get(player)
+	if not data then return Enum.ProductPurchaseDecision.NotProcessedYet end
+	data.Receipts = data.Receipts or {}
+	local id = tostring(info.PurchaseId)
+	if data.Receipts[id] then
+		return Enum.ProductPurchaseDecision.PurchaseGranted -- already given
+	end
+	if not grantProduct(player, product) then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	data.Receipts[id] = os.time()
+	forgetOldReceipts(data.Receipts)
+	say(player, "{Star} Thanks for buying " .. product.Name .. "!", true)
+	return Enum.ProductPurchaseDecision.PurchaseGranted
+end
+
+---------------------------------------------------------------------
+-- BUYING
+---------------------------------------------------------------------
+local lastPrompt = {}
+
+local function buy(player, key)
+	if typeof(key) ~= "string" then return end
+	if os.clock() - (lastPrompt[player] or 0) < 0.5 then return end
+	lastPrompt[player] = os.clock()
+	local data = PlayerData.Get(player)
+	if not data then return end
+	local pass = StoreData.PassesByKey[key]
+	local product = StoreData.ProductsByKey[key]
+	if pass then
+		if StoreData.Owns(data, pass.Key) then
+			say(player, "You already own " .. pass.Name .. "!", true)
+		elseif pass.Id > 0 then
+			MarketplaceService:PromptGamePassPurchase(player, pass.Id)
+		elseif IS_STUDIO then
+			grantPass(player, pass, true)
+		else
+			say(player, pass.Name .. " is coming soon!", false)
+		end
+	elseif product then
+		if product.Id > 0 then
+			MarketplaceService:PromptProductPurchase(player, product.Id)
+		elseif IS_STUDIO then
+			if grantProduct(player, product) then say(player, "{Star} " .. product.Name .. " (Studio test, free)", true) end
+		else
+			say(player, product.Name .. " is coming soon!", false)
+		end
+	end
+end
+
+buyRemote.OnServerEvent:Connect(buy)
+storePrompt.Event:Connect(buy)
+
+Players.PlayerRemoving:Connect(function(player)
+	lastPrompt[player] = nil
+end)
+
+print("StoreManager ready: " .. #StoreData.Passes .. " game passes, " .. #StoreData.Products .. " products")
 ]=])
 install(game:GetService("ServerScriptService"), "TutorialManager", "Script", [=[
 -- TutorialManager (Script in ServerScriptService)
@@ -18273,6 +18669,15 @@ local petKey = UIKit.panel(petButton, {Size = UDim2.fromOffset(24, 24), Position
 petKey.ZIndex = 4
 UIKit.label(petKey, "P", {Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, MaxText = 16}).ZIndex = 5
 petButton.MouseButton1Click:Connect(function() UIBus.Fire("Pets") end)
+
+-- Store: a gold tile beside the Bag (the Robux store: game passes and the Relic Egg, StoreClient)
+local storeButton = UIKit.button(menu, "", {Size = UDim2.fromOffset(98, 98), Position = UDim2.new(0, 166, 0, 0), AnchorPoint = Vector2.new(0.5, 0),
+	Color = rgb(255, 196, 40), Radius = 12, Pattern = false})
+storeButton.Name = "Store"
+UIKit.icon(storeButton, "PassMoney", {Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2})
+UIKit.label(storeButton, "Store", {Size = UDim2.new(1, -6, 0, 30), Position = UDim2.new(0.5, 0, 0.5, 8), AnchorPoint = Vector2.new(0.5, 0.5),
+	Color = rgb(255, 245, 200), Stroke = 3.5, MaxText = 26}).ZIndex = 4
+storeButton.MouseButton1Click:Connect(function() UIBus.Fire("Store") end)
 
 ---------------------------------------------------------------------
 -- TOP RIGHT CORNER: a small dark round Settings button up in Roblox's top bar row
@@ -21844,6 +22249,184 @@ RunService.Heartbeat:Connect(function()
 	end
 end)
 ]=])
+install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "StoreClient", "LocalScript", [=[
+-- StoreClient (LocalScript in StarterPlayer > StarterPlayerScripts)
+-- The Robux Store window (the Store button on the left, or UIBus "Store"), see StoreData:
+--   * left: the four game passes as cards (icon, what it does, a Robux button, or OWNED;
+--     the Relic Pickaxe gets an EQUIP button when you've switched to a shop pickaxe)
+--   * right: the Relic Egg, turning, with its five pets and their chances, and buttons to
+--     buy 1 or 3 eggs
+-- Buying goes through the StoreBuy remote; StoreManager shows Roblox's purchase prompt.
+
+local MarketplaceService = game:GetService("MarketplaceService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local PetData = require(ReplicatedStorage:WaitForChild("PetData"))
+local PetVisuals = require(ReplicatedStorage:WaitForChild("PetVisuals"))
+local StoreData = require(ReplicatedStorage:WaitForChild("StoreData"))
+local UIBus = require(ReplicatedStorage:WaitForChild("UIBus"))
+local UIKit = require(ReplicatedStorage:WaitForChild("UIKit"))
+local C = UIKit.Colors
+local rgb = Color3.fromRGB
+
+local player = Players.LocalPlayer
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+local buyRemote = remotes:WaitForChild("StoreBuy")
+local equipRemote = remotes:WaitForChild("EquipShovel")
+
+local IS_STUDIO = RunService:IsStudio()
+local GOLD = rgb(255, 196, 40)
+
+---------------------------------------------------------------------
+-- PRICES: read from Roblox once (the Creator Hub price), StoreData's Robux as a fallback
+---------------------------------------------------------------------
+local prices = {} -- [key] = Robux
+local function priceText(item)
+	if item.Id == 0 and not IS_STUDIO then return "SOON" end
+	return "R$ " .. (prices[item.Key] or item.Robux)
+end
+
+---------------------------------------------------------------------
+-- WINDOW
+---------------------------------------------------------------------
+local gui = UIKit.screen(player, "StoreUI", 7)
+local window, content = UIKit.window(gui, "Store", UDim2.fromOffset(880, 570), GOLD, "PassMoney")
+window.Name = "StoreWindow"
+
+-- left: game passes, 2 x 2
+local passArea = Instance.new("Frame")
+passArea.BackgroundTransparency = 1
+passArea.Size = UDim2.new(0.62, -8, 1, 0)
+passArea.Parent = content
+UIKit.label(passArea, "GAME PASSES", {Size = UDim2.new(1, 0, 0, 30), Align = "Left", Color = C.Ink, Stroke = 0, MaxText = 26})
+local passGrid = Instance.new("Frame")
+passGrid.BackgroundTransparency = 1
+passGrid.Size = UDim2.new(1, 0, 1, -36)
+passGrid.Position = UDim2.fromOffset(0, 36)
+passGrid.Parent = passArea
+local gridLayout = Instance.new("UIGridLayout")
+gridLayout.CellSize = UDim2.new(0.5, -6, 0.5, -6)
+gridLayout.CellPadding = UDim2.fromOffset(12, 12)
+gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
+gridLayout.Parent = passGrid
+
+local passButtons = {} -- [key] = button
+for i, pass in ipairs(StoreData.Passes) do
+	local card = UIKit.panel(passGrid, {Color = pass.Color:Lerp(Color3.new(1, 1, 1), 0.72), Radius = 16, Stroke = 3, StrokeColor = pass.Color:Lerp(C.Outline, 0.55)})
+	card.LayoutOrder = i
+	UIKit.icon(card, pass.Icon, {Size = UDim2.fromScale(0.36, 0.5), Position = UDim2.new(0, 4, 0, 2)}).ZIndex = 2
+	UIKit.label(card, pass.Name, {Size = UDim2.new(0.62, -10, 0.2, 0), Position = UDim2.new(0.38, 0, 0.06, 0), Align = "Left", Stroke = 3, MaxText = 26})
+	UIKit.label(card, pass.Text, {Size = UDim2.new(0.62, -10, 0.3, 0), Position = UDim2.new(0.38, 0, 0.26, 0), Align = "Left", VAlign = "Top",
+		Color = C.Ink, Stroke = 0, MaxText = 15, Font = UIKit.BodyFont})
+	local button = UIKit.button(card, priceText(pass), {Size = UDim2.new(1, -20, 0.3, 0), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1),
+		Color = C.Money, MaxText = 26})
+	button.MouseButton1Click:Connect(function()
+		if pass.Key == "RelicPickaxe" and StoreData.PlayerOwns(player, pass.Key) then
+			equipRemote:FireServer("RelicPickaxe")
+		elseif not StoreData.PlayerOwns(player, pass.Key) then
+			buyRemote:FireServer(pass.Key)
+		end
+	end)
+	passButtons[pass.Key] = button
+end
+
+-- right: the Relic Egg
+local egg = PetData.RelicEgg
+local eggPanel = UIKit.panel(content, {Size = UDim2.new(0.38, -8, 1, 0), Position = UDim2.new(1, 0, 0, 0), AnchorPoint = Vector2.new(1, 0),
+	Color = rgb(40, 34, 70), Radius = 18, Stroke = 3})
+UIKit.label(eggPanel, string.upper(egg.Name), {Size = UDim2.new(1, -20, 0.08, 0), Position = UDim2.new(0.5, 0, 0.02, 0), AnchorPoint = Vector2.new(0.5, 0),
+	Color = GOLD, Stroke = 3, MaxText = 30})
+local eggView = Instance.new("Frame")
+eggView.BackgroundTransparency = 1
+eggView.Size = UDim2.new(1, -20, 0.27, 0)
+eggView.Position = UDim2.new(0.5, 0, 0.1, 0)
+eggView.AnchorPoint = Vector2.new(0.5, 0)
+eggView.Parent = eggPanel
+PetVisuals.viewport(eggView, egg.Id, {Spin = true})
+local chances = PetData.Chances(egg)
+for i, petId in ipairs(egg.Pets) do
+	local pet = PetData.GetPet(petId)
+	local rarity = PetData.Rarity(pet)
+	local row = UIKit.panel(eggPanel, {Size = UDim2.new(1, -20, 0.072, 0), Position = UDim2.new(0.5, 0, 0.38 + (i - 1) * 0.082, 0), AnchorPoint = Vector2.new(0.5, 0),
+		Color = rarity.Color, Radius = 10, Stroke = 2.5})
+	local view = Instance.new("Frame")
+	view.BackgroundTransparency = 1
+	view.Size = UDim2.new(0, 40, 1.3, 0)
+	view.Position = UDim2.new(0, 2, 0.5, 0)
+	view.AnchorPoint = Vector2.new(0, 0.5)
+	view.Parent = row
+	PetVisuals.viewport(view, pet.Id)
+	UIKit.label(row, pet.Name, {Size = UDim2.new(0.62, -44, 0.8, 0), Position = UDim2.new(0, 44, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+		Align = "Left", Stroke = 2.5, MaxText = 20})
+	UIKit.label(row, chances[i] .. "%", {Size = UDim2.new(0.3, 0, 0.8, 0), Position = UDim2.new(1, -8, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+		Align = "Right", Stroke = 2.5, MaxText = 20})
+end
+UIKit.label(eggPanel, "Exclusive pets: every one boosts money, luck AND speed!", {Size = UDim2.new(1, -24, 0.06, 0), Position = UDim2.new(0.5, 0, 0.79, 0),
+	AnchorPoint = Vector2.new(0.5, 0), Color = rgb(150, 245, 230), Stroke = 0, MaxText = 15, Font = UIKit.BodyFont})
+local productButtons = {}
+for i, product in ipairs(StoreData.Products) do
+	local b = UIKit.button(eggPanel, "", {Size = UDim2.new(0.5, -14, 0.12, 0), Position = UDim2.new(i == 1 and 0 or 1, i == 1 and 10 or -10, 1, -10),
+		AnchorPoint = Vector2.new(i == 1 and 0 or 1, 1), Color = i == 1 and C.Money or GOLD, MaxText = 20})
+	b.MouseButton1Click:Connect(function() buyRemote:FireServer(product.Key) end)
+	productButtons[product.Key] = b
+end
+
+---------------------------------------------------------------------
+-- STATE
+---------------------------------------------------------------------
+local function refresh()
+	for _, pass in ipairs(StoreData.Passes) do
+		local button = passButtons[pass.Key]
+		if StoreData.PlayerOwns(player, pass.Key) then
+			local inHand = string.sub(player:GetAttribute("EquippedShovel") or "", 1, 12) == "RelicPickaxe"
+			if pass.Key == "RelicPickaxe" and not inHand then
+				UIKit.setButton(button, "EQUIP", C.Sky)
+			else
+				UIKit.setButton(button, "OWNED", rgb(150, 145, 170))
+			end
+		else
+			UIKit.setButton(button, priceText(pass), pass.Id == 0 and not IS_STUDIO and rgb(150, 145, 170) or C.Money)
+		end
+	end
+	for i, product in ipairs(StoreData.Products) do
+		local text = "x" .. product.Amount .. "  " .. priceText(product)
+		UIKit.setButton(productButtons[product.Key], text, product.Id == 0 and not IS_STUDIO and rgb(150, 145, 170) or (i == 1 and C.Money or GOLD))
+	end
+end
+refresh()
+for _, pass in ipairs(StoreData.Passes) do
+	player:GetAttributeChangedSignal(StoreData.Attribute(pass.Key)):Connect(refresh)
+end
+player:GetAttributeChangedSignal("EquippedShovel"):Connect(refresh)
+
+task.spawn(function()
+	for _, item in ipairs(StoreData.Passes) do
+		if item.Id > 0 then
+			local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, item.Id, Enum.InfoType.GamePass)
+			if ok and info and info.PriceInRobux then prices[item.Key] = info.PriceInRobux end
+		end
+	end
+	for _, item in ipairs(StoreData.Products) do
+		if item.Id > 0 then
+			local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, item.Id, Enum.InfoType.Product)
+			if ok and info and info.PriceInRobux then prices[item.Key] = info.PriceInRobux end
+		end
+	end
+	refresh()
+end)
+
+local function toggle()
+	if window.Visible then
+		window.Visible = false
+	else
+		refresh()
+		UIKit.open(window)
+	end
+end
+UIBus.On("Store", toggle)
+]=])
 install(game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"), "TutorialClient", "LocalScript", [=[
 -- TutorialClient (LocalScript in StarterPlayer > StarterPlayerScripts)
 -- The first-join walkthrough (TutorialManager runs the steps on the server):
@@ -22911,4 +23494,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-03 12:30). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-03 13:07). Now save the place (Ctrl+S).")

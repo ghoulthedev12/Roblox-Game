@@ -7,6 +7,8 @@
 --   Speed      you swing your pickaxe faster
 -- Rarer pets and pets from later worlds give bigger boosts. The meshes are made in Blender
 -- (tools/blender/pets.py, ReplicatedStorage > PetModels); PetVisuals shows them.
+-- One more egg is bought with Robux instead of cash: the Relic Egg (PetData.RelicEgg, sold by
+-- StoreManager), with five exclusive pets that are only Rare or better and boost everything.
 
 local GameConfig = require(script.Parent:WaitForChild("GameConfig"))
 
@@ -143,9 +145,41 @@ for worldId, entry in ipairs(EGGS) do
 	PetData.EggsById[egg.Id] = egg
 end
 
+-- THE RELIC EGG (Robux): not in any world (World = 0) and no cash price. Its five pets have
+-- their own rarities and chances, and boost all three stats, at World 9 strength and a bit more.
+local RELIC_PETS = {
+	-- {id, name, description, rarity, chance out of 100}
+	{"FossilRex", "Fossil Rex", "Dug up from the oldest server rack.", 3, 42},
+	{"MummyCat", "Mummy Cat", "Wrapped in ancient ethernet cable.", 3, 30},
+	{"TotemOwl", "Totem Owl", "Carved by the first archaeologists.", 4, 16},
+	{"IdolMonkey", "Idol Monkey", "A solid gold idol. Do not swap it for sand.", 4, 9},
+	{"RelicDragon", "Relic Dragon", "Guardian of the buried internet.", 5, 3},
+}
+local RELIC_STRENGTH = PetData.WorldFactor(9) * 1.25
+local relicEgg = {Id = "RelicEgg", Name = "Relic Egg", World = 0, Price = 0, Robux = true, Pets = {}, Chances = {}}
+for _, info in ipairs(RELIC_PETS) do
+	local power = PetData.Rarities[info[4]].Power * RELIC_STRENGTH
+	local pet = {Id = info[1], Name = info[2], Description = info[3], World = 0, Egg = relicEgg.Id, Rarity = info[4], Exclusive = true,
+		Boosts = {Money = power, Luck = power, Speed = power * 0.5}}
+	PetData.Pets[pet.Id] = pet
+	table.insert(relicEgg.Pets, pet.Id)
+	table.insert(relicEgg.Chances, info[5])
+	table.insert(PetData.Order, pet.Id)
+end
+PetData.RelicEgg = relicEgg
+PetData.EggsById[relicEgg.Id] = relicEgg
+
+-- the chance (out of 100) of each pet in an egg, in egg.Pets order
+function PetData.Chances(egg)
+	if egg.Chances then return egg.Chances end
+	local list = {}
+	for i in ipairs(egg.Pets) do list[i] = PetData.Rarities[i].Chance end
+	return list
+end
+
 -- pets that fly (they hover beside you instead of hopping along the ground)
 for _, id in ipairs({"WifiOwl", "ServerDragon", "LanternMoth", "KoiBot", "StarBlob", "NebulaWhale", "BubbleFish", "JellyLamp",
-	"SugarDragon", "Phoenix", "PixelGhost", "ErrorCube"}) do
+	"SugarDragon", "Phoenix", "PixelGhost", "ErrorCube", "TotemOwl", "RelicDragon"}) do
 	PetData.Pets[id].Fly = true
 end
 
@@ -159,11 +193,11 @@ end
 
 -- picks a pet from an egg (rng: a Random)
 function PetData.Roll(egg, rng)
+	local chances = PetData.Chances(egg)
 	local roll = rng:NextNumber() * 100
-	for i = #PetData.Rarities, 1, -1 do
-		local chance = PetData.Rarities[i].Chance
-		if roll < chance then return egg.Pets[i] end
-		roll -= chance
+	for i = #egg.Pets, 1, -1 do
+		if roll < chances[i] then return egg.Pets[i] end
+		roll -= chances[i]
 	end
 	return egg.Pets[1]
 end

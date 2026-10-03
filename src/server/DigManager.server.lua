@@ -18,6 +18,7 @@ local BuriedPainting = require(script.Parent:WaitForChild("BuriedPainting"))
 local DigBoosts = require(script.Parent:WaitForChild("DigBoosts"))
 local GimmickHooks = require(script.Parent:WaitForChild("GimmickHooks"))
 local Quests = require(script.Parent:WaitForChild("Quests"))
+local StoreData = require(ReplicatedStorage:WaitForChild("StoreData"))
 local TweenService = game:GetService("TweenService")
 
 local terrain = workspace.Terrain
@@ -83,6 +84,9 @@ local toolTemplates = {}
 for _, def in ipairs(GameConfig.Shovels) do
 	toolTemplates[def.Id] = ShovelModels(def)
 end
+for _, def in pairs(GameConfig.RelicPickaxes) do -- the Relic Pickaxe game pass, one per world
+	toolTemplates[def.Id] = ShovelModels(def)
+end
 
 ---------------------------------------------------------------------
 -- PLAYER STATE: which world they're in, which shovel they hold there
@@ -96,6 +100,10 @@ end
 local function getEquippedDef(player, world)
 	world = world or getWorld(player)
 	local data = PlayerData.Get(player)
+	-- the Relic Pickaxe game pass: used in every world, unless you picked a shop pickaxe since
+	if data and StoreData.PlayerOwns(player, "RelicPickaxe") and data.UseRelic ~= false then
+		return GameConfig.RelicPickaxe(world)
+	end
 	local id = data and data.EquippedShovels[tostring(world.Id)]
 	local def = id and GameConfig.GetShovel(id)
 	if def and def.World == world.Id and data.OwnedShovels[def.Id] then
@@ -509,6 +517,12 @@ swingRemote.OnServerEvent:Connect(function(player, target, swingLength)
 	local floorY = origin.Y + world.Zones[def.MaxZone].Bottom
 	-- the crater's radius scales straight with the shovel's Power (see GameConfig.DigRadiusForPower)
 	local radius = (GameConfig.DigRadiusForPower(def.Power) + 2) / 2 + 0.75
+	if StoreData.PlayerOwns(player, "BigHoles") then
+		-- the 2x Bigger Holes game pass; near the rim it shrinks back so it never bites further
+		-- past the pit's edge than a normal hole would
+		local flat = Vector3.new(carveAt.X - origin.X, 0, carveAt.Z - origin.Z).Magnitude
+		radius = math.max(radius, math.min(radius * 2, world.PitRadius - flat + radius))
+	end
 	local centerY = math.max(carveAt.Y + radius * 0.35, floorY + radius)
 	terrain:FillBall(Vector3.new(carveAt.X, centerY, carveAt.Z), radius, Enum.Material.Air)
 	-- the bedrock can never be dug: if the crater reached down to it, put back any bedrock
@@ -655,6 +669,7 @@ buyShovelRemote.OnServerEvent:Connect(function(player, shovelId)
 	end
 	data.OwnedShovels[def.Id] = true
 	data.EquippedShovels[tostring(def.World)] = def.Id
+	data.UseRelic = false -- holding the new pickaxe now (the store's Equip button brings the Relic back)
 	updateAttributes(player)
 	giveShovel(player)
 	shopMessageRemote:FireClient(player, "{Pickaxe} You bought the " .. def.Name .. "! It digs down to " .. -GameConfig.GetWorld(def.World).Zones[def.MaxZone].Bottom .. "m.", true)
@@ -662,8 +677,17 @@ end)
 
 equipShovelRemote.OnServerEvent:Connect(function(player, shovelId)
 	local data = PlayerData.Get(player)
+	if data and shovelId == "RelicPickaxe" then -- the store's Equip button
+		if StoreData.PlayerOwns(player, "RelicPickaxe") then
+			data.UseRelic = true
+			updateAttributes(player)
+			giveShovel(player)
+		end
+		return
+	end
 	local def = typeof(shovelId) == "string" and GameConfig.GetShovel(shovelId)
 	if not data or not def or not data.OwnedShovels[def.Id] then return end
+	data.UseRelic = false
 	data.EquippedShovels[tostring(def.World)] = def.Id
 	updateAttributes(player)
 	giveShovel(player)
@@ -914,6 +938,11 @@ local function onPlayerAdded(player)
 	if not player.Parent then return end
 	currentWorld[player] = GameConfig.Worlds[1] -- everyone spawns at their museum in world 1
 	updateAttributes(player)
+	-- buying the Relic Pickaxe pass (StoreManager sets the attribute) puts it in your hands
+	player:GetAttributeChangedSignal(StoreData.Attribute("RelicPickaxe")):Connect(function()
+		updateAttributes(player)
+		giveShovel(player)
+	end)
 	player.CharacterAdded:Connect(function()
 		currentWorld[player] = GameConfig.Worlds[1]
 		updateAttributes(player)

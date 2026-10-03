@@ -106,6 +106,23 @@ So there's always something to chase in the other worlds:
   banner when a quest is done. Progress is reported with `Quests.Found(...)` /
   `Quests.Progress(player, kind)` from DigManager and the world gimmicks.
 
+## The Robux Store
+The gold **Store** button on the left opens it (`src/client/StoreClient.client.lua`); the list
+of items and their IDs is `src/shared/StoreData.lua`, the purchases are handled by
+`src/server/StoreManager.server.lua`.
+- **Game passes** (bought once): **2x Money** (PlayerData), **2x Dig Speed** (DigBoosts),
+  **2x Bigger Holes** (DigManager) and the **Relic Pickaxe**, an exclusive pickaxe for every
+  world as deep as that world's best one, with +50% luck (`GameConfig.RelicPickaxes`; the
+  store's EQUIP button brings it back after you pick a shop pickaxe).
+- **Developer products**: the **Relic Egg**, 1 or 3 at a time, with five exclusive pets
+  (`PetData.RelicEgg`), also sold at its gold stand in World 1.
+- To hook them up: make the passes and products on the Creator Hub and paste their IDs into
+  StoreData. Until then, Studio gives them for free for that test session (passes are not
+  saved; test eggs are), and live servers show them as "Soon".
+- Icons: `tools/blender/store_icons.py` renders `assets/ui/store/<Name>.png` (for the game,
+  ids in UIIconImages) and `assets/ui/store/roblox/<Name>.png` (round backgrounds, for the
+  Creator Hub).
+
 ## Meme pictures
 `assets/meme_images/` has an original meme picture for every artifact (see its CREDITS.md).
 To put them in the game:

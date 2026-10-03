@@ -16,4 +16,11 @@ return {
 	Lock = "rbxassetid://78646449722777",
 	Picture = "rbxassetid://119024953737683",
 	Pickaxe = "rbxassetid://89644053778488",
+	-- the Robux store (tools/blender/store_icons.py -> assets/ui/store)
+	PassMoney = "rbxassetid://129768369602621",
+	PassSpeed = "rbxassetid://88901226704548",
+	PassHoles = "rbxassetid://89007196691165",
+	PassPickaxe = "rbxassetid://88528019682299",
+	PassEgg = "rbxassetid://105493672711547",
+	PassEgg3 = "rbxassetid://74595878127307",
 }

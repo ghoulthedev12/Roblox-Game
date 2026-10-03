@@ -13,6 +13,7 @@ local ArtifactData = require(ReplicatedStorage:WaitForChild("ArtifactData"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local QuestData = require(ReplicatedStorage:WaitForChild("QuestData"))
 local PetData = require(ReplicatedStorage:WaitForChild("PetData"))
+local StoreData = require(ReplicatedStorage:WaitForChild("StoreData"))
 
 local ProfileService = require(script.Parent:WaitForChild("ProfileService"))
 
@@ -70,6 +71,9 @@ local function defaultData()
 		Pets = {},         -- [uid] = petId
 		EquippedPets = {}, -- [uid] = true: the pets following you (and boosting you)
 		NextPetUid = 1,
+		-- the Robux store (StoreManager, StoreData)
+		Passes = {},      -- [pass key] = true: game passes this player owns
+		Receipts = {},    -- [purchase id] = os.time(): developer products already given out
 	}
 end
 
@@ -116,7 +120,9 @@ local function computeIncome(data)
 		end
 	end
 	-- every rebirth adds a permanent income bonus; equipped pets add their money boost
-	return total * (1 + GameConfig.RebirthIncomeBonus * (data.Rebirths or 0)) * (1 + PetData.Bonuses(data).Money)
+	-- and the 2x Money game pass doubles it all
+	local pass = StoreData.Owns(data, "DoubleMoney") and 2 or 1
+	return total * (1 + GameConfig.RebirthIncomeBonus * (data.Rebirths or 0)) * (1 + PetData.Bonuses(data).Money) * pass
 end
 
 local function refresh(player)
@@ -230,6 +236,7 @@ local function load(player)
 		data.ImportedOldSave = true
 	end
 	migrate(data)
+	data.TestPasses = nil -- Studio test buys of the store never last past their session
 
 	-- Offline earnings
 	if returning then
