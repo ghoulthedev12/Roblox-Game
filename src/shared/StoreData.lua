@@ -29,8 +29,8 @@ StoreData.Passes = {
 }
 
 StoreData.Products = {
-	{Key = "RelicEgg1", Id = 0, Robux = 49, Name = "Relic Egg", Amount = 1, Egg = "RelicEgg", Icon = "PassEgg"},
-	{Key = "RelicEgg3", Id = 0, Robux = 129, Name = "3 Relic Eggs", Amount = 3, Egg = "RelicEgg", Icon = "PassEgg"},
+	{Key = "RelicEgg1", Id = 3716189620, Robux = 49, Name = "Relic Egg", Amount = 1, Egg = "RelicEgg", Icon = "PassEgg"},
+	{Key = "RelicEgg3", Id = 3716189665, Robux = 129, Name = "3 Relic Eggs", Amount = 3, Egg = "RelicEgg", Icon = "PassEgg"},
 }
 
 StoreData.PassesByKey = {}
