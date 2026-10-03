@@ -1364,4 +1364,5 @@ def main():
     print("wrote", path, "and", OUT_LUA, "with", len(objs), "meshes")
 
 
-main()
+if __name__ == "__main__":  # (promo.py imports the builders without exporting)
+    main()
