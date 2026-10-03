@@ -396,7 +396,136 @@ def build_settings():
     return 4.5, (12, -14)
 
 
-ICONS = {"Rebirth": build_rebirth, "Bag": build_bag, "Settings": build_settings, "Gem": build_gem, "Cash": build_cash}
+def sphere(name, radius, mat, loc=(0, 0, 0), scale=(1, 1, 1)):
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=48, ring_count=24, radius=radius, location=loc)
+    o = bpy.context.active_object
+    o.name = name
+    o.scale = scale
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    link(o)
+    return finish(o, mat, bevel=0)
+
+
+def star_points(outer, inner, n=5, turn=90):
+    return [(math.cos(R(turn + k * 180 / n)) * (outer if k % 2 == 0 else inner),
+             math.sin(R(turn + k * 180 / n)) * (outer if k % 2 == 0 else inner)) for k in range(n * 2)]
+
+
+def heart_points(size, steps=64):
+    pts = []
+    for i in range(steps):
+        t = 2 * math.pi * i / steps
+        x = 16 * math.sin(t) ** 3
+        z = 13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t)
+        pts.append((x / 17 * size, (z + 2) / 17 * size))
+    return pts[::-1]
+
+
+def build_star():
+    """A puffy gold star."""
+    gold = material("StarGold", rgb(255, 198, 40), rough=0.16, coat=1.0)
+    flat_shape("Star", star_points(2.0, 0.98), 1.0, gold, bevel=0.42)
+    return 4.6, (12, -14), 0.05
+
+
+def build_luck():
+    """A four-leaf clover: four heart-shaped leaves (two round lobes each) and a stem."""
+    green = material("CloverGreen", rgb(70, 196, 80), rough=0.25, coat=0.9)
+    light = material("CloverLight", rgb(120, 225, 100), rough=0.25, coat=0.9)
+    stem = material("CloverStem", rgb(44, 150, 60), rough=0.3, coat=0.6)
+    flat_shape("Stem", [(0.1, 0.0), (0.45, -1.1), (0.9, -1.85), (0.62, -1.98), (0.15, -1.15), (-0.15, 0.0)], 0.3, stem,
+               loc=(0, 0.25, 0), bevel=0.1)
+    for k in range(4):
+        a = R(45 + k * 90)
+        out = (math.cos(a), math.sin(a))
+        side = (-out[1], out[0])
+        for s in (-1, 1):
+            cx = out[0] * 0.95 + side[0] * s * 0.36
+            cz = out[1] * 0.95 + side[1] * s * 0.36
+            sphere("Leaf", 0.62, green if k % 2 else light, loc=(cx, 0, cz), scale=(1, 0.42, 1))
+        sphere("Leaf", 0.5, green if k % 2 else light, loc=(out[0] * 0.5, 0, out[1] * 0.5), scale=(1, 0.42, 1))
+    return 4.9, (10, -12), -0.1
+
+
+def build_heart():
+    pink = material("HeartPink", rgb(255, 70, 120), rough=0.15, coat=1.0)
+    flat_shape("Heart", heart_points(2.0), 1.0, pink, loc=(0, 0, -0.1), bevel=0.4)
+    return 4.4, (10, -14), 0.0
+
+
+def build_crown():
+    gold = material("CrownGold", rgb(255, 196, 40), rough=0.18, coat=1.0, metal=0.2)
+    red = material("CrownRed", rgb(230, 40, 70), rough=0.1, coat=1.0)
+    blue = material("CrownBlue", rgb(60, 150, 255), rough=0.1, coat=1.0)
+    pts = [(-1.9, -1.0), (1.9, -1.0), (1.95, 1.0), (1.05, 0.15), (0, 1.35), (-1.05, 0.15), (-1.95, 1.0)]
+    flat_shape("Crown", pts, 1.0, gold, bevel=0.22)
+    rounded_box("Band", (4.0, 1.1, 0.6), gold, loc=(0, 0, -0.75), bevel=0.25)
+    for x, z in ((-1.95, 1.15), (0, 1.5), (1.95, 1.15)):
+        sphere("Ball", 0.3, gold, loc=(x, 0, z))
+    for x, mat in ((-1.1, blue), (0, red), (1.1, blue)):
+        sphere("Gem", 0.26, mat, loc=(x, -0.62, -0.75), scale=(1, 0.5, 1))
+    return 4.9, (14, -14), 0.0
+
+
+def build_lock():
+    gold = material("LockGold", rgb(255, 196, 40), rough=0.2, coat=1.0, metal=0.2)
+    steel = material("LockSteel", rgb(200, 210, 228), rough=0.15, coat=0.8, metal=0.6)
+    dark = material("LockHole", rgb(60, 40, 20), rough=0.5, coat=0.2)
+    bpy.ops.mesh.primitive_torus_add(major_radius=0.95, minor_radius=0.26, location=(0, 0, 0.55), rotation=(R(90), 0, 0),
+                                     major_segments=64, minor_segments=20)
+    o = bpy.context.active_object
+    o.name = "Shackle"
+    link(o)
+    finish(o, steel, bevel=0)
+    rounded_box("Body", (2.9, 1.1, 2.2), gold, loc=(0, 0, -0.75), bevel=0.4)
+    cylinder("Hole", 0.28, 0.2, dark, loc=(0, -0.55, -0.55), rot=(R(90), 0, 0), bevel=0.05)
+    flat_shape("HoleSlot", [(-0.13, -1.25), (0.13, -1.25), (0.08, -0.6), (-0.08, -0.6)], 0.2, dark, loc=(0, -0.55, 0), bevel=0.04)
+    return 4.6, (12, -14), -0.2
+
+
+def build_picture():
+    wood = material("FrameWood", rgb(214, 140, 60), rough=0.3, coat=0.7)
+    sky = material("PicSky", rgb(120, 200, 255), rough=0.4, coat=0.3)
+    hill = material("PicHill", rgb(90, 200, 90), rough=0.4, coat=0.3)
+    sun = material("PicSun", rgb(255, 214, 60), rough=0.3, coat=0.5)
+    rounded_box("Frame", (4.0, 0.6, 3.2), wood, bevel=0.3)
+    rounded_box("Canvas", (3.1, 0.2, 2.3), sky, loc=(0, -0.28, 0), bevel=0.05)
+    flat_shape("Hill", [(-1.55, -1.15), (1.55, -1.15), (1.55, -0.3), (0.6, 0.15), (-0.3, -0.45), (-1.55, 0.1)], 0.12, hill,
+               loc=(0, -0.42, 0), bevel=0.04)
+    cylinder("Sun", 0.38, 0.12, sun, loc=(0.85, -0.42, 0.55), rot=(R(90), 0, 0), bevel=0.04)
+    return 4.8, (12, -16), 0.0
+
+
+def build_pickaxe():
+    """A wooden handle on a diagonal with a curved steel head across its top."""
+    handle = material("PickHandle", rgb(186, 116, 58), rough=0.35, coat=0.6)
+    steel = material("PickSteel", rgb(205, 220, 242), rough=0.15, coat=0.9, metal=0.5)
+    grip = material("PickGrip", rgb(90, 70, 160), rough=0.4, coat=0.4)
+    bottom, top = (-1.55, -1.75), (1.05, 1.15)
+    dx, dz = top[0] - bottom[0], top[1] - bottom[1]
+    length = math.hypot(dx, dz)
+    ux, uz = dx / length, dz / length
+    turn = math.atan2(dx, dz)
+    mid = ((bottom[0] + top[0]) / 2, (bottom[1] + top[1]) / 2)
+    rounded_box("Handle", (0.46, 0.46, length + 0.3), handle, loc=(mid[0], 0, mid[1]), rot=(0, turn, 0), bevel=0.2)
+    rounded_box("Grip", (0.58, 0.58, 1.0), grip, loc=(bottom[0] + ux * 0.55, 0, bottom[1] + uz * 0.55), rot=(0, turn, 0), bevel=0.24)
+    # the head: an arc bowed upward over the top of the handle, pointed at both ends
+    cx, cz = top[0] - ux * 1.5, top[1] - uz * 1.5
+    base = math.atan2(uz, ux)
+    outer, pts, back = 1.95, [], []
+    for i in range(31):
+        f = i / 30
+        a = base + R(-62 + 124 * f)
+        thick = 0.12 + 0.5 * math.sin(math.pi * f)
+        pts.append((cx + math.cos(a) * outer, cz + math.sin(a) * outer))
+        back.append((cx + math.cos(a) * (outer - thick), cz + math.sin(a) * (outer - thick)))
+    flat_shape("Head", pts + back[::-1], 0.6, steel, bevel=0.14)
+    return 5.0, (10, -12), -0.2
+
+
+ICONS = {"Rebirth": build_rebirth, "Bag": build_bag, "Settings": build_settings, "Gem": build_gem, "Cash": build_cash,
+         "Star": build_star, "Luck": build_luck, "Heart": build_heart, "Crown": build_crown, "Lock": build_lock,
+         "Picture": build_picture, "Pickaxe": build_pickaxe}
 
 
 def render(name):

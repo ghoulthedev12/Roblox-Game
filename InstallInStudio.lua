@@ -3926,6 +3926,14 @@ return {
 	Gem = "rbxassetid://111005589199418",
 	Rebirth = "rbxassetid://84292147523245",
 	Settings = "rbxassetid://123962860909979",
+	-- the quest and pets windows' icons (rendered after the 3D star looked cheap there)
+	Star = "rbxassetid://85702736956238",
+	Luck = "rbxassetid://109481211102730",
+	Heart = "rbxassetid://104440315677826",
+	Crown = "rbxassetid://81379278298436",
+	Lock = "rbxassetid://78646449722777",
+	Picture = "rbxassetid://119024953737683",
+	Pickaxe = "rbxassetid://89644053778488",
 }
 ]=])
 install(game:GetService("ReplicatedStorage"), "UIIconList", "ModuleScript", [=[
@@ -19685,10 +19693,32 @@ local function isUnlocked(worldId)
 	return false
 end
 
-local function rewardText(worldId, quest)
+local function rewardCash(worldId, quest)
 	local world = GameConfig.GetWorld(worldId)
-	local cash = math.floor((world and world.Price or 0) * (quest.Cash or 0))
-	return "+" .. ArtifactData.FormatMoney(cash) .. "  +" .. (quest.Gems or 0) .. " gems"
+	return math.floor((world and world.Price or 0) * (quest.Cash or 0))
+end
+
+-- a reward as chunky pills on the right of a quest row: cash, then gems
+local function rewardPills(row, worldId, quest)
+	local holder = Instance.new("Frame")
+	holder.BackgroundTransparency = 1
+	holder.Size = UDim2.new(0.34, 0, 0, 30)
+	holder.Position = UDim2.new(1, -10, 0.5, 0)
+	holder.AnchorPoint = Vector2.new(1, 0.5)
+	holder.Parent = row
+	local layout = Instance.new("UIListLayout")
+	layout.FillDirection = Enum.FillDirection.Horizontal
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	layout.VerticalAlignment = Enum.VerticalAlignment.Center
+	layout.Padding = UDim.new(0, 6)
+	layout.Parent = holder
+	local function pill(icon, text, color, width)
+		local p = UIKit.panel(holder, {Size = UDim2.new(width, -4, 1, 0), Color = color, Radius = 10, Stroke = 2.5})
+		UIKit.icon(p, icon, {Size = UDim2.fromOffset(30, 30), Position = UDim2.new(0, -4, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)})
+		UIKit.label(p, text, {Size = UDim2.new(1, -32, 0.8, 0), Position = UDim2.new(0, 26, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Stroke = 2, MaxText = 16})
+	end
+	pill("Cash", "+" .. ArtifactData.FormatMoney(rewardCash(worldId, quest)), rgb(70, 170, 70), 0.6)
+	if (quest.Gems or 0) > 0 then pill("Gem", "+" .. quest.Gems, rgb(150, 80, 220), 0.4) end
 end
 
 local gui = UIKit.screen(player, "QuestGui", 4)
@@ -19774,29 +19804,43 @@ questsTab.Name = "QuestsTab"
 indexTab.Name = "IndexTab"
 tabRow.Name = "Tabs"
 
-local worldRow = Instance.new("Frame")
-worldRow.BackgroundTransparency = 1
-worldRow.Size = UDim2.new(1, 0, 0, 40)
-worldRow.Position = UDim2.fromOffset(0, 52)
-worldRow.Parent = content
+-- the worlds, as a list down the left: name and how far along its quests you are
+local worldList = Instance.new("ScrollingFrame")
+worldList.BackgroundTransparency = 1
+worldList.BorderSizePixel = 0
+worldList.ScrollBarThickness = 6
+worldList.ScrollBarImageColor3 = C.Lilac
+worldList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+worldList.CanvasSize = UDim2.new()
+worldList.Size = UDim2.new(0.27, 0, 1, -54)
+worldList.Position = UDim2.fromOffset(0, 54)
+worldList.Parent = content
 local worldLayout = Instance.new("UIListLayout")
-worldLayout.FillDirection = Enum.FillDirection.Horizontal
 worldLayout.Padding = UDim.new(0, 6)
 worldLayout.SortOrder = Enum.SortOrder.LayoutOrder
-worldLayout.Parent = worldRow
-local worldButtons = {}
+worldLayout.Parent = worldList
+local worldPad = Instance.new("UIPadding")
+worldPad.PaddingTop = UDim.new(0, 2)
+worldPad.PaddingRight = UDim.new(0, 10)
+worldPad.Parent = worldList
+local worldButtons, worldNotes = {}, {}
 for i, worldId in ipairs(QUEST_WORLDS) do
 	local world = GameConfig.GetWorld(worldId)
-	local short = world and string.match(world.Name, "^(%S+)") or ("World " .. worldId)
-	local b = UIKit.button(worldRow, short, {Size = UDim2.new(1 / #QUEST_WORLDS, -6, 1, 0), Color = C.Sky, Radius = 10, MaxText = 15, Pattern = false})
+	local b = UIKit.button(worldList, "", {Size = UDim2.new(1, 0, 0, 52), Color = C.Sky, Radius = 12, Pattern = false})
 	b.LayoutOrder = i
+	UIKit.label(b, world and world.Name or ("World " .. worldId), {Size = UDim2.new(1, -16, 0, 24), Position = UDim2.fromOffset(8, 4), Align = "Left",
+		Stroke = 2.5, MaxText = 19}).ZIndex = 3
+	local note = UIKit.label(b, "", {Size = UDim2.new(1, -16, 0, 18), Position = UDim2.fromOffset(8, 27), Align = "Left",
+		Color = rgb(255, 250, 225), Stroke = 2, MaxText = 15})
+	note.ZIndex = 3
 	worldButtons[worldId] = b
+	worldNotes[worldId] = note
 end
 
 local body = Instance.new("Frame")
 body.BackgroundTransparency = 1
-body.Size = UDim2.new(1, 0, 1, -104)
-body.Position = UDim2.fromOffset(0, 102)
+body.Size = UDim2.new(0.73, -12, 1, -54)
+body.Position = UDim2.new(0.27, 12, 0, 54)
 body.Parent = content
 
 local function clearBody()
@@ -19836,16 +19880,20 @@ local function drawQuests(worldId)
 			UIKit.label(badge, tostring(i), {Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5),
 				Stroke = 2.5, MaxText = 24})
 		end
-		UIKit.label(row, quest.Text, {Size = UDim2.new(0.58, 0, 0, 26), Position = UDim2.new(0, 66, 0, current and 6 or 19), Align = "Left",
+		UIKit.label(row, quest.Text, {Size = UDim2.new(0.52, 0, 0, 26), Position = UDim2.new(0, 66, 0, current and 6 or 19), Align = "Left",
 			Color = (done or current) and C.Ink or C.Grey, Stroke = 0, MaxText = 20})
 		if current then
-			local fill = bar(row, {Size = UDim2.new(0.56, 0, 0, 16), Position = UDim2.new(0, 66, 1, -10), AnchorPoint = Vector2.new(0, 1)},
+			local fill = bar(row, {Size = UDim2.new(0.5, 0, 0, 16), Position = UDim2.new(0, 66, 1, -10), AnchorPoint = Vector2.new(0, 1)},
 				q.Progress / quest.Goal, C.Mint)
 			UIKit.label(fill.Parent, q.Progress .. " / " .. quest.Goal, {Size = UDim2.fromScale(1, 1.2), Position = UDim2.fromScale(0.5, 0.5),
 				AnchorPoint = Vector2.new(0.5, 0.5), Stroke = 2, MaxText = 13}).ZIndex = 3
 		end
-		UIKit.label(row, done and "DONE" or rewardText(worldId, quest), {Size = UDim2.new(0.3, -12, 0, 30), Position = UDim2.new(1, -12, 0.5, 0),
-			AnchorPoint = Vector2.new(1, 0.5), Align = "Right", Color = done and C.Mint or rgb(40, 150, 70), Stroke = done and 2 or 0, MaxText = 18})
+		if done then
+			UIKit.label(row, "DONE", {Size = UDim2.new(0.3, -12, 0, 30), Position = UDim2.new(1, -12, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+				Align = "Right", Color = C.Mint, Stroke = 2.5, MaxText = 22})
+		else
+			rewardPills(row, worldId, quest)
+		end
 	end
 end
 
@@ -19909,7 +19957,9 @@ local function redraw()
 	for worldId, b in pairs(worldButtons) do
 		local q = questOf(worldId)
 		local mastered = q.Step > QuestData.Count(worldId)
-		b.BackgroundColor3 = worldId == selectedWorld and GOLD or (not isUnlocked(worldId) and rgb(150, 145, 170) or (mastered and C.Mint or C.Sky))
+		local unlocked = isUnlocked(worldId)
+		b.BackgroundColor3 = worldId == selectedWorld and GOLD or (not unlocked and rgb(150, 145, 170) or (mastered and C.Mint or C.Sky))
+		worldNotes[worldId].Text = not unlocked and "LOCKED" or (mastered and "MASTERED" or ("Quest " .. math.min(q.Step, QuestData.Count(worldId)) .. " / " .. QuestData.Count(worldId)))
 	end
 	if tab == "Quests" then drawQuests(selectedWorld) else drawIndex(selectedWorld) end
 end
@@ -22861,4 +22911,4 @@ UserInputService.InputBegan:Connect(function(input)
 end)
 ]=])
 if recording then ChangeHistoryService:FinishRecording(recording, Enum.FinishRecordingOperation.Commit) end
-print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-03 00:19). Now save the place (Ctrl+S).")
+print("Meme Archaeologist: installed " .. count .. " scripts (build 2026-10-03 12:30). Now save the place (Ctrl+S).")
