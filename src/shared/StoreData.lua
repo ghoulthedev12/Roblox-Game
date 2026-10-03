@@ -18,13 +18,13 @@
 local StoreData = {}
 
 StoreData.Passes = {
-	{Key = "DoubleMoney", Id = 0, Robux = 199, Name = "2x Money", Icon = "PassMoney", Color = Color3.fromRGB(90, 200, 80),
+	{Key = "DoubleMoney", Id = 2005844738, Robux = 199, Name = "2x Money", Icon = "PassMoney", Color = Color3.fromRGB(90, 200, 80),
 		Text = "Your museum earns double money. Forever!"},
-	{Key = "DoubleSpeed", Id = 0, Robux = 149, Name = "2x Dig Speed", Icon = "PassSpeed", Color = Color3.fromRGB(70, 170, 255),
+	{Key = "DoubleSpeed", Id = 2005832754, Robux = 149, Name = "2x Dig Speed", Icon = "PassSpeed", Color = Color3.fromRGB(70, 170, 255),
 		Text = "Swing your pickaxe twice as fast."},
-	{Key = "BigHoles", Id = 0, Robux = 99, Name = "2x Bigger Holes", Icon = "PassHoles", Color = Color3.fromRGB(230, 140, 60),
+	{Key = "BigHoles", Id = 2005922738, Robux = 99, Name = "2x Bigger Holes", Icon = "PassHoles", Color = Color3.fromRGB(230, 140, 60),
 		Text = "Every swing digs a hole twice as wide."},
-	{Key = "RelicPickaxe", Id = 0, Robux = 299, Name = "Relic Pickaxe", Icon = "PassPickaxe", Color = Color3.fromRGB(240, 180, 30),
+	{Key = "RelicPickaxe", Id = 2005238738, Robux = 299, Name = "Relic Pickaxe", Icon = "PassPickaxe", Color = Color3.fromRGB(240, 180, 30),
 		Text = "Golden pickaxe for every world. Digs deepest, +50% luck!"},
 }
 
